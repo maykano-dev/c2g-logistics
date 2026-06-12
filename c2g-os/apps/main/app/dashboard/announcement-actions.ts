@@ -40,30 +40,7 @@ export async function getActiveAnnouncements() {
     (ann) => !dismissedIds.includes(ann.id)
   );
 
-  return { 
-    announcements: [
-      {
-        id: "test-1",
-        title: "Sea Freight Delay Notice",
-        message: "Due to port congestion, sea freight shipments are experiencing a 5-day delay. We apologize for the inconvenience.",
-        type: "warning",
-        icon: "alert-triangle",
-        priority: 10,
-        created_at: new Date().toISOString(),
-        action_label: "Read More",
-        action_url: "https://c2glogistics.com",
-      },
-      {
-        id: "test-2",
-        title: "New Warehouse Opened!",
-        message: "We've opened a new warehouse in Yiwu for faster processing.",
-        type: "info",
-        icon: "party-popper",
-        priority: 1,
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-      }
-    ] 
-  };
+  return { announcements: activeAnnouncements };
 }
 
 export async function dismissAnnouncement(announcementId: string) {

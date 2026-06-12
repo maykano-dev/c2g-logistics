@@ -55,9 +55,25 @@ export default function CheckoutClient({ initialProfile, exchangeRate }: { initi
 
     if (res.success) {
       clearCart();
-      // In a real flow, redirect to Paystack/Hubtel payment gateway here.
-      // For now, redirect to a success page or dashboard.
-      router.push(`/dashboard/mall-orders?success=true&orderId=${res.orderId}`);
+      // Call Hubtel to initialize payment
+      try {
+        const hubtelRes = await fetch('/api/hubtel/initialize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: res.id, type: 'mall_order' })
+        });
+        const hubtelData = await hubtelRes.json();
+
+        if (hubtelData.checkoutUrl) {
+          window.location.href = hubtelData.checkoutUrl;
+        } else {
+          alert('Failed to initialize payment gateway. Please try again from your orders page.');
+          router.push(`/dashboard/mall-orders`);
+        }
+      } catch (err) {
+        alert('Network error initializing payment.');
+        router.push(`/dashboard/mall-orders`);
+      }
     } else {
       alert("Error: " + res.error);
       setLoading(false);

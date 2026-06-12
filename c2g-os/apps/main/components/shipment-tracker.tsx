@@ -172,6 +172,12 @@ export function ShipmentTracker({
       // Dark theme map tiles by default for our design
       const tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
       
+      // Cleanup previous instance if Strict Mode causes double render
+      const container = L.DomUtil.get(mapRef.current);
+      if (container != null) {
+        container._leaflet_id = null;
+      }
+
       mapInstance = L.map(mapRef.current, { zoomControl: false, scrollWheelZoom: true, dragging: true });
       L.tileLayer(tileUrl, { maxZoom: 20 }).addTo(mapInstance);
 
@@ -181,20 +187,69 @@ export function ShipmentTracker({
       const maxBounds = L.latLngBounds(activeRoute.map(p => [p.lat, p.lng]));
       mapInstance.fitBounds(maxBounds, { paddingTopLeft: [50, 100], paddingBottomRight: [50, 50] });
 
-      const d3PlaneSVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%; filter: drop-shadow(0px 6px 8px rgba(0,0,0,0.5)); transform: scale(1.3);"><defs><linearGradient id="planeGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#93c5fd;stop-opacity:1" /><stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" /></linearGradient></defs><path d="M21,16V14L13,9V3.5A1.5,1.5 0 0,0 11.5,2A1.5,1.5 0 0,0 10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5L21,16Z" fill="url(#planeGrad)" stroke="#1e3a8a" stroke-width="0.3" stroke-linejoin="round"/></svg>`;
-      const shipSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%; height:100%; filter: drop-shadow(0px 6px 8px rgba(0,0,0,0.5)); transform: scale(1.3); color: #10b981;"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6M12 10v4M12 2v3"/></svg>`;
+      // 3D Isometric Cargo Plane
+      const d3PlaneSVG = `<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%; filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.6)); transform: scale(1.6);">
+        <g transform="rotate(45, 400, 400) scale(1.2) translate(-60, -60)">
+          <!-- Fuselage -->
+          <path d="M400,200 Q450,200 450,400 Q450,600 400,700 Q350,600 350,400 Q350,200 400,200" fill="url(#planeBodyGrad)"/>
+          <!-- Wings -->
+          <path d="M450,350 L750,450 L750,500 L450,450 Z" fill="url(#planeWingGrad)"/>
+          <path d="M350,350 L50,450 L50,500 L350,450 Z" fill="url(#planeWingGrad)"/>
+          <!-- Tail -->
+          <path d="M400,600 L400,750 L450,750 L420,600 Z" fill="#1e3a8a"/>
+          <path d="M450,650 L600,700 L600,720 L420,680 Z" fill="#3b82f6"/>
+          <path d="M350,650 L200,700 L200,720 L380,680 Z" fill="#3b82f6"/>
+          <!-- Cockpit -->
+          <path d="M380,250 Q400,220 420,250 Q420,280 380,280 Z" fill="#0ea5e9"/>
+          <defs>
+            <linearGradient id="planeBodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#bfdbfe;stop-opacity:1" />
+              <stop offset="50%" style="stop-color:#eff6ff;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#93c5fd;stop-opacity:1" />
+            </linearGradient>
+            <linearGradient id="planeWingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+        </g>
+      </svg>`;
+
+      // 3D Isometric Cargo Ship
+      const shipSVG = `<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%; filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.6)); transform: scale(1.6);">
+        <g transform="translate(100, 200)">
+          <!-- Hull Side -->
+          <path d="M100,300 L500,300 L450,400 L150,400 Z" fill="#047857"/>
+          <!-- Hull Front -->
+          <path d="M500,300 L600,200 L550,250 L450,400 Z" fill="#065f46"/>
+          <!-- Hull Top -->
+          <path d="M100,300 L200,200 L600,200 L500,300 Z" fill="#10b981"/>
+          <!-- Containers (Stack 1) -->
+          <path d="M250,250 L300,200 L350,200 L300,250 Z" fill="#ef4444"/>
+          <path d="M250,250 L300,250 L300,280 L250,280 Z" fill="#b91c1c"/>
+          <path d="M300,250 L350,200 L350,230 L300,280 Z" fill="#7f1d1d"/>
+          <!-- Containers (Stack 2) -->
+          <path d="M320,250 L370,200 L420,200 L370,250 Z" fill="#3b82f6"/>
+          <path d="M320,250 L370,250 L370,280 L320,280 Z" fill="#1d4ed8"/>
+          <path d="M370,250 L420,200 L420,230 L370,280 Z" fill="#1e3a8a"/>
+          <!-- Cabin -->
+          <path d="M120,250 L170,200 L220,200 L170,250 Z" fill="#f8fafc"/>
+          <path d="M120,250 L170,250 L170,300 L120,300 Z" fill="#cbd5e1"/>
+          <path d="M170,250 L220,200 L220,250 L170,300 Z" fill="#94a3b8"/>
+        </g>
+      </svg>`;
 
       const markerEl = `
-        <div style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px;">
-           <div id="ship-icon-el" style="position: relative; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; z-index: 2;">
-              ${isAir ? `<div style="width:50px; height:50px;">${d3PlaneSVG}</div>` : `<div style="width:50px; height:50px;">${shipSVG}</div>`}
+        <div style="display: flex; align-items: center; justify-content: center; width: 120px; height: 120px;">
+           <div id="ship-icon-el" style="position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; z-index: 2; transform-origin: center;">
+              ${isAir ? `<div style="width:90px; height:90px;">${d3PlaneSVG}</div>` : `<div style="width:90px; height:90px;">${shipSVG}</div>`}
            </div>
         </div>
       `;
 
       const startNode = activeRoute[0] || { lat: 0, lng: 0 };
       shipMarker = L.marker([startNode.lat, startNode.lng], {
-          icon: L.divIcon({ className: '', html: markerEl, iconSize: [80, 80], iconAnchor: [40, 40] }),
+          icon: L.divIcon({ className: '', html: markerEl, iconSize: [120, 120], iconAnchor: [60, 60] }),
           zIndexOffset: 1000
       }).addTo(mapInstance);
 
@@ -264,7 +319,7 @@ export function ShipmentTracker({
   }, [shipmentStartDate, duration, isAir, activeRoute, activeStages]);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-background/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto custom-scrollbar">
+    <div className="fixed inset-0 z-[99999] bg-background/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto custom-scrollbar">
       <div className="w-full max-w-4xl bg-black border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col relative animate-in fade-in zoom-in-95 duration-300">
         
         {/* Header */}
@@ -275,7 +330,13 @@ export function ShipmentTracker({
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground leading-none mb-1">Live Tracking</h3>
-              <p className="text-sm font-mono text-muted-foreground">{trackingId}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-mono text-muted-foreground">{trackingId}</p>
+                <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isAir ? 'bg-blue-500/10 text-blue-500' : 'bg-green-500/10 text-green-500'}`}>
+                  {formattedMode} ({duration} days)
+                </span>
+              </div>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-muted-foreground hover:text-foreground">

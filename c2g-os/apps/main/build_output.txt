@@ -1,0 +1,111 @@
+
+> main@0.1.0 build
+> next build
+
+▲ Next.js 16.2.0 (Turbopack)
+- Environments: .env.local
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Turbopack build encountered 1 warnings:
+./apps/main/tailwind.config.js
+Specified module format (EcmaScript Modules) is not matching the module format of the source code (CommonJs)
+The EcmaScript module format was specified in the package.json that is affecting this source file or by using an special extension, but it looks like that CommonJs syntax is used in the source code.
+Exports made by CommonJs syntax will lead to a runtime error, since the module is in EcmaScript mode. Either change the "type" field in the package.json or replace CommonJs syntax with EcmaScript import/export syntax in the source file.
+
+
+
+> Build error occurred
+Error: Turbopack build failed with 5 errors:
+./apps/main/app/dashboard/invoices/[id]/invoice-detail-client.tsx:177:7
+Expected '>', got 'ident'
+  [90m175 |[0m         }
+  [90m176 |[0m       [32m`}} />[0m
+[31m[1m>[0m [90m177 |[0m [32m    </div>[0m
+  [90m    |[0m       [31m[1m^^^[0m
+  [90m178 |[0m [32m  );[0m
+  [90m179 |[0m [32m}[0m
+  [90m180 |[0m
+
+Parsing ecmascript source code failed
+
+Import trace:
+  Server Component:
+    ./apps/main/app/dashboard/invoices/[id]/invoice-detail-client.tsx
+    ./apps/main/app/dashboard/invoices/[id]/page.tsx
+
+
+./apps/main/app/api/hubtel/initialize/route.ts:14:11
+the name `body` is defined multiple times
+  [90m12 |[0m
+  [90m13 |[0m     [36mconst[0m body = [36mawait[0m request.json();
+[31m[1m>[0m [90m14 |[0m     [36mconst[0m body = [36mawait[0m request.json();
+  [90m   |[0m           [31m[1m^^^^[0m
+  [90m15 |[0m     [36mconst[0m { orderId, packageId, [36mtype[0m } = body;
+  [90m16 |[0m
+  [90m17 |[0m     [36mif[0m (!orderId && !packageId) {
+
+Ecmascript file had an error
+
+
+./apps/main/app/dashboard/packages/[id]/page.tsx:1:1
+Module not found: Can't resolve '../../../../../utils/supabase/server'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m { createClient } [36mfrom[0m [32m'../../../../../utils/supabase/server'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m [36mimport[0m { redirect } [36mfrom[0m [32m'next/navigation'[0m;
+  [90m3 |[0m [36mimport[0m [33mTrackerClient[0m [36mfrom[0m [32m'./tracker-client'[0m;
+  [90m4 |[0m [36mimport[0m [33mLink[0m [36mfrom[0m [32m'next/link'[0m;
+
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./apps/main/app/dashboard/packages/actions.ts:3:1
+Module not found: Can't resolve '../../../../utils/supabase/server'
+  [90m1 |[0m [32m'use server'[0m;
+  [90m2 |[0m
+[31m[1m>[0m [90m3 |[0m [36mimport[0m { createClient } [36mfrom[0m [32m'../../../../utils/supabase/server'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m4 |[0m [36mimport[0m { revalidatePath } [36mfrom[0m [32m'next/cache'[0m;
+  [90m5 |[0m
+  [90m6 |[0m [36mexport[0m [36masync[0m [36mfunction[0m getPackages() {
+
+
+
+Import trace:
+  Server Component:
+    ./apps/main/app/dashboard/packages/actions.ts
+    ./apps/main/app/dashboard/packages/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./apps/main/app/dashboard/link-orders/new/new-link-order-form.tsx:6:1
+Module not found: Can't resolve './actions'
+  [90m4 |[0m [36mimport[0m [33mLink[0m [36mfrom[0m [32m"next/link"[0m;
+  [90m5 |[0m [36mimport[0m { useState, useActionState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m6 |[0m [36mimport[0m { createLinkOrder } [36mfrom[0m [32m"./actions"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m [36mimport[0m { useRouter } [36mfrom[0m [32m"next/navigation"[0m;
+  [90m8 |[0m
+  [90m9 |[0m [36mexport[0m [36mfunction[0m [33mNewLinkOrderForm[0m({ exchangeRate }: { exchangeRate: numb...
+
+
+
+Import trace:
+  Server Component:
+    ./apps/main/app/dashboard/link-orders/new/new-link-order-form.tsx
+    ./apps/main/app/dashboard/link-orders/new/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./apps/main/app/dashboard/invoices/[id]/invoice-detail-client.tsx:177:7)
+    at <unknown> (./apps/main/app/api/hubtel/initialize/route.ts:14:11)
+    at <unknown> (./apps/main/app/dashboard/packages/[id]/page.tsx:1:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./apps/main/app/dashboard/packages/actions.ts:3:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./apps/main/app/dashboard/link-orders/new/new-link-order-form.tsx:6:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

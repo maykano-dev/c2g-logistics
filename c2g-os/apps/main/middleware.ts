@@ -29,7 +29,15 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session if expired - required for Server Components
   // https://supabase.com/docs/guides/auth/server-side/nextjs
-  await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  // Requirement: "middleware never redirects". We pass the auth status via headers.
+  if (!user || error) {
+    supabaseResponse.headers.set('x-auth-status', 'unauthenticated')
+  } else {
+    supabaseResponse.headers.set('x-auth-status', 'authenticated')
+    supabaseResponse.headers.set('x-user-id', user.id)
+  }
 
   return supabaseResponse
 }

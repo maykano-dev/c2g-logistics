@@ -54,3 +54,23 @@ export async function updateCustomerProfile(formData: FormData) {
 
   return { success: true };
 }
+
+export async function deleteAccount() {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData?.user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  // Call the custom RPC function to delete the user account
+  const { error } = await supabase.rpc('delete_user_account');
+
+  if (error) {
+    console.error("Error deleting account:", error);
+    return { success: false, error: error.message };
+  }
+
+  await supabase.auth.signOut();
+  return { success: true };
+}

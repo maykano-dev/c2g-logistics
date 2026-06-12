@@ -1,94 +1,231 @@
-import { Search } from "lucide-react";
-import { getShopProducts, getShopPromotions } from "./actions";
+import { Suspense } from "react";
+import {
+  getShopProducts,
+  getShopPromotions,
+  getTrendingProducts,
+  getNewArrivals,
+  getBestSellers,
+} from "./actions";
 import ProductCard from "../../components/shop/product-card";
-import ShopClientFilters from "../../components/shop/shop-filters";
+import ShopHeader from "../../components/shop/shop-header";
+import HeroCarousel from "../../components/shop/hero-carousel";
+import ProductSection from "../../components/shop/product-section";
+import MobileBottomNav from "../../components/shop/mobile-bottom-nav";
+import FloatingCart from "../../components/shop/floating-cart";
+import { Search, ShoppingBag, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "C2G Mall | Best Online Shop in Ghana",
-  description: "Buy cheap quality goods from China at C2G Mall. Fast shipping from China to Ghana.",
+  description:
+    "Buy cheap quality goods from China at C2G Mall. Fast shipping from China to Ghana.",
 };
 
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: { category?: string; query?: string };
+  searchParams: Promise<{ category?: string; query?: string; sort?: string }>;
 }) {
-  const [{ products, exchangeRate, error }, { promotions }] = await Promise.all([
-    getShopProducts(searchParams),
-    getShopPromotions(),
-  ]);
+  const resolvedParams = await searchParams;
+
+  // Fetch all data in parallel
+  const [allProductsResult, trendingResult, newArrivalsResult, bestSellersResult] =
+    await Promise.all([
+      getShopProducts(resolvedParams),
+      getTrendingProducts(),
+      getNewArrivals(),
+      getBestSellers(),
+    ]);
+
+  const { products, exchangeRate, error } = allProductsResult;
+  const { products: trendingProducts } = trendingResult;
+  const { products: newProducts } = newArrivalsResult;
+  const { products: bestProducts } = bestSellersResult;
+
+  const isSearching = !!(resolvedParams.query || (resolvedParams.category && resolvedParams.category !== "all"));
+  const hasProducts = products && products.length > 0;
 
   return (
-    <div className="bg-background min-h-screen pb-24">
-      {/* Hero Banner Area */}
-      <section className="relative w-full max-w-7xl mx-auto md:py-6 md:px-4">
-        <div className="relative overflow-hidden rounded-none md:rounded-3xl h-[300px] md:h-[400px] bg-gradient-to-tr from-primary/90 to-primary/60 shadow-xl group">
-          <img 
-            src={promotions?.[0]?.media_url || "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop"} 
-            alt="C2G Mall Promotions" 
-            className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-60 group-hover:scale-105 transition-transform duration-700" 
-          />
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"></div>
-          <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
-            <span className="px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 text-sm font-medium mb-6 animate-fade-in-up">
-              Welcome to C2G Mall
-            </span>
-            <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4 animate-fade-in-up" style={{ animationDelay: "100ms" }}>
-              Buy Cheap Quality Goods <br className="hidden md:block" /> From China
-            </h1>
-            <p className="text-white/90 text-sm md:text-lg max-w-2xl animate-fade-in-up" style={{ animationDelay: "200ms" }}>
-              Direct from the factory to your doorstep in Ghana. No hidden fees.
-            </p>
-          </div>
+    <div className="bg-background min-h-screen pb-20 md:pb-8">
+      {/* Sticky Shop Header (Search + Category Chips) */}
+      <Suspense fallback={<div className="h-28 bg-background" />}>
+        <ShopHeader />
+      </Suspense>
+
+      {/* ═══════════ HOMEPAGE VIEW (no search/category active) ═══════════ */}
+      {!isSearching ? (
+        <div className="space-y-8 md:space-y-12">
+          {/* Hero Banner Carousel */}
+          <section className="max-w-7xl mx-auto md:px-4 md:pt-6">
+            <HeroCarousel />
+          </section>
+
+          {/* 🔥 Trending Products */}
+          {trendingProducts.length > 0 && (
+            <section className="max-w-7xl mx-auto px-4">
+              <ProductSection title="Trending Now" emoji="🔥" href="/shop?sort=trending">
+                {trendingProducts.map((product: any) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    exchangeRate={exchangeRate || 1}
+                    variant="scroll"
+                  />
+                ))}
+              </ProductSection>
+            </section>
+          )}
+
+          {/* 🆕 New Arrivals */}
+          {newProducts.length > 0 && (
+            <section className="max-w-7xl mx-auto px-4">
+              <ProductSection title="New Arrivals" emoji="✨" href="/shop?sort=newest">
+                {newProducts.map((product: any) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    exchangeRate={exchangeRate || 1}
+                    variant="scroll"
+                  />
+                ))}
+              </ProductSection>
+            </section>
+          )}
+
+          {/* 🏆 Best Sellers */}
+          {bestProducts.length > 0 && (
+            <section className="max-w-7xl mx-auto px-4">
+              <ProductSection title="Best Sellers" emoji="🏆" href="/shop?sort=popular">
+                {bestProducts.map((product: any) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    exchangeRate={exchangeRate || 1}
+                    variant="scroll"
+                  />
+                ))}
+              </ProductSection>
+            </section>
+          )}
+
+          {/* All Products Grid */}
+          <section className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <span className="text-xl">🛍️</span> All Products
+              </h2>
+              <span className="text-xs text-muted-foreground font-medium">
+                {products?.length || 0} items
+              </span>
+            </div>
+
+            {hasProducts ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+                {products!.map((product: any) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    exchangeRate={exchangeRate || 1}
+                    variant="grid"
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyProducts />
+            )}
+          </section>
         </div>
-      </section>
-
-      {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
-        
-        {/* Sidebar Filters */}
-        <aside className="w-full lg:w-64 flex-shrink-0">
-          <ShopClientFilters />
-        </aside>
-
-        {/* Product Grid */}
-        <main className="flex-1">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-            <h2 className="text-2xl font-bold tracking-tight">
-              {searchParams.query ? `Results for "${searchParams.query}"` : searchParams.category ? `${searchParams.category.charAt(0).toUpperCase() + searchParams.category.slice(1)} Products` : "All Products"}
-            </h2>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{products?.length || 0} items found</span>
-              <select className="flex h-10 w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-                <option>Default Sorting</option>
-                <option>Newest Arrivals</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
-              </select>
+      ) : (
+        /* ═══════════ SEARCH / CATEGORY VIEW ═══════════ */
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
+                {resolvedParams.query
+                  ? `Results for "${resolvedParams.query}"`
+                  : resolvedParams.category
+                  ? `${resolvedParams.category.charAt(0).toUpperCase() + resolvedParams.category.slice(1)}`
+                  : "All Products"}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {products?.length || 0} items found
+              </p>
             </div>
           </div>
 
           {error && (
-            <div className="p-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/30 mb-8">
+            <div className="p-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/30 mb-6 text-sm">
               Failed to load products: {error}
             </div>
           )}
 
-          {!products || products.length === 0 ? (
-            <div className="glass-panel p-16 text-center flex flex-col items-center justify-center border-dashed border-2">
-              <Search className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-bold mb-2">No products found</h3>
-              <p className="text-muted-foreground">Try adjusting your search or filters to find what you're looking for.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} exchangeRate={exchangeRate || 1} />
+          {hasProducts ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+              {products!.map((product: any) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  exchangeRate={exchangeRate || 1}
+                  variant="grid"
+                />
               ))}
             </div>
+          ) : (
+            <EmptySearch query={resolvedParams.query} />
           )}
-        </main>
+        </div>
+      )}
+
+      {/* Floating Cart (Desktop) */}
+      <FloatingCart />
+
+      {/* Mobile Bottom Nav */}
+      <MobileBottomNav />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Empty States
+// ═══════════════════════════════════════════════════════════════════
+function EmptyProducts() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-5">
+        <ShoppingBag className="w-10 h-10 text-muted-foreground" />
       </div>
+      <h3 className="text-xl font-bold mb-2">No Products Yet</h3>
+      <p className="text-muted-foreground text-sm max-w-sm mb-6">
+        Products are being added by importers. Check back soon for amazing deals!
+      </p>
+      <Link
+        href="/dashboard/link-orders/new"
+        className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
+      >
+        Request an Item <ArrowRight className="w-4 h-4" />
+      </Link>
+    </div>
+  );
+}
+
+function EmptySearch({ query }: { query?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-5">
+        <Search className="w-10 h-10 text-muted-foreground" />
+      </div>
+      <h3 className="text-xl font-bold mb-2">No products found</h3>
+      <p className="text-muted-foreground text-sm max-w-sm mb-6">
+        {query
+          ? `We couldn't find anything matching "${query}". Try a different search.`
+          : "Try adjusting your filters to find what you're looking for."}
+      </p>
+      <Link
+        href="/shop"
+        className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
+      >
+        Browse All Products
+      </Link>
     </div>
   );
 }
