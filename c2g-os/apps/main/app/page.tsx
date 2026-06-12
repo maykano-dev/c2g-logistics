@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { SiteNav } from "../components/site-nav";
 import { 
   ShoppingCart, 
@@ -24,13 +25,13 @@ export default function LandingPage() {
 
       <SiteNav />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-24 space-y-32">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 space-y-10 md:space-y-16">
         
         {/* ── GALLERY HERO ── */}
-        <section className="relative pt-12 lg:pt-20 pb-8 flex flex-col lg:flex-row items-center gap-10 lg:gap-16 animate-fade-in">
+        <section className="relative pt-24 lg:pt-32 pb-8 flex flex-col lg:flex-row items-center gap-10 lg:gap-12 animate-fade-in justify-center">
 
           {/* ── Left: Text Content ── */}
-          <div className="flex-1 space-y-8 text-center lg:text-left z-10">
+          <div className="flex-1 space-y-8 text-center lg:text-left z-10 relative">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary text-secondary-foreground border border-border text-sm font-medium">
               <Globe className="w-4 h-4 text-primary" /> Simplified Logistics &amp; Sourcing
             </div>
@@ -41,13 +42,13 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Whether you're shopping, importing for yourself, or running a WhatsApp business — C2G handles procurement, warehousing, consolidation, and delivery to Ghana.
+              Whether you're shopping, importing for yourself, or running a WhatsApp business, C2G handles procurement, warehousing, consolidation, and delivery to Ghana.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-              <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-13 px-8 shadow-lg shadow-primary/30 hover:scale-[1.02] transition-all">
+              <Link href="/shop" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-13 px-8 shadow-lg shadow-primary/30 hover:scale-[1.02] transition-all">
                 <ShoppingCart className="w-5 h-5" /> Shop on C2G Mall
-              </button>
-              <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl text-base font-semibold border border-input glass hover:bg-secondary h-13 px-8 transition-all">
+              </Link>
+              <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full text-base font-semibold border border-input glass hover:bg-secondary h-13 px-8 transition-all">
                 Start Importing <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -57,10 +58,10 @@ export default function LandingPage() {
           </div>
 
           {/* ── Right: Gallery Columns ── */}
-          <div className="flex-1 w-full relative h-[520px] lg:h-[640px] overflow-hidden rounded-3xl hidden sm:block">
+          <div className="absolute inset-0 sm:relative flex-1 w-full h-full sm:h-[520px] lg:h-[640px] overflow-hidden sm:rounded-3xl opacity-30 sm:opacity-100 pointer-events-none sm:pointer-events-auto z-0 sm:z-10">
             {/* Gradient overlays to blend edges */}
             <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent z-20 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-background/20 z-20 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/90 sm:from-background/70 via-transparent to-background/50 sm:to-background/20 z-20 pointer-events-none" />
 
             <div className="flex gap-3 h-full">
               {/* Column 1 — scroll up */}
@@ -124,6 +125,35 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* PLATFORMS MARQUEE */}
+        <section className="w-full overflow-hidden bg-transparent py-4 relative group">
+          {/* Fading Edges */}
+          <div className="absolute top-0 bottom-0 left-0 w-16 md:w-32 bg-gradient-to-r from-background to-transparent z-20 pointer-events-none" />
+          <div className="absolute top-0 bottom-0 right-0 w-16 md:w-32 bg-gradient-to-l from-background to-transparent z-20 pointer-events-none" />
+          
+          <div className="flex w-max items-center group-hover:[animation-play-state:paused]" style={{ animation: 'marquee 30s linear infinite' }}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex gap-4 pr-4 py-2">
+                {[
+                  { name: "1688", color: "bg-[#ea580c]", glow: "bg-[#ea580c]/40" },
+                  { name: "Taobao", color: "bg-[#f97316]", glow: "bg-[#f97316]/40" },
+                  { name: "Pinduoduo", color: "bg-[#ec4899]", glow: "bg-[#ec4899]/40" },
+                  { name: "Alibaba", color: "bg-[#3b82f6]", glow: "bg-[#3b82f6]/40" },
+                  { name: "AliExpress", color: "bg-[#ef4444]", glow: "bg-[#ef4444]/40" },
+                  { name: "Xianyu", color: "bg-[#eab308]", glow: "bg-[#eab308]/40" },
+                  { name: "JD.com", color: "bg-[#dc2626]", glow: "bg-[#dc2626]/40" }
+                ].map((platform, j) => (
+                  <div key={j} className="flex-shrink-0 flex items-center gap-3 pl-2.5 pr-6 py-2 rounded-[2rem] bg-[#141414]/90 backdrop-blur-xl border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_10px_20px_rgba(0,0,0,0.3)] relative overflow-hidden inline-flex">
+                    <div className={`absolute left-[-5%] top-1/2 -translate-y-1/2 w-16 h-16 rounded-full ${platform.glow} blur-[12px] z-0 pointer-events-none`} />
+                    <div className={`w-3.5 h-3.5 rounded-full ${platform.color} animate-pulse z-10 flex-shrink-0 shadow-lg border border-black/20`} />
+                    <span className="font-bold text-[15px] text-white/95 leading-none z-10">{platform.name}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* C2G MALL */}
         <section className="glass-panel p-8 md:p-12 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px]" />
@@ -141,8 +171,13 @@ export default function LandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="flex-1 w-full relative h-[400px] rounded-2xl border border-border bg-black/40 overflow-hidden shadow-2xl flex items-center justify-center">
-              <ShoppingCart className="w-32 h-32 text-primary/20" />
+            <div className="flex-1 w-full relative h-[300px] md:h-[400px] flex items-center justify-center transform transition-transform hover:-translate-y-2 duration-500">
+              <Image 
+                src="/images/shop-from-china.png" 
+                alt="Shop Products From China" 
+                fill 
+                className="object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
+              />
             </div>
           </div>
         </section>
@@ -175,6 +210,7 @@ export default function LandingPage() {
           </div>
         </section>
 
+
         {/* OUR SERVICES */}
         <section className="space-y-12">
           <div className="text-center">
@@ -205,19 +241,24 @@ export default function LandingPage() {
         </section>
 
         {/* FOR MINI IMPORTERS */}
-        <section className="glass-panel p-8 md:p-12 border-l-4 border-l-accent relative overflow-hidden">
+        <section className="glass-panel p-8 md:p-12 border-l-4 border-l-accent relative overflow-hidden mt-12">
           <div className="absolute inset-0 bg-gradient-to-r from-accent/5 to-transparent z-0" />
-          <div className="relative z-10 flex flex-col md:flex-row gap-12">
-            <div className="flex-1 space-y-6">
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-accent/20 text-accent border border-accent/30 text-xs font-bold uppercase tracking-wider mb-2">
-                Coming Soon
+          
+          <div className="relative z-10 flex flex-col lg:flex-row gap-12 lg:gap-16 items-center">
+            {/* Left Column: Text & Features */}
+            <div className="flex-1 space-y-8 w-full">
+              <div className="space-y-4">
+                <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-accent text-accent-foreground border border-accent/50 text-sm font-black uppercase tracking-widest mb-2 shadow-[0_0_20px_rgba(var(--accent),0.5)]">
+                  Now Available
+                </div>
+                <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
+                  Built For WhatsApp Sellers & Mini Importers
+                </h2>
+                <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
+                  Turn your WhatsApp import business into a fully managed operation. List products, receive customer orders, track profits, and let C2G handle procurement, warehousing, and shipping while you focus on growing your customer base.
+                </p>
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Built For WhatsApp Sellers & Mini Importers</h2>
-              <p className="text-lg text-muted-foreground">
-                Turn your WhatsApp import business into a fully managed operation. List products, receive customer orders, track profits, and let C2G handle procurement, warehousing, and shipping while you focus on growing your customer base.
-              </p>
-            </div>
-            <div className="flex-1">
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
                   "Manage products from one dashboard",
@@ -225,14 +266,44 @@ export default function LandingPage() {
                   "Track profits in real time",
                   "List products on C2G Mall",
                   "Monitor shipment progress",
-                  "Request payouts easily",
                   "Scale business without operational stress"
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 bg-background/50 p-3 rounded-lg border border-border/50">
-                    <CheckCircle2 className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                    <span className="text-sm font-medium">{item}</span>
+                  <div key={i} className="flex items-start gap-3 bg-secondary/30 p-3.5 rounded-xl border border-border/50 hover:border-blue-500/50 transition-colors">
+                    <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0 mt-0.5 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                    <span className="text-sm font-medium leading-tight">{item}</span>
                   </div>
                 ))}
+              </div>
+              
+              <div className="pt-2 relative">
+                {/* Background glow to emphasize pulse */}
+                <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-[pulse_3s_ease-in-out_infinite]" />
+                <Link href="/importers" className="relative inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-primary px-10 py-4 text-base font-extrabold text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] gap-3 border border-blue-400/30 animate-[pulse_3s_ease-in-out_infinite]">
+                  Launch Your Store <ArrowRight className="w-5 h-5 animate-pulse" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column: Staggered Image Gallery */}
+            <div className="flex-1 w-full relative min-h-[340px] sm:min-h-[400px] lg:min-h-[600px] flex items-center justify-center mt-2 lg:mt-0 mb-[-2rem] sm:mb-0">
+              {/* Background Glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-accent/20 blur-[100px] rounded-full z-0 pointer-events-none" />
+              
+              <div className="relative z-10 w-full max-w-[600px] aspect-square flex items-center justify-center">
+                {/* Back Image (Left) */}
+                <div className="absolute top-[0%] left-[0%] w-[70%] sm:top-[10%] sm:left-[5%] sm:w-[55%] aspect-square rounded-3xl overflow-hidden border border-white/20 shadow-[0_8px_32px_rgba(255,255,255,0.1)] z-10 bg-white/5 backdrop-blur-xl transform -rotate-6 transition-all hover:opacity-100 hover:rotate-0 hover:z-50 hover:scale-110 duration-500 cursor-pointer p-0.5">
+                  <Image src="/images/sellers/img2.png" alt="Dashboard 2" fill className="object-contain drop-shadow-2xl" />
+                </div>
+
+                {/* Back Image (Right) */}
+                <div className="absolute top-[5%] right-[0%] w-[70%] sm:top-[15%] sm:right-[5%] sm:w-[55%] aspect-square rounded-3xl overflow-hidden border border-white/20 shadow-[0_8px_32px_rgba(255,255,255,0.1)] z-10 bg-white/5 backdrop-blur-xl transform rotate-6 transition-all hover:opacity-100 hover:rotate-0 hover:z-50 hover:scale-110 duration-500 cursor-pointer p-0.5">
+                  <Image src="/images/sellers/img3.png" alt="Dashboard 3" fill className="object-contain drop-shadow-2xl" />
+                </div>
+                
+                {/* Main Image (Center) */}
+                <div className="absolute top-[15%] left-[15%] w-[70%] sm:top-[20%] sm:left-[22.5%] sm:w-[55%] aspect-square rounded-3xl overflow-hidden border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-20 bg-white/10 backdrop-blur-2xl transform transition-all hover:z-50 hover:scale-110 hover:-translate-y-4 duration-500 cursor-pointer p-0.5">
+                  <Image src="/images/sellers/img1.png" alt="Dashboard 1" fill className="object-contain drop-shadow-2xl" />
+                </div>
               </div>
             </div>
           </div>
@@ -308,29 +379,30 @@ export default function LandingPage() {
         </section>
 
         {/* STATISTICS */}
-        <section className="bg-primary rounded-3xl p-8 md:p-16 text-center relative overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-full bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
+        <section className="relative rounded-[2rem] p-8 md:p-16 text-center overflow-hidden border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.5)] bg-secondary/40 backdrop-blur-3xl my-12">
+           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 z-0" />
+           <div className="absolute top-0 left-0 w-full h-full bg-[url('/noise.png')] opacity-[0.15] mix-blend-overlay z-0" />
            <div className="relative z-10 space-y-12">
              <div>
-               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary-foreground mb-2">Why Choose C2G Logistics?</h2>
-               <p className="text-primary-foreground/80 text-lg">Trusted by thousands for seamless China-Ghana logistics.</p>
+               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-3">Why Choose C2G Logistics?</h2>
+               <p className="text-muted-foreground text-lg">Trusted by thousands for seamless China-Ghana logistics.</p>
              </div>
              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-               <div className="space-y-2">
-                 <div className="text-4xl md:text-5xl font-black text-white">450+</div>
-                 <div className="text-primary-foreground/80 font-medium">Happy Customers</div>
+               <div className="space-y-3">
+                 <div className="text-4xl md:text-6xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40 drop-shadow-sm">450+</div>
+                 <div className="text-primary font-bold uppercase tracking-widest text-xs">Happy Customers</div>
                </div>
-               <div className="space-y-2">
-                 <div className="text-4xl md:text-5xl font-black text-white">2k+</div>
-                 <div className="text-primary-foreground/80 font-medium">Orders Delivered</div>
+               <div className="space-y-3">
+                 <div className="text-4xl md:text-6xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40 drop-shadow-sm">2k+</div>
+                 <div className="text-primary font-bold uppercase tracking-widest text-xs">Orders Delivered</div>
                </div>
-               <div className="space-y-2">
-                 <div className="text-4xl md:text-5xl font-black text-white">99%</div>
-                 <div className="text-primary-foreground/80 font-medium">Success Rate</div>
+               <div className="space-y-3">
+                 <div className="text-4xl md:text-6xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40 drop-shadow-sm">99%</div>
+                 <div className="text-primary font-bold uppercase tracking-widest text-xs">Success Rate</div>
                </div>
-               <div className="space-y-2">
-                 <div className="text-4xl md:text-5xl font-black text-white">24/7</div>
-                 <div className="text-primary-foreground/80 font-medium">Support</div>
+               <div className="space-y-3">
+                 <div className="text-4xl md:text-6xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40 drop-shadow-sm">24/7</div>
+                 <div className="text-primary font-bold uppercase tracking-widest text-xs">Support</div>
                </div>
              </div>
            </div>
@@ -368,39 +440,79 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* WHY CHOOSE C2G & TRACKING */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <div className="space-y-8">
-            <h2 className="text-3xl font-bold tracking-tight">Why Choose C2G</h2>
+        {/* CORE PILLARS & TRACKING */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="space-y-10">
+            <div>
+              <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">Our Core Pillars</h2>
+              <p className="text-muted-foreground text-lg max-w-lg">The foundational principles driving our commitment to your business.</p>
+            </div>
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {[
-                { title: "Transparency", desc: "Track your orders and shipments from purchase to delivery." },
-                { title: "Secure Payments", desc: "Safe and verified purchasing from trusted Chinese suppliers." },
-                { title: "Consolidation", desc: "Combine multiple packages into a single shipment and save." },
-                { title: "Reliable Shipping", desc: "Regular air and sea shipments from China to Ghana." },
-                { title: "Customer Support", desc: "Our team is available to assist you throughout the import process." },
-                { title: "Built For Ghana", desc: "Designed specifically for Ghanaian importers, businesses, and resellers." }
-              ].map((item, i) => (
-                <div key={i}>
-                  <h4 className="font-bold text-foreground mb-1">{item.title}</h4>
-                  <p className="text-sm text-muted-foreground">{item.desc}</p>
-                </div>
-              ))}
+                { title: "Transparency", desc: "Track orders from purchase to delivery.", icon: Globe, color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20" },
+                { title: "Secure Payments", desc: "Verified purchasing from trusted suppliers.", icon: ShieldCheck, color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
+                { title: "Consolidation", desc: "Combine packages and save on shipping.", icon: PackageCheck, color: "text-purple-400", bg: "bg-purple-400/10 border-purple-400/20" },
+                { title: "Reliable Shipping", desc: "Regular air and sea shipments to Ghana.", icon: Ship, color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20" },
+                { title: "Customer Support", desc: "Our team assists you at every step.", icon: MessageCircle, color: "text-pink-400", bg: "bg-pink-400/10 border-pink-400/20" },
+                { title: "Built For Ghana", desc: "Designed specifically for Ghanaian importers.", icon: MapPin, color: "text-primary", bg: "bg-primary/10 border-primary/20" }
+              ].map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className="group relative p-5 rounded-2xl bg-secondary/30 border border-white/5 hover:bg-secondary/50 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 border ${item.bg}`}>
+                      <Icon className={`w-6 h-6 ${item.color}`} />
+                    </div>
+                    <h4 className="font-bold text-foreground mb-2">{item.title}</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
-          <div className="glass-panel p-8">
-            <h3 className="text-2xl font-bold mb-2">Know Where Your Goods Are</h3>
-            <p className="text-muted-foreground mb-8">No more guessing. No more endless follow-ups.</p>
-            <div className="relative pl-6 space-y-6">
-              <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-secondary"></div>
+          <div className="glass-panel p-8 relative overflow-hidden group border-white/10 shadow-2xl bg-[#0f111a]/80">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/20 rounded-full blur-[80px] group-hover:bg-primary/30 transition-colors" />
+            <h3 className="text-2xl font-bold mb-2 relative z-10 text-white">Know Where Your Goods Are</h3>
+            <p className="text-muted-foreground mb-8 relative z-10">No more guessing. No more endless follow-ups.</p>
+            
+            <div className="space-y-0 relative z-10 mt-6">
               {[
-                "Purchased", "Received At Warehouse", "Consolidated", 
-                "Shipped", "In Transit", "Arrived Ghana", "Clearance", "Ready For Pickup"
-              ].map((status, i) => (
-                <div key={i} className="relative flex items-center gap-4">
-                  <div className="absolute -left-6 w-4 h-4 rounded-full bg-background border-2 border-primary" />
-                  <span className="font-medium">{status}</span>
+                { status: "Purchased", date: "Oct 12, 09:41 AM", state: "done" },
+                { status: "Received At Warehouse", date: "Oct 14, 02:15 PM", state: "done" },
+                { status: "Consolidated", date: "Oct 15, 11:30 AM", state: "done" },
+                { status: "Shipped", date: "Oct 16, 08:00 PM", state: "done" },
+                { status: "In Transit", date: "Estimated 14 Days", state: "current" },
+                { status: "Arrived Ghana", date: "Pending", state: "pending" },
+                { status: "Clearance", date: "Pending", state: "pending" },
+                { status: "Ready For Pickup", date: "Pending", state: "pending" }
+              ].map((step, i, arr) => (
+                <div key={i} className="flex gap-5 relative group cursor-default">
+                  {/* Continuous Line */}
+                  {i < arr.length - 1 && (
+                    <div className={`absolute top-6 left-[11px] bottom-[-16px] w-[2px] ${step.state === 'done' ? 'bg-[#3b82f6]' : 'bg-white/10'}`} />
+                  )}
+                  
+                  {/* Indicator */}
+                  <div className="relative mt-1 flex-shrink-0 z-10">
+                    {step.state === 'done' ? (
+                      <div className="w-6 h-6 rounded-full bg-[#3b82f6] flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.6)]">
+                         <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                    ) : step.state === 'current' ? (
+                      <div className="w-6 h-6 rounded-full border-[2px] border-[#3b82f6] bg-[#0f111a] flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                         <div className="w-2.5 h-2.5 bg-[#3b82f6] rounded-full animate-pulse" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full border-[2px] border-white/20 bg-[#0f111a] flex items-center justify-center" />
+                    )}
+                  </div>
+                  
+                  {/* Content */}
+                  <div className={`pb-6 ${step.state === 'pending' ? 'opacity-40' : 'opacity-100'}`}>
+                    <p className={`font-bold text-base ${step.state === 'current' ? 'text-[#3b82f6]' : 'text-white'}`}>{step.status}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{step.date}</p>
+                  </div>
                 </div>
               ))}
             </div>

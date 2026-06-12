@@ -12,7 +12,8 @@ import HeroCarousel from "../../components/shop/hero-carousel";
 import ProductSection from "../../components/shop/product-section";
 import MobileBottomNav from "../../components/shop/mobile-bottom-nav";
 import FloatingCart from "../../components/shop/floating-cart";
-import { Search, ShoppingBag, ArrowRight } from "lucide-react";
+import ShopLayoutWrapper from "../../components/shop/shop-layout-wrapper";
+import { Search, ShoppingBag, ArrowRight, Flame, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
@@ -24,7 +25,7 @@ export const metadata = {
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; query?: string; sort?: string }>;
+  searchParams: Promise<{ category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string }>;
 }) {
   const resolvedParams = await searchParams;
 
@@ -52,18 +53,19 @@ export default async function ShopPage({
         <ShopHeader />
       </Suspense>
 
-      {/* ═══════════ HOMEPAGE VIEW (no search/category active) ═══════════ */}
-      {!isSearching ? (
-        <div className="space-y-8 md:space-y-12">
-          {/* Hero Banner Carousel */}
-          <section className="max-w-7xl mx-auto md:px-4 md:pt-6">
+      <ShopLayoutWrapper>
+        {/* ═══════════ HOMEPAGE VIEW (no search/category active) ═══════════ */}
+        {!isSearching ? (
+          <div className="space-y-8 md:space-y-12">
+            {/* Hero Banner Carousel */}
+            <section className="w-full">
             <HeroCarousel />
           </section>
 
           {/* 🔥 Trending Products */}
-          {trendingProducts.length > 0 && (
-            <section className="max-w-7xl mx-auto px-4">
-              <ProductSection title="Trending Now" emoji="🔥" href="/shop?sort=trending">
+            {trendingProducts.length > 0 && (
+              <section className="w-full">
+                <ProductSection title="Trending Now" icon={<Flame className="w-5 h-5 text-orange-500" />} href="/shop?sort=trending">
                 {trendingProducts.map((product: any) => (
                   <ProductCard
                     key={product.id}
@@ -77,9 +79,9 @@ export default async function ShopPage({
           )}
 
           {/* 🆕 New Arrivals */}
-          {newProducts.length > 0 && (
-            <section className="max-w-7xl mx-auto px-4">
-              <ProductSection title="New Arrivals" emoji="✨" href="/shop?sort=newest">
+            {newProducts.length > 0 && (
+              <section className="w-full">
+                <ProductSection title="New Arrivals" icon={<Sparkles className="w-5 h-5 text-yellow-500" />} href="/shop?sort=newest">
                 {newProducts.map((product: any) => (
                   <ProductCard
                     key={product.id}
@@ -93,9 +95,9 @@ export default async function ShopPage({
           )}
 
           {/* 🏆 Best Sellers */}
-          {bestProducts.length > 0 && (
-            <section className="max-w-7xl mx-auto px-4">
-              <ProductSection title="Best Sellers" emoji="🏆" href="/shop?sort=popular">
+            {bestProducts.length > 0 && (
+              <section className="w-full">
+                <ProductSection title="Best Sellers" icon={<Trophy className="w-5 h-5 text-yellow-600" />} href="/shop?sort=popular">
                 {bestProducts.map((product: any) => (
                   <ProductCard
                     key={product.id}
@@ -108,12 +110,12 @@ export default async function ShopPage({
             </section>
           )}
 
-          {/* All Products Grid */}
-          <section className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                <span className="text-xl">🛍️</span> All Products
-              </h2>
+            {/* All Products Grid */}
+            <section className="w-full">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-primary" /> All Products
+                </h2>
               <span className="text-xs text-muted-foreground font-medium">
                 {products?.length || 0} items
               </span>
@@ -135,10 +137,10 @@ export default async function ShopPage({
             )}
           </section>
         </div>
-      ) : (
-        /* ═══════════ SEARCH / CATEGORY VIEW ═══════════ */
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+        ) : (
+          /* ═══════════ SEARCH / CATEGORY VIEW ═══════════ */
+          <div className="w-full py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
                 {resolvedParams.query
@@ -172,9 +174,10 @@ export default async function ShopPage({
             </div>
           ) : (
             <EmptySearch query={resolvedParams.query} />
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </ShopLayoutWrapper>
 
       {/* Floating Cart (Desktop) */}
       <FloatingCart />

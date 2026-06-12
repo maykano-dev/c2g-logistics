@@ -109,6 +109,8 @@ export async function getShopProducts(params?: {
   category?: string;
   query?: string;
   sort?: string;
+  minPrice?: string;
+  maxPrice?: string;
 }) {
   const supabase = await createClient();
 
@@ -116,10 +118,18 @@ export async function getShopProducts(params?: {
   let query = supabase.from("products").select(PRODUCT_SELECT);
 
   // Filter only published products
-  query = query.eq("status", "published");
+  query = query.in("status", ["published", "active"]);
 
   if (params?.category && params.category !== "all") {
     query = query.ilike("category", `%${params.category}%`);
+  }
+
+  if (params?.minPrice) {
+    query = query.gte("price", parseFloat(params.minPrice));
+  }
+
+  if (params?.maxPrice) {
+    query = query.lte("price", parseFloat(params.maxPrice));
   }
 
   if (params?.query) {
@@ -179,7 +189,7 @@ export async function getTrendingProducts() {
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
-    .eq("status", "published")
+    .in("status", ["published", "active"])
     .order("view_count", { ascending: false })
     .limit(12);
 
@@ -203,7 +213,7 @@ export async function getNewArrivals() {
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
-    .eq("status", "published")
+    .in("status", ["published", "active"])
     .order("created_at", { ascending: false })
     .limit(12);
 
@@ -228,7 +238,7 @@ export async function getBestSellers() {
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
-    .eq("status", "published")
+    .in("status", ["published", "active"])
     .order("sales_count", { ascending: false })
     .limit(12);
 
@@ -282,6 +292,19 @@ export async function getProductDetails(id: string) {
 
   const exchangeRate = await getExchangeRate(supabase);
 
+  // Safely fetch reviews if the table exists
+  let reviews = [];
+  try {
+    const { data: revData } = await supabase
+      .from("product_reviews")
+      .select("rating, review_text, created_at, user_id")
+      .eq("product_id", id);
+    if (revData) reviews = revData;
+  } catch (_) {}
+
+  productData.reviews = reviews;
+
+
   // Increment view count (fire and forget)
   supabase
     .from("products")
@@ -308,7 +331,7 @@ export async function getSimilarProducts(
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
-    .eq("status", "published")
+    .in("status", ["published", "active"])
     .ilike("category", `%${category}%`)
     .neq("id", productId)
     .limit(8);
@@ -333,7 +356,7 @@ export async function getCategories() {
   const { data, error } = await supabase
     .from("products")
     .select("category")
-    .eq("status", "published")
+    .in("status", ["published", "active"])
     .not("category", "is", null);
 
   if (error) return [];

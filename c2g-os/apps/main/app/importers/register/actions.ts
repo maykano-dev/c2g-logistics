@@ -6,19 +6,47 @@ export async function submitImporterRegistration(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { success: false, error: 'You must be logged in to register as an importer.' };
-  }
-
-  const businessName = formData.get('businessName') as string;
+  const businessName = formData.get('storeName') as string;
   const storeSlug = formData.get('storeSlug') as string;
   const whatsapp = formData.get('whatsapp') as string;
   const email = formData.get('email') as string;
-  const ghanaCard = formData.get('ghanaCard') as string;
+  const ghanaCard = formData.get('idNumber') as string;
   const businessDescription = formData.get('businessDescription') as string;
+  const password = formData.get('password') as string;
+  const fullName = formData.get('fullName') as string;
+  const phone = formData.get('phone') as string;
 
   if (!businessName || !storeSlug || !whatsapp || !email || !ghanaCard) {
     return { success: false, error: 'Please fill in all required fields.' };
+  }
+
+  let currentUserId = user?.id;
+
+  // If user is not logged in, we must create an account for them
+  if (!currentUserId) {
+    if (!password || !fullName) {
+      return { success: false, error: 'Password and Full Name are required to create an account.' };
+    }
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          phone: phone,
+          role: 'importer'
+        }
+      }
+    });
+
+    if (signUpError) {
+      return { success: false, error: signUpError.message };
+    }
+    currentUserId = signUpData.user?.id;
+  }
+
+  if (!currentUserId) {
+    return { success: false, error: 'Failed to create user account.' };
   }
 
   // Validate slug (alphanumeric and dashes only)
@@ -30,7 +58,7 @@ export async function submitImporterRegistration(formData: FormData) {
   const { data: existingApp } = await supabase
     .from('importers')
     .select('id, status')
-    .eq('user_id', user.id)
+    .eq('user_id', currentUserId)
     .single();
 
   if (existingApp) {
@@ -51,7 +79,7 @@ export async function submitImporterRegistration(formData: FormData) {
   const { error } = await supabase
     .from('importers')
     .insert({
-      user_id: user.id,
+      user_id: currentUserId,
       business_name: businessName,
       store_slug: storeSlug,
       whatsapp,

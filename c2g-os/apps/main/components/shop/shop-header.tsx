@@ -3,40 +3,21 @@
 import { Search, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useCart } from "./cart-context";
-
-const CATEGORIES = [
-  { id: "all", label: "All", emoji: "🔥" },
-  { id: "electronics", label: "Electronics", emoji: "📱" },
-  { id: "fashion", label: "Fashion", emoji: "👗" },
-  { id: "beauty", label: "Beauty", emoji: "💄" },
-  { id: "home", label: "Home", emoji: "🏠" },
-  { id: "automotive", label: "Auto", emoji: "🚗" },
-  { id: "kids", label: "Kids", emoji: "🧸" },
-  { id: "accessories", label: "Accessories", emoji: "⌚" },
-  { id: "kitchenware", label: "Kitchen", emoji: "🍳" },
-  { id: "sneakers", label: "Sneakers", emoji: "👟" },
-  { id: "gaming", label: "Gaming", emoji: "🎮" },
-  { id: "audio", label: "Audio", emoji: "🎧" },
-  { id: "laptops", label: "Laptops", emoji: "💻" },
-  { id: "smartphones", label: "Phones", emoji: "📲" },
-];
 
 export default function ShopHeader() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentCategory = searchParams.get("category") || "all";
   const currentQuery = searchParams.get("query") || "";
   const [query, setQuery] = useState(currentQuery);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { cartCount } = useCart();
-  const chipsRef = useRef<HTMLDivElement>(null);
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value && value !== "all") {
+      if (value) {
         params.set(name, value);
       } else {
         params.delete(name);
@@ -49,10 +30,6 @@ export default function ShopHeader() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     router.push("/shop?" + createQueryString("query", query));
-  };
-
-  const handleCategoryClick = (category: string) => {
-    router.push("/shop?" + createQueryString("category", category));
   };
 
   const clearSearch = () => {
@@ -119,35 +96,6 @@ export default function ShopHeader() {
             >
               <User className="w-5 h-5" />
             </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Category Chips — horizontal scroll */}
-      <div className="border-t border-border/30">
-        <div className="max-w-7xl mx-auto px-4">
-          <div
-            ref={chipsRef}
-            className="flex items-center gap-2 py-2.5 overflow-x-auto scrollbar-hide"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            {CATEGORIES.map((cat) => {
-              const isActive = currentCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryClick(cat.id)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-105"
-                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/50"
-                  }`}
-                >
-                  <span className="text-sm">{cat.emoji}</span>
-                  {cat.label}
-                </button>
-              );
-            })}
           </div>
         </div>
       </div>

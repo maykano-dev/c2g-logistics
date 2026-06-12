@@ -6,12 +6,12 @@ import { useRef } from "react";
 
 export default function ProductSection({
   title,
-  emoji,
+  icon,
   href,
   children,
 }: {
   title: string;
-  emoji: string;
+  icon: React.ReactNode;
   href?: string;
   children: React.ReactNode;
 }) {
@@ -28,7 +28,7 @@ export default function ProductSection({
       {/* Section Header */}
       <div className="flex items-center justify-between mb-4 px-1">
         <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-          <span className="text-xl">{emoji}</span>
+          {icon}
           {title}
         </h2>
         {href && (

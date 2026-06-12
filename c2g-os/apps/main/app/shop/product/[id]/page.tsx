@@ -15,6 +15,7 @@ import ProductImages from "../../../../components/shop/product-images";
 import ProductOptions from "../../../../components/shop/product-options";
 import ProductCard from "../../../../components/shop/product-card";
 import MobileBottomNav from "../../../../components/shop/mobile-bottom-nav";
+import ProductReviews from "../../../../components/shop/product-reviews";
 
 export async function generateMetadata({
   params,
@@ -117,20 +118,8 @@ export default async function ProductPage({
 
             {/* Rating + Stock */}
             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/50 flex-wrap">
-              <div className="flex items-center gap-1 text-yellow-500">
-                <span className="font-medium text-foreground mr-1 text-sm">
-                  4.8
-                </span>
-                {"★★★★★".split("").map((star, i) => (
-                  <Star
-                    key={i}
-                    className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500"
-                  />
-                ))}
-                <span className="text-muted-foreground ml-2 text-xs">
-                  (124)
-                </span>
-              </div>
+              <ProductReviews reviews={product.reviews || []} />
+              
               <div className="w-px h-4 bg-border" />
               <span className="text-xs text-muted-foreground">
                 {product.sales_count || 0} sold

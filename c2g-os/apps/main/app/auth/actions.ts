@@ -58,7 +58,15 @@ export async function login(prevState: any, formData: FormData) {
     if (error.status === 429) {
       return { error: 'Too many login attempts. Please try again later.' }
     }
-    return { error: error.message || 'Could not authenticate user' }
+    let errorMessage = error.message || 'Could not authenticate user';
+    
+    if (errorMessage.toLowerCase().includes('fetch failed') || errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('failed to fetch')) {
+      errorMessage = "We're having trouble connecting right now. Please check your internet connection and try again.";
+    } else if (errorMessage === 'Invalid login credentials') {
+      errorMessage = 'The email or password you entered is incorrect.';
+    }
+
+    return { error: errorMessage }
   }
 
   // Check MFA (Two-Factor Authentication)

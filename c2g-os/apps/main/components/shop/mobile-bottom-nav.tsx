@@ -4,6 +4,7 @@ import { Home, LayoutGrid, ShoppingCart, Package, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "./cart-context";
+import { motion } from "framer-motion";
 
 const NAV_ITEMS = [
   { href: "/shop", label: "Home", icon: Home },
@@ -18,51 +19,100 @@ export default function MobileBottomNav() {
   const { cartCount } = useCart();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/95 backdrop-blur-xl border-t border-border/50 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]">
-      <div className="flex items-center justify-around h-16 px-2">
-        {NAV_ITEMS.map((item) => {
+    <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[380px]">
+      {/* Outer fully-pill liquid glass shell */}
+      <div
+        className="relative flex items-center justify-between rounded-full p-2"
+        style={{
+          background: "rgba(20, 25, 40, 0.45)",
+          backdropFilter: "blur(32px) saturate(200%)",
+          WebkitBackdropFilter: "blur(32px) saturate(200%)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
+        }}
+      >
+        {/* Top-edge ambient highlight */}
+        <div
+          className="absolute top-0 left-[15%] right-[15%] h-px rounded-full pointer-events-none"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)" }}
+        />
+
+        {NAV_ITEMS.map((link) => {
           const isActive =
-            item.href === "/shop"
+            link.href === "/shop"
               ? pathname === "/shop"
-              : pathname.startsWith(item.href);
-          const Icon = item.icon;
+              : pathname.startsWith(link.href) && !pathname.includes('?'); // Simplified active check
+              
+          // Better active check taking search params into account conceptually:
+          // Since we can't cleanly check query params from `usePathname()`, we'll just check base path.
+          // For actual query params, Next.js 'useSearchParams' could be used, but for now we stick to pathname.
+
+          const Icon = link.icon;
+          const shortName = link.label.split(" ")[0];
 
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-colors relative ${
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+              key={link.label}
+              href={link.href}
+              className={`relative flex items-center justify-center h-12 rounded-full transition-all duration-300 ease-out z-10 ${
+                isActive ? "px-5" : "w-12 px-0 hover:bg-white/5"
               }`}
             >
-              <div className="relative">
-                <Icon
-                  className={`w-5 h-5 ${isActive ? "stroke-[2.5px]" : ""}`}
+              {/* Animated sliding liquid glass active pill */}
+              {isActive && (
+                <motion.div
+                  layoutId="active-shop-nav-pill"
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: "rgba(255,255,255,0.15)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.2)",
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                  }}
                 />
-                {item.showBadge && cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 bg-primary text-primary-foreground rounded-full text-[9px] font-bold flex items-center justify-center px-1 shadow-lg">
-                    {cartCount > 99 ? "99+" : cartCount}
-                  </span>
+              )}
+
+              {/* Icon & Text Container */}
+              <div className="relative z-20 flex items-center gap-2">
+                <div className="relative">
+                  <Icon
+                    className={`shrink-0 transition-colors duration-300 ${
+                      isActive ? "text-white" : "text-white/60"
+                    }`}
+                    style={{ width: "22px", height: "22px", strokeWidth: isActive ? 2.5 : 2 }}
+                  />
+                  {link.showBadge && cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 bg-primary text-primary-foreground rounded-full text-[9px] font-bold flex items-center justify-center px-1 shadow-lg">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                </div>
+                
+                {isActive && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, width: "auto", scale: 1 }}
+                    exit={{ opacity: 0, width: 0, scale: 0.8 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                      opacity: { duration: 0.2 },
+                    }}
+                    className="text-white font-semibold text-[13px] whitespace-nowrap overflow-hidden"
+                  >
+                    {shortName}
+                  </motion.span>
                 )}
               </div>
-              <span
-                className={`text-[10px] font-medium ${
-                  isActive ? "font-bold" : ""
-                }`}
-              >
-                {item.label}
-              </span>
-              {isActive && (
-                <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-primary rounded-full" />
-              )}
             </Link>
           );
         })}
       </div>
-      {/* Safe area spacer for iOS */}
-      <div className="h-[env(safe-area-inset-bottom)] bg-background" />
     </nav>
   );
 }

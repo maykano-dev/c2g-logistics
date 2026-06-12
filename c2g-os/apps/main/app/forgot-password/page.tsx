@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Metadata } from "next";
 import { resetPassword } from "../auth/actions";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
@@ -22,9 +23,16 @@ export default function ForgotPasswordPage() {
           {/* Subtle top highlight */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-50" />
           
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Reset Password</h1>
-            <p className="text-sm text-muted-foreground mt-2">
+          {/* Logo & Header */}
+          <div className="flex flex-col items-center mb-8 mt-2">
+            <div className="w-20 h-20 relative flex items-center justify-center mb-2">
+              <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
+            </div>
+            <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#3b82f6] to-[#ef4444] mb-6 drop-shadow-sm text-center">
+              C2G Logistics
+            </span>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Reset Password</h1>
+            <p className="text-sm text-muted-foreground mt-2 text-center">
               Enter your email to receive a password reset link
             </p>
           </div>
@@ -56,6 +64,19 @@ export default function ForgotPasswordPage() {
             <Link href="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
               Return to Sign In
             </Link>
+          </div>
+
+          {/* Badges */}
+          <div className="mt-8 pt-6 border-t border-border/50 flex flex-wrap justify-center gap-3">
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/5 text-muted-foreground/60 text-[11px] font-bold uppercase tracking-wider">
+              Affordable
+            </span>
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/5 text-muted-foreground/60 text-[11px] font-bold uppercase tracking-wider">
+              Fast
+            </span>
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/5 text-muted-foreground/60 text-[11px] font-bold uppercase tracking-wider">
+              Reliable
+            </span>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   LayoutDashboard, 
@@ -36,10 +37,10 @@ export default function DashboardClientLayout({
       <aside className="hidden md:flex flex-col w-64 glass border-r border-border/50 sticky top-0 h-screen overflow-y-auto z-50">
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">C</span>
+            <div className="w-10 h-10 relative flex items-center justify-center">
+              <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-foreground">C2G Logistics</span>
+            <span className="font-bold text-xl tracking-tight">C2G Logistics</span>
           </Link>
         </div>
         
@@ -87,8 +88,8 @@ export default function DashboardClientLayout({
         {/* Mobile Header */}
         <header className="md:hidden h-14 glass border-b border-border/50 flex items-center justify-between px-4 sticky top-0 z-40 w-full">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">C</span>
+            <div className="w-8 h-8 relative flex items-center justify-center -ml-1">
+              <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
             </div>
             <span className="font-bold tracking-tight text-foreground">C2G Logistics</span>
           </div>

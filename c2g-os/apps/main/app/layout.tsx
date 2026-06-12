@@ -8,7 +8,7 @@ const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "C2G Logistics — Shop, Import & Ship From China to Ghana",
+    default: "C2G Logistics | Shop, Import & Ship From China to Ghana",
     template: "%s | C2G Logistics",
   },
   description: "C2G Logistics is Ghana's trusted platform for shopping, importing, and shipping products from China. Buy For Me, Warehouse Address, Air & Sea Freight.",
