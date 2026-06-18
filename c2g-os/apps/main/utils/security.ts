@@ -2,15 +2,21 @@ import { createClient } from '@supabase/supabase-js';
 
 // We use the admin client here to bypass RLS for rate limits and session management
 // Because this runs on the server, we use the service role key.
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdmin() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase admin keys missing');
+  }
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 const MAX_ATTEMPTS = 5;
 const RESET_TIME_MS = 15 * 60 * 1000; // 15 minutes
 
 export async function checkRateLimit(ip: string, email: string = ''): Promise<boolean> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from('auth_rate_limits')
     .select('*')
@@ -77,6 +83,8 @@ export function getCountryFromIP(ip: string): string {
 export async function checkAnomalousLogin(userId: string, currentIp: string) {
   const currentCountry = getCountryFromIP(currentIp);
   
+  const supabaseAdmin = getSupabaseAdmin();
+  
   // Get last session
   const { data: lastSession } = await supabaseAdmin
     .from('user_sessions')
@@ -97,6 +105,7 @@ export async function checkAnomalousLogin(userId: string, currentIp: string) {
 }
 
 export async function enforceSessionLimit(userId: string, maxSessions: number = 3) {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: sessions } = await supabaseAdmin
     .from('user_sessions')
     .select('id')
