@@ -19,7 +19,7 @@ export const ResetPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
-const SHIPPING_MODES = ['air', 'sea', 'express'] as [string, ...string[]];
+const SHIPPING_MODES = z.union([z.literal('air'), z.literal('sea'), z.literal('express')]);
 
 export const CreateLinkOrderSchema = z.object({
   items_json: z.string().refine((val) => {
@@ -30,20 +30,20 @@ export const CreateLinkOrderSchema = z.object({
       return false;
     }
   }, 'Invalid items format'),
-  shipping_mode: z.enum(SHIPPING_MODES, { required_error: 'Shipping mode is required' }),
+  shipping_mode: SHIPPING_MODES,
 });
 
 export const UpdateLinkOrderSchema = z.object({
   quantity: z.number().int().positive().max(999),
   notes: z.string().max(500).optional(),
-  shipping_mode: z.enum(SHIPPING_MODES),
+  shipping_mode: SHIPPING_MODES,
 });
 
 export const RegisterPackagesSchema = z.object({
   tracking_numbers: z.array(z.string().min(3)).min(1, 'At least one tracking number is required'),
   store_name: z.string().min(1, 'Store name is required').max(200),
   description: z.string().min(1, 'Description is required').max(500),
-  shipping_mode: z.enum(SHIPPING_MODES),
+  shipping_mode: SHIPPING_MODES,
 });
 
 export const UpdateProfileSchema = z.object({
@@ -98,10 +98,19 @@ export const CheckoutSchema = z.object({
   exchangeRate: z.number().optional(),
 });
 
-const STATUSES = ['pending', 'processing', 'purchased', 'arrived_warehouse', 'shipped', 'delivered', 'cancelled', 'on_hold'] as [string, ...string[]];
+const STATUSES = z.union([
+  z.literal('pending'),
+  z.literal('processing'),
+  z.literal('purchased'),
+  z.literal('arrived_warehouse'),
+  z.literal('shipped'),
+  z.literal('delivered'),
+  z.literal('cancelled'),
+  z.literal('on_hold')
+]);
 
 export const EmployeeActionSchema = z.object({
-  status: z.enum(STATUSES).optional(),
+  status: STATUSES.optional(),
   trackingNumber: z.string().regex(/^[a-zA-Z0-9\-_]+$/).max(50).optional(),
   note: z.string().max(2000).optional(),
 });

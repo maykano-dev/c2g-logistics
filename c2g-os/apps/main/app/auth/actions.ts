@@ -16,6 +16,7 @@ async function getClientContext() {
 }
 
 export async function login(prevState: any, formData: FormData) {
+  const supabase = await createClient();
   const { ip, ua } = await getClientContext();
   const emailRaw = formData.get('email') as string
   const passwordRaw = formData.get('password') as string
@@ -89,6 +90,7 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 export async function signup(prevState: any, formData: FormData) {
+  const supabase = await createClient();
   const { ip } = await getClientContext();
   const emailRaw = formData.get('email') as string
   const passwordRaw = formData.get('password') as string
@@ -129,6 +131,7 @@ export async function signup(prevState: any, formData: FormData) {
 }
 
 export async function resetPassword(prevState: any, formData: FormData) {
+  const supabase = await createClient();
   const { ip } = await getClientContext();
   const emailRaw = formData.get('email') as string
 

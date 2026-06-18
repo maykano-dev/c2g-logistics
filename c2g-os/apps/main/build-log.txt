@@ -1,0 +1,42 @@
+
+> main@0.1.0 build /home/maykano/Downloads/New C2g Logistics/c2g-os/apps/main
+> next build
+
+▲ Next.js 16.2.0 (Turbopack)
+- Environments: .env.local
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Turbopack build encountered 1 warnings:
+./apps/main/tailwind.config.js
+Specified module format (EcmaScript Modules) is not matching the module format of the source code (CommonJs)
+The EcmaScript module format was specified in the package.json that is affecting this source file or by using an special extension, but it looks like that CommonJs syntax is used in the source code.
+Exports made by CommonJs syntax will lead to a runtime error, since the module is in EcmaScript mode. Either change the "type" field in the package.json or replace CommonJs syntax with EcmaScript import/export syntax in the source file.
+
+
+✓ Compiled successfully in 29.6s
+  Running TypeScript ...
+  Finished TypeScript in 21.9s ...
+  Collecting page data using 3 workers ...
+⚠ Using edge runtime on a page currently disables static generation for that page
+Error: Failed to collect configuration for /forgot-password
+    at ignore-listed frames {
+  [cause]: Error: supabaseKey is required.
+      at new cN (.next/server/chunks/ssr/0qxs_@supabase_supabase-js_dist_index_mjs_0qprfgp._.js:37:50419)
+      at <unknown> (.next/server/chunks/ssr/0qxs_@supabase_supabase-js_dist_index_mjs_0qprfgp._.js:37:55737)
+      at module evaluation (.next/server/chunks/ssr/_0cyi435._.js:2:10023)
+      at instantiateModule (.next/server/chunks/ssr/[turbopack]_runtime.js:853:9)
+      at getOrInstantiateModuleFromParent (.next/server/chunks/ssr/[turbopack]_runtime.js:877:12)
+      at Context.esmImport [as i] (.next/server/chunks/ssr/[turbopack]_runtime.js:281:20)
+      at module evaluation (.next/server/chunks/ssr/_0k27y6u._.js:3:1079)
+      at instantiateModule (.next/server/chunks/ssr/[turbopack]_runtime.js:853:9)
+      at getOrInstantiateModuleFromParent (.next/server/chunks/ssr/[turbopack]_runtime.js:877:12)
+      at Context.esmImport [as i] (.next/server/chunks/ssr/[turbopack]_runtime.js:281:20)
+}
+
+> Build error occurred
+Error: Failed to collect page data for /forgot-password
+    at ignore-listed frames {
+  type: 'Error'
+}
+ ELIFECYCLE  Command failed with exit code 1.
