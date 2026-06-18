@@ -1,7 +1,64 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Simple in-memory rate limiter for middleware
+// Note: Edge middleware limits this to the specific Vercel edge node, 
+// so it's a loose limit, but good for basic defense-in-depth.
+const rateLimitMap = new Map<string, { count: number, resetAt: number }>();
+
+function checkRateLimit(ip: string, path: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const key = `${ip}:${path}`;
+  
+  // Clean up occasionally
+  if (Math.random() < 0.01) {
+    for (const [k, v] of Array.from(rateLimitMap.entries())) {
+      if (now > v.resetAt) rateLimitMap.delete(k);
+    }
+  }
+
+  const record = rateLimitMap.get(key);
+  if (!record) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  
+  if (now > record.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  
+  if (record.count >= maxRequests) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 export async function middleware(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const path = request.nextUrl.pathname;
+
+  // Apply rate limits to specific paths
+  if (path.startsWith('/api/hubtel/initialize')) {
+    if (!checkRateLimit(ip, '/api/hubtel/initialize', 10, 60000)) { // 10 req / minute
+      return new NextResponse('Too Many Requests', { status: 429 });
+    }
+  } else if (path.startsWith('/api/upload')) {
+    if (!checkRateLimit(ip, '/api/upload', 20, 60000)) { // 20 req / minute
+      return new NextResponse('Too Many Requests', { status: 429 });
+    }
+  } else if (path.startsWith('/api/webhooks/')) {
+    if (!checkRateLimit(ip, '/api/webhooks', 100, 60000)) { // 100 req / minute
+      return new NextResponse('Too Many Requests', { status: 429 });
+    }
+  } else if (path.startsWith('/auth/')) {
+    if (!checkRateLimit(ip, '/auth', 10, 60000)) { // 10 req / minute
+      return new NextResponse('Too Many Requests', { status: 429 });
+    }
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

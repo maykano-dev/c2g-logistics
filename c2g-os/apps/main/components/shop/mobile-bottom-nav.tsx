@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, LayoutGrid, ShoppingCart, Package, User } from "lucide-react";
+import { Home, ShoppingCart, Package, User, Heart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "./cart-context";
@@ -8,9 +8,9 @@ import { motion } from "framer-motion";
 
 const NAV_ITEMS = [
   { href: "/shop", label: "Home", icon: Home },
-  { href: "/shop?view=categories", label: "Categories", icon: LayoutGrid },
+  { href: "/dashboard/mall-orders", label: "Orders", icon: Package },
   { href: "/cart", label: "Cart", icon: ShoppingCart, showBadge: true },
-  { href: "/dashboard/link-orders", label: "Orders", icon: Package },
+  { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/dashboard", label: "Account", icon: User },
 ];
 

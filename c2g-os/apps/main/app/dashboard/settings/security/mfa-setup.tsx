@@ -66,10 +66,12 @@ export default function MfaSetup({ hasTotp }: { hasTotp: boolean }) {
     setIsLoading(true);
     try {
       const { data: factorsData } = await supabase.auth.mfa.listFactors();
-      if (factorsData && factorsData.totp.length > 0) {
-        const id = factorsData.totp[0].id;
-        const { error } = await supabase.auth.mfa.unenroll({ factorId: id });
-        if (error) throw error;
+      if (factorsData && factorsData.totp && factorsData.totp.length > 0) {
+        const id = factorsData.totp[0]?.id;
+        if (id) {
+          const { error } = await supabase.auth.mfa.unenroll({ factorId: id });
+          if (error) throw error;
+        }
       }
       setSuccess(false);
       setQrCode(null);

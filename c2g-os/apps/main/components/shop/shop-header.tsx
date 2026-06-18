@@ -2,6 +2,7 @@
 
 import { Search, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useCallback } from "react";
 import { useCart } from "./cart-context";
@@ -44,8 +45,8 @@ export default function ShopHeader() {
         <div className="flex items-center gap-3 h-14 md:h-16">
           {/* Logo */}
           <Link href="/shop" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/25">
-              <span className="text-primary-foreground font-bold text-sm">C2G</span>
+            <div className="w-8 h-8 relative flex items-center justify-center">
+              <Image src="/logo.png" alt="C2G Mall Logo" fill className="object-contain" />
             </div>
             <span className="font-bold text-lg hidden sm:block">Mall</span>
           </Link>

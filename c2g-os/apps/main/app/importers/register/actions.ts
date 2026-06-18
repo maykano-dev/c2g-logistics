@@ -1,24 +1,39 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { ImporterRegistrationSchema } from '@/utils/security-schemas';
 
 export async function submitImporterRegistration(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const businessName = formData.get('storeName') as string;
-  const storeSlug = formData.get('storeSlug') as string;
-  const whatsapp = formData.get('whatsapp') as string;
-  const email = formData.get('email') as string;
-  const ghanaCard = formData.get('idNumber') as string;
-  const businessDescription = formData.get('businessDescription') as string;
-  const password = formData.get('password') as string;
-  const fullName = formData.get('fullName') as string;
-  const phone = formData.get('phone') as string;
+  const businessNameRaw = formData.get('storeName') as string;
+  const storeSlugRaw = formData.get('storeSlug') as string;
+  const whatsappRaw = formData.get('whatsapp') as string;
+  const emailRaw = formData.get('email') as string;
+  const ghanaCardRaw = formData.get('idNumber') as string;
+  const businessDescriptionRaw = formData.get('businessDescription') as string;
+  const passwordRaw = formData.get('password') as string;
+  const fullNameRaw = formData.get('fullName') as string;
+  const phoneRaw = formData.get('phone') as string;
 
-  if (!businessName || !storeSlug || !whatsapp || !email || !ghanaCard) {
-    return { success: false, error: 'Please fill in all required fields.' };
+  const validation = ImporterRegistrationSchema.safeParse({
+    businessName: businessNameRaw,
+    storeSlug: storeSlugRaw,
+    whatsapp: whatsappRaw,
+    email: emailRaw,
+    ghanaCard: ghanaCardRaw,
+    businessDescription: businessDescriptionRaw,
+    password: passwordRaw,
+    fullName: fullNameRaw,
+    phone: phoneRaw,
+  });
+
+  if (!validation.success) {
+    return { success: false, error: validation.error.issues[0].message };
   }
+
+  const { businessName, storeSlug, whatsapp, email, ghanaCard, businessDescription, password, fullName, phone } = validation.data;
 
   let currentUserId = user?.id;
 
@@ -49,9 +64,8 @@ export async function submitImporterRegistration(formData: FormData) {
     return { success: false, error: 'Failed to create user account.' };
   }
 
-  // Validate slug (alphanumeric and dashes only)
-  if (!/^[a-z0-9-]+$/.test(storeSlug)) {
-    return { success: false, error: 'Store URL can only contain lowercase letters, numbers, and hyphens.' };
+  if (!currentUserId) {
+    return { success: false, error: 'Failed to create user account.' };
   }
 
   // Check if user already applied

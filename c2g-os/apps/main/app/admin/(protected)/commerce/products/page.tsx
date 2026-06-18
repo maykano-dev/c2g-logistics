@@ -1,0 +1,166 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { Search, Filter, Plus, Edit, Trash2, Package, Tag, ArrowUpRight, Copy } from 'lucide-react';
+import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
+
+export default function ProductsCatalogView() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const supabase = createClient();
+    
+    // Fetch products with their variants
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, product_variants(id, price, stock, sku, variant_options)')
+      .order('created_at', { ascending: false });
+
+    if (data && !error) {
+      setProducts(data);
+    }
+    setLoading(false);
+  };
+
+  const filtered = products.filter(p => 
+    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-10">
+      
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+            <Package className="w-6 h-6 text-indigo-500" /> Catalog & Inventory
+          </h1>
+          <p className="text-zinc-400 mt-1">Manage C2G Mall products, variants, and stock levels.</p>
+        </div>
+        <button 
+          onClick={() => router.push('/admin/commerce/products/new')}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-900/20 transition-all flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" /> Add Product
+        </button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-2xl">
+        <div className="relative flex-1">
+          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input 
+            type="text"
+            placeholder="Search products by Name or SKU..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+          />
+        </div>
+        <button className="px-4 h-10 border border-zinc-800 bg-zinc-950 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-zinc-800 transition-colors shrink-0">
+          <Filter className="w-4 h-4" /> Filters
+        </button>
+      </div>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-zinc-800 bg-zinc-950/50">
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Product Info</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Category</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Pricing</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Inventory Status</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {loading ? (
+                <tr><td colSpan={5} className="p-8 text-center text-zinc-500 animate-pulse">Loading catalog...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={5} className="p-8 text-center text-zinc-500">No products found.</td></tr>
+              ) : (
+                filtered.map(product => {
+                  const totalStock = product.product_variants && product.product_variants.length > 0 
+                    ? product.product_variants.reduce((acc: number, v: any) => acc + (v.stock || 0), 0)
+                    : product.stock || 0;
+
+                  return (
+                    <tr key={product.id} className="hover:bg-zinc-800/50 transition-colors group">
+                      <td className="p-4 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700 overflow-hidden flex-shrink-0">
+                          {product.images && product.images.length > 0 ? (
+                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-zinc-600"><Package className="w-5 h-5"/></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white leading-snug line-clamp-2 max-w-[300px] group-hover:text-indigo-400 transition-colors">{product.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-mono text-zinc-500">{product.sku || 'NO-SKU'}</span>
+                            <button className="text-zinc-600 hover:text-zinc-400"><Copy className="w-3 h-3"/></button>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-bold uppercase tracking-wider rounded-md border border-zinc-700">
+                          {product.category || 'Uncategorized'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        {product.product_variants && product.product_variants.length > 0 ? (
+                          <div className="text-sm text-zinc-300 font-medium">
+                            <span className="text-xs text-zinc-500 mr-1">from</span>
+                            ₵{Math.min(...product.product_variants.map((v:any) => v.price)).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-zinc-300 font-medium">₵{parseFloat(product.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        )}
+                        {product.cost_price && <div className="text-[10px] text-zinc-500 mt-1">Cost: ¥{product.cost_price}</div>}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${totalStock > 20 ? 'bg-emerald-500' : totalStock > 0 ? 'bg-amber-500' : 'bg-red-500'}`}></div>
+                          <span className={`text-sm font-bold ${totalStock > 20 ? 'text-white' : totalStock > 0 ? 'text-amber-400' : 'text-red-400'}`}>
+                            {totalStock} in stock
+                          </span>
+                        </div>
+                        {product.product_variants && product.product_variants.length > 0 && (
+                          <p className="text-[10px] text-zinc-500 mt-1">Across {product.product_variants.length} variants</p>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                         <div className="flex items-center justify-end gap-2">
+                           <button className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" title="View Details">
+                             <ArrowUpRight className="w-4 h-4" />
+                           </button>
+                           <button className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg transition-colors" title="Edit Product">
+                             <Edit className="w-4 h-4" />
+                           </button>
+                           <button className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors" title="Delete">
+                             <Trash2 className="w-4 h-4" />
+                           </button>
+                         </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -12,10 +12,7 @@ export const size = {
 };
 export const contentType = 'image/png';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Removed top-level createClient to avoid module evaluation errors when env vars are missing
 
 export default async function Image({ params }: { params: { id: string } }) {
   // Fetch product data
@@ -23,6 +20,11 @@ export default async function Image({ params }: { params: { id: string } }) {
   let primaryImage = '';
 
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    );
+
     const { data } = await supabaseAdmin
       .from('products')
       .select('name, price, product_images(image_url, is_primary)')

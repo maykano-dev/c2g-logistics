@@ -2,14 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendPushNotification } from '../../../../utils/push';
 
-// We must use the service role key for the webhook because it doesn't have the user's session
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-async function notifyUser(userId: string, title: string, message: string, type: string, url: string) {
+async function notifyUser(supabase: any, userId: string, title: string, message: string, type: string, url: string) {
   // Save to DB
-  await supabase.from('notifications').insert({ user_id: userId, title, message, type });
+  await supabase.from('notifications').insert({ user_id: userId, title, message, type, link: url, read: false });
   
   // Get push subscriptions
   const { data: subs } = await supabase.from('push_subscriptions').select('*').eq('user_id', userId);
@@ -26,6 +21,9 @@ async function notifyUser(userId: string, title: string, message: string, type: 
 }
 
 export async function POST(request: Request) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
   try {
     const callbackData = await request.json();
     console.log('Received Hubtel callback:', JSON.stringify(callbackData, null, 2));
@@ -111,6 +109,7 @@ export async function POST(request: Request) {
             });
 
           await notifyUser(
+            supabase,
             linkOrder.customer_id,
             'Payment Successful',
             `Your payment for Link Order #${linkOrder.id.split('-').pop().substring(0,8)} has been received.`,
@@ -149,6 +148,7 @@ export async function POST(request: Request) {
           }
 
           await notifyUser(
+            supabase,
             shipment.customer_id,
             'Registration Fee Paid',
             `Your registration fee for Package ${shipment.tracking_number} is complete.`,
@@ -197,6 +197,7 @@ export async function POST(request: Request) {
 
         if (paymentStatus === 'paid') {
           await notifyUser(
+            supabase,
             mallOrder.customer_id,
             'Mall Order Paid',
             `Payment for Mall Order #${mallOrder.order_id} was successful.`,

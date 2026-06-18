@@ -3,66 +3,34 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const BANNERS = [
-  {
-    id: 1,
-    title: "New Arrivals",
-    subtitle: "Fresh products just landed from China",
-    gradient: "from-violet-600 via-purple-600 to-indigo-700",
-    emoji: "✨",
-    cta: "Shop Now",
-    href: "/shop?sort=newest",
-  },
-  {
-    id: 2,
-    title: "Sea Shipment Deals",
-    subtitle: "Save big on bulk orders with sea freight",
-    gradient: "from-emerald-600 via-teal-600 to-cyan-700",
-    emoji: "🚢",
-    cta: "Explore Deals",
-    href: "/shop?category=home",
-  },
-  {
-    id: 3,
-    title: "Trending Products",
-    subtitle: "The hottest items everyone is buying right now",
-    gradient: "from-orange-500 via-red-500 to-pink-600",
-    emoji: "🔥",
-    cta: "See Trending",
-    href: "/shop?sort=trending",
-  },
-  {
-    id: 4,
-    title: "Importer Specials",
-    subtitle: "Exclusive deals from top Ghanaian importers",
-    gradient: "from-blue-600 via-blue-700 to-indigo-800",
-    emoji: "🇬🇭",
-    cta: "Browse Specials",
-    href: "/shop?sort=popular",
-  },
-];
+import Link from "next/link";
+import Image from "next/image";
 
-export default function HeroCarousel() {
+export default function HeroCarousel({ products }: { products: any[] }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
   const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % BANNERS.length);
-  }, []);
+    if (!products?.length) return;
+    setCurrentSlide((prev) => (prev + 1) % products.length);
+  }, [products]);
 
   const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + BANNERS.length) % BANNERS.length);
-  }, []);
+    if (!products?.length) return;
+    setCurrentSlide((prev) => (prev - 1 + products.length) % products.length);
+  }, [products]);
 
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    if (!isAutoPlaying || !products?.length) return;
     const timer = setInterval(nextSlide, 5000);
     return () => clearInterval(timer);
-  }, [isAutoPlaying, nextSlide]);
+  }, [isAutoPlaying, nextSlide, products]);
+
+  if (!products || products.length === 0) return null;
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-none md:rounded-2xl"
+      className="relative w-full overflow-hidden rounded-[2rem] shadow-2xl"
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
@@ -71,60 +39,78 @@ export default function HeroCarousel() {
         className="flex transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
-        {BANNERS.map((banner) => (
-          <div
-            key={banner.id}
-            className={`w-full shrink-0 bg-gradient-to-br ${banner.gradient} relative h-[200px] sm:h-[260px] md:h-[340px] flex items-center justify-center`}
-          >
-            {/* Decorative elements */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-8 left-8 w-32 h-32 rounded-full bg-white/20 blur-3xl" />
-              <div className="absolute bottom-8 right-16 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
-            </div>
+        {products.map((product, index) => {
+          const gradients = [
+            "from-blue-600 via-indigo-600 to-purple-700",
+            "from-emerald-600 via-teal-600 to-cyan-700",
+            "from-orange-500 via-red-500 to-pink-600",
+            "from-violet-600 via-fuchsia-600 to-pink-700",
+            "from-rose-500 via-red-500 to-orange-600"
+          ];
+          const gradient = gradients[index % gradients.length];
+          
+          const images = product.product_images?.filter((img: any) => img.media_type !== "video") || [];
+          const primaryImage = images.find((img: any) => img.is_primary) || images[0] || product.product_images?.[0];
+          const imageUrl = primaryImage?.image_url || "https://placehold.co/400x400/1a1a2e/6c757d?text=No+Image";
 
-            <div className="relative z-10 text-center px-6 max-w-xl mx-auto">
-              <span className="text-4xl md:text-5xl mb-3 block">{banner.emoji}</span>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white mb-2 drop-shadow-lg">
-                {banner.title}
-              </h2>
-              <p className="text-white/80 text-sm md:text-base mb-5 max-w-md mx-auto">
-                {banner.subtitle}
-              </p>
-              <a
-                href={banner.href}
-                className="inline-flex items-center px-6 py-2.5 bg-white text-gray-900 rounded-full font-bold text-sm shadow-xl hover:scale-105 transition-transform"
-              >
-                {banner.cta}
-              </a>
-            </div>
-          </div>
-        ))}
+          return (
+            <Link
+              key={product.id}
+              href={`/shop/product/${product.id}`}
+              className={`w-full shrink-0 bg-gradient-to-br ${gradient} relative h-[180px] sm:h-[300px] md:h-[360px] flex items-center justify-between px-2 sm:px-16 overflow-hidden group`}
+            >
+              {/* Decorative elements */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-8 left-8 w-32 h-32 rounded-full bg-white/20 blur-3xl" />
+                <div className="absolute bottom-8 right-16 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
+              </div>
+
+              <div className="relative z-10 w-3/5 sm:max-w-lg flex-1 py-4 sm:py-8 pl-4 sm:pl-0">
+                <span className="inline-block px-2 sm:px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 sm:mb-4 border border-white/30">
+                  #{index + 1} Best Seller
+                </span>
+                <h2 className="text-xl sm:text-3xl md:text-5xl font-black text-white mb-2 sm:mb-4 drop-shadow-lg leading-tight line-clamp-2 sm:line-clamp-3">
+                  {product.name}
+                </h2>
+                <div className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-white text-gray-900 rounded-full font-black text-xs sm:text-sm shadow-xl group-hover:scale-105 transition-transform">
+                  Shop Now
+                </div>
+              </div>
+
+              <div className="relative z-10 w-2/5 sm:w-1/3 h-full flex items-center justify-center py-4 pr-4 sm:p-8 ml-auto">
+                <div className="relative w-full aspect-square max-w-[120px] sm:max-w-[280px] rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl transform rotate-3 group-hover:rotate-0 transition-transform duration-500 border-2 sm:border-4 border-white/20">
+                  <Image src={imageUrl} alt={product.name} fill className="object-cover" />
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Arrow Buttons */}
       <button
         onClick={prevSlide}
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/50 transition-colors z-10"
+        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition-colors z-10 border border-white/10"
       >
-        <ChevronLeft className="w-5 h-5" />
+        <ChevronLeft className="w-6 h-6" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/50 transition-colors z-10"
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition-colors z-10 border border-white/10"
       >
-        <ChevronRight className="w-5 h-5" />
+        <ChevronRight className="w-6 h-6" />
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-        {BANNERS.map((_, i) => (
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+        {products.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrentSlide(i)}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
+            className={`h-2 rounded-full transition-all duration-300 ${
               i === currentSlide
                 ? "bg-white w-8"
-                : "bg-white/40 w-1.5 hover:bg-white/60"
+                : "bg-white/40 w-2 hover:bg-white/60"
             }`}
           />
         ))}

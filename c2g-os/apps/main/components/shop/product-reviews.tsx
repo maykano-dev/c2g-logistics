@@ -10,7 +10,7 @@ interface Review {
   user_id: string;
 }
 
-export default function ProductReviews({ reviews = [] }: { reviews?: Review[] }) {
+export default function ProductReviews({ reviews = [], isLoggedIn }: { reviews?: Review[], isLoggedIn?: boolean }) {
   const [showReviews, setShowReviews] = useState(false);
 
   // If there are no reviews, fallback to a mock "4.8" or "0.0" based on requirements.

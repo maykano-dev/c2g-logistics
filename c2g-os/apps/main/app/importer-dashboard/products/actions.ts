@@ -2,6 +2,8 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { uploadImage } from '@/utils/image-service';
+import { AddProductSchema } from '@/utils/security-schemas';
 
 export async function addImporterProduct(formData: FormData) {
   const supabase = await createClient();
@@ -18,21 +20,33 @@ export async function addImporterProduct(formData: FormData) {
 
   if (!importer) return { success: false, error: 'Importer not found' };
 
-  const name = formData.get('name') as string;
-  const description = formData.get('description') as string;
-  const sourcePlatform = formData.get('sourcePlatform') as string;
-  const sourceUrl = formData.get('sourceUrl') as string;
-  const costPriceCny = parseFloat(formData.get('costPriceCny') as string);
-  const sellingPriceGhs = parseFloat(formData.get('sellingPriceGhs') as string);
-  const category = formData.get('category') as string;
-  const primaryImage = formData.get('primaryImage') as string;
+  const nameRaw = formData.get('name') as string;
+  const descriptionRaw = formData.get('description') as string;
+  const sourcePlatformRaw = formData.get('sourcePlatform') as string;
+  const sourceUrlRaw = formData.get('sourceUrl') as string;
+  const costPriceCnyRaw = parseFloat(formData.get('costPriceCny') as string);
+  const sellingPriceGhsRaw = parseFloat(formData.get('sellingPriceGhs') as string);
+  const categoryRaw = formData.get('category') as string;
+  const primaryImageFile = formData.get('primaryImage') as File | null;
 
-  if (!name || isNaN(costPriceCny) || isNaN(sellingPriceGhs)) {
-    return { success: false, error: 'Please provide valid name and pricing.' };
+  const validation = AddProductSchema.safeParse({
+    name: nameRaw,
+    description: descriptionRaw,
+    sourcePlatform: sourcePlatformRaw,
+    sourceUrl: sourceUrlRaw,
+    costPriceCny: costPriceCnyRaw,
+    sellingPriceGhs: sellingPriceGhsRaw,
+    category: categoryRaw,
+  });
+
+  if (!validation.success) {
+    return { success: false, error: validation.error.issues[0].message };
   }
 
+  const { name, description, sourcePlatform, sourceUrl, costPriceCny, sellingPriceGhs, category } = validation.data;
+
   // We set price to an arbitrary number because selling_price_ghs handles the real price.
-  // We'll set price = costPriceCny and price_cny = costPriceCny for standard columns just to be safe.
+  // We'll set price = sellingPriceGhs and price_cny = costPriceCny for standard columns just to be safe.
   
   const { data: product, error: productError } = await supabase
     .from('products')
@@ -45,7 +59,7 @@ export async function addImporterProduct(formData: FormData) {
       source_url: sourceUrl,
       cost_price_cny: costPriceCny,
       selling_price_ghs: sellingPriceGhs,
-      price: costPriceCny, // legacy support
+      price: sellingPriceGhs, // legacy support
       price_cny: costPriceCny, // legacy support
       stock: 999, // default
       status: 'published',
@@ -60,22 +74,56 @@ export async function addImporterProduct(formData: FormData) {
   }
 
   // Add primary image if provided
-  if (primaryImage) {
-    await supabase.from('product_images').insert({
-      product_id: product.id,
-      image_url: primaryImage,
-      is_primary: true
-    });
+  if (primaryImageFile && primaryImageFile.size > 0) {
+    const buffer = Buffer.from(await primaryImageFile.arrayBuffer());
+    const result = await uploadImage(buffer, primaryImageFile.name);
+    
+    if (result.success && result.url) {
+      await supabase.from('product_images').insert({
+        product_id: product.id,
+        image_url: result.url,
+        is_primary: true
+      });
+    } else {
+      console.error('Failed to upload image:', result.error);
+      // We still created the product, but without an image
+    }
   }
 
-  // Auto-generate a default variant using selling_price_ghs for now
-  await supabase.from('product_variants').insert({
-    product_id: product.id,
-    sku: `${product.product_code}-DEFAULT`,
-    price: sellingPriceGhs, 
-    price_cny: costPriceCny,
-    stock: 999
-  });
+  const variantsDataStr = formData.get('variantsData') as string;
+  let variantsData = [];
+  if (variantsDataStr) {
+    try {
+      variantsData = JSON.parse(variantsDataStr);
+    } catch (e) {
+      console.error('Error parsing variants data', e);
+    }
+  }
+
+  if (variantsData.length > 0) {
+    const variantInserts = variantsData.map((v: any, index: number) => ({
+      product_id: product.id,
+      sku: `${product.product_code}-V${index + 1}`,
+      combination: v.combination,
+      cost_price_cny: v.costYuan,
+      selling_price_ghs: v.sellingGhs,
+      price: v.sellingGhs, // legacy
+      price_cny: v.costYuan, // legacy
+      stock: v.stock || 999
+    }));
+    await supabase.from('product_variants').insert(variantInserts);
+  } else {
+    // Auto-generate a default variant using selling_price_ghs for now
+    await supabase.from('product_variants').insert({
+      product_id: product.id,
+      sku: `${product.product_code}-DEFAULT`,
+      cost_price_cny: costPriceCny,
+      selling_price_ghs: sellingPriceGhs,
+      price: sellingPriceGhs, 
+      price_cny: costPriceCny,
+      stock: 999
+    });
+  }
 
   revalidatePath('/importer-dashboard/products');
   

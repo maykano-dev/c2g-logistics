@@ -5,29 +5,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { headers } from 'next/headers'
 
-// In-memory rate limiting (Note: in serverless environments, this resets per cold start. 
-// For a fully robust setup, a Redis cache is recommended, but this stops basic brute forcing per instance).
-const rateLimitMap = new Map<string, { count: number, resetAt: number }>();
-const MAX_ATTEMPTS = 5;
-const RESET_TIME_MS = 15 * 60 * 1000; // 15 minutes
-
-async function checkRateLimit(ip: string): Promise<boolean> {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-  if (!record) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RESET_TIME_MS });
-    return true;
-  }
-  if (now > record.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RESET_TIME_MS });
-    return true;
-  }
-  if (record.count >= MAX_ATTEMPTS) {
-    return false;
-  }
-  record.count++;
-  return true;
-}
+import { checkRateLimit, checkAnomalousLogin, enforceSessionLimit } from '@/utils/security';
+import { LoginSchema, SignupSchema, ResetPasswordSchema } from '@/utils/security-schemas';
 
 async function getClientContext() {
   const headersList = await headers();
@@ -38,18 +17,19 @@ async function getClientContext() {
 
 export async function login(prevState: any, formData: FormData) {
   const { ip, ua } = await getClientContext();
-  const isAllowed = await checkRateLimit(ip);
-  if (!isAllowed) {
-    return { error: 'Too many login attempts. Please try again later.' };
+  const emailRaw = formData.get('email') as string
+  const passwordRaw = formData.get('password') as string
+
+  const validation = LoginSchema.safeParse({ email: emailRaw, password: passwordRaw });
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
   }
 
-  const supabase = await createClient()
+  const { email, password } = validation.data;
 
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-
-  if (!email || !password) {
-    return { error: 'Email and password are required' }
+  const isAllowed = await checkRateLimit(ip, email);
+  if (!isAllowed) {
+    return { error: 'Too many login attempts. Please try again later.' };
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -91,14 +71,17 @@ export async function login(prevState: any, formData: FormData) {
 
   // If no MFA required (or successfully verified later), log the session
   if (data.user) {
-    // Use service role if needed, or simply insert via authenticated session
-    // since the user is now technically logged in at AAL1/AAL2.
-    // However, since we might need admin privileges for some setups, we'll try standard insert.
+    // Check anomalous login
+    await checkAnomalousLogin(data.user.id, ip);
+
     await supabase.from('user_sessions').insert({
       user_id: data.user.id,
       ip_address: ip,
       user_agent: ua
     });
+
+    // Enforce concurrent session limit
+    await enforceSessionLimit(data.user.id);
   }
 
   revalidatePath('/', 'layout')
@@ -107,24 +90,21 @@ export async function login(prevState: any, formData: FormData) {
 
 export async function signup(prevState: any, formData: FormData) {
   const { ip } = await getClientContext();
-  const isAllowed = await checkRateLimit(ip);
+  const emailRaw = formData.get('email') as string
+  const passwordRaw = formData.get('password') as string
+  const nameRaw = formData.get('name') as string
+  const phoneRaw = formData.get('phone') as string
+
+  const validation = SignupSchema.safeParse({ email: emailRaw, password: passwordRaw, name: nameRaw, phone: phoneRaw });
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
+  }
+
+  const { email, password, name, phone } = validation.data;
+
+  const isAllowed = await checkRateLimit(ip, email);
   if (!isAllowed) {
     return { error: 'Too many signup attempts. Please try again later.' };
-  }
-
-  const supabase = await createClient()
-
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-  const name = formData.get('name') as string
-  const phone = formData.get('phone') as string
-
-  if (!email || !password || !name) {
-    return { error: 'Email, password, and name are required' }
-  }
-
-  if (password.length < 8) {
-    return { error: 'Password must be at least 8 characters' }
   }
 
   const { error } = await supabase.auth.signUp({
@@ -150,17 +130,18 @@ export async function signup(prevState: any, formData: FormData) {
 
 export async function resetPassword(prevState: any, formData: FormData) {
   const { ip } = await getClientContext();
-  const isAllowed = await checkRateLimit(ip);
-  if (!isAllowed) {
-    return { error: 'Too many reset attempts. Please try again later.' };
+  const emailRaw = formData.get('email') as string
+
+  const validation = ResetPasswordSchema.safeParse({ email: emailRaw });
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
   }
 
-  const supabase = await createClient()
+  const { email } = validation.data;
 
-  const email = formData.get('email') as string
-
-  if (!email) {
-    return { error: 'Email is required' }
+  const isAllowed = await checkRateLimit(ip, email);
+  if (!isAllowed) {
+    return { error: 'Too many reset attempts. Please try again later.' };
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email)

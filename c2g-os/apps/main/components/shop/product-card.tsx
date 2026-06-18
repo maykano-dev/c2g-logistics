@@ -50,11 +50,17 @@ export default function ProductCard({
   const hasVariants =
     product.product_variants && product.product_variants.length > 0;
 
-  const priceCny =
-    product.price_cny !== null && product.price_cny !== undefined
+  const priceGhs = product.selling_price_ghs !== null && product.selling_price_ghs !== undefined 
+    ? parseFloat(product.selling_price_ghs)
+    : product.price !== null && product.price !== undefined 
+      ? parseFloat(product.price) 
+      : 0;
+
+  const priceCny = product.cost_price_cny !== null && product.cost_price_cny !== undefined
+    ? parseFloat(product.cost_price_cny)
+    : product.price_cny !== null && product.price_cny !== undefined
       ? parseFloat(product.price_cny)
-      : parseFloat(product.price) * exchangeRate;
-  const priceGhs = priceCny / exchangeRate;
+      : priceGhs * exchangeRate; // fallback
 
   const salesCount = product.sales_count || 0;
   const viewCount = product.view_count || 0;
@@ -119,13 +125,13 @@ export default function ProductCard({
         {/* Wishlist Heart */}
         <button
           onClick={handleWishlist}
-          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10 hover:scale-110"
+          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md flex items-center justify-center opacity-100 transition-all z-10 hover:scale-110 shadow-sm border border-border/20"
         >
           <Heart
             className={`w-4 h-4 transition-colors ${
               isWishlisted
                 ? "fill-red-500 text-red-500"
-                : "text-white"
+                : "text-foreground/70"
             }`}
           />
         </button>
@@ -166,28 +172,24 @@ export default function ProductCard({
             <span className="font-extrabold text-base sm:text-lg text-primary leading-none">
               ₵{priceGhs.toFixed(2)}
             </span>
-            <span className="text-[10px] text-muted-foreground line-through opacity-60">
-              ¥{priceCny.toFixed(0)}
-            </span>
           </div>
 
-          {/* Add to Cart */}
-          <button
-            onClick={hasVariants ? undefined : handleQuickAdd}
-            className={`w-full h-8 sm:h-9 flex items-center justify-center rounded-lg text-xs font-semibold transition-all gap-1.5 ${
-              hasVariants
-                ? "border border-border bg-secondary/50 text-foreground hover:bg-secondary"
-                : "bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
-            }`}
-          >
-            {hasVariants ? (
-              "See Options"
-            ) : (
-              <>
-                <ShoppingCart className="w-3.5 h-3.5" /> Add
-              </>
-            )}
-          </button>
+          {/* Add to Cart or View Options */}
+          {hasVariants ? (
+            <Link
+              href={`/shop/product/${product.id}`}
+              className="w-full h-8 sm:h-9 flex items-center justify-center rounded-lg text-xs font-semibold transition-all border border-border bg-secondary/50 text-foreground hover:bg-secondary"
+            >
+              View Options
+            </Link>
+          ) : (
+            <button
+              onClick={handleQuickAdd}
+              className="w-full h-8 sm:h-9 flex items-center justify-center rounded-lg text-xs font-semibold transition-all gap-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" /> Add
+            </button>
+          )}
         </div>
       </div>
     </div>

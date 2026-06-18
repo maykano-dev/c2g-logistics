@@ -12,8 +12,8 @@ export default function ProductImages({ images }: { images: any[] }) {
 
   return (
     <div className="flex flex-col gap-4 sticky top-24">
-      {/* Main Image */}
-      <div className="aspect-square bg-secondary rounded-2xl overflow-hidden border border-border relative group">
+      {/* Desktop Main Image (Hidden on Mobile) */}
+      <div className="hidden md:block aspect-square bg-secondary rounded-2xl overflow-hidden border border-border relative group">
         <img 
           src={displayImages[activeIndex]?.image_url} 
           alt="Product Image" 
@@ -21,9 +21,26 @@ export default function ProductImages({ images }: { images: any[] }) {
         />
       </div>
 
-      {/* Thumbnails */}
+      {/* Mobile Swipeable Gallery (Hidden on Desktop) */}
+      <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {displayImages.map((img, idx) => (
+          <div key={idx} className="shrink-0 w-[90%] sm:w-full aspect-square bg-secondary rounded-2xl overflow-hidden border border-border snap-center relative shadow-sm">
+            <img 
+              src={img.image_url} 
+              alt={`Product Image ${idx + 1}`} 
+              className="w-full h-full object-cover"
+            />
+            {/* Image Counter Indicator */}
+            <div className="absolute bottom-3 right-3 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md">
+              {idx + 1} / {displayImages.length}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Thumbnails (Hidden on Mobile) */}
       {displayImages.length > 1 && (
-        <div className="grid grid-cols-5 gap-3">
+        <div className="hidden md:grid grid-cols-5 gap-3">
           {displayImages.map((img, idx) => (
             <button 
               key={idx}

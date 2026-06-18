@@ -29,7 +29,7 @@ export default function TrackerClient({ pkg }: TrackerClientProps) {
 
   const modeLower = (pkg.method || 'pending').toLowerCase();
   const isAir = modeLower.includes('air') || modeLower.includes('express') || modeLower.includes('normal');
-  const durationDays = isAir ? (modeLower.includes('express') ? 7 : 14) : 60;
+  const durationDays = isAir ? (modeLower.includes('express') ? 7 : 16) : 60;
   
   const startDateMs = new Date(pkg.created_at).getTime();
   const totalMs = durationDays * 24 * 60 * 60 * 1000;
@@ -95,7 +95,7 @@ export default function TrackerClient({ pkg }: TrackerClientProps) {
             <p className="text-muted-foreground mt-1 max-w-2xl line-clamp-1">{pkg.items_description}</p>
           </div>
           <div className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-lg font-mono font-bold text-sm">
-            {modeDisplay.label} &middot; {durationDays} Days
+            {modeDisplay.label} &middot; {isAir ? (modeLower.includes('express') ? '3-7' : '12-16') : '50-60'} Days
           </div>
         </div>
       </div>

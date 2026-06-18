@@ -24,8 +24,9 @@ export default function MfaVerifyForm() {
       }
       
       const { data: factorsData } = await supabase.auth.mfa.listFactors();
-      if (factorsData?.totp && factorsData.totp.length > 0) {
-        setFactorId(factorsData.totp[0].id);
+      const firstTotp = factorsData?.totp?.[0];
+      if (firstTotp) {
+        setFactorId(firstTotp.id);
       } else {
         // No TOTP enrolled, redirect back
         router.replace('/dashboard');

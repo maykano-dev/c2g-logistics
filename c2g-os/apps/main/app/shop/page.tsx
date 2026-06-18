@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import {
   getShopProducts,
-  getShopPromotions,
+  getTopPurchasedProducts,
   getTrendingProducts,
   getNewArrivals,
   getBestSellers,
@@ -25,20 +25,27 @@ export const metadata = {
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string }>;
+  searchParams: Promise<{ category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string; page?: string }>;
 }) {
   const resolvedParams = await searchParams;
 
+  const paramsForProducts = {
+    ...resolvedParams,
+    page: resolvedParams.page ? parseInt(resolvedParams.page, 10) : undefined
+  };
+
   // Fetch all data in parallel
-  const [allProductsResult, trendingResult, newArrivalsResult, bestSellersResult] =
+  const [allProductsResult, topPurchasedResult, trendingResult, newArrivalsResult, bestSellersResult] =
     await Promise.all([
-      getShopProducts(resolvedParams),
+      getShopProducts(paramsForProducts),
+      getTopPurchasedProducts(5),
       getTrendingProducts(),
       getNewArrivals(),
       getBestSellers(),
     ]);
 
-  const { products, exchangeRate, error } = allProductsResult;
+  const { products, exchangeRate, error, currentPage, totalPages } = allProductsResult;
+  const { products: topPurchasedProducts } = topPurchasedResult;
   const { products: trendingProducts } = trendingResult;
   const { products: newProducts } = newArrivalsResult;
   const { products: bestProducts } = bestSellersResult;
@@ -58,9 +65,11 @@ export default async function ShopPage({
         {!isSearching ? (
           <div className="space-y-8 md:space-y-12">
             {/* Hero Banner Carousel */}
-            <section className="w-full">
-            <HeroCarousel />
-          </section>
+            {topPurchasedProducts.length > 0 && (
+              <section className="w-full">
+                <HeroCarousel products={topPurchasedProducts} />
+              </section>
+            )}
 
           {/* 🔥 Trending Products */}
             {trendingProducts.length > 0 && (
@@ -97,7 +106,7 @@ export default async function ShopPage({
           {/* 🏆 Best Sellers */}
             {bestProducts.length > 0 && (
               <section className="w-full">
-                <ProductSection title="Best Sellers" icon={<Trophy className="w-5 h-5 text-yellow-600" />} href="/shop?sort=popular">
+                <ProductSection title="Best Sellers" icon={<Trophy className="w-5 h-5 text-yellow-600" />}>
                 {bestProducts.map((product: any) => (
                   <ProductCard
                     key={product.id}
@@ -116,9 +125,6 @@ export default async function ShopPage({
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-primary" /> All Products
                 </h2>
-              <span className="text-xs text-muted-foreground font-medium">
-                {products?.length || 0} items
-              </span>
             </div>
 
             {hasProducts ? (
@@ -135,6 +141,39 @@ export default async function ShopPage({
             ) : (
               <EmptyProducts />
             )}
+
+            {/* Pagination Controls */}
+            {hasProducts && totalPages && totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-8">
+                {currentPage! > 1 ? (
+                  <Link
+                    href={`/shop?${new URLSearchParams({ ...resolvedParams, page: String(currentPage! - 1) }).toString()}`}
+                    className="px-4 py-2 border border-border rounded-lg bg-card hover:bg-secondary text-sm font-medium transition-colors"
+                  >
+                    Previous
+                  </Link>
+                ) : (
+                  <button disabled className="px-4 py-2 border border-border rounded-lg bg-secondary/50 text-muted-foreground text-sm font-medium opacity-50 cursor-not-allowed">
+                    Previous
+                  </button>
+                )}
+                <span className="text-sm font-medium text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                {currentPage! < totalPages! ? (
+                  <Link
+                    href={`/shop?${new URLSearchParams({ ...resolvedParams, page: String(currentPage! + 1) }).toString()}`}
+                    className="px-4 py-2 border border-border rounded-lg bg-card hover:bg-secondary text-sm font-medium transition-colors"
+                  >
+                    Next
+                  </Link>
+                ) : (
+                  <button disabled className="px-4 py-2 border border-border rounded-lg bg-secondary/50 text-muted-foreground text-sm font-medium opacity-50 cursor-not-allowed">
+                    Next
+                  </button>
+                )}
+              </div>
+            )}
           </section>
         </div>
         ) : (
@@ -149,9 +188,6 @@ export default async function ShopPage({
                   ? `${resolvedParams.category.charAt(0).toUpperCase() + resolvedParams.category.slice(1)}`
                   : "All Products"}
               </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {products?.length || 0} items found
-              </p>
             </div>
           </div>
 
@@ -175,6 +211,39 @@ export default async function ShopPage({
           ) : (
             <EmptySearch query={resolvedParams.query} />
             )}
+
+          {/* Pagination Controls for Search/Category View */}
+          {hasProducts && totalPages && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-8">
+              {currentPage! > 1 ? (
+                <Link
+                  href={`/shop?${new URLSearchParams({ ...resolvedParams, page: String(currentPage! - 1) }).toString()}`}
+                  className="px-4 py-2 border border-border rounded-lg bg-card hover:bg-secondary text-sm font-medium transition-colors"
+                >
+                  Previous
+                </Link>
+              ) : (
+                <button disabled className="px-4 py-2 border border-border rounded-lg bg-secondary/50 text-muted-foreground text-sm font-medium opacity-50 cursor-not-allowed">
+                  Previous
+                </button>
+              )}
+              <span className="text-sm font-medium text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              {currentPage! < totalPages! ? (
+                <Link
+                  href={`/shop?${new URLSearchParams({ ...resolvedParams, page: String(currentPage! + 1) }).toString()}`}
+                  className="px-4 py-2 border border-border rounded-lg bg-card hover:bg-secondary text-sm font-medium transition-colors"
+                >
+                  Next
+                </Link>
+              ) : (
+                <button disabled className="px-4 py-2 border border-border rounded-lg bg-secondary/50 text-muted-foreground text-sm font-medium opacity-50 cursor-not-allowed">
+                  Next
+                </button>
+              )}
+            </div>
+          )}
           </div>
         )}
       </ShopLayoutWrapper>

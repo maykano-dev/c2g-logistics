@@ -37,7 +37,10 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <form action={resetPassword} className="space-y-4">
+          <form action={async (formData) => {
+            "use server";
+            await resetPassword(null, formData);
+          }} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 Email

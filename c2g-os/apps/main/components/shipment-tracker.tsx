@@ -137,7 +137,7 @@ export function ShipmentTracker({
 
   const modeLower = shippingModeStr.toLowerCase();
   const isAir = modeLower.includes('air') || modeLower.includes('express') || modeLower.includes('normal');
-  let duration = isAir ? (modeLower.includes('express') ? 7 : 14) : 60; 
+  let duration = isAir ? (modeLower.includes('express') ? 7 : 16) : 60; 
   let formattedMode = shippingModeStr;
   if (modeLower === 'express') formattedMode = 'Air Express';
   else if (modeLower === 'normal') formattedMode = 'Air Normal';
@@ -175,6 +175,7 @@ export function ShipmentTracker({
       // Cleanup previous instance if Strict Mode causes double render
       const container = L.DomUtil.get(mapRef.current);
       if (container != null) {
+        // @ts-ignore
         container._leaflet_id = null;
       }
 
@@ -334,7 +335,7 @@ export function ShipmentTracker({
                 <p className="text-sm font-mono text-muted-foreground">{trackingId}</p>
                 <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isAir ? 'bg-blue-500/10 text-blue-500' : 'bg-green-500/10 text-green-500'}`}>
-                  {formattedMode} ({duration} days)
+                  {formattedMode} ({isAir ? (modeLower.includes('express') ? '3-7' : '12-16') : '50-60'} days)
                 </span>
               </div>
             </div>

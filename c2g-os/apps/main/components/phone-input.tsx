@@ -14,7 +14,7 @@ const countries = [
   { code: "US", dial: "+1", name: "United States", flag: "🇺🇸" },
 ];
 
-export function PhoneInput() {
+export function PhoneInput({ name = "phone", required = true }: { name?: string; required?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(countries[0]);
@@ -39,7 +39,7 @@ export function PhoneInput() {
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Hidden input to submit the full combined phone number */}
-      <input type="hidden" name="phone" value={`${selected?.dial || '+233'} ${phone}`} />
+      <input type="hidden" name={name} value={`${selected?.dial || '+233'} ${phone}`} />
       
       <div className="flex h-11 w-full rounded-md border border-input bg-background/50 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors backdrop-blur-sm group">
         
@@ -60,7 +60,7 @@ export function PhoneInput() {
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/[^0-9\s]/g, ""))}
           placeholder="24 123 4567"
-          required
+          required={required}
           className="flex-1 bg-transparent px-3 py-2 outline-none placeholder:text-muted-foreground"
         />
       </div>

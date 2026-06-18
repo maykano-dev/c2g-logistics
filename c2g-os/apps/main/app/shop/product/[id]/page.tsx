@@ -11,11 +11,15 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "../../../../utils/supabase/server";
 import ProductImages from "../../../../components/shop/product-images";
 import ProductOptions from "../../../../components/shop/product-options";
 import ProductCard from "../../../../components/shop/product-card";
 import MobileBottomNav from "../../../../components/shop/mobile-bottom-nav";
 import ProductReviews from "../../../../components/shop/product-reviews";
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function generateMetadata({
   params,
@@ -47,6 +51,10 @@ export default async function ProductPage({
     resolvedParams.id
   );
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+
   if (error || !product) {
     return (
       <div className="min-h-screen pt-24 pb-12 flex flex-col items-center justify-center">
@@ -71,13 +79,39 @@ export default async function ProductPage({
   const variants = product.product_variants || [];
   const hasVariants = variants.length > 0;
 
-  // Extract unique options
   const optionTypes = new Set<string>();
+  const variantImages: any[] = [];
+  
   variants.forEach((v: any) => {
-    if (v.combination) {
-      Object.keys(v.combination).forEach((k) => optionTypes.add(k));
+    let combo = v.combination || v.variant_options; // Fallback to legacy variant_options
+    console.log("Variant ID:", v.id, "Combo:", combo);
+    
+    if (typeof combo === 'string') {
+      try {
+        combo = JSON.parse(combo);
+      } catch (e) {
+        combo = null;
+      }
+    }
+    
+    v.combination = combo; // Mutate for downstream use (ProductOptions)
+    
+    if (combo && typeof combo === 'object') {
+      Object.keys(combo).forEach((k) => optionTypes.add(k));
+    }
+    
+    if (v.image_url) {
+      variantImages.push({
+        id: `variant-img-${v.id}`,
+        image_url: v.image_url,
+        is_primary: false,
+        media_type: 'image'
+      });
     }
   });
+
+  // Merge variant images into product images for the gallery
+  const allImages = [...(product.product_images || []), ...variantImages];
 
   // Fetch similar products
   const { products: similarProducts, exchangeRate: simExRate } =
@@ -107,7 +141,7 @@ export default async function ProductPage({
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           {/* Images Section */}
           <div className="w-full lg:w-1/2 flex-shrink-0">
-            <ProductImages images={product.product_images} />
+            <ProductImages images={allImages} />
           </div>
 
           {/* Details Section */}
@@ -118,7 +152,7 @@ export default async function ProductPage({
 
             {/* Rating + Stock */}
             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/50 flex-wrap">
-              <ProductReviews reviews={product.reviews || []} />
+              <ProductReviews reviews={product.reviews || []} isLoggedIn={isLoggedIn} />
               
               <div className="w-px h-4 bg-border" />
               <span className="text-xs text-muted-foreground">
@@ -143,6 +177,7 @@ export default async function ProductPage({
               variants={variants}
               exchangeRate={exchangeRate || 1}
               optionTypes={Array.from(optionTypes)}
+              isLoggedIn={isLoggedIn}
             />
 
             {/* Shipping Estimates */}
@@ -156,7 +191,7 @@ export default async function ProductPage({
                   <div>
                     <p className="font-bold text-xs">Air Express</p>
                     <p className="text-[10px] text-muted-foreground">
-                      3–5 days
+                      3–7 days
                     </p>
                   </div>
                 </div>
@@ -165,7 +200,7 @@ export default async function ProductPage({
                   <div>
                     <p className="font-bold text-xs">Air Normal</p>
                     <p className="text-[10px] text-muted-foreground">
-                      10–14 days
+                      12–16 days
                     </p>
                   </div>
                 </div>
@@ -174,7 +209,7 @@ export default async function ProductPage({
                   <div>
                     <p className="font-bold text-xs">Sea Freight</p>
                     <p className="text-[10px] text-muted-foreground">
-                      30–45 days
+                      50–60 days
                     </p>
                   </div>
                 </div>
@@ -206,9 +241,14 @@ export default async function ProductPage({
         </div>
 
         {/* Product Description */}
-        <div className="mt-12 pt-10 border-t border-border">
-          <h2 className="text-xl font-bold mb-5">Product Details</h2>
-          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+        <details className="group mt-12 pt-6 border-t border-border">
+          <summary className="flex cursor-pointer list-none items-center justify-between outline-none [&::-webkit-details-marker]:hidden">
+            <h2 className="text-xl font-bold">Product Details</h2>
+            <span className="transition duration-300 group-open:-rotate-180 text-muted-foreground p-2 rounded-full hover:bg-secondary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </summary>
+          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
             {product.description ? (
               <div
                 dangerouslySetInnerHTML={{
@@ -219,7 +259,7 @@ export default async function ProductPage({
               <p>No detailed description available for this product.</p>
             )}
           </div>
-        </div>
+        </details>
 
         {/* Similar Products */}
         {similarProducts.length > 0 && (

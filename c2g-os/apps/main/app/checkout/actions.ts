@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { CheckoutSchema } from "@/utils/security-schemas";
+import { secureLog } from "@/utils/logger";
 
 export async function createEcomOrder(orderData: any) {
   const supabase = await createClient();
@@ -13,31 +15,62 @@ export async function createEcomOrder(orderData: any) {
   const userId = userData.user.id;
   const userEmail = userData.user.email;
   
+  const validation = CheckoutSchema.safeParse(orderData);
+  if (!validation.success) {
+    return { success: false, error: validation.error.issues[0].message };
+  }
+
+  const validatedData = validation.data;
+  
   // 1. Fetch fresh product data to get cost and importer info
-  const productIds = orderData.items.map((item: any) => item.productId);
+  const productIds = validatedData.items.map((item: any) => item.productId);
   const { data: products } = await supabase
     .from("products")
-    .select("id, importer_id, cost_price_cny")
+    .select("id, importer_id, cost_price_cny, selling_price_ghs")
     .in("id", productIds);
 
   const productMap = new Map();
   products?.forEach(p => productMap.set(p.id, p));
 
+  const variantIds = validatedData.items.filter((i: any) => i.variantId).map((i: any) => i.variantId);
+  const { data: variants } = variantIds.length > 0 ? await supabase
+    .from("product_variants")
+    .select("id, cost_price_cny, selling_price_ghs")
+    .in("id", variantIds) : { data: [] };
+    
+  const variantMap = new Map();
+  variants?.forEach(v => variantMap.set(v.id, v));
+
   // 2. Group items by importer_id
   const itemsByImporter = new Map<string | null, any[]>();
   
-  for (const item of orderData.items) {
-    const productInfo = productMap.get(item.productId) || {};
+  for (const item of validatedData.items) {
+    const productInfo = productMap.get(item.productId);
+    if (!productInfo) {
+      return { success: false, error: `Product not found: ${item.productId}` };
+    }
+    
     const importerId = productInfo.importer_id || null;
     
-    // Calculate costs dynamically to prevent client spoofing
-    const costPriceCny = productInfo.cost_price_cny || item.priceCny;
-    const costPriceGhs = costPriceCny / orderData.exchangeRate;
+    // Server-side pricing enforcement
+    let trueSellingPriceGhs = productInfo.selling_price_ghs || item.priceGhs || 0;
+    let trueCostPriceCny = productInfo.cost_price_cny || item.priceCny || 0;
+
+    if (item.variantId) {
+      const variantInfo = variantMap.get(item.variantId);
+      if (variantInfo) {
+        if (variantInfo.selling_price_ghs) trueSellingPriceGhs = variantInfo.selling_price_ghs;
+        if (variantInfo.cost_price_cny) trueCostPriceCny = variantInfo.cost_price_cny;
+      }
+    }
+
+    const exchangeRate = validatedData.exchangeRate || 1;
+    const costPriceGhs = trueCostPriceCny / exchangeRate;
     
     const enrichedItem = {
       ...item,
-      price: item.priceGhs,
-      price_cny: item.priceCny,
+      price: trueSellingPriceGhs,
+      price_cny: trueCostPriceCny,
       cost_price_ghs: costPriceGhs,
       variant_id: item.variantId,
       product_id: item.productId,
@@ -53,25 +86,25 @@ export async function createEcomOrder(orderData: any) {
 
   // 3. Create an order per importer
   for (const [importerId, items] of Array.from(itemsByImporter.entries())) {
-    // Recalculate totals for this specific group
-    const subtotal = items.reduce((sum, item) => sum + (item.priceGhs * item.quantity), 0);
+    // Recalculate totals for this specific group securely
+    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalCostGhs = items.reduce((sum, item) => sum + (item.cost_price_ghs * item.quantity), 0);
     const totalProfitGhs = subtotal - totalCostGhs;
 
-    // Prorate shipping/service fee (simple split for now if multiple orders)
-    const splitRatio = subtotal / orderData.subtotal;
-    const proratedShipping = (orderData.shippingCost || 0) * splitRatio;
-    const proratedService = (orderData.serviceFee || 0) * splitRatio;
+    // Prorate shipping/service fee
+    const splitRatio = validatedData.subtotal ? (subtotal / validatedData.subtotal) : 1;
+    const proratedShipping = (validatedData.shippingCost || 0) * splitRatio;
+    const proratedService = (validatedData.serviceFee || 0) * splitRatio;
     const totalAmount = subtotal + proratedShipping + proratedService;
 
     const orderPayload = {
       customer_id: userId,
-      customer_name: orderData.shippingName,
-      customer_phone: orderData.shippingPhone,
+      customer_name: validatedData.shippingName,
+      customer_phone: validatedData.shippingPhone,
       customer_email: userEmail,
-      shipping_address: orderData.shippingAddress,
-      shipping_notes: orderData.shippingNotes || "",
-      shipping_method: orderData.shippingMethod || "sea",
+      shipping_address: validatedData.shippingAddress,
+      shipping_notes: validatedData.shippingNotes || "",
+      shipping_method: validatedData.shippingMethod || "sea",
       items: items,
       subtotal: subtotal,
       service_fee: proratedService,
@@ -80,11 +113,11 @@ export async function createEcomOrder(orderData: any) {
       total_cost_ghs: totalCostGhs,
       total_profit_ghs: totalProfitGhs,
       importer_id: importerId,
-      rate_at_purchase: orderData.exchangeRate,
+      rate_at_purchase: validatedData.exchangeRate,
       payment_status: 'pending',
       order_status: 'pending_payment',
-      payment_reference: orderData.reference,
-      payment_gateway: orderData.paymentGateway || 'hubtel'
+      payment_reference: validatedData.reference,
+      payment_gateway: validatedData.paymentGateway || 'hubtel'
     };
 
     const { data, error } = await supabase
@@ -94,7 +127,7 @@ export async function createEcomOrder(orderData: any) {
       .single();
 
     if (error) {
-      console.error("Error creating ecom order split:", error);
+      secureLog("Error creating ecom order split", { error: error.message, payload: orderPayload });
       return { success: false, error: error.message };
     }
     
@@ -114,7 +147,7 @@ export async function createEcomOrder(orderData: any) {
   }
 
   // Attempt to decrement stock (ignore errors if it fails to not block checkout)
-  for (const item of orderData.items) {
+  for (const item of validatedData.items) {
     if (item.variantId) {
       await supabase.rpc('decrement_variant_stock', {
         variant_id_to_update: item.variantId,

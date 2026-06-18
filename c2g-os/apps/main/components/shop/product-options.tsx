@@ -1,16 +1,22 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ShoppingCart, Plus, Minus } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Heart } from "lucide-react";
 import { useCart } from "./cart-context";
+import { useWishlist } from "./wishlist-context";
+import { useRouter } from "next/navigation";
 
-export default function ProductOptions({ product, variants, exchangeRate, optionTypes }: { product: any, variants: any[], exchangeRate: number, optionTypes: string[] }) {
+export default function ProductOptions({ product, variants, exchangeRate, optionTypes, isLoggedIn }: { product: any, variants: any[], exchangeRate: number, optionTypes: string[], isLoggedIn?: boolean }) {
   const { addToCart } = useCart();
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const router = useRouter();
   
   // State for selected options
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+
+  const isWishlisted = isInWishlist(product.id);
 
   // Extract all possible values for each option type
   const optionValues = useMemo(() => {
@@ -18,10 +24,15 @@ export default function ProductOptions({ product, variants, exchangeRate, option
     optionTypes.forEach(t => vals[t] = new Set());
     
     variants.forEach(v => {
-      if (v.combination) {
-        Object.entries(v.combination).forEach(([key, val]) => {
+      const combo = v.combination || v.variant_options;
+      if (combo) {
+        Object.entries(combo).forEach(([key, val]) => {
           if (vals[key] && typeof val === 'string') {
-            vals[key].add(val);
+            if (val.includes(',')) {
+              val.split(',').forEach(s => vals[key]?.add(s.trim()));
+            } else {
+              vals[key]?.add(val.trim());
+            }
           }
         });
       }
@@ -43,21 +54,31 @@ export default function ProductOptions({ product, variants, exchangeRate, option
     if (Object.keys(selectedOptions).length !== optionTypes.length) return null; // Not all options selected
 
     return variants.find(v => {
-      if (!v.combination) return false;
-      return Object.entries(selectedOptions).every(([key, val]) => v.combination[key] === val);
+      const combo = v.combination || v.variant_options;
+      if (!combo) return false;
+      return Object.entries(selectedOptions).every(([key, val]) => {
+        const comboVal = combo[key];
+        if (!comboVal || typeof comboVal !== 'string') return false;
+        if (comboVal === val) return true;
+        return comboVal.split(',').map(s => s.trim()).includes(val);
+      });
     });
   }, [selectedOptions, variants, optionTypes.length]);
 
   // Determine current price and stock
-  const displayPriceCny = currentVariant?.price_cny !== null && currentVariant?.price_cny !== undefined
-    ? parseFloat(currentVariant.price_cny) 
-    : currentVariant?.price 
-      ? parseFloat(currentVariant.price) * exchangeRate
-      : product.price_cny !== null 
-        ? parseFloat(product.price_cny)
-        : parseFloat(product.price) * exchangeRate;
-        
-  const displayPriceGhs = displayPriceCny / exchangeRate;
+  // Display the actual selling price set by the importer
+  const displayPriceGhs = currentVariant?.selling_price_ghs !== null && currentVariant?.selling_price_ghs !== undefined
+    ? parseFloat(currentVariant.selling_price_ghs)
+    : product.selling_price_ghs !== null && product.selling_price_ghs !== undefined
+      ? parseFloat(product.selling_price_ghs)
+      : parseFloat(product.price) || 0; // fallback to legacy price
+
+  // Cost reference (Yuan) to show as strikethrough
+  const displayPriceCny = currentVariant?.cost_price_cny !== null && currentVariant?.cost_price_cny !== undefined
+    ? parseFloat(currentVariant.cost_price_cny) 
+    : product.cost_price_cny !== null && product.cost_price_cny !== undefined
+      ? parseFloat(product.cost_price_cny)
+      : parseFloat(product.price_cny) || 0; // fallback to legacy price_cny
   const currentStock = currentVariant ? currentVariant.stock : product.stock;
   
   // Check if all options are selected (if there are variants)
@@ -68,12 +89,13 @@ export default function ProductOptions({ product, variants, exchangeRate, option
   const handleAddToCart = () => {
     if (!canAddToCart) return;
 
-    const imageUrl = product.product_images?.find((img: any) => img.is_primary)?.image_url 
+    const imageUrl = currentVariant?.image_url 
+      || product.product_images?.find((img: any) => img.is_primary)?.image_url 
       || product.product_images?.[0]?.image_url 
       || "https://placehold.co/300x300/e9ecef/6c757d?text=N/A";
 
     addToCart({
-      id: currentVariant ? `${product.id}-${currentVariant.id}` : product.id,
+      id: currentVariant ? `${product.id}-${currentVariant.id}-${Object.values(selectedOptions).join('-')}` : product.id,
       productId: product.id,
       variantId: currentVariant?.id,
       name: product.name,
@@ -81,7 +103,7 @@ export default function ProductOptions({ product, variants, exchangeRate, option
       priceGhs: displayPriceGhs,
       priceCny: displayPriceCny,
       quantity,
-      combination: currentVariant?.combination,
+      combination: selectedOptions, // Store exactly what the user selected, not the giant comma string
       stock: currentStock
     });
 
@@ -94,7 +116,6 @@ export default function ProductOptions({ product, variants, exchangeRate, option
       {/* Price */}
       <div className="flex items-baseline gap-2">
         <span className="text-4xl font-extrabold text-primary">₵{displayPriceGhs.toFixed(2)}</span>
-        <span className="text-lg text-muted-foreground line-through opacity-70">¥{displayPriceCny.toFixed(2)}</span>
       </div>
 
       {/* Options */}
@@ -175,6 +196,33 @@ export default function ProductOptions({ product, variants, exchangeRate, option
                 <ShoppingCart className="w-5 h-5" /> Add to Cart
               </>
             )}
+          </button>
+
+          {/* Wishlist Button */}
+          <button 
+            onClick={() => {
+              if (isWishlisted) {
+                removeFromWishlist(product.id);
+              } else {
+                addToWishlist({
+                  id: product.id,
+                  name: product.name,
+                  imageUrl: product.product_images?.[0]?.image_url || "https://placehold.co/300",
+                  priceGhs: displayPriceGhs,
+                  priceCny: displayPriceCny
+                });
+              }
+            }}
+            className="w-12 h-12 flex shrink-0 items-center justify-center rounded-xl border border-border bg-card hover:bg-secondary transition-all group"
+            aria-label="Add to wishlist"
+          >
+            <Heart 
+              className={`w-5 h-5 transition-colors ${
+                isWishlisted 
+                  ? "fill-red-500 text-red-500 group-hover:fill-red-600 group-hover:text-red-600" 
+                  : "text-muted-foreground group-hover:text-foreground"
+              }`} 
+            />
           </button>
         </div>
       </div>

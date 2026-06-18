@@ -3,6 +3,10 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ClientFooter } from "../components/client-footer";
 import { CartProvider } from "../components/shop/cart-context";
+import { WishlistProvider } from "../components/shop/wishlist-context";
+import OfflineIndicator from "../components/offline-indicator";
+import ServiceWorkerRegister from "../components/sw-register";
+import { ClientWhatsAppButton } from "../components/client-whatsapp-button";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -30,21 +34,16 @@ export default function RootLayout({
       </head>
       <body className={outfit.className}>
         <CartProvider>
-          <div className="min-h-screen bg-background text-foreground flex flex-col">
-            {children}
-            <ClientFooter />
-          </div>
+          <WishlistProvider>
+            <div className="min-h-screen bg-background text-foreground flex flex-col">
+              <ServiceWorkerRegister />
+              <OfflineIndicator />
+              {children}
+              <ClientFooter />
+            </div>
+          </WishlistProvider>
         </CartProvider>
-        {/* Global WhatsApp Float Button */}
-        <a
-          href="https://wa.me/233241465282"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Chat on WhatsApp"
-          className="fixed bottom-[100px] md:bottom-6 right-4 md:right-6 z-50 w-14 h-14 rounded-full bg-green-500 text-white flex items-center justify-center shadow-lg shadow-green-500/40 hover:bg-green-600 hover:scale-110 transition-all"
-        >
-          <i className="fab fa-whatsapp text-2xl" />
-        </a>
+        <ClientWhatsAppButton />
       </body>
     </html>
   );

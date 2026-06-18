@@ -73,33 +73,46 @@ const PRODUCT_WITH_VARIANTS_SELECT = `
     id,
     sku,
     combination,
+    variant_options,
     price,
     price_cny,
+    cost_price_cny,
+    selling_price_ghs,
+    image_url,
     stock
   )
 `;
 
 // ═══════════════════════════════════════════════════════════════════
-// Shop Promotions
+// Top Purchased Products (For Hero Carousel)
 // ═══════════════════════════════════════════════════════════════════
-export async function getShopPromotions() {
+export async function getTopPurchasedProducts(limit: number = 5) {
   const supabase = await createClient();
 
-  // Try promotions table first — graceful fallback if table is missing
   try {
     const { data, error } = await supabase
-      .from("promotions")
-      .select("*")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(5);
+      .from("products")
+      .select(PRODUCT_WITH_VARIANTS_SELECT)
+      .in("status", ["published", "active"])
+      .order("sales_count", { ascending: false })
+      .limit(limit);
 
-    if (!error) {
-      return { success: true, promotions: data || [] };
-    }
-  } catch (_) {}
+    if (error) throw error;
 
-  return { success: true, promotions: [] };
+    const exchangeRate = await getExchangeRate(supabase);
+    
+    return {
+      success: true,
+      products: data?.map((p) => ({
+        ...p,
+        demandLabel: computeDemandLabel(p),
+      })) || [],
+      exchangeRate
+    };
+  } catch (error: any) {
+    console.error("Failed to fetch top purchased products:", error);
+    return { success: false, products: [], exchangeRate: 1, error: error.message };
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -111,17 +124,19 @@ export async function getShopProducts(params?: {
   sort?: string;
   minPrice?: string;
   maxPrice?: string;
+  page?: number;
 }) {
   const supabase = await createClient();
 
   // Use status='published' instead of is_active=true (matches actual DB schema)
-  let query = supabase.from("products").select(PRODUCT_SELECT);
+  let query = supabase.from("products").select(PRODUCT_WITH_VARIANTS_SELECT, { count: 'exact' });
 
   // Filter only published products
   query = query.in("status", ["published", "active"]);
 
   if (params?.category && params.category !== "all") {
-    query = query.ilike("category", `%${params.category}%`);
+    const cleanCategory = params.category.replace(/[^a-zA-Z0-9\s-&]/g, '');
+    query = query.ilike("category", `%${cleanCategory}%`);
   }
 
   if (params?.minPrice) {
@@ -134,8 +149,9 @@ export async function getShopProducts(params?: {
 
   if (params?.query) {
     // Multi-field semantic search: search name, category, sku
+    const cleanQuery = params.query.replace(/[^a-zA-Z0-9\s-]/g, '');
     query = query.or(
-      `name.ilike.%${params.query}%,category.ilike.%${params.query}%,sku.ilike.%${params.query}%`
+      `name.ilike.%${cleanQuery}%,category.ilike.%${cleanQuery}%,sku.ilike.%${cleanQuery}%`
     );
   }
 
@@ -158,9 +174,15 @@ export async function getShopProducts(params?: {
       query = query.order("created_at", { ascending: false });
   }
 
-  query = query.limit(100);
+  // Pagination
+  const page = params?.page || 1;
+  const limit = 20;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  
+  query = query.range(from, to);
 
-  const { data, error } = await query;
+  const { data, count, error } = await query;
 
   if (error) {
     console.error("Error fetching products:", error);
@@ -176,7 +198,14 @@ export async function getShopProducts(params?: {
     demandLabel: computeDemandLabel(p),
   }));
 
-  return { success: true, products: enrichedProducts, exchangeRate };
+  return { 
+    success: true, 
+    products: enrichedProducts, 
+    exchangeRate,
+    totalCount: count || 0,
+    totalPages: Math.ceil((count || 0) / limit),
+    currentPage: page
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -188,10 +217,10 @@ export async function getTrendingProducts() {
 
   const { data, error } = await supabase
     .from("products")
-    .select(PRODUCT_SELECT)
+    .select(PRODUCT_WITH_VARIANTS_SELECT)
     .in("status", ["published", "active"])
     .order("view_count", { ascending: false })
-    .limit(12);
+    .limit(20);
 
   if (error) return { products: [], exchangeRate };
 
@@ -212,7 +241,7 @@ export async function getNewArrivals() {
 
   const { data, error } = await supabase
     .from("products")
-    .select(PRODUCT_SELECT)
+    .select(PRODUCT_WITH_VARIANTS_SELECT)
     .in("status", ["published", "active"])
     .order("created_at", { ascending: false })
     .limit(12);
@@ -237,10 +266,10 @@ export async function getBestSellers() {
 
   const { data, error } = await supabase
     .from("products")
-    .select(PRODUCT_SELECT)
+    .select(PRODUCT_WITH_VARIANTS_SELECT)
     .in("status", ["published", "active"])
     .order("sales_count", { ascending: false })
-    .limit(12);
+    .limit(15);
 
   if (error) return { products: [], exchangeRate };
 
@@ -293,7 +322,7 @@ export async function getProductDetails(id: string) {
   const exchangeRate = await getExchangeRate(supabase);
 
   // Safely fetch reviews if the table exists
-  let reviews = [];
+  let reviews: any[] = [];
   try {
     const { data: revData } = await supabase
       .from("product_reviews")
@@ -328,11 +357,13 @@ export async function getSimilarProducts(
 
   if (!category) return { products: [], exchangeRate };
 
+  const cleanCategory = category.replace(/[^a-zA-Z0-9\s-&]/g, '');
+
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
     .in("status", ["published", "active"])
-    .ilike("category", `%${category}%`)
+    .ilike("category", `%${cleanCategory}%`)
     .neq("id", productId)
     .limit(8);
 

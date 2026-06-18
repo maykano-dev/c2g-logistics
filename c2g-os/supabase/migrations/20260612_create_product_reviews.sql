@@ -1,7 +1,9 @@
 -- Product Reviews Table
-CREATE TABLE IF NOT EXISTS public.product_reviews (
+DROP TABLE IF EXISTS public.product_reviews CASCADE;
+
+CREATE TABLE public.product_reviews (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
+    product_id BIGINT REFERENCES public.products(id) ON DELETE CASCADE,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
     review_text TEXT,

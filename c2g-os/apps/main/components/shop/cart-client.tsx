@@ -1,12 +1,12 @@
 "use client";
 
 import { useCart } from "./cart-context";
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Trash, CreditCard, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function CartClient() {
-  const { items, removeFromCart, updateQuantity, cartTotalGhs, cartCount } = useCart();
+  const { items, removeFromCart, updateQuantity, cartTotalGhs, cartCount, clearCart } = useCart();
   const router = useRouter();
 
   if (items.length === 0) {
@@ -29,9 +29,17 @@ export default function CartClient() {
       {/* Cart Items List */}
       <div className="flex-1 space-y-6">
         <div className="glass-panel p-6">
-          <h2 className="text-xl font-bold mb-6 flex items-center justify-between border-b border-border/50 pb-4">
-            <span>Shopping Cart ({cartCount} items)</span>
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/50 pb-4 mb-6">
+            <h2 className="text-xl font-bold line-clamp-1">
+              Shopping Cart ({cartCount})
+            </h2>
+            <button 
+              onClick={clearCart}
+              className="text-sm font-medium text-red-500 hover:text-red-600 flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition-colors shrink-0 whitespace-nowrap"
+            >
+              <Trash className="w-4 h-4" /> Clear Cart
+            </button>
+          </div>
 
           <div className="space-y-6">
             {items.map((item) => (
@@ -42,14 +50,13 @@ export default function CartClient() {
                 </Link>
 
                 {/* Details */}
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col min-w-0">
                   <div className="flex justify-between items-start gap-4 mb-2">
-                    <Link href={`/shop/product/${item.productId}`} className="font-bold text-lg hover:text-primary transition-colors line-clamp-2">
+                    <Link href={`/shop/product/${item.productId}`} className="font-bold text-lg hover:text-primary transition-colors truncate block flex-1">
                       {item.name}
                     </Link>
                     <div className="text-right shrink-0">
                       <div className="font-bold text-lg text-primary">₵{(item.priceGhs * item.quantity).toFixed(2)}</div>
-                      <div className="text-xs text-muted-foreground line-through opacity-70">¥{(item.priceCny * item.quantity).toFixed(2)}</div>
                     </div>
                   </div>
 
@@ -128,11 +135,16 @@ export default function CartClient() {
             Proceed to Checkout <ArrowRight className="w-5 h-5" />
           </button>
           
-          <div className="mt-4 flex items-center justify-center gap-4 opacity-50 grayscale">
-            {/* Payment provider icons placeholders */}
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/M-PESA_LOGO-01.svg/512px-M-PESA_LOGO-01.svg.png" alt="Mobile Money" className="h-6 object-contain" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-4 object-contain" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-6 object-contain" />
+          <div className="mt-6 flex items-center justify-center gap-4 text-muted-foreground opacity-70">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <Smartphone className="w-4 h-4" /> MoMo
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <CreditCard className="w-4 h-4" /> Card
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <span className="font-bold border border-current px-1 rounded-sm text-[10px]">VISA</span>
+            </div>
           </div>
         </div>
       </div>

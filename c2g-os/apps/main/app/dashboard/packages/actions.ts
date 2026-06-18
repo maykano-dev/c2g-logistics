@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { RegisterPackagesSchema } from '@/utils/security-schemas';
 
 export async function getPackages() {
   const supabase = await createClient();
@@ -36,14 +37,23 @@ export async function registerPackages(formData: FormData) {
   }
 
   // Extract from FormData
-  const trackingNumbers = formData.getAll('tracking_numbers') as string[];
-  const storeName = formData.get('store_name') as string;
-  const description = formData.get('description') as string;
-  const shippingMode = formData.get('shipping_mode') as string;
+  const trackingNumbersRaw = formData.getAll('tracking_numbers') as string[];
+  const storeNameRaw = formData.get('store_name') as string;
+  const descriptionRaw = formData.get('description') as string;
+  const shippingModeRaw = formData.get('shipping_mode') as string;
 
-  if (!trackingNumbers.length || !storeName || !description || !shippingMode) {
-    throw new Error('All fields are required');
+  const validation = RegisterPackagesSchema.safeParse({
+    tracking_numbers: trackingNumbersRaw,
+    store_name: storeNameRaw,
+    description: descriptionRaw,
+    shipping_mode: shippingModeRaw,
+  });
+
+  if (!validation.success) {
+    throw new Error(validation.error.issues[0].message);
   }
+
+  const { tracking_numbers: trackingNumbers, store_name: storeName, description, shipping_mode: shippingMode } = validation.data;
 
   // Get customer info for insertion
   const { data: customer } = await supabase

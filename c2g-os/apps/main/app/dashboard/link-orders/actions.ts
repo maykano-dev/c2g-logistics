@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { CreateLinkOrderSchema, UpdateLinkOrderSchema } from '@/utils/security-schemas'
 
 export async function getLinkOrders() {
   const supabase = await createClient()
@@ -69,19 +70,23 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
   if (!user) return { error: 'Unauthorized' }
 
   const itemsJsonStr = formData.get('items_json') as string;
-  let items = [];
-  try {
-    items = JSON.parse(itemsJsonStr || '[]');
-  } catch (e) {
-    return { error: 'Invalid items format' };
-  }
-
   const shipping_mode = formData.get('shipping') as string;
   const screenshot = formData.get('screenshot') as File;
 
-  if (!items || items.length === 0 || !shipping_mode || !screenshot) {
-    return { error: 'All mandatory fields must be provided' };
+  const validation = CreateLinkOrderSchema.safeParse({
+    items_json: itemsJsonStr,
+    shipping_mode,
+  });
+
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
   }
+
+  if (!screenshot) {
+    return { error: 'Screenshot is required' };
+  }
+
+  let items = JSON.parse(itemsJsonStr);
 
   // Upload screenshot to Supabase Storage
   const fileExt = screenshot.name.split('.').pop()
@@ -162,13 +167,21 @@ export async function updateLinkOrder(id: string, prevState: any, formData: Form
     return { error: 'Cannot edit a paid order' }
   }
 
-  const quantity = parseInt(formData.get('quantity') as string)
-  const notes = formData.get('notes') as string
-  const shipping_mode = formData.get('shipping') as string
+  const quantityRaw = parseInt(formData.get('quantity') as string)
+  const notesRaw = formData.get('notes') as string
+  const shipping_modeRaw = formData.get('shipping') as string
 
-  if (isNaN(quantity) || !shipping_mode) {
-    return { error: 'Quantity and shipping mode are required' }
+  const validation = UpdateLinkOrderSchema.safeParse({
+    quantity: quantityRaw,
+    notes: notesRaw,
+    shipping_mode: shipping_modeRaw,
+  });
+
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
   }
+
+  const { quantity, notes, shipping_mode } = validation.data;
 
   // We should ideally recalculate the total based on the original CNY price
   // But we need to fetch the cny_price from the order
