@@ -30,7 +30,7 @@ export async function submitImporterRegistration(formData: FormData) {
   });
 
   if (!validation.success) {
-    return { success: false, error: validation.error.issues[0].message };
+    return { success: false, error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   const { businessName, storeSlug, whatsapp, email, ghanaCard, businessDescription, password, fullName, phone } = validation.data;

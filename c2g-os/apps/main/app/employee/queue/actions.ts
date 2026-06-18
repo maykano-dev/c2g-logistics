@@ -173,7 +173,7 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
 
     const validation = EmployeeActionSchema.safeParse({ status: newStatus });
     if (!validation.success) {
-      return { success: false, error: validation.error.issues[0].message };
+      return { success: false, error: validation.error.issues[0]?.message || 'Validation failed' };
     }
 
     const validStatus = validation.data.status;
@@ -232,7 +232,7 @@ export async function addTrackingNumber(orderId: string, trackingNumber: string)
 
     const validation = EmployeeActionSchema.safeParse({ trackingNumber });
     if (!validation.success) {
-      return { success: false, error: validation.error.issues[0].message };
+      return { success: false, error: validation.error.issues[0]?.message || 'Validation failed' };
     }
 
     const cleanTracking = validation.data.trackingNumber;
@@ -272,7 +272,7 @@ export async function addOrderNote(orderId: string, content: string) {
 
     const validation = EmployeeActionSchema.safeParse({ note: content });
     if (!validation.success) {
-      return { success: false, error: validation.error.issues[0].message };
+      return { success: false, error: validation.error.issues[0]?.message || 'Validation failed' };
     }
 
     const cleanContent = sanitize(validation.data.note, 2000);

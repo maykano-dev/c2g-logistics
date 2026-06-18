@@ -50,7 +50,7 @@ export async function registerPackages(formData: FormData) {
   });
 
   if (!validation.success) {
-    throw new Error(validation.error.issues[0].message);
+    throw new Error(validation.error.issues[0]?.message || 'Validation failed');
   }
 
   const { tracking_numbers: trackingNumbers, store_name: storeName, description, shipping_mode: shippingMode } = validation.data;

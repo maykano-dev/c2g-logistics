@@ -22,7 +22,7 @@ export async function login(prevState: any, formData: FormData) {
 
   const validation = LoginSchema.safeParse({ email: emailRaw, password: passwordRaw });
   if (!validation.success) {
-    return { error: validation.error.issues[0].message };
+    return { error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   const { email, password } = validation.data;
@@ -97,7 +97,7 @@ export async function signup(prevState: any, formData: FormData) {
 
   const validation = SignupSchema.safeParse({ email: emailRaw, password: passwordRaw, name: nameRaw, phone: phoneRaw });
   if (!validation.success) {
-    return { error: validation.error.issues[0].message };
+    return { error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   const { email, password, name, phone } = validation.data;
@@ -134,7 +134,7 @@ export async function resetPassword(prevState: any, formData: FormData) {
 
   const validation = ResetPasswordSchema.safeParse({ email: emailRaw });
   if (!validation.success) {
-    return { error: validation.error.issues[0].message };
+    return { error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   const { email } = validation.data;

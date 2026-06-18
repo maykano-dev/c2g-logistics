@@ -79,7 +79,7 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
   });
 
   if (!validation.success) {
-    return { error: validation.error.issues[0].message };
+    return { error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   if (!screenshot) {
@@ -178,7 +178,7 @@ export async function updateLinkOrder(id: string, prevState: any, formData: Form
   });
 
   if (!validation.success) {
-    return { error: validation.error.issues[0].message };
+    return { error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   const { quantity, notes, shipping_mode } = validation.data;

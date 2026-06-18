@@ -40,7 +40,7 @@ export async function addImporterProduct(formData: FormData) {
   });
 
   if (!validation.success) {
-    return { success: false, error: validation.error.issues[0].message };
+    return { success: false, error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   const { name, description, sourcePlatform, sourceUrl, costPriceCny, sellingPriceGhs, category } = validation.data;

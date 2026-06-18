@@ -17,7 +17,7 @@ export async function createEcomOrder(orderData: any) {
   
   const validation = CheckoutSchema.safeParse(orderData);
   if (!validation.success) {
-    return { success: false, error: validation.error.issues[0].message };
+    return { success: false, error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   const validatedData = validation.data;

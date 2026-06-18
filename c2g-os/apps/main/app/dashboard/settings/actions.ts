@@ -46,7 +46,7 @@ export async function updateCustomerProfile(formData: FormData) {
   });
 
   if (!validation.success) {
-    return { success: false, error: validation.error.issues[0].message };
+    return { success: false, error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
   const { name, phone, telegram_chat_id, telegram_notifications_enabled } = validation.data;
