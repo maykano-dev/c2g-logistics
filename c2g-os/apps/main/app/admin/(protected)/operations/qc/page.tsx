@@ -5,11 +5,13 @@ import { createClient } from '@/utils/supabase/client';
 import { Search, Filter, Camera, CheckCircle2, XCircle, AlertCircle, PackageCheck, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { adminUpdateQCStatus } from '@/app/admin/qc-actions';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function QualityControlView() {
   const [inspections, setInspections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const { showAlert, showConfirm } = useModal();
 
   useEffect(() => {
     fetchInspections();
@@ -51,11 +53,21 @@ export default function QualityControlView() {
   );
 
   const handleUpdateQC = async (id: string, newStatus: string) => {
+    const confirmed = await showConfirm({
+      title: 'Update QC Status',
+      message: `Are you sure you want to mark this package as ${newStatus}?`,
+      type: newStatus === 'passed' ? 'success' : 'danger',
+      confirmText: `Yes, mark as ${newStatus}`
+    });
+
+    if (!confirmed) return;
+
     const res = await adminUpdateQCStatus(id, newStatus);
     if (res.success) {
       setInspections(prev => prev.map(i => i.id === id ? { ...i, status: newStatus, inspected_at: new Date().toISOString() } : i));
+      showAlert({ title: 'Success', message: `Status updated to ${newStatus}`, type: 'success' });
     } else {
-      alert('Action failed: ' + res.error);
+      showAlert({ title: 'Error', message: 'Action failed: ' + res.error, type: 'danger' });
     }
   };
 

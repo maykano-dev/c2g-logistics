@@ -3,15 +3,23 @@
 import { useState } from 'react';
 import { ShieldAlert, Loader2 } from 'lucide-react';
 import { deleteAccount } from './actions';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function DeleteAccountForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { showConfirm, showAlert } = useModal();
+
   const handleDelete = async () => {
-    if (!confirm('Are you absolutely sure you want to permanently delete your account? All your shipments, orders, and data will be unrecoverable. This action cannot be undone.')) {
-      return;
-    }
+    const confirmed = await showConfirm({
+      title: 'Delete Account',
+      message: 'Are you absolutely sure you want to permanently delete your account? All your shipments, orders, and data will be unrecoverable. This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Yes, Delete Account'
+    });
+    
+    if (!confirmed) return;
 
     setIsLoading(true);
     setError(null);
@@ -20,6 +28,7 @@ export default function DeleteAccountForm() {
     if (!result.success) {
       setError(result.error || 'Failed to delete account.');
       setIsLoading(false);
+      showAlert({ title: 'Error', message: result.error || 'Failed to delete account', type: 'danger' });
     } else {
       window.location.href = '/login';
     }

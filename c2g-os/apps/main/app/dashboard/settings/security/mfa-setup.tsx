@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { ShieldCheck, Loader2 } from 'lucide-react';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function MfaSetup({ hasTotp }: { hasTotp: boolean }) {
   const supabase = createClient();
@@ -13,6 +14,7 @@ export default function MfaSetup({ hasTotp }: { hasTotp: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(hasTotp);
   const [isLoading, setIsLoading] = useState(false);
+  const { showConfirm, showAlert } = useModal();
 
   const startEnrollment = async () => {
     setIsEnrolling(true);
@@ -61,7 +63,14 @@ export default function MfaSetup({ hasTotp }: { hasTotp: boolean }) {
   };
 
   const handleUnenroll = async () => {
-    if (!confirm('Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.')) return;
+    const confirmed = await showConfirm({
+      title: 'Disable 2FA',
+      message: 'Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.',
+      type: 'warning',
+      confirmText: 'Yes, Disable'
+    });
+    
+    if (!confirmed) return;
     
     setIsLoading(true);
     try {
@@ -78,6 +87,7 @@ export default function MfaSetup({ hasTotp }: { hasTotp: boolean }) {
       setFactorId(null);
     } catch (err: any) {
       setError('Failed to disable MFA. Try again.');
+      showAlert({ title: 'Error', message: 'Failed to disable MFA. Try again.', type: 'danger' });
     } finally {
       setIsLoading(false);
     }

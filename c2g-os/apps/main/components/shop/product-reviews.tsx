@@ -2,6 +2,7 @@
 
 import { Star, MessageSquare } from "lucide-react";
 import { useState } from "react";
+import { useModal } from "@/components/providers/modal-provider";
 
 interface Review {
   rating: number;
@@ -17,6 +18,7 @@ export default function ProductReviews({ productId, reviews = [], isLoggedIn }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [localReviews, setLocalReviews] = useState<Review[]>(reviews);
+  const { showAlert } = useModal();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +41,7 @@ export default function ProductReviews({ productId, reviews = [], isLoggedIn }: 
           is_approved: false
         } as any, ...localReviews]);
       } else {
-        alert(result.error || "Failed to submit review");
+        showAlert({ title: 'Error', message: result.error || "Failed to submit review", type: 'danger' });
       }
     } catch (err) {
       console.error(err);

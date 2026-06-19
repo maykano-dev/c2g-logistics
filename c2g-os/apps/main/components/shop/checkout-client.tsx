@@ -5,10 +5,12 @@ import { useCart } from "./cart-context";
 import { useRouter } from "next/navigation";
 import { createEcomOrder } from "../../app/checkout/actions";
 import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck } from "lucide-react";
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function CheckoutClient({ initialProfile, exchangeRate }: { initialProfile: any, exchangeRate: number }) {
   const { items, cartTotalGhs, clearCart } = useCart();
   const router = useRouter();
+  const { showAlert } = useModal();
 
   const [loading, setLoading] = useState(false);
   const [shippingMethod, setShippingMethod] = useState("sea");
@@ -67,15 +69,15 @@ export default function CheckoutClient({ initialProfile, exchangeRate }: { initi
         if (hubtelData.checkoutUrl) {
           window.location.href = hubtelData.checkoutUrl;
         } else {
-          alert('Failed to initialize payment gateway. Please try again from your orders page.');
+          showAlert({ title: 'Payment Error', message: 'Failed to initialize payment gateway. Please try again from your orders page.', type: 'danger' });
           router.push(`/dashboard/mall-orders`);
         }
       } catch (err) {
-        alert('Network error initializing payment.');
+        showAlert({ title: 'Network Error', message: 'Network error initializing payment.', type: 'danger' });
         router.push(`/dashboard/mall-orders`);
       }
     } else {
-      alert("Error: " + res.error);
+      showAlert({ title: 'Error', message: res.error || "An unknown error occurred", type: 'danger' });
       setLoading(false);
     }
   };

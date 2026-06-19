@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { Package, ScanLine, CheckCircle2, XCircle, Printer, Camera, ArrowRight, AlertTriangle, Box } from 'lucide-react';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function ChinaWarehouseScanner() {
   const [scanInput, setScanInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [lastScanned, setLastScanned] = useState<any>(null);
+  const { showAlert } = useModal();
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ export default function ChinaWarehouseScanner() {
 
   const handlePrintLabel = () => {
     // In production, this sends a print command via local network API or WebSocket to the Zebra thermal printer
-    alert('Sending print command to Zebra Thermal Printer for C2G-1042...');
+    showAlert({ title: 'Printing Label', message: 'Sending print command to Zebra Thermal Printer for C2G-1042...', type: 'info' });
     if (lastScanned) {
       setLastScanned({ ...lastScanned, status: 'received' });
     }

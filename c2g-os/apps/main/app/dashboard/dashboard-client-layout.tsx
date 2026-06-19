@@ -34,7 +34,7 @@ export default function DashboardClientLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row relative pb-28 md:pb-0">
+    <div className="h-screen h-[100dvh] overflow-hidden bg-background flex flex-col md:flex-row relative">
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 glass border-r border-border/50 sticky top-0 h-screen overflow-y-auto z-50">
         <div className="p-6">
@@ -82,13 +82,13 @@ export default function DashboardClientLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen relative w-full overflow-hidden">
+      <main className="flex-1 flex flex-col h-screen relative w-full overflow-y-auto overflow-x-hidden">
         {/* Dynamic Background Elements */}
-        <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[150px] rounded-full animate-pulse -z-10" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full animate-pulse delay-1000 -z-10" />
+        <div className="fixed top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[150px] rounded-full animate-pulse -z-10" />
+        <div className="fixed bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full animate-pulse delay-1000 -z-10" />
 
         {/* Mobile Header */}
-        <header className="md:hidden h-14 glass border-b border-border/50 flex items-center justify-between px-4 sticky top-0 z-40 w-full">
+        <header className="md:hidden h-14 glass border-b border-border/50 flex items-center justify-between px-4 sticky top-0 z-40 w-full shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 relative flex items-center justify-center -ml-1">
               <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
@@ -119,7 +119,7 @@ export default function DashboardClientLayout({
         </header>
 
         {/* Content */}
-        <div className="flex-1 p-4 md:p-6 lg:p-8 z-0 w-full overflow-y-auto">
+        <div className="flex-1 p-4 md:p-6 lg:p-8 pb-32 md:pb-8 z-0 w-full">
           {children}
         </div>
       </main>

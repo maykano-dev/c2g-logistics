@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { CreditCard } from 'lucide-react';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function PackagePayButton({ packageId }: { packageId: string }) {
   const [isLoading, setIsLoading] = useState(false);
+  const { showAlert } = useModal();
 
   const handlePay = async () => {
     setIsLoading(true);
@@ -20,11 +22,11 @@ export default function PackagePayButton({ packageId }: { packageId: string }) {
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        alert(data.error || 'Failed to initialize payment');
+        showAlert({ title: 'Payment Error', message: data.error || 'Failed to initialize payment', type: 'danger' });
         setIsLoading(false);
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      showAlert({ title: 'Network Error', message: 'Network error. Please try again.', type: 'danger' });
       setIsLoading(false);
     }
   };

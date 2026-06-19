@@ -1712,6 +1712,10 @@ export type Database = {
           rates: Json | null
           sea_base_fee: number
           sea_rate_per_kg: number
+          service_fee_percentage: number | null
+          minimum_service_fee: number | null
+          local_delivery_percentage: number | null
+          minimum_local_delivery_fee: number | null
           store_name: string
           updated_at: string | null
           usd_ghs_rate: number | null
@@ -1742,6 +1746,10 @@ export type Database = {
           rates?: Json | null
           sea_base_fee?: number
           sea_rate_per_kg?: number
+          service_fee_percentage?: number | null
+          minimum_service_fee?: number | null
+          local_delivery_percentage?: number | null
+          minimum_local_delivery_fee?: number | null
           store_name?: string
           updated_at?: string | null
           usd_ghs_rate?: number | null
@@ -1772,6 +1780,10 @@ export type Database = {
           rates?: Json | null
           sea_base_fee?: number
           sea_rate_per_kg?: number
+          service_fee_percentage?: number | null
+          minimum_service_fee?: number | null
+          local_delivery_percentage?: number | null
+          minimum_local_delivery_fee?: number | null
           store_name?: string
           updated_at?: string | null
           usd_ghs_rate?: number | null

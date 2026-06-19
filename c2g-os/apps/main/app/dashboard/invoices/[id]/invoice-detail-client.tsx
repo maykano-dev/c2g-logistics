@@ -3,10 +3,12 @@
 import { Printer, ArrowLeft, CreditCard, Download, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice: any, companyInfo: any }) {
   const router = useRouter();
   const [isPaying, setIsPaying] = useState(false);
+  const { showAlert } = useModal();
 
   const formatCurrency = (amount: number) => `₵${parseFloat(amount.toString()).toFixed(2)}`;
   const formatDate = (date: string) => new Date(date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -32,11 +34,11 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
       if (hubtelData.checkoutUrl) {
         window.location.href = hubtelData.checkoutUrl;
       } else {
-        alert(hubtelData.error || 'Failed to initialize payment gateway.');
+        showAlert({ title: 'Payment Error', message: hubtelData.error || 'Failed to initialize payment gateway.', type: 'danger' });
         setIsPaying(false);
       }
     } catch (err) {
-      alert('Network error initializing payment.');
+      showAlert({ title: 'Network Error', message: 'Network error initializing payment.', type: 'danger' });
       setIsPaying(false);
     }
   };

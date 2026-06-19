@@ -191,5 +191,10 @@ export default function TrackingMap({ isAir, progress }: { isAir: boolean, progr
     lastPosRef.current = pos;
   }, [progress, activeRoute, isAir]);
 
-  return <div ref={mapRef} className="w-full h-full rounded-xl" />;
+  return (
+    <>
+      <style>{`.leaflet-container { background: transparent !important; }`}</style>
+      <div ref={mapRef} className="w-full h-full rounded-xl z-0" />
+    </>
+  );
 }

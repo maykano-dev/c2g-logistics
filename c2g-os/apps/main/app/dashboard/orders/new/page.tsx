@@ -5,6 +5,10 @@ import { NewLinkOrderForm } from "./new-link-order-form";
 export default async function NewLinkOrderPage() {
   const settings = await getSettings();
   const exchangeRate = settings?.rate_link_orders || settings?.rate_shop_products || 0.5200;
+  const serviceFeePercentage = settings?.service_fee_percentage != null ? settings.service_fee_percentage : 15;
+  const minServiceFee = settings?.minimum_service_fee || 5;
+  const localDeliveryPercentage = settings?.local_delivery_percentage != null ? settings.local_delivery_percentage : 0;
+  const minLocalDeliveryFee = settings?.minimum_local_delivery_fee || 0;
 
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
@@ -21,7 +25,13 @@ export default async function NewLinkOrderPage() {
         <p className="text-muted-foreground mt-1">Found a product on a Chinese site? We'll buy it and ship it to you.</p>
       </div>
 
-      <NewLinkOrderForm exchangeRate={exchangeRate} />
+      <NewLinkOrderForm 
+        exchangeRate={exchangeRate} 
+        serviceFeePercentage={serviceFeePercentage}
+        minServiceFee={minServiceFee}
+        localDeliveryPercentage={localDeliveryPercentage}
+        minLocalDeliveryFee={minLocalDeliveryFee}
+      />
     </div>
   );
 }

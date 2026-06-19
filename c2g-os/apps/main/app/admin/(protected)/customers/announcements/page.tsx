@@ -5,11 +5,13 @@ import { Megaphone, Send, Clock, Users, Mail, BellRing } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { createAnnouncement } from '@/app/admin/announcement-actions';
 import { format } from 'date-fns';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function AnnouncementsView() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showAlert } = useModal();
   
   // Form state
   const [title, setTitle] = useState('');
@@ -36,7 +38,7 @@ export default function AnnouncementsView() {
 
   const handleCreate = async () => {
     if (!title || !content) {
-      alert('Please provide a subject and message body.');
+      showAlert({ title: 'Validation Error', message: 'Please provide a subject and message body.', type: 'warning' });
       return;
     }
 
@@ -47,8 +49,9 @@ export default function AnnouncementsView() {
       setContent('');
       setAudience('all');
       fetchAnnouncements(); // Refresh list
+      showAlert({ title: 'Success', message: 'Announcement broadcasted successfully!', type: 'success' });
     } else {
-      alert('Error creating announcement: ' + result.error);
+      showAlert({ title: 'Error', message: 'Error creating announcement: ' + result.error, type: 'danger' });
     }
     setIsSubmitting(false);
   };

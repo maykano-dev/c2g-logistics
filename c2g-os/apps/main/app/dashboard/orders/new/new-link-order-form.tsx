@@ -2,12 +2,26 @@
 
 import { LinkIcon, UploadCloud, Info, Calculator, Ship, Plane, Zap, Loader2, Plus, Trash2, ImageIcon, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useState, useActionState, useEffect } from "react";
+import { useState, useActionState, useEffect, startTransition } from "react";
 import { createLinkOrder } from "../actions";
 import { useRouter } from "next/navigation";
+import { useModal } from "@/components/providers/modal-provider";
 
-export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
+export function NewLinkOrderForm({ 
+  exchangeRate, 
+  serviceFeePercentage, 
+  minServiceFee,
+  localDeliveryPercentage,
+  minLocalDeliveryFee 
+}: { 
+  exchangeRate: number, 
+  serviceFeePercentage: number, 
+  minServiceFee: number,
+  localDeliveryPercentage: number,
+  minLocalDeliveryFee: number 
+}) {
   const router = useRouter();
+  const { showConfirm } = useModal();
   
   // Multi-item State
   const [items, setItems] = useState([
@@ -20,6 +34,7 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const [state, action, isPending] = useActionState(createLinkOrder, null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (state?.success && state?.redirectUrl) {
@@ -30,18 +45,78 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
   // Calculations
   const itemCostCny = items.reduce((sum, item) => sum + (item.cny_price * item.quantity), 0);
   const itemCostGhs = itemCostCny / exchangeRate;
-  const serviceFee = itemCostGhs * 0.05; // 5% fee example
-  const localDelivery = 0; // Assume 0 for this estimate
+  
+  const calculatedServiceFee = itemCostGhs * (serviceFeePercentage / 100);
+  const serviceFee = Math.max(calculatedServiceFee, minServiceFee);
+  
+  const calculatedLocalDelivery = itemCostGhs * (localDeliveryPercentage / 100);
+  const localDelivery = Math.max(calculatedLocalDelivery, minLocalDeliveryFee); 
+  
   const totalGhs = itemCostGhs + serviceFee + localDelivery;
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+    let hasError = false;
+
+    items.forEach((item, index) => {
+      if (!item.product_link) { newErrors[`link_${item.id}`] = "Product link is required"; hasError = true; }
+      if (!item.cny_price || item.cny_price <= 0) { newErrors[`price_${item.id}`] = "Price must be greater than 0"; hasError = true; }
+      if (!item.quantity || item.quantity <= 0) { newErrors[`qty_${item.id}`] = "Quantity must be at least 1"; hasError = true; }
+      if (!itemFileNames[item.id]) { newErrors[`screenshot_${item.id}`] = "Screenshot is mandatory for this item"; hasError = true; }
+    });
+
+    if (!shippingMode) { newErrors['shipping'] = "Please select a shipping mode"; hasError = true; }
+
+    if (totalGhs <= 0) {
+      newErrors['total'] = "Total cost must be greater than 0 to initialize payment";
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    setErrors({});
+    
+    // Create FormData from the form and trigger action
+    const formData = new FormData(e.currentTarget);
+    startTransition(() => {
+      action(formData);
+    });
+  };
 
   const handleAddItem = () => {
     setItems([...items, { id: Date.now().toString(), product_link: '', cny_price: 0, quantity: 1, notes: '' }]);
   };
 
-  const handleRemoveItem = (idToRemove: string) => {
+  const handleRemoveItem = async (idToRemove: string) => {
     if (items.length === 1) return; // Must have at least one item
-    if (window.confirm("Are you sure you want to remove this item?")) {
+    const confirmed = await showConfirm({
+      title: "Remove Item",
+      message: "Are you sure you want to remove this item?",
+      type: "danger",
+      confirmText: "Remove"
+    });
+    
+    if (confirmed) {
       setItems(items.filter(item => item.id !== idToRemove));
+      
+      const newNames = {...itemFileNames};
+      delete newNames[idToRemove];
+      setItemFileNames(newNames);
+      
+      const newPreviews = {...itemPreviews};
+      delete newPreviews[idToRemove];
+      setItemPreviews(newPreviews);
+      
+      const newErrors = {...errors};
+      delete newErrors[`link_${idToRemove}`];
+      delete newErrors[`price_${idToRemove}`];
+      delete newErrors[`qty_${idToRemove}`];
+      delete newErrors[`screenshot_${idToRemove}`];
+      setErrors(newErrors);
     }
   };
 
@@ -50,7 +125,7 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
   };
 
   return (
-    <form action={action} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
         <div className="space-y-6">
           {state?.error && (
@@ -93,11 +168,18 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                   <input 
                     type="url" 
                     value={item.product_link}
-                    onChange={(e) => updateItem(item.id, 'product_link', e.target.value)}
+                    onChange={(e) => {
+                      updateItem(item.id, 'product_link', e.target.value);
+                      if (errors[`link_${item.id}`]) setErrors(prev => ({...prev, [`link_${item.id}`]: ''}));
+                    }}
                     placeholder="e.g., https://item.taobao.com/item.htm?id=..." 
-                    required
-                    className="flex h-11 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors backdrop-blur-sm"
+                    className={`flex h-11 w-full rounded-md border bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors backdrop-blur-sm ${
+                      errors[`link_${item.id}`] ? 'border-destructive bg-destructive/5' : 'border-input'
+                    }`}
                   />
+                  {errors[`link_${item.id}`] && (
+                    <p className="text-destructive text-sm font-bold mt-1 bg-destructive/10 px-2 py-1 rounded w-max">{errors[`link_${item.id}`]}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -112,11 +194,18 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                         min="0"
                         value={item.cny_price || ''}
                         placeholder="0.00" 
-                        required
-                        onChange={(e) => updateItem(item.id, 'cny_price', parseFloat(e.target.value) || 0)}
-                        className="flex h-11 w-full rounded-md border border-input bg-background/50 pl-8 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors" 
+                        onChange={(e) => {
+                          updateItem(item.id, 'cny_price', parseFloat(e.target.value) || 0);
+                          if (errors[`price_${item.id}`]) setErrors(prev => ({...prev, [`price_${item.id}`]: ''}));
+                        }}
+                        className={`flex h-11 w-full rounded-md border bg-background/50 pl-8 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${
+                          errors[`price_${item.id}`] ? 'border-destructive bg-destructive/5' : 'border-input'
+                        }`} 
                       />
                     </div>
+                    {errors[`price_${item.id}`] && (
+                      <p className="text-destructive text-sm font-bold mt-1 bg-destructive/10 px-2 py-1 rounded w-max">{errors[`price_${item.id}`]}</p>
+                    )}
                   </div>
 
                   {/* Quantity */}
@@ -126,10 +215,17 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                       type="number" 
                       min="1" 
                       value={item.quantity}
-                      required 
-                      onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                      className="flex h-11 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors" 
+                      onChange={(e) => {
+                        updateItem(item.id, 'quantity', parseInt(e.target.value) || 1);
+                        if (errors[`qty_${item.id}`]) setErrors(prev => ({...prev, [`qty_${item.id}`]: ''}));
+                      }}
+                      className={`flex h-11 w-full rounded-md border bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${
+                        errors[`qty_${item.id}`] ? 'border-destructive bg-destructive/5' : 'border-input'
+                      }`} 
                     />
+                    {errors[`qty_${item.id}`] && (
+                      <p className="text-destructive text-sm font-bold mt-1 bg-destructive/10 px-2 py-1 rounded w-max">{errors[`qty_${item.id}`]}</p>
+                    )}
                   </div>
                 </div>
 
@@ -152,23 +248,25 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                   </label>
                   <div className="grid grid-cols-2 gap-4 h-32">
                     {/* Upload Side */}
-                    <div className="relative border-2 border-dashed border-border/50 rounded-xl p-4 flex flex-col items-center justify-center bg-secondary/10 hover:bg-secondary/20 transition-colors cursor-pointer group h-full">
+                    <div className={`relative border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center bg-secondary/10 hover:bg-secondary/20 transition-colors cursor-pointer group h-full ${
+                      errors[`screenshot_${item.id}`] ? 'border-destructive bg-destructive/5' : 'border-border/50'
+                    }`}>
                       <input 
                         type="file" 
                         name={`screenshot_${item.id}`}
                         accept="image/*" 
-                        required 
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
                             const file = e.target.files[0];
                             setItemFileNames(prev => ({...prev, [item.id]: file.name}));
                             setItemPreviews(prev => ({...prev, [item.id]: URL.createObjectURL(file)}));
+                            if (errors[`screenshot_${item.id}`]) setErrors(prev => ({...prev, [`screenshot_${item.id}`]: ''}));
                           }
                         }}
                       />
                       <div className="p-3 bg-background rounded-full mb-2 group-hover:scale-110 transition-transform shadow-sm">
-                        <UploadCloud className="w-5 h-5 text-primary" />
+                        <UploadCloud className={`w-5 h-5 ${errors[`screenshot_${item.id}`] ? 'text-destructive' : 'text-primary'}`} />
                       </div>
                       <p className="text-xs font-medium text-center text-muted-foreground px-2 line-clamp-1">
                         {itemFileNames[item.id] || "Click to browse"}
@@ -187,6 +285,9 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                       )}
                     </div>
                   </div>
+                  {errors[`screenshot_${item.id}`] && (
+                    <p className="text-destructive text-sm font-bold mt-2 bg-destructive/10 px-2 py-1 rounded w-max inline-block">{errors[`screenshot_${item.id}`]}</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -204,12 +305,14 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
             {/* Shipping Mode */}
             <div className="space-y-3 relative">
               <label className="text-sm font-medium">Shipping Mode <span className="text-destructive">*</span></label>
-              <input type="hidden" name="shipping" value={shippingMode} required />
+              <input type="hidden" name="shipping" value={shippingMode} />
               
               <button 
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center justify-between h-12 w-full rounded-md border border-input bg-background/50 px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer shadow-sm hover:bg-secondary/20"
+                  className={`flex items-center justify-between h-12 w-full rounded-md border bg-background/50 px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer shadow-sm hover:bg-secondary/20 ${
+                    errors['shipping'] ? 'border-destructive bg-destructive/5' : 'border-input'
+                  }`}
                 >
                   <div className="flex items-center gap-2">
                     {shippingMode === 'express' ? <><Zap className="w-4 h-4 text-orange-500" /> Air Express</> : 
@@ -219,12 +322,19 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                   </div>
                   <ChevronDown className="w-4 h-4 opacity-50" />
                 </button>
+                {errors['shipping'] && (
+                  <p className="text-destructive text-sm font-bold mt-1 bg-destructive/10 px-2 py-1 rounded w-max">{errors['shipping']}</p>
+                )}
 
                 {isDropdownOpen && (
                   <div className="absolute top-[72px] left-0 right-0 bg-background border border-border rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-100">
                     <button 
                       type="button"
-                      onClick={() => { setShippingMode('express'); setIsDropdownOpen(false); }}
+                      onClick={() => { 
+                        setShippingMode('express'); 
+                        setIsDropdownOpen(false); 
+                        if (errors['shipping']) setErrors(prev => ({...prev, shipping: ''}));
+                      }}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-secondary/50 flex items-center gap-3 border-b border-border/50"
                     >
                       <Zap className="w-5 h-5 text-orange-500" />
@@ -235,7 +345,11 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                     </button>
                     <button 
                       type="button"
-                      onClick={() => { setShippingMode('normal'); setIsDropdownOpen(false); }}
+                      onClick={() => { 
+                        setShippingMode('normal'); 
+                        setIsDropdownOpen(false); 
+                        if (errors['shipping']) setErrors(prev => ({...prev, shipping: ''}));
+                      }}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-secondary/50 flex items-center gap-3 border-b border-border/50"
                     >
                       <Plane className="w-5 h-5 text-blue-500" />
@@ -299,7 +413,7 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
               </div>
 
               <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-                Exact shipping fee will be communicated via WhatsApp after your item has been purchased and is ready to ship. Rates above are estimates.
+                The shipping fee will be invoiced to your dashboard once the item gets to Ghana. Rates above are estimates.
               </p>
             </div>
           </div>
@@ -312,6 +426,9 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
           <div className="bg-primary/10 p-4 border-b border-border/50 flex items-center gap-2">
             <Calculator className="w-5 h-5 text-primary" />
             <h3 className="font-bold">Live Cost Summary</h3>
+            {errors['total'] && (
+              <p className="text-destructive text-sm font-bold bg-destructive/10 px-3 py-2 rounded-md mb-2">{errors['total']}</p>
+            )}
           </div>
           
           <div className="p-5 space-y-4">
@@ -348,6 +465,12 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
               <p className="text-left leading-tight font-bold">The shipping fee will be invoiced once the items get to Ghana.</p>
             </div>
             <div className="mt-6 flex flex-col gap-3">
+              {errors['total'] && (
+                <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-lg flex items-center gap-2 text-destructive">
+                  <Info className="w-4 h-4 shrink-0" />
+                  <p className="text-sm font-bold leading-tight">{errors['total']}</p>
+                </div>
+              )}
               <button 
                 type="submit" 
                 disabled={isPending}

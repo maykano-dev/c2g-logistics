@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { Users, Mail, Phone, MapPin, Search, Filter, Plus, UserPlus, FileText, CheckCircle2, XCircle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { adminSetEmployeeStatus } from '@/app/admin/employee-actions';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function EmployeesDirectoryView() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
     fetchEmployees();
@@ -30,11 +32,21 @@ export default function EmployeesDirectoryView() {
   };
 
   const handleStatusChange = async (id: string, status: string) => {
+    const confirmed = await showConfirm({
+      title: 'Confirm Status Change',
+      message: `Are you sure you want to change this employee's status to ${status}?`,
+      type: status === 'active' ? 'success' : 'danger',
+      confirmText: `Yes, make ${status}`
+    });
+
+    if (!confirmed) return;
+
     const res = await adminSetEmployeeStatus(id, status);
     if (res.success) {
       setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status } : emp));
+      showAlert({ title: 'Success', message: `Employee status updated to ${status}`, type: 'success' });
     } else {
-      alert('Failed to update status: ' + res.error);
+      showAlert({ title: 'Error', message: 'Failed to update status: ' + res.error, type: 'danger' });
     }
   };
 

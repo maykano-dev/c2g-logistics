@@ -5,12 +5,14 @@ import { createClient } from '@/utils/supabase/client';
 import { Wallet, Search, Filter, CheckCircle2, XCircle, AlertTriangle, ShieldCheck, Banknote } from 'lucide-react';
 import { format } from 'date-fns';
 import { adminHandleWithdrawal } from '@/app/admin/withdrawal-actions';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function WithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [userRole, setUserRole] = useState<'founder' | 'manager' | 'officer'>('officer');
+  const { showAlert } = useModal();
 
   useEffect(() => {
     fetchWithdrawals();
@@ -58,8 +60,9 @@ export default function WithdrawalsPage() {
     if (res.success) {
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: newStatus } : w));
+      showAlert({ title: 'Success', message: `Withdrawal successfully ${newStatus}`, type: 'success' });
     } else {
-      alert(res.error);
+      showAlert({ title: 'Error', message: res.error || 'Action failed', type: 'danger' });
     }
   };
 

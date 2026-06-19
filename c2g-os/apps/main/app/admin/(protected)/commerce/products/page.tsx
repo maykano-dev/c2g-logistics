@@ -6,12 +6,14 @@ import { Search, Filter, Plus, Edit, Trash2, Package, Tag, ArrowUpRight, Copy } 
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { adminDeleteProduct } from '@/app/admin/product-actions';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function ProductsCatalogView() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
+  const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
     fetchProducts();
@@ -34,12 +36,21 @@ export default function ProductsCatalogView() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    const confirmed = await showConfirm({
+      title: 'Delete Product',
+      message: 'Are you sure you want to delete this product? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Yes, Delete'
+    });
+    
+    if (!confirmed) return;
+    
     const res = await adminDeleteProduct(id);
     if (res.success) {
       setProducts(prev => prev.filter(p => p.id !== id));
+      showAlert({ title: 'Success', message: 'Product deleted successfully', type: 'success' });
     } else {
-      alert('Failed to delete: ' + res.error);
+      showAlert({ title: 'Error', message: 'Failed to delete: ' + res.error, type: 'danger' });
     }
   };
 

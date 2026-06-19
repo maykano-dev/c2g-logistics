@@ -2,31 +2,38 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Link as LinkIcon, ArrowLeft, CheckCircle2, Clock, Map, Plane, Ship, ExternalLink, CreditCard } from "lucide-react";
-import { ShipmentTracker } from "../../../../components/shipment-tracker";
+import { Link as LinkIcon, ArrowLeft, CheckCircle2, Clock, Map, Plane, Ship, ExternalLink, CreditCard, Settings, ShoppingCart, Building, Navigation, Circle, ShieldCheck, MapPin } from "lucide-react";
+import TrackerClient from "../../packages/[id]/tracker-client";
+import { useModal } from "@/components/providers/modal-provider";
 
 export function OrderDetailsClient({ order, initialTrack }: { order: any, initialTrack: boolean }) {
   const router = useRouter();
   const [showTracker, setShowTracker] = useState(initialTrack);
+  const { showAlert } = useModal();
 
-  // Define full timeline based on C2G flow
   const timelineSteps = [
-    { key: "pending_payment", label: "Pending Payment" },
-    { key: "pending", label: "Awaiting Purchase" },
-    { key: "purchased", label: "Purchased" },
-    { key: "shipped_from_supplier", label: "Supplier Shipped" },
-    { key: "in_warehouse", label: "Received In Warehouse" },
-    { key: "in_transit", label: "Shipped To Destination" },
-    { key: "arrived", label: "Arrived Destination" },
-    { key: "ready_for_pickup", label: "Ready For Pickup" },
-    { key: "delivered", label: "Completed" }
+    { key: "new", label: "Awaiting Payment", icon: CreditCard },
+    { key: "processing", label: "Processing", icon: Settings },
+    { key: "purchased", label: "Purchased", icon: ShoppingCart },
+    { key: "in_warehouse", label: "In Warehouse", icon: Building },
+    { key: "in_transit", label: "In Transit", icon: Plane },
+    { key: "clearance", label: "Clearance", icon: ShieldCheck },
+    { key: "available_for_pickup", label: "Available for pickup", icon: MapPin },
+    { key: "delivered", label: "Delivered", icon: CheckCircle2 }
   ];
 
   // Map history to timeline
   const getTimeline = () => {
-    let currentReached = false;
-    // Iterate from end backwards to find current status
-    const currentStepIndex = timelineSteps.findIndex(s => s.key === order.order_status) || 0;
+    const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
+    
+    let currentStepIndex = timelineSteps.findIndex(s => s.key === order.order_status);
+    
+    // Automatically advance timeline if payment went through but order_status is lagging
+    if (currentStepIndex <= 0 && isPaid) {
+      currentStepIndex = 1; // Force 'Processing' 
+    }
+    
+    if (currentStepIndex === -1) currentStepIndex = 0;
 
     return timelineSteps.map((step, index) => {
       const historyEntry = order.history?.find((h: any) => h.status === step.key);
@@ -38,10 +45,13 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
         : null;
 
       // Special case for creation
-      if (step.key === "pending_payment" && !date) {
+      if (step.key === "new" && !date) {
         return {
+          key: step.key,
           status: step.label,
           completed: true,
+          isCurrent: index === currentStepIndex,
+          Icon: step.icon,
           date: new Date(order.created_at).toLocaleString('en-GB', { 
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
           })
@@ -49,9 +59,12 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
       }
 
       return {
+        key: step.key,
         status: step.label,
         completed: isCompleted,
-        date: date
+        isCurrent: index === currentStepIndex,
+        date: date,
+        Icon: step.icon
       };
     });
   };
@@ -61,8 +74,33 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
   
   const formatCurrency = (amount: number) => `₵${parseFloat((amount || 0).toString()).toFixed(2)}`;
 
+  if (showTracker) {
+    const adapterPkg = {
+      id: order.id,
+      tracking_number: order.id,
+      items_description: order.product_name || 'Link Order Items',
+      method: order.shipping_mode === 'sea' ? 'sea_normal' : 'air_normal',
+      status: order.order_status,
+      created_at: order.created_at,
+      weight: order.weight,
+      cbm: order.cbm,
+      shipment_start_date: ['in_transit', 'clearance', 'available_for_pickup', 'delivered'].includes(order.order_status) 
+        ? (order.history?.find((h: any) => h.status === 'in_transit')?.changed_at || order.created_at) 
+        : null,
+      registration_fee_paid: null, // Null to skip the registration fee overlay
+    };
+
+    return (
+      <TrackerClient 
+        pkg={adapterPkg} 
+        onBack={() => setShowTracker(false)} 
+        backLabel="Back to Order Details" 
+      />
+    );
+  }
+
   return (
-    <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
+    <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4">
         <button 
@@ -77,10 +115,10 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="flex flex-col gap-6 lg:gap-10">
         
-        {/* Main Info Column */}
-        <div className="md:col-span-2 space-y-6">
+        {/* Main Info Card */}
+        <div className="space-y-6 w-full">
           <div className="glass-panel p-6 relative overflow-hidden">
              {/* Absolute Payment Status Badge */}
              <div className="absolute top-6 right-6">
@@ -133,12 +171,12 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
                       if (data.checkoutUrl) {
                         window.location.href = data.checkoutUrl;
                       } else {
-                        alert(data.error || 'Failed to initialize payment');
+                        showAlert({ title: 'Payment Error', message: data.error || 'Failed to initialize payment', type: 'danger' });
                         btn.disabled = false;
                         btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-credit-card w-4 h-4"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg> Pay Order Now';
                       }
                     } catch (err) {
-                      alert('Network error. Please try again.');
+                      showAlert({ title: 'Network Error', message: 'Network error. Please try again.', type: 'danger' });
                       btn.disabled = false;
                       btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-credit-card w-4 h-4"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg> Pay Order Now';
                     }
@@ -167,54 +205,60 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
               )}
             </div>
           </div>
-        </div>
-
-        {/* Timeline Column */}
-        <div className="md:col-span-1">
-          <div className="glass-panel p-6 h-full">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-6">
+        </div>        {/* Timeline Horizontal Layout */}
+        <div className="w-full">
+          <div className="glass-panel p-6">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-8">
               <Clock className="w-4 h-4" /> Timeline
             </h3>
             
-            <div className="relative pl-6 space-y-5">
-              <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-secondary/80"></div>
+            <div className="relative flex flex-col md:flex-row gap-6 md:gap-4 overflow-x-auto pb-6 pt-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {/* Horizontal Connecting Line (Desktop) */}
+              <div className="hidden md:block absolute top-[23px] left-[5%] right-[5%] h-[2px] bg-secondary z-0"></div>
+              {/* Vertical Connecting Line (Mobile) */}
+              <div className="md:hidden absolute left-[15px] top-4 bottom-4 w-[2px] bg-secondary z-0"></div>
               
-              {timeline.map((step, i) => (
-                <div key={i} className={`relative flex items-start gap-4 ${step.completed ? 'opacity-100' : 'opacity-40'}`}>
-                  {/* Timeline Node */}
-                  <div className={`absolute -left-6 mt-0.5 w-4 h-4 rounded-full border-2 ${
-                    step.completed 
-                      ? 'bg-primary border-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]' 
-                      : 'bg-background border-muted-foreground'
-                  }`}>
-                    {step.completed && <CheckCircle2 className="w-full h-full text-primary-foreground p-0.5" />}
+              {timeline.map((step, i) => {
+                const Icon = step.Icon;
+                return (
+                  <div key={i} className={`relative flex md:flex-col items-start md:items-center gap-4 md:gap-4 flex-1 min-w-[160px] transition-all duration-500 ${step.completed ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                    {/* Timeline Node */}
+                    <div className={`relative z-10 w-8 h-8 shrink-0 rounded-full flex items-center justify-center border-[3px] transition-all duration-500 ${
+                      step.isCurrent
+                        ? 'bg-primary border-background text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.6)] scale-125 animate-pulse'
+                        : step.completed 
+                          ? 'bg-primary border-background text-primary-foreground scale-110' 
+                          : 'bg-secondary border-background text-muted-foreground'
+                    }`}>
+                      {step.completed && !step.isCurrent ? <CheckCircle2 className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                    </div>
+                    
+                    {/* Timeline Content Card */}
+                    <div className={`mt-0 md:mt-2 text-left md:text-center w-full p-4 rounded-2xl border backdrop-blur-md transition-all duration-300 hover:-translate-y-1 ${
+                      step.isCurrent 
+                        ? 'bg-primary/10 border-primary/40 shadow-lg shadow-primary/5' 
+                        : step.completed
+                          ? 'bg-secondary/40 border-border/60 hover:bg-secondary/60 hover:shadow-md'
+                          : 'bg-background/50 border-border/30'
+                    }`}>
+                      <p className={`text-sm font-bold tracking-wide leading-tight ${step.isCurrent ? 'text-primary' : step.completed ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {step.status}
+                      </p>
+                      {step.date ? (
+                        <p className="text-[11px] text-muted-foreground mt-1.5 font-medium uppercase tracking-wider">{step.date}</p>
+                      ) : step.completed ? (
+                        <p className="text-[11px] text-muted-foreground mt-1.5 font-medium uppercase tracking-wider">Completed</p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground/50 mt-1.5 italic uppercase tracking-wider">Pending</p>
+                      )}
+                    </div>
                   </div>
-                  
-                  {/* Timeline Content */}
-                  <div className="flex-1 -mt-1">
-                    <p className={`text-sm font-medium ${step.completed ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {step.status}
-                    </p>
-                    {step.date && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{step.date}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
-
       </div>
-
-      {showTracker && (
-        <ShipmentTracker
-          trackingId={order.id}
-          shippingModeStr={order.shipping_mode}
-          shipmentStartDate={order.created_at}
-          onClose={() => setShowTracker(false)}
-        />
-      )}
     </div>
   );
 }

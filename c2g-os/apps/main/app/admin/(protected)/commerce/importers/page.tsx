@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { Users, Briefcase, TrendingUp, Filter, Search, CheckCircle2, XCircle, AlertTriangle, Building2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { adminHandleImporterStatus } from '@/app/admin/importer-actions';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function ImportersView() {
   const [importers, setImporters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({ pendingCount: 0, totalVolume: 0 });
+  const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
     fetchImporters();
@@ -40,13 +42,23 @@ export default function ImportersView() {
   };
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
+    const confirmed = await showConfirm({
+      title: 'Confirm Action',
+      message: `Are you sure you want to ${action} this importer application?`,
+      type: action === 'approve' ? 'success' : 'danger',
+      confirmText: `Yes, ${action}`
+    });
+
+    if (!confirmed) return;
+
     const res = await adminHandleImporterStatus(id, action);
     if (res.success) {
       const newStatus = action === 'approve' ? 'active' : 'rejected';
       setImporters(prev => prev.map(imp => imp.id === id ? { ...imp, status: newStatus } : imp));
       setStats(prev => ({ ...prev, pendingCount: prev.pendingCount - 1 }));
+      showAlert({ title: 'Success', message: `Importer application ${newStatus}.`, type: 'success' });
     } else {
-      alert('Action failed: ' + res.error);
+      showAlert({ title: 'Error', message: 'Action failed: ' + res.error, type: 'danger' });
     }
   };
 

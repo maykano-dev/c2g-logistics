@@ -4,6 +4,7 @@ import { useFormState, useFormStatus } from 'react-dom';
 import { updateLinkOrder, cancelLinkOrder } from '../../actions';
 import { Plane, Ship, Image as ImageIcon, Loader2, Link as LinkIcon, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useModal } from "@/components/providers/modal-provider";
 
 const initialState: any = {
   error: null,
@@ -28,16 +29,25 @@ function SubmitButton() {
 export function EditLinkOrderForm({ order }: { order: any }) {
   const updateOrderWithId = updateLinkOrder.bind(null, order.id);
   const [state, formAction] = useFormState(updateOrderWithId, initialState);
+  const { showConfirm, showAlert } = useModal();
 
   if (state?.redirectUrl) {
     window.location.href = state.redirectUrl;
   }
 
   const handleCancel = async () => {
-    if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
+    const confirmed = await showConfirm({
+      title: 'Cancel Order',
+      message: 'Are you sure you want to cancel this order? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Yes, Cancel'
+    });
+    
+    if (!confirmed) return;
+    
     const res = await cancelLinkOrder(order.id);
     if (res.error) {
-      alert(res.error);
+      showAlert({ title: 'Error', message: res.error, type: 'danger' });
     } else {
       window.location.href = res.redirectUrl!;
     }

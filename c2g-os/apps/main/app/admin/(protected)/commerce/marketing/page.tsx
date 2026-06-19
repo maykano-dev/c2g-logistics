@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Megaphone, Plus, Image as ImageIcon, Send, Edit, Trash2, Search, Video, ImagePlus, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { adminHandleGalleryStatus } from '@/app/admin/gallery-actions';
+import { useModal } from "@/components/providers/modal-provider";
 
 type TabType = 'promotions' | 'announcements' | 'broadcasts' | 'ads' | 'gallery' | 'searchLogs';
 
@@ -12,6 +13,7 @@ export default function AdminMarketingView() {
   const [activeTab, setActiveTab] = useState<TabType>('ads');
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
     fetchData();
@@ -46,6 +48,15 @@ export default function AdminMarketingView() {
   };
 
   const handleGalleryAction = async (id: string, action: 'approve' | 'reject' | 'delete') => {
+    const confirmed = await showConfirm({
+      title: 'Confirm Action',
+      message: `Are you sure you want to ${action} this gallery item?`,
+      type: action === 'delete' || action === 'reject' ? 'danger' : 'success',
+      confirmText: `Yes, ${action}`
+    });
+
+    if (!confirmed) return;
+
     const res = await adminHandleGalleryStatus(id, action);
     if (res.success) {
       if (action === 'delete') {
@@ -54,8 +65,9 @@ export default function AdminMarketingView() {
         const newStatus = action === 'approve' ? 'approved' : 'rejected';
         setData(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
       }
+      showAlert({ title: 'Success', message: `Item successfully ${action}d.`, type: 'success' });
     } else {
-      alert('Action failed: ' + res.error);
+      showAlert({ title: 'Error', message: 'Action failed: ' + res.error, type: 'danger' });
     }
   };
 

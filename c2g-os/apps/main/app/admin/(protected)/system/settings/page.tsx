@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Megaphone, Save } from 'lucide-react';
 import { adminUpdateSettings } from '@/app/admin/settings-actions';
+import { useModal } from "@/components/providers/modal-provider";
 
 export default function AdminSettingsView() {
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { showAlert } = useModal();
 
   useEffect(() => {
     fetchSettings();
@@ -49,10 +51,10 @@ export default function AdminSettingsView() {
     const res = await adminUpdateSettings(settings);
       
     if (res.success) {
-      alert('Settings saved successfully!');
+      showAlert({ title: 'Success', message: 'Settings saved successfully!', type: 'success' });
     } else {
       console.error(res.error);
-      alert('Failed to save settings: ' + res.error);
+      showAlert({ title: 'Error', message: 'Failed to save settings: ' + res.error, type: 'danger' });
     }
     setSaving(false);
   };

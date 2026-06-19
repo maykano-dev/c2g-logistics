@@ -16,6 +16,36 @@ export function LinkOrderCard({ order }: { order: any }) {
 
   const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
 
+  // Automatically advance status if payment went through but order_status is lagging
+  let displayStatus = order.order_status;
+  if ((!displayStatus || displayStatus === 'new' || displayStatus === 'pending_payment') && isPaid) {
+    displayStatus = 'processing';
+  }
+
+  const getStatusBadgeClass = (status: string) => {
+    switch(status?.toLowerCase()) {
+      case 'delivered':
+      case 'available_for_pickup':
+        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+      case 'in_warehouse':
+      case 'processing':
+      case 'shipped':
+      case 'in_transit':
+      case 'clearance':
+        return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+      case 'purchased':
+        return 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20';
+      case 'new':
+      case 'pending':
+      case 'pending_payment':
+        return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+      case 'cancelled':
+        return 'bg-red-500/10 text-red-500 border-red-500/20';
+      default:
+        return 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20';
+    }
+  };
+
   return (
     <div 
       className="glass-panel p-6 overflow-hidden flex flex-col relative transition-all duration-300 hover:border-primary/50 cursor-pointer group"
@@ -23,10 +53,10 @@ export function LinkOrderCard({ order }: { order: any }) {
     >
       {/* Absolute Payment Status Badge */}
       <div className="absolute top-6 right-6">
-         <span className={`px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${
+          <span className={`px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${
             isPaid 
               ? 'bg-green-500/10 text-green-500 border-green-500/20' 
-              : 'bg-destructive/10 text-destructive border-destructive/20 animate-pulse'
+              : 'bg-red-500/20 text-red-500 border-red-500/30 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.2)]'
           }`}>
             {order.payment_status?.replace('_', ' ') || 'Unpaid'}
           </span>
@@ -70,7 +100,9 @@ export function LinkOrderCard({ order }: { order: any }) {
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Current Status</span>
-            <span className="font-bold text-accent capitalize">{order.order_status?.replace(/_/g, ' ') || 'Pending'}</span>
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize tracking-wider ${getStatusBadgeClass(displayStatus)}`}>
+              {displayStatus?.replace(/_/g, ' ') || 'Pending'}
+            </span>
           </div>
         </div>
 

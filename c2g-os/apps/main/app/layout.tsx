@@ -8,6 +8,7 @@ import OfflineIndicator from "../components/offline-indicator";
 import ServiceWorkerRegister from "../components/sw-register";
 import { ClientWhatsAppButton } from "../components/client-whatsapp-button";
 import NextTopLoader from 'nextjs-toploader';
+import { ModalProvider } from "../components/providers/modal-provider";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -52,16 +53,18 @@ export default function RootLayout({
       </head>
       <body className={outfit.className}>
         <NextTopLoader color="#3b82f6" showSpinner={false} shadow="0 0 10px #3b82f6,0 0 5px #3b82f6" />
-        <CartProvider>
-          <WishlistProvider>
-            <div className="min-h-[100dvh] bg-background text-foreground flex flex-col w-full overflow-x-hidden">
-              <ServiceWorkerRegister />
+        <ModalProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <div className="min-h-[100dvh] bg-background text-foreground flex flex-col w-full overflow-x-hidden">
+                <ServiceWorkerRegister />
               <OfflineIndicator />
               {children}
               <ClientFooter />
             </div>
           </WishlistProvider>
         </CartProvider>
+        </ModalProvider>
         <ClientWhatsAppButton />
       </body>
     </html>

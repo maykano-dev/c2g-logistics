@@ -135,15 +135,25 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
     item.screenshot_url = publicUrlData.publicUrl;
   }
 
-  // Fetch exchange rate
+  // Fetch exchange rate and admin fees
   const settings = await getSettings()
   const exchangeRate = settings?.rate_link_orders || settings?.rate_shop_products || 0.5200
+  const serviceFeePercentage = settings?.service_fee_percentage != null ? settings.service_fee_percentage / 100 : 0.15;
+  const minServiceFee = settings?.minimum_service_fee || 5;
+  const localDeliveryPercentage = settings?.local_delivery_percentage != null ? settings.local_delivery_percentage / 100 : 0;
+  const minLocalDeliveryFee = settings?.minimum_local_delivery_fee || 0;
 
-  // Calculate totals
+  // Calculate totals securely on the server
   const itemCostCny = items.reduce((sum: number, item: any) => sum + (item.cny_price * item.quantity), 0);
   const itemCostGhs = itemCostCny / exchangeRate;
-  const serviceFee = itemCostGhs * 0.05;
-  const totalGhs = itemCostGhs + serviceFee;
+  
+  const calculatedServiceFee = itemCostGhs * serviceFeePercentage;
+  const serviceFee = Math.max(calculatedServiceFee, minServiceFee);
+
+  const calculatedLocalDelivery = itemCostGhs * localDeliveryPercentage;
+  const localDelivery = Math.max(calculatedLocalDelivery, minLocalDeliveryFee);
+
+  const totalGhs = itemCostGhs + serviceFee + localDelivery;
 
   // Use the first item's details as the primary fallback, store everything in items JSON
   const primaryItem = items[0];

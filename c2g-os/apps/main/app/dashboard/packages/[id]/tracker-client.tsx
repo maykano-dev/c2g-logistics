@@ -22,9 +22,12 @@ const TrackingMap = dynamic(() => import('./tracking-map'), {
 
 interface TrackerClientProps {
   pkg: any;
+  backLink?: string;
+  backLabel?: string;
+  onBack?: () => void;
 }
 
-export default function TrackerClient({ pkg }: TrackerClientProps) {
+export default function TrackerClient({ pkg, backLink = "/dashboard/packages", backLabel = "Back to Packages", onBack }: TrackerClientProps) {
   const [progress, setProgress] = useState(0);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
   const [statusLabel, setStatusLabel] = useState('Calculating...');
@@ -99,9 +102,15 @@ export default function TrackerClient({ pkg }: TrackerClientProps) {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Link href="/dashboard/packages" className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
-            <ArrowLeft className="w-4 h-4" /> Back to Packages
-          </Link>
+          {onBack ? (
+            <button onClick={onBack} className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
+              <ArrowLeft className="w-4 h-4" /> {backLabel}
+            </button>
+          ) : (
+            <Link href={backLink} className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
+              <ArrowLeft className="w-4 h-4" /> {backLabel}
+            </Link>
+          )}
         </div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
@@ -117,7 +126,7 @@ export default function TrackerClient({ pkg }: TrackerClientProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 lg:gap-8 max-w-3xl mx-auto relative">
+      <div className="flex flex-col gap-6 lg:gap-8 relative">
         {pkg.registration_fee_paid === false && (
           <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center bg-background/60 backdrop-blur-xl rounded-2xl border border-border/50">
             <div className="glass-panel p-6 flex flex-col items-center max-w-xs text-center shadow-2xl animate-in zoom-in-95 duration-500">
@@ -135,8 +144,24 @@ export default function TrackerClient({ pkg }: TrackerClientProps) {
           </div>
         )}
 
-        <div className={`space-y-6 lg:space-y-8 ${pkg.registration_fee_paid === false ? 'pointer-events-none opacity-30 select-none blur-[10px] max-h-[450px] overflow-hidden transition-all duration-1000' : ''}`}>
-          {/* Progress Card */}
+        {pkg.registration_fee_paid !== false && !hasStarted && (
+          <div className="absolute inset-0 z-[9998] flex flex-col items-center justify-center bg-background/60 backdrop-blur-xl rounded-2xl border border-border/50">
+            <div className="glass-panel p-6 flex flex-col items-center max-w-sm text-center shadow-2xl animate-in zoom-in-95 duration-500">
+              <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                <Lock className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-bold mb-2">Awaiting Departure</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Your item hasn't departed China yet. Check back later.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 ${pkg.registration_fee_paid === false || !hasStarted ? 'pointer-events-none opacity-30 select-none blur-[10px] max-h-[450px] overflow-hidden transition-all duration-1000' : ''}`}>
+          {/* Left Column: Progress & Details */}
+          <div className="flex flex-col gap-6 lg:gap-8">
+            {/* Progress Card */}
         <div className="glass-panel p-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none" />
           
@@ -199,46 +224,51 @@ export default function TrackerClient({ pkg }: TrackerClientProps) {
           </div>
         </div>
 
-        {/* Main Area: Interactive Map (Square) */}
-        <div className="w-full aspect-square flex flex-col">
+          {/* Details Card */}
+          <div className="glass-panel p-6">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Package className="w-5 h-5 text-muted-foreground" /> Package Details
+            </h3>
+            
+            <div className="space-y-4">
+              {pkg.registration_fee_paid !== null && (
+                <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
+                  <span className="text-sm text-muted-foreground font-medium">Registration Fee</span>
+                  {pkg.registration_fee_paid ? (
+                    <span className="text-xs font-bold px-2 py-1 bg-green-500/10 text-green-500 rounded-md">Paid</span>
+                  ) : (
+                    <span className="text-xs font-bold px-2 py-1 bg-orange-500/10 text-orange-500 rounded-md">Unpaid</span>
+                  )}
+                </div>
+              )}
+              <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
+                <span className="text-sm text-muted-foreground font-medium">Registered On</span>
+                <span className="text-sm font-semibold">{new Date(pkg.created_at).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
+                <span className="text-sm text-muted-foreground font-medium">Est. Arrival</span>
+                <span className="text-sm font-semibold">{hasStarted ? new Date(arrivalMs).toLocaleDateString() : 'Pending Departure'}</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
+                <span className="text-sm text-muted-foreground font-medium">Weight</span>
+                <span className="text-sm font-semibold">{pkg.weight || 'Not set'}</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
+                <span className="text-sm text-muted-foreground font-medium">CBM</span>
+                <span className="text-sm font-semibold">{pkg.cbm || 'Not set'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Interactive Map */}
+        <div className="w-full aspect-square flex flex-col max-h-[700px]">
           <div className="glass-panel p-2 flex-1 relative overflow-hidden flex flex-col">
             <TrackingMap isAir={isAir} progress={progress} />
           </div>
         </div>
 
-        {/* Details Card */}
-        <div className="glass-panel p-6">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-            <Package className="w-5 h-5 text-muted-foreground" /> Package Details
-          </h3>
-          
-          <div className="space-y-4">
-            <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
-              <span className="text-sm text-muted-foreground font-medium">Registration Fee</span>
-              {pkg.registration_fee_paid ? (
-                <span className="text-xs font-bold px-2 py-1 bg-green-500/10 text-green-500 rounded-md">Paid</span>
-              ) : (
-                <span className="text-xs font-bold px-2 py-1 bg-orange-500/10 text-orange-500 rounded-md">Unpaid</span>
-              )}
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
-              <span className="text-sm text-muted-foreground font-medium">Registered On</span>
-              <span className="text-sm font-semibold">{new Date(pkg.created_at).toLocaleDateString()}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
-              <span className="text-sm text-muted-foreground font-medium">Est. Arrival</span>
-              <span className="text-sm font-semibold">{hasStarted ? new Date(arrivalMs).toLocaleDateString() : 'Pending Departure'}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
-              <span className="text-sm text-muted-foreground font-medium">Weight</span>
-              <span className="text-sm font-semibold">{pkg.weight || 'Not set'}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
-              <span className="text-sm text-muted-foreground font-medium">CBM</span>
-              <span className="text-sm font-semibold">{pkg.cbm || 'Not set'}</span>
-            </div>
-          </div>
-          </div>
+
         </div>
       </div>
     </div>
