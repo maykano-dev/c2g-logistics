@@ -13,11 +13,11 @@ export async function getDashboardStats() {
   // Fetch user name
   const { data: customerData } = await supabase
     .from('customers')
-    .select('first_name')
+    .select('name')
     .eq('id', user.id)
     .single()
     
-  const userName = customerData?.first_name || 'there'
+  const userName = customerData?.name ? customerData.name.split(' ')[0] : 'there'
 
   // 1. Orders in Transit (shipped, arrived_ghana, clearing_customs)
   const { count: transitOrdersCount } = await supabase

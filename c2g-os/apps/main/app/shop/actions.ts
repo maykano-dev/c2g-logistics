@@ -449,3 +449,71 @@ export async function submitProductReview(productId: string, rating: number, rev
 
   return { success: true };
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Wishlist Sync
+// ═══════════════════════════════════════════════════════════════════
+export async function getDbWishlist() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, items: [] };
+
+  const { data, error } = await supabase
+    .from("wishlist")
+    .select(`
+      product_id,
+      products (
+        id, name, price, price_cny, selling_price_ghs, cost_price_cny,
+        product_images (image_url, is_primary)
+      )
+    `)
+    .eq("customer_id", user.id);
+
+  if (error || !data) return { success: false, items: [] };
+
+  const exchangeRate = await getExchangeRate(supabase);
+
+  const items = data.map((row: any) => {
+    const p = row.products;
+    if (!p) return null;
+    
+    const priceGhs = p.selling_price_ghs !== null ? parseFloat(p.selling_price_ghs) : parseFloat(p.price) || 0;
+    const priceCny = p.cost_price_cny !== null ? parseFloat(p.cost_price_cny) : parseFloat(p.price_cny) || 0;
+    const imageUrl = p.product_images?.find((img: any) => img.is_primary)?.image_url || p.product_images?.[0]?.image_url || "https://placehold.co/300";
+
+    return {
+      id: String(p.id),
+      name: p.name,
+      imageUrl,
+      priceGhs,
+      priceCny: priceCny || (priceGhs * exchangeRate)
+    };
+  }).filter(Boolean);
+
+  return { success: true, items };
+}
+
+export async function addDbWishlist(productId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false };
+
+  await supabase.from("wishlist").upsert({
+    customer_id: user.id,
+    product_id: parseInt(productId)
+  }, { onConflict: "customer_id, product_id" }).select();
+  
+  return { success: true };
+}
+
+export async function removeDbWishlist(productId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false };
+
+  await supabase.from("wishlist")
+    .delete()
+    .match({ customer_id: user.id, product_id: parseInt(productId) });
+    
+  return { success: true };
+}

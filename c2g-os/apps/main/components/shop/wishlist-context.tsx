@@ -25,14 +25,32 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Load from local storage
-    const saved = localStorage.getItem("c2g_mall_wishlist");
-    if (saved) {
+    // Sync with DB if possible
+    async function syncDb() {
       try {
-        setItems(JSON.parse(saved));
-      } catch (e) {}
+        const { getDbWishlist } = await import("../../app/shop/actions");
+        const res = await getDbWishlist();
+        if (res.success && res.items) {
+          setItems(res.items);
+          localStorage.setItem("c2g_mall_wishlist", JSON.stringify(res.items));
+        } else {
+          // Load from local storage fallback
+          const saved = localStorage.getItem("c2g_mall_wishlist");
+          if (saved) {
+            try { setItems(JSON.parse(saved)); } catch (e) {}
+          }
+        }
+      } catch (err) {
+        // Fallback
+        const saved = localStorage.getItem("c2g_mall_wishlist");
+        if (saved) {
+          try { setItems(JSON.parse(saved)); } catch (e) {}
+        }
+      } finally {
+        setIsLoaded(true);
+      }
     }
-    setIsLoaded(true);
+    syncDb();
   }, []);
 
   useEffect(() => {
@@ -41,15 +59,23 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, isLoaded]);
 
-  const addToWishlist = (item: WishlistItem) => {
+  const addToWishlist = async (item: WishlistItem) => {
     setItems(prev => {
       if (prev.find(i => i.id === item.id)) return prev;
       return [...prev, item];
     });
+    try {
+      const { addDbWishlist } = await import("../../app/shop/actions");
+      await addDbWishlist(item.id);
+    } catch (err) {}
   };
 
-  const removeFromWishlist = (id: string) => {
+  const removeFromWishlist = async (id: string) => {
     setItems(prev => prev.filter(i => i.id !== id));
+    try {
+      const { removeDbWishlist } = await import("../../app/shop/actions");
+      await removeDbWishlist(id);
+    } catch (err) {}
   };
 
   const isInWishlist = (id: string) => {

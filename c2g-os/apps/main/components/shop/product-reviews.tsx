@@ -82,9 +82,20 @@ export default function ProductReviews({ productId, reviews = [], isLoggedIn }: 
 
       {showReviews && (
         <div className="mt-4 p-4 rounded-xl bg-secondary/20 border border-border/50">
-          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" /> Customer Reviews
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" /> Customer Reviews
+            </h3>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReviews(false);
+              }} 
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground px-2 py-1 rounded-md bg-secondary border border-border/50 hover:bg-secondary/80 transition-colors"
+            >
+              Close
+            </button>
+          </div>
           {totalReviews === 0 ? (
             <p className="text-xs text-muted-foreground">No reviews yet. Buy this item to be the first to review!</p>
           ) : (

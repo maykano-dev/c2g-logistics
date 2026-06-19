@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useWishlist } from "../../components/shop/wishlist-context";
 import { ShoppingCart, Trash2, HeartCrack, ChevronLeft } from "lucide-react";
 
+import MobileBottomNav from "../../components/shop/mobile-bottom-nav";
+
 export default function WishlistPage() {
   const { items, removeFromWishlist } = useWishlist();
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-12 pt-24">
+    <div className="min-h-screen bg-background pb-24 md:pb-12 pt-6 md:pt-10">
       <div className="max-w-5xl mx-auto px-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
@@ -80,6 +82,7 @@ export default function WishlistPage() {
           </div>
         )}
       </div>
+      <MobileBottomNav />
     </div>
   );
 }

@@ -93,13 +93,13 @@ export default function HeroCarousel({ products }: { products: any[] }) {
       {/* Arrow Buttons */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition-colors z-10 border border-white/10"
+        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md text-white items-center justify-center hover:bg-black/60 transition-colors z-10 border border-white/10"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition-colors z-10 border border-white/10"
+        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md text-white items-center justify-center hover:bg-black/60 transition-colors z-10 border border-white/10"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
