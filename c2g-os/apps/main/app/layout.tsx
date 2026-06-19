@@ -7,6 +7,7 @@ import { WishlistProvider } from "../components/shop/wishlist-context";
 import OfflineIndicator from "../components/offline-indicator";
 import ServiceWorkerRegister from "../components/sw-register";
 import { ClientWhatsAppButton } from "../components/client-whatsapp-button";
+import NextTopLoader from 'nextjs-toploader';
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -50,6 +51,7 @@ export default function RootLayout({
         />
       </head>
       <body className={outfit.className}>
+        <NextTopLoader color="#3b82f6" showSpinner={false} shadow="0 0 10px #3b82f6,0 0 5px #3b82f6" />
         <CartProvider>
           <WishlistProvider>
             <div className="min-h-[100dvh] bg-background text-foreground flex flex-col w-full overflow-x-hidden">

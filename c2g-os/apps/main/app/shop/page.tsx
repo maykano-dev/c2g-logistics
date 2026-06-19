@@ -51,6 +51,8 @@ export default async function ShopPage({
   const { products: bestProducts } = bestSellersResult;
 
   const isSearching = !!(resolvedParams.query || (resolvedParams.category && resolvedParams.category !== "all"));
+  const isFirstPage = !currentPage || currentPage === 1;
+  const showHeroAndSections = !isSearching && isFirstPage;
   const hasProducts = products && products.length > 0;
 
   return (
@@ -64,60 +66,64 @@ export default async function ShopPage({
         {/* ═══════════ HOMEPAGE VIEW (no search/category active) ═══════════ */}
         {!isSearching ? (
           <div className="space-y-8 md:space-y-12">
-            {/* Hero Banner Carousel */}
-            {topPurchasedProducts.length > 0 && (
-              <section className="w-full">
-                <HeroCarousel products={topPurchasedProducts} />
-              </section>
+            {showHeroAndSections && (
+              <>
+                {/* Hero Banner Carousel */}
+                {topPurchasedProducts.length > 0 && (
+                  <section className="w-full">
+                    <HeroCarousel products={topPurchasedProducts} />
+                  </section>
+                )}
+
+                {/* 🔥 Trending Products */}
+                {trendingProducts.length > 0 && (
+                  <section className="w-full">
+                    <ProductSection title="Trending Now" icon={<Flame className="w-5 h-5 text-orange-500" />} href="/shop?sort=trending">
+                    {trendingProducts.map((product: any) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        exchangeRate={exchangeRate || 1}
+                        variant="scroll"
+                      />
+                    ))}
+                    </ProductSection>
+                  </section>
+                )}
+
+                {/* 🆕 New Arrivals */}
+                {newProducts.length > 0 && (
+                  <section className="w-full">
+                    <ProductSection title="New Arrivals" icon={<Sparkles className="w-5 h-5 text-yellow-500" />} href="/shop?sort=newest">
+                    {newProducts.map((product: any) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        exchangeRate={exchangeRate || 1}
+                        variant="scroll"
+                      />
+                    ))}
+                    </ProductSection>
+                  </section>
+                )}
+
+                {/* 🏆 Best Sellers */}
+                {bestProducts.length > 0 && (
+                  <section className="w-full">
+                    <ProductSection title="Best Sellers" icon={<Trophy className="w-5 h-5 text-yellow-600" />}>
+                    {bestProducts.map((product: any) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        exchangeRate={exchangeRate || 1}
+                        variant="scroll"
+                      />
+                    ))}
+                    </ProductSection>
+                  </section>
+                )}
+              </>
             )}
-
-          {/* 🔥 Trending Products */}
-            {trendingProducts.length > 0 && (
-              <section className="w-full">
-                <ProductSection title="Trending Now" icon={<Flame className="w-5 h-5 text-orange-500" />} href="/shop?sort=trending">
-                {trendingProducts.map((product: any) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    exchangeRate={exchangeRate || 1}
-                    variant="scroll"
-                  />
-                ))}
-              </ProductSection>
-            </section>
-          )}
-
-          {/* 🆕 New Arrivals */}
-            {newProducts.length > 0 && (
-              <section className="w-full">
-                <ProductSection title="New Arrivals" icon={<Sparkles className="w-5 h-5 text-yellow-500" />} href="/shop?sort=newest">
-                {newProducts.map((product: any) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    exchangeRate={exchangeRate || 1}
-                    variant="scroll"
-                  />
-                ))}
-              </ProductSection>
-            </section>
-          )}
-
-          {/* 🏆 Best Sellers */}
-            {bestProducts.length > 0 && (
-              <section className="w-full">
-                <ProductSection title="Best Sellers" icon={<Trophy className="w-5 h-5 text-yellow-600" />}>
-                {bestProducts.map((product: any) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    exchangeRate={exchangeRate || 1}
-                    variant="scroll"
-                  />
-                ))}
-              </ProductSection>
-            </section>
-          )}
 
             {/* All Products Grid */}
             <section className="w-full">
