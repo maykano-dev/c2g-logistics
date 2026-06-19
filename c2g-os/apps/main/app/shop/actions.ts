@@ -413,3 +413,39 @@ export async function getShippingRecommendation(weightKg?: number, volumeCbm?: n
   }
   return { mode: "air", label: "Air Freight Recommended", reason: "Default recommendation" };
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Submit Product Review
+// ═══════════════════════════════════════════════════════════════════
+export async function submitProductReview(productId: string, rating: number, reviewText: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "You must be logged in to review." };
+  }
+
+  // Try to insert the review. Note: Since we might not have an is_approved column yet,
+  // we just insert the standard fields.
+  const { error } = await supabase
+    .from("product_reviews")
+    .insert({
+      product_id: parseInt(productId),
+      user_id: user.id,
+      rating,
+      review_text: reviewText,
+      // If the database has is_approved, we would set it to false here.
+      // But since we can't alter the DB remotely in this session, 
+      // we'll just omit it to prevent crashes, relying on the UI to handle it optimistically.
+    });
+
+  if (error) {
+    if (error.code === '23505') {
+      return { success: false, error: "You have already reviewed this product." };
+    }
+    console.error("Error submitting review:", error);
+    return { success: false, error: "Failed to submit review." };
+  }
+
+  return { success: true };
+}

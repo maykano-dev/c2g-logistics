@@ -152,7 +152,7 @@ export default async function ProductPage({
 
             {/* Rating + Stock */}
             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/50 flex-wrap">
-              <ProductReviews reviews={product.reviews || []} isLoggedIn={isLoggedIn} />
+              <ProductReviews productId={product.id.toString()} reviews={product.reviews || []} isLoggedIn={isLoggedIn} />
               
               <div className="w-px h-4 bg-border" />
               <span className="text-xs text-muted-foreground">

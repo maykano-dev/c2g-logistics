@@ -169,7 +169,7 @@ export default function ProductCard({
         {/* Price Area */}
         <div className="mt-auto pt-2">
           <div className="flex items-baseline gap-1.5 mb-2.5">
-            <span className="font-extrabold text-base sm:text-lg text-primary leading-none">
+            <span className="font-extrabold text-base sm:text-lg text-primary leading-none font-sans tracking-tight">
               ₵{priceGhs.toFixed(2)}
             </span>
           </div>

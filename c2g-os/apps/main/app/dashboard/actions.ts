@@ -10,6 +10,15 @@ export async function getDashboardStats() {
     return null
   }
 
+  // Fetch user name
+  const { data: customerData } = await supabase
+    .from('customers')
+    .select('first_name')
+    .eq('id', user.id)
+    .single()
+    
+  const userName = customerData?.first_name || 'there'
+
   // 1. Orders in Transit (shipped, arrived_ghana, clearing_customs)
   const { count: transitOrdersCount } = await supabase
     .from('orders')
@@ -86,6 +95,7 @@ export async function getDashboardStats() {
     inWarehouseCount: inWarehouseCount || 0,
     incomingPackagesCount: incomingPackagesCount || 0,
     linkOrdersCount: linkOrdersCount || 0,
+    userName,
   }
 }
 

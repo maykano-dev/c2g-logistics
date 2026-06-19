@@ -13,7 +13,8 @@ import {
   Bell,
   LogOut,
   Menu,
-  X
+  X,
+  ShoppingCart
 } from "lucide-react";
 import { logout } from "../auth/actions";
 
@@ -29,6 +30,7 @@ export default function DashboardClientLayout({
     { name: "Packages", href: "/dashboard/packages", icon: Package },
     { name: "Link Orders", href: "/dashboard/link-orders", icon: LinkIcon },
     { name: "Warehouse", href: "/dashboard/warehouse", icon: MapPin },
+    { name: "C2G Mall", href: "/shop", icon: ShoppingCart },
   ];
 
   return (

@@ -115,7 +115,7 @@ export default function ProductOptions({ product, variants, exchangeRate, option
     <div className="space-y-8">
       {/* Price */}
       <div className="flex items-baseline gap-2">
-        <span className="text-4xl font-extrabold text-primary">₵{displayPriceGhs.toFixed(2)}</span>
+        <span className="text-4xl font-extrabold text-primary font-sans tracking-tight">₵{displayPriceGhs.toFixed(2)}</span>
       </div>
 
       {/* Options */}
