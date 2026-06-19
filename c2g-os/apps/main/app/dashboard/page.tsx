@@ -98,57 +98,49 @@ export default async function DashboardOverview() {
         <div className="glass-panel p-6 flex flex-col h-full order-first lg:order-none lg:col-span-1 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[60px] -mr-20 -mt-20 pointer-events-none" />
           <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3">
-            <Link href="/dashboard/link-orders/new" className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group backdrop-blur-sm">
-              <div className="p-2.5 bg-primary/20 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors shadow-sm">
+          <div className="flex flex-col gap-3">
+            <Link href="/dashboard/link-orders/new" className="flex flex-row items-center gap-4 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group backdrop-blur-sm shadow-sm hover:shadow-md">
+              <div className="p-3 bg-primary/20 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors shadow-sm shrink-0">
                 <LinkIcon className="w-5 h-5 text-primary group-hover:text-current" />
               </div>
-              <div className="flex-1 mt-2 lg:mt-0">
-                <p className="font-bold text-sm lg:text-base">Place Link Order</p>
-                <p className="text-xs text-muted-foreground hidden lg:block">Buy for me service</p>
+              <div className="flex-1">
+                <p className="font-bold text-sm sm:text-base text-foreground">Place Link Order</p>
+                <p className="text-xs text-muted-foreground">Buy for me service</p>
               </div>
-              <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors hidden lg:block" />
+              <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
             </Link>
 
-            <Link href="/dashboard/packages/register" className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group backdrop-blur-sm">
-              <div className="p-2.5 bg-green-500/20 rounded-xl group-hover:bg-green-500 group-hover:text-white transition-colors shadow-sm">
+            <Link href="/dashboard/packages/register" className="flex flex-row items-center gap-4 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-green-500/10 hover:border-green-500/30 transition-all group backdrop-blur-sm shadow-sm hover:shadow-md">
+              <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500 group-hover:text-white transition-colors shadow-sm shrink-0">
                 <Package className="w-5 h-5 text-green-500 group-hover:text-current" />
               </div>
-              <div className="flex-1 mt-2 lg:mt-0">
-                <p className="font-bold text-sm lg:text-base">Register Package</p>
-                <p className="text-xs text-muted-foreground hidden lg:block">Add incoming tracking</p>
+              <div className="flex-1">
+                <p className="font-bold text-sm sm:text-base text-foreground">Register Package</p>
+                <p className="text-xs text-muted-foreground">Add incoming tracking</p>
               </div>
-              <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-green-500 transition-colors hidden lg:block" />
+              <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-green-500 transition-colors" />
             </Link>
 
-            <Link href="/dashboard/invoices" className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group backdrop-blur-sm">
-              <div className="p-2.5 bg-red-500/20 rounded-xl group-hover:bg-red-500 group-hover:text-white transition-colors shadow-sm">
+            <Link href="/dashboard/invoices" className="flex flex-row items-center gap-4 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-red-500/10 hover:border-red-500/30 transition-all group backdrop-blur-sm shadow-sm hover:shadow-md">
+              <div className="p-3 bg-red-500/20 rounded-xl group-hover:bg-red-500 group-hover:text-white transition-colors shadow-sm shrink-0">
                 <CreditCard className="w-5 h-5 text-red-500 group-hover:text-current" />
               </div>
-              <div className="flex-1 mt-2 lg:mt-0">
-                <p className="font-bold text-sm lg:text-base">Pay Invoice</p>
-                <p className="text-xs text-muted-foreground hidden lg:block">Clear outstanding dues</p>
+              <div className="flex-1">
+                <p className="font-bold text-sm sm:text-base text-foreground">Pay Invoice</p>
+                <p className="text-xs text-muted-foreground">Clear outstanding dues</p>
               </div>
+              <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" />
             </Link>
 
-            <Link href="/dashboard/warehouse" className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group backdrop-blur-sm">
-              <div className="p-2.5 bg-purple-500/20 rounded-xl group-hover:bg-purple-500 group-hover:text-white transition-colors shadow-sm">
+            <Link href="/dashboard/warehouse" className="flex flex-row items-center gap-4 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-purple-500/10 hover:border-purple-500/30 transition-all group backdrop-blur-sm shadow-sm hover:shadow-md">
+              <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500 group-hover:text-white transition-colors shadow-sm shrink-0">
                 <MapPin className="w-5 h-5 text-purple-500 group-hover:text-current" />
               </div>
-              <div className="flex-1 mt-2 lg:mt-0">
-                <p className="font-bold text-sm lg:text-base">Warehouse Address</p>
-                <p className="text-xs text-muted-foreground hidden lg:block">View shipping details</p>
+              <div className="flex-1">
+                <p className="font-bold text-sm sm:text-base text-foreground">Warehouse Address</p>
+                <p className="text-xs text-muted-foreground">View shipping details</p>
               </div>
-            </Link>
-
-            <Link href="/shop" className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group lg:mt-auto backdrop-blur-sm">
-              <div className="p-2.5 bg-blue-500/20 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors shadow-sm">
-                <ShoppingCart className="w-5 h-5 text-blue-500 group-hover:text-current" />
-              </div>
-              <div className="flex-1 mt-2 lg:mt-0">
-                <p className="font-bold text-sm lg:text-base">Go to C2G Mall</p>
-                <p className="text-xs text-muted-foreground hidden lg:block">Shop directly from China</p>
-              </div>
+              <PlusCircle className="w-5 h-5 text-muted-foreground group-hover:text-purple-500 transition-colors opacity-0 group-hover:opacity-100" />
             </Link>
           </div>
         </div>
