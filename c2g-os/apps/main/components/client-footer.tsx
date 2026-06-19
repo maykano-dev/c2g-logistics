@@ -7,7 +7,7 @@ export function ClientFooter() {
   const pathname = usePathname();
   
   // Hide footer on dashboard, auth, admin and other full-screen app routes
-  const hideFooterRoutes = ["/dashboard", "/admin", "/login", "/signup", "/forgot-password"];
+  const hideFooterRoutes = ["/dashboard", "/admin", "/login", "/signup", "/forgot-password", "/importers/login", "/importers/register"];
   const shouldHide = hideFooterRoutes.some(route => pathname?.startsWith(route));
 
   if (shouldHide) {

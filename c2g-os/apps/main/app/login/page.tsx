@@ -10,19 +10,19 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-8 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background p-0 sm:p-8 relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full animate-pulse pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/20 blur-[120px] rounded-full animate-pulse delay-700 pointer-events-none" />
       
-      <div className="w-full max-w-[400px] z-10 animate-fade-in">
-        <div className="glass-panel p-8 sm:p-10 shadow-2xl">
+      <div className="w-full h-[100dvh] sm:h-auto sm:max-w-[400px] z-10 animate-fade-in">
+        <div className="glass-panel p-6 sm:p-10 border-0 sm:border shadow-none sm:shadow-2xl rounded-none sm:rounded-2xl min-h-[100dvh] sm:min-h-0 flex flex-col justify-center">
           {/* Logo & Header */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-20 h-20 relative flex items-center justify-center mb-2">
+          <div className="flex flex-col items-center mb-6 sm:mb-8">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center mb-2">
               <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
             </div>
-            <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#3b82f6] to-[#ef4444] mb-6 drop-shadow-sm text-center">
+            <span className="text-2xl sm:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#3b82f6] to-[#ef4444] mb-2 sm:mb-6 drop-shadow-sm text-center">
               C2G Logistics
             </span>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome Back</h1>
@@ -41,7 +41,7 @@ export default function LoginPage() {
           </div>
 
           {/* Badges */}
-          <div className="mt-8 pt-6 border-t border-border/50 flex flex-wrap justify-center gap-3">
+          <div className="hidden sm:flex mt-8 pt-6 border-t border-border/50 flex-wrap justify-center gap-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/5 text-muted-foreground/60 text-[11px] font-bold uppercase tracking-wider">
               Affordable
             </span>

@@ -48,7 +48,7 @@ export default function ShopHeader() {
             <div className="w-8 h-8 relative flex items-center justify-center">
               <Image src="/logo.png" alt="C2G Mall Logo" fill className="object-contain" />
             </div>
-            <span className="font-bold text-lg hidden sm:block">Mall</span>
+            <span className="font-bold text-lg hidden sm:block">C2G Mall</span>
           </Link>
 
           {/* Search Bar */}

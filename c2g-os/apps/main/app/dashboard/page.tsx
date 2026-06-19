@@ -8,7 +8,8 @@ import {
   CreditCard,
   Clock,
   Activity,
-  Bell
+  Bell,
+  ShoppingCart
 } from "lucide-react";
 import Link from "next/link";
 import { getDashboardStats, getRecentActivity } from "./actions";
@@ -118,13 +119,23 @@ export default async function DashboardOverview() {
               </div>
             </Link>
 
-            <Link href="/dashboard/warehouse" className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group lg:mt-auto backdrop-blur-sm">
+            <Link href="/dashboard/warehouse" className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group backdrop-blur-sm">
               <div className="p-2.5 bg-purple-500/20 rounded-xl group-hover:bg-purple-500 group-hover:text-white transition-colors shadow-sm">
                 <MapPin className="w-5 h-5 text-purple-500 group-hover:text-current" />
               </div>
               <div className="flex-1 mt-2 lg:mt-0">
                 <p className="font-bold text-sm lg:text-base">Warehouse Address</p>
                 <p className="text-xs text-muted-foreground hidden lg:block">View shipping details</p>
+              </div>
+            </Link>
+
+            <Link href="/shop" className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group lg:mt-auto backdrop-blur-sm">
+              <div className="p-2.5 bg-blue-500/20 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors shadow-sm">
+                <ShoppingCart className="w-5 h-5 text-blue-500 group-hover:text-current" />
+              </div>
+              <div className="flex-1 mt-2 lg:mt-0">
+                <p className="font-bold text-sm lg:text-base">Go to C2G Mall</p>
+                <p className="text-xs text-muted-foreground hidden lg:block">Shop directly from China</p>
               </div>
             </Link>
           </div>

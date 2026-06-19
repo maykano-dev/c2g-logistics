@@ -47,7 +47,7 @@ export default function ShopLayoutWrapper({
 
       <div className="flex flex-col md:flex-row gap-8 py-6 md:py-8">
         {/* Desktop Sidebar (Hidden on mobile) */}
-        <div className="hidden md:block w-64 shrink-0 sticky top-[80px] h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar pr-4">
+        <div className="hidden md:block w-64 shrink-0 sticky top-[80px] pr-4">
           <ShopSidebar />
         </div>
 
