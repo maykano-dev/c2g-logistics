@@ -40,15 +40,6 @@ export default function HeroCarousel({ products }: { products: any[] }) {
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         {products.map((product, index) => {
-          const gradients = [
-            "from-blue-600 via-indigo-600 to-purple-700",
-            "from-emerald-600 via-teal-600 to-cyan-700",
-            "from-orange-500 via-red-500 to-pink-600",
-            "from-violet-600 via-fuchsia-600 to-pink-700",
-            "from-rose-500 via-red-500 to-orange-600"
-          ];
-          const gradient = gradients[index % gradients.length];
-          
           const images = product.product_images?.filter((img: any) => img.media_type !== "video") || [];
           const primaryImage = images.find((img: any) => img.is_primary) || images[0] || product.product_images?.[0];
           const imageUrl = primaryImage?.image_url || "https://placehold.co/400x400/1a1a2e/6c757d?text=No+Image";
@@ -57,10 +48,22 @@ export default function HeroCarousel({ products }: { products: any[] }) {
             <Link
               key={product.id}
               href={`/shop/product/${product.id}`}
-              className={`w-full shrink-0 bg-gradient-to-br ${gradient} relative h-[180px] sm:h-[300px] md:h-[360px] flex items-center justify-between px-2 sm:px-16 overflow-hidden group`}
+              className="w-full shrink-0 relative h-[180px] sm:h-[300px] md:h-[360px] flex items-center justify-between px-2 sm:px-16 overflow-hidden group"
             >
+              {/* Dynamic Dominant Color Background */}
+              <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
+                {/* Scaled & massively blurred image to bleed colors natively */}
+                <Image 
+                  src={imageUrl} 
+                  alt="" 
+                  fill 
+                  className="object-cover scale-[2] blur-3xl opacity-70"
+                />
+                {/* Black to Transparent gradient to ensure text readability */}
+                <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-background/20" />
+              </div>
               {/* Decorative elements */}
-              <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 opacity-20 z-0">
                 <div className="absolute top-8 left-8 w-32 h-32 rounded-full bg-white/20 blur-3xl" />
                 <div className="absolute bottom-8 right-16 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
               </div>
