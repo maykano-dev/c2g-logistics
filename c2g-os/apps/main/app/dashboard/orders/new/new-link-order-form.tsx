@@ -14,7 +14,7 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
     { id: Date.now().toString(), product_link: '', cny_price: 0, quantity: 1, notes: '' }
   ]);
   
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [itemFileNames, setItemFileNames] = useState<Record<string, string>>({});
   
   const [state, action, isPending] = useActionState(createLinkOrder, null);
 
@@ -139,6 +139,32 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                     className="flex w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors resize-none"
                   />
                 </div>
+
+                {/* Image Upload for Item */}
+                <div className="space-y-2 mt-4 pt-4 border-t border-border/50">
+                  <label className="text-sm font-medium text-destructive flex items-center gap-2">
+                    Item Screenshot (MANDATORY) *
+                  </label>
+                  <div className="relative border-2 border-dashed border-border/50 rounded-xl p-6 flex flex-col items-center justify-center bg-secondary/10 hover:bg-secondary/20 transition-colors cursor-pointer group">
+                    <input 
+                      type="file" 
+                      name={`screenshot_${item.id}`}
+                      accept="image/*" 
+                      required 
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          setItemFileNames(prev => ({...prev, [item.id]: file.name}));
+                        }
+                      }}
+                    />
+                    <div className="p-3 bg-background rounded-full mb-3 group-hover:scale-110 transition-transform shadow-sm">
+                      <UploadCloud className="w-5 h-5 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium text-center">{itemFileNames[item.id] || "Click to browse or drag and drop"}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -180,32 +206,7 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
               </div>
             </div>
 
-            {/* Image Upload */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-destructive flex items-center gap-2">
-                Order Screenshot (MANDATORY) *
-              </label>
-              <p className="text-xs text-muted-foreground mb-2">Please upload a screenshot containing all items in your cart.</p>
-              <div className="relative border-2 border-dashed border-border/50 rounded-xl p-8 flex flex-col items-center justify-center bg-secondary/10 hover:bg-secondary/20 transition-colors cursor-pointer group">
-                <input 
-                  type="file" 
-                  name="screenshot" 
-                  accept="image/*" 
-                  required 
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setFileName(e.target.files[0].name);
-                    }
-                  }}
-                />
-                <div className="p-3 bg-background rounded-full mb-3 group-hover:scale-110 transition-transform shadow-sm">
-                  <UploadCloud className="w-6 h-6 text-primary" />
-                </div>
-                <p className="text-sm font-medium">{fileName || "Click to browse or drag and drop"}</p>
-                <p className="text-xs text-muted-foreground mt-1">SVG, PNG, JPG or GIF</p>
-              </div>
-            </div>
+
 
             <div className="pt-4 border-t border-border/50 flex justify-end gap-3">
               <Link href="/dashboard/orders" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8">

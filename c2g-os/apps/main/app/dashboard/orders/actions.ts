@@ -91,7 +91,6 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
 
   const itemsJsonStr = formData.get('items_json') as string;
   const shipping_mode = formData.get('shipping') as string;
-  const screenshot = formData.get('screenshot') as File;
 
   const validation = CreateLinkOrderSchema.safeParse({
     items_json: itemsJsonStr,
@@ -102,32 +101,38 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
     return { error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
-  if (!screenshot) {
-    return { error: 'Screenshot is required' };
-  }
-
   let items = JSON.parse(itemsJsonStr);
 
-  // Upload screenshot to Supabase Storage
-  const fileExt = screenshot.name.split('.').pop()
-  const fileName = `${user.id}-${Date.now()}.${fileExt}`
-  
-  const { error: uploadError } = await supabase.storage
-    .from('order-screenshots')
-    .upload(fileName, screenshot, {
-      cacheControl: '3600',
-      upsert: false
-    })
+  // Upload screenshots for each item
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const screenshot = formData.get(`screenshot_${item.id}`) as File | null;
+    
+    if (!screenshot || screenshot.size === 0) {
+      return { error: `Screenshot is required for item ${i + 1}` };
+    }
 
-  if (uploadError) {
-    console.error('Upload Error:', uploadError)
-    // Fallback if bucket doesn't exist, we just skip image for now in dev, but throw error in prod
-    // return { error: 'Failed to upload screenshot. Make sure "order-screenshots" bucket exists.' }
+    const fileExt = screenshot.name.split('.').pop()
+    const fileName = `${user.id}-${item.id}-${Date.now()}.${fileExt}`
+    
+    const { error: uploadError } = await supabase.storage
+      .from('order-screenshots')
+      .upload(fileName, screenshot, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('Upload Error:', uploadError)
+      return { error: `Failed to upload screenshot for item ${i + 1}` }
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('order-screenshots')
+      .getPublicUrl(fileName)
+
+    item.screenshot_url = publicUrlData.publicUrl;
   }
-
-  const { data: publicUrlData } = supabase.storage
-    .from('order-screenshots')
-    .getPublicUrl(fileName)
 
   // Fetch exchange rate
   const settings = await getSettings()
@@ -154,7 +159,7 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
       notes: primaryItem.notes,
       items: items,
       shipping_mode,
-      screenshot_url: publicUrlData.publicUrl,
+      screenshot_url: primaryItem.screenshot_url,
       total: totalGhs,
       order_status: 'pending_payment',
       payment_status: 'pending'
