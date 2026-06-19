@@ -132,8 +132,8 @@ export async function POST(request: Request) {
       description = `Order #${order.id.substring(0, 8)} - ${storeName}`;
       clientReference = `C2G-ORDER-${orderId.substring(0, 8)}-${timestamp}`;
       
-      returnUrl = `${origin}/dashboard/link-orders/${orderId}?track=true`;
-      cancelUrl = `${origin}/dashboard/link-orders/${orderId}`;
+      returnUrl = `${origin}/dashboard/orders/${orderId}?track=true`;
+      cancelUrl = `${origin}/dashboard/orders/${orderId}`;
       
       dbTable = 'orders';
       dbId = order.id;

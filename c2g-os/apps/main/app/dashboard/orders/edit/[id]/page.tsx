@@ -6,13 +6,13 @@ export default async function EditLinkOrderPage({ params }: { params: { id: stri
   const order = await getLinkOrder(params.id);
 
   if (!order) {
-    redirect("/dashboard/link-orders");
+    redirect("/dashboard/orders");
   }
 
   // We only allow editing if it hasn't been paid for yet.
   const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
   if (isPaid || order.order_status === 'cancelled') {
-    redirect(`/dashboard/link-orders/${order.id}`);
+    redirect(`/dashboard/orders/${order.id}`);
   }
 
   return (

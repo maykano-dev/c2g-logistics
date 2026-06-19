@@ -19,7 +19,7 @@ export function LinkOrderCard({ order }: { order: any }) {
   return (
     <div 
       className="glass-panel p-6 overflow-hidden flex flex-col relative transition-all duration-300 hover:border-primary/50 cursor-pointer group"
-      onClick={() => router.push(`/dashboard/link-orders/${order.id}`)}
+      onClick={() => router.push(`/dashboard/orders/${order.id}`)}
     >
       {/* Absolute Payment Status Badge */}
       <div className="absolute top-6 right-6">
@@ -79,7 +79,7 @@ export function LinkOrderCard({ order }: { order: any }) {
           {!isPaid ? (
             <>
               <button 
-                onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/link-orders/edit/${order.id}`); }}
+                onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/orders/edit/${order.id}`); }}
                 className="p-2 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border"
                 title="Edit Order"
               >
@@ -94,7 +94,7 @@ export function LinkOrderCard({ order }: { order: any }) {
             </>
           ) : (
             <button 
-              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/link-orders/${order.id}?track=true`); }}
+              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/orders/${order.id}?track=true`); }}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1"
             >
               <Map className="w-4 h-4" /> Track Shipment

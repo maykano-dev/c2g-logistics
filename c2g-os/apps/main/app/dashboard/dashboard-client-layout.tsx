@@ -28,7 +28,7 @@ export default function DashboardClientLayout({
   const navLinks = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "Packages", href: "/dashboard/packages", icon: Package },
-    { name: "Link Orders", href: "/dashboard/link-orders", icon: LinkIcon },
+    { name: "Orders", href: "/dashboard/orders", icon: LinkIcon },
     { name: "Warehouse", href: "/dashboard/warehouse", icon: MapPin },
     { name: "C2G Mall", href: "/shop", icon: ShoppingCart },
   ];

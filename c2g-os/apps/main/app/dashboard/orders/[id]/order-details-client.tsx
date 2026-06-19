@@ -66,7 +66,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
       {/* Header */}
       <div className="flex items-center gap-4">
         <button 
-          onClick={() => router.push("/dashboard/link-orders")}
+          onClick={() => router.push("/dashboard/orders")}
           className="p-2 -ml-2 hover:bg-secondary rounded-full transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

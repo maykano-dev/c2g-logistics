@@ -99,7 +99,7 @@ export default async function DashboardOverview() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[60px] -mr-20 -mt-20 pointer-events-none" />
           <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
           <div className="flex flex-col gap-3">
-            <Link href="/dashboard/link-orders/new" className="flex flex-row items-center gap-4 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group backdrop-blur-sm shadow-sm hover:shadow-md">
+            <Link href="/dashboard/orders/new" className="flex flex-row items-center gap-4 p-4 rounded-xl border border-border/50 bg-secondary/30 hover:bg-primary/10 hover:border-primary/30 transition-all group backdrop-blur-sm shadow-sm hover:shadow-md">
               <div className="p-3 bg-primary/20 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors shadow-sm shrink-0">
                 <LinkIcon className="w-5 h-5 text-primary group-hover:text-current" />
               </div>

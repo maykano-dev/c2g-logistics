@@ -25,6 +25,26 @@ export async function getLinkOrders() {
   return orders || []
 }
 
+export async function getMallOrders() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return []
+
+  const { data: orders, error } = await supabase
+    .from('ecom_orders')
+    .select('*')
+    .eq('customer_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching mall orders:', error)
+    return []
+  }
+
+  return orders || []
+}
+
 export async function getLinkOrder(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -145,7 +165,7 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
     return { error: insertError.message || 'Failed to create order' }
   }
 
-  return { success: true, redirectUrl: '/dashboard/link-orders' }
+  return { success: true, redirectUrl: '/dashboard/orders' }
 }
 
 export async function updateLinkOrder(id: string, prevState: any, formData: FormData) {
@@ -209,7 +229,7 @@ export async function updateLinkOrder(id: string, prevState: any, formData: Form
     return { error: updateError.message || 'Failed to update order' }
   }
 
-  return { success: true, redirectUrl: `/dashboard/link-orders/${id}` }
+  return { success: true, redirectUrl: `/dashboard/orders/${id}` }
 }
 
 export async function cancelLinkOrder(id: string) {
@@ -241,5 +261,5 @@ export async function cancelLinkOrder(id: string) {
     return { error: updateError.message || 'Failed to cancel order' }
   }
 
-  return { success: true, redirectUrl: '/dashboard/link-orders' }
+  return { success: true, redirectUrl: '/dashboard/orders' }
 }

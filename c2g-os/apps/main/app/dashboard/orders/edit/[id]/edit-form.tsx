@@ -134,7 +134,7 @@ export function EditLinkOrderForm({ order }: { order: any }) {
           <Trash2 className="w-4 h-4" /> Cancel Order
         </button>
         <Link 
-          href={`/dashboard/link-orders/${order.id}`}
+          href={`/dashboard/orders/${order.id}`}
           className="w-full h-12 bg-secondary text-secondary-foreground hover:bg-secondary/80 font-semibold rounded-xl transition-all flex items-center justify-center"
         >
           Go Back

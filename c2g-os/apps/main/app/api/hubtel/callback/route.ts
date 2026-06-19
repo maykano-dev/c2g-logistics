@@ -114,7 +114,7 @@ export async function POST(request: Request) {
             'Payment Successful',
             `Your payment for Link Order #${linkOrder.id.split('-').pop().substring(0,8)} has been received.`,
             'payment',
-            `/dashboard/link-orders/${linkOrder.id}`
+            `/dashboard/orders/${linkOrder.id}`
           );
         }
 

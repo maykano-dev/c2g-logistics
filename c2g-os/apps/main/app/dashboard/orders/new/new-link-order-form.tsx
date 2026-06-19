@@ -208,7 +208,7 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
             </div>
 
             <div className="pt-4 border-t border-border/50 flex justify-end gap-3">
-              <Link href="/dashboard/link-orders" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8">
+              <Link href="/dashboard/orders" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8">
                 Cancel
               </Link>
               <button 

@@ -11,7 +11,7 @@ export default async function NewLinkOrderPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Link href="/dashboard/link-orders" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+          <Link href="/dashboard/orders" className="text-sm text-muted-foreground hover:text-primary transition-colors">
             Link Orders
           </Link>
           <span className="text-muted-foreground">/</span>
