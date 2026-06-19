@@ -1,228 +1,307 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { sendPushNotification } from '../../../../utils/push';
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { 
+    fetchHubtelTransactionStatusLocal, 
+    HUBTEL_RATE_LIMIT_ERROR, 
+    HUBTEL_NO_MATCH,
+    mergeNotesWithHubtelCheckout
+} from '../../../../utils/hubtel'
 
-async function notifyUser(supabase: any, userId: string, title: string, message: string, type: string, url: string) {
-  // Save to DB
-  await supabase.from('notifications').insert({ user_id: userId, title, message, type, link: url, read: false });
-  
-  // Get push subscriptions
-  const { data: subs } = await supabase.from('push_subscriptions').select('*').eq('user_id', userId);
-  if (subs && subs.length > 0) {
-    const payload = { title, body: message, url };
-    for (const sub of subs) {
-      const subscription = {
-        endpoint: sub.endpoint,
-        keys: { p256dh: sub.p256dh, auth: sub.auth }
-      };
-      await sendPushNotification(subscription, payload);
-    }
-  }
+function normalizeHubtelCallbackCode(raw: unknown): string {
+    if (raw === undefined || raw === null) return ''
+    const s = String(raw).trim()
+    if (/^\d+$/.test(s)) return s.padStart(4, '0')
+    return s
 }
 
-export async function POST(request: Request) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  try {
-    const callbackData = await request.json();
-    console.log('Received Hubtel callback:', JSON.stringify(callbackData, null, 2));
+function isHubtelCallbackSuccess(
+    responseCode: unknown,
+    statusRaw: unknown,
+    data?: Record<string, unknown> | null
+): boolean {
+    const rc = normalizeHubtelCallbackCode(responseCode)
+    if (rc !== '0000') return false
 
-    const data = callbackData.Data ?? callbackData.data;
+    const st = String(statusRaw ?? '').trim().toLowerCase()
+    if (st === 'unpaid' || st === 'pending' || st === 'failed' || st === 'failure') return false
+    if (st === '' || st === 'success' || st === 'successful') return true
+    if (st === 'paid' || st === 'fulfilled' || st === 'completed') return true
 
-    if (!data || !(data.ClientReference ?? data.clientReference)) {
-      console.error('Invalid callback data: missing ClientReference');
-      return NextResponse.json({ error: 'Invalid callback data' }, { status: 400 });
+    if (data) {
+        const fulfilled = data.IsFulfilled ?? data.isFulfilled
+        if (fulfilled === true) return true
+        const inner = String(data.status ?? data.Status ?? '').trim().toLowerCase()
+        if (inner === 'unpaid' || inner === 'pending') return false
+        if (inner === 'paid' || inner === 'fulfilled' || inner === 'completed') return true
     }
+    return false
+}
 
-    const responseCode = callbackData.ResponseCode ?? callbackData.responseCode ?? data.ResponseCode ?? data.responseCode;
-    const status = callbackData.Status ?? callbackData.status ?? data.Status ?? data.status;
-    const clientReference = String(data.ClientReference ?? data.clientReference ?? '').trim();
-    
-    // Normalize response code
-    const rc = String(responseCode).trim().padStart(4, '0');
-    
-    // Determine status
-    let isSuccess = false;
-    let isFailed = false;
-
-    if (rc === '0000') {
-      const st = String(status ?? '').trim().toLowerCase();
-      if (st === 'paid' || st === 'success' || st === 'successful' || st === 'completed' || st === 'fulfilled' || st === '') {
-        isSuccess = true;
-      }
-      
-      const fulfilled = data.IsFulfilled ?? data.isFulfilled;
-      if (fulfilled === true) {
-        isSuccess = true;
-      }
-    } else if (rc === '2001') {
-      isFailed = true;
+function isHubtelCallbackFailed(
+    responseCode: unknown,
+    statusRaw: unknown,
+    data?: Record<string, unknown> | null
+): boolean {
+    const rc = normalizeHubtelCallbackCode(responseCode)
+    const st = String(statusRaw ?? '').trim().toLowerCase()
+    if (rc === '2001') return true
+    if (st === 'failed' || st === 'failure' || st === 'declined') return true
+    if (data) {
+        const drc = normalizeHubtelCallbackCode(data.ResponseCode ?? data.responseCode)
+        if (drc === '2001') return true
+        const inner = String(data.status ?? data.Status ?? '').trim().toLowerCase()
+        if (inner === 'failed' || inner === 'failure' || inner === 'declined') return true
     }
+    return false
+}
 
-    let paymentStatus = 'pending';
-    let orderStatus = 'pending_payment';
-
-    if (isSuccess) {
-      paymentStatus = 'paid';
-      orderStatus = 'processing';
-    } else if (isFailed) {
-      paymentStatus = 'failed';
-      orderStatus = 'cancelled';
-    }
-
-    // Process based on reference type
-    if (clientReference.startsWith('C2G-ORDER-')) {
-      const { data: linkOrder, error: linkFetchError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('payment_reference', clientReference)
-        .maybeSingle();
-
-      if (!linkFetchError && linkOrder) {
-        const linkOrderStatus = paymentStatus === 'paid' 
-          ? 'processing' 
-          : (paymentStatus === 'failed' ? 'cancelled' : (linkOrder.order_status || 'pending_payment'));
-
-        const { error: linkUpdateError } = await supabase
-          .from('orders')
-          .update({
-            payment_status: paymentStatus,
-            order_status: linkOrderStatus
-          })
-          .eq('id', linkOrder.id);
-
-        if (linkUpdateError) {
-          console.error('Error updating link order:', linkUpdateError);
-          return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
-        }
-
-        // Insert into history if status changed to paid
-        if (paymentStatus === 'paid') {
-          await supabase
-            .from('order_status_history')
-            .insert({
-              order_id: linkOrder.id,
-              status: linkOrderStatus,
-              changed_by: 'system',
-              notes: 'Payment received via Hubtel webhook'
-            });
-
-          await notifyUser(
-            supabase,
-            linkOrder.customer_id,
-            'Payment Successful',
-            `Your payment for Link Order #${linkOrder.id.split('-').pop().substring(0,8)} has been received.`,
-            'payment',
-            `/dashboard/orders/${linkOrder.id}`
-          );
-        }
-
-        return NextResponse.json({
-          message: 'Link order callback processed successfully',
-          reference: clientReference,
-          status: paymentStatus
-        });
-      }
-    } else if (clientReference.startsWith('REG-')) {
-      // Handle Package Registration Fee
-      const { data: shipment, error: shipmentFetchError } = await supabase
-        .from('shipments')
-        .select('*')
-        .eq('registration_fee_payment_reference', clientReference)
-        .maybeSingle();
-
-      if (!shipmentFetchError && shipment) {
-        if (isSuccess && !shipment.registration_fee_paid) {
-          const { error: shipmentUpdateError } = await supabase
-            .from('shipments')
-            .update({
-              registration_fee_paid: true,
-              status: 'pending' // Move from pending_payment to pending
-            })
-            .eq('id', shipment.id);
-
-          if (shipmentUpdateError) {
-            console.error('Error updating shipment:', shipmentUpdateError);
-            return NextResponse.json({ error: 'Failed to update shipment' }, { status: 500 });
-          }
-
-          await notifyUser(
-            supabase,
-            shipment.customer_id,
-            'Registration Fee Paid',
-            `Your registration fee for Package ${shipment.tracking_number} is complete.`,
-            'payment',
-            `/dashboard/packages`
-          );
-
-          return NextResponse.json({
-            message: 'Package registration fee callback processed successfully',
-            reference: clientReference,
-            status: 'paid'
-          });
-        } else if (isFailed) {
-           return NextResponse.json({
-            message: 'Package registration fee payment failed',
-            reference: clientReference,
-            status: 'failed'
-          });
-        }
-      }
-    } else if (clientReference.startsWith('MALL-')) {
-      // Handle Mall Orders
-      const { data: mallOrder, error: mallFetchError } = await supabase
-        .from('ecom_orders')
-        .select('*')
-        .eq('payment_reference', clientReference)
-        .maybeSingle();
-
-      if (!mallFetchError && mallOrder) {
-        const orderStatus = paymentStatus === 'paid' 
-          ? 'processing' 
-          : (paymentStatus === 'failed' ? 'cancelled' : (mallOrder.order_status || 'pending_payment'));
-
-        const { error: mallUpdateError } = await supabase
-          .from('ecom_orders')
-          .update({
-            payment_status: paymentStatus,
-            order_status: orderStatus
-          })
-          .eq('id', mallOrder.id);
-
-        if (mallUpdateError) {
-          console.error('Error updating mall order:', mallUpdateError);
-          return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
-        }
-
-        if (paymentStatus === 'paid') {
-          await notifyUser(
-            supabase,
-            mallOrder.customer_id,
-            'Mall Order Paid',
-            `Payment for Mall Order #${mallOrder.order_id} was successful.`,
-            'payment',
-            `/dashboard/mall-orders`
-          );
-        }
-
-        return NextResponse.json({
-          message: 'Mall order callback processed successfully',
-          reference: clientReference,
-          status: paymentStatus
-        });
-      }
-    }
-
-    // Return 200 OK to Hubtel even if we don't recognize the reference to stop retries
+export async function GET() {
     return NextResponse.json({
-      message: 'Callback received, reference not processed by this handler',
-      reference: clientReference
-    });
+        ok: true,
+        service: 'hubtel-callback',
+        hint: 'Hubtel sends POST JSON here. Set callback URL in Hubtel.'
+    })
+}
 
-  } catch (error: any) {
-    console.error('Webhook error:', error);
-    // Still return 200 to prevent Hubtel from retrying endlessly
-    return NextResponse.json({ error: 'Internal server error', message: error.message }, { status: 200 });
-  }
+export async function POST(req: Request) {
+    try {
+        const callbackData = await req.json() as Record<string, unknown>
+        console.log('Received Hubtel callback:', JSON.stringify(callbackData, null, 2))
+
+        const data = (callbackData.Data ?? callbackData.data) as Record<string, unknown> | undefined
+
+        if (!data || !(data.ClientReference ?? data.clientReference)) {
+            console.error('Invalid callback data: missing ClientReference')
+            return NextResponse.json({ error: 'Invalid callback data' }, { status: 400 })
+        }
+
+        const responseCode = callbackData.ResponseCode ?? callbackData.responseCode ?? data.ResponseCode ?? data.responseCode
+        const status = callbackData.Status ?? callbackData.status ?? data.Status ?? data.status
+
+        const clientReference = String(data.ClientReference ?? data.clientReference ?? '').trim()
+        const checkoutId = data.CheckoutId ?? data.checkoutId
+        const salesInvoiceId = data.SalesInvoiceId ?? data.salesInvoiceId
+        const amount = data.Amount ?? data.amount as number
+        const customerPhone = data.CustomerPhoneNumber ?? data.customerPhoneNumber
+        const paymentDetails = data.PaymentDetails ?? data.paymentDetails
+        const description = data.Description ?? data.description
+
+        let paymentStatus = 'pending'
+        let orderStatus = 'pending_payment'
+
+        if (isHubtelCallbackSuccess(responseCode, status, data)) {
+            paymentStatus = 'paid'
+            orderStatus = 'processing'
+        } else if (isHubtelCallbackFailed(responseCode, status, data)) {
+            paymentStatus = 'failed'
+            orderStatus = 'cancelled'
+        }
+
+        // Bouncer: Verify securely
+        if (paymentStatus === 'paid') {
+            try {
+                console.log(`🔒 Verifying webhook payload for reference: ${clientReference}`)
+                const verifiedStatus = await fetchHubtelTransactionStatusLocal({
+                    clientReference: clientReference || undefined,
+                    hubtelTransactionId: checkoutId ? String(checkoutId) : undefined
+                })
+                
+                const hs = String(verifiedStatus.status || '').toLowerCase()
+                if (hs !== 'success' && hs !== 'paid') {
+                    console.warn(`🚨 SECURITY WARNING: Webhook claimed success, but Hubtel API says ${hs}. Ignoring payload.`)
+                    paymentStatus = 'pending'
+                    orderStatus = 'pending_payment'
+                } else {
+                    console.log(`✅ Webhook payload verified securely against Hubtel API.`)
+                }
+            } catch (err: any) {
+                const msg = String(err?.message || err)
+                if (msg === HUBTEL_RATE_LIMIT_ERROR || /429/.test(msg)) {
+                    console.warn(`⚠️ Rate limited by Hubtel API during callback verification. Downgrading to pending.`)
+                    paymentStatus = 'pending'
+                    orderStatus = 'pending_payment'
+                } else if (msg === HUBTEL_NO_MATCH) {
+                    console.warn(`🚨 SECURITY WARNING: Hubtel API has no record of this transaction (no_match). Ignoring payload.`)
+                    paymentStatus = 'pending'
+                    orderStatus = 'pending_payment'
+                } else {
+                    console.warn(`⚠️ Could not verify webhook against Hubtel API:`, err)
+                    paymentStatus = 'pending'
+                    orderStatus = 'pending_payment'
+                }
+            }
+        }
+
+        // Bypass RLS using service role key
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+        const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+        const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
+
+        // 1. LINK ORDERS (orders table)
+        const { data: linkOrder, error: linkFetchError } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('payment_reference', clientReference)
+            .maybeSingle()
+
+        if (!linkFetchError && linkOrder) {
+            const linkOrderStatus = paymentStatus === 'paid'
+                ? 'processing'
+                : (paymentStatus === 'failed' ? 'cancelled' : (linkOrder.order_status || 'new'))
+
+            const notesMerged = mergeNotesWithHubtelCheckout(linkOrder.notes as string | undefined, checkoutId as string | undefined)
+
+            const { error: linkUpdateError } = await supabase
+                .from('orders')
+                .update({
+                    payment_status: paymentStatus,
+                    order_status: linkOrderStatus,
+                    ...(notesMerged !== linkOrder.notes && notesMerged != null ? { notes: notesMerged } : {})
+                })
+                .eq('id', linkOrder.id)
+
+            if (linkUpdateError) throw linkUpdateError
+            
+            console.log(`Link order ${linkOrder.id} updated from Hubtel callback: ${paymentStatus}`)
+            
+            return NextResponse.json({
+                message: 'Link order callback processed successfully',
+                reference: clientReference,
+                status: paymentStatus,
+                orderType: 'link_order'
+            })
+        }
+
+        // 2. MALL ORDERS (ecom_orders table)
+        const { data: ecomOrder, error: fetchError } = await supabase
+            .from('ecom_orders')
+            .select('*')
+            .eq('payment_reference', clientReference)
+            .maybeSingle()
+
+        if (!fetchError && ecomOrder) {
+            const { error: updateError } = await supabase
+                .from('ecom_orders')
+                .update({
+                    payment_status: paymentStatus,
+                    order_status: orderStatus,
+                    payment_gateway: 'hubtel',
+                    payment_details: {
+                        checkoutId,
+                        salesInvoiceId,
+                        amount,
+                        customerPhone,
+                        paymentMethod: (paymentDetails as any)?.PaymentType || (paymentDetails as any)?.paymentType || null,
+                        channel: (paymentDetails as any)?.Channel || (paymentDetails as any)?.channel || null,
+                        mobileMoneyNumber: (paymentDetails as any)?.MobileMoneyNumber || (paymentDetails as any)?.mobileMoneyNumber || null,
+                        description,
+                        responseCode,
+                        callbackReceivedAt: new Date().toISOString()
+                    },
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', ecomOrder.id)
+
+            if (updateError) throw updateError
+            console.log(`Ecom Order ${ecomOrder.id} updated: ${paymentStatus}`)
+
+            return NextResponse.json({
+                message: 'Ecom order callback processed successfully',
+                reference: clientReference,
+                status: paymentStatus,
+                orderType: 'ecom_order'
+            })
+        }
+
+        // 3. SHIPMENT SHIPPING FEES
+        if (clientReference.startsWith('SHIPMENT-')) {
+            const { data: shipment, error: shipErr } = await supabase
+                .from('shipments')
+                .select('id, shipping_fee_paid')
+                .eq('shipping_fee_payment_reference', clientReference)
+                .maybeSingle()
+
+            if (!shipErr && shipment) {
+                if (paymentStatus === 'paid' && !shipment.shipping_fee_paid) {
+                    await supabase
+                        .from('shipments')
+                        .update({ shipping_fee_paid: true })
+                        .eq('id', shipment.id)
+                    console.log(`Shipment ${shipment.id} shipping fee marked paid`)
+                }
+                return NextResponse.json({
+                    message: 'Shipment callback processed',
+                    reference: clientReference,
+                    type: 'shipment_shipping_fee'
+                })
+            }
+        }
+
+        // 4. ECOM SHIPPING FEES
+        if (clientReference.startsWith('SHIPPING_') || clientReference.startsWith('C2G-SHIPPING-') || clientReference.startsWith('SHIP-')) {
+            const { data: shipFeeOrder, error: sfoErr } = await supabase
+                .from('ecom_orders')
+                .select('id, shipping_fee_paid')
+                .eq('shipping_fee_payment_reference', clientReference)
+                .maybeSingle()
+
+            if (!sfoErr && shipFeeOrder) {
+                if (paymentStatus === 'paid' && !shipFeeOrder.shipping_fee_paid) {
+                    await supabase
+                        .from('ecom_orders')
+                        .update({
+                            shipping_fee_paid: true,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', shipFeeOrder.id)
+                    console.log(`Ecom order ${shipFeeOrder.id} shipping fee marked paid`)
+                }
+                return NextResponse.json({
+                    message: 'Ecom shipping fee callback processed',
+                    reference: clientReference,
+                    type: 'ecom_shipping_fee'
+                })
+            }
+        }
+
+        // 5. PACKAGE REGISTRATION FEES
+        if (clientReference.startsWith('REG-')) {
+            const { data: regShipment, error: regErr } = await supabase
+                .from('shipments')
+                .select('id, registration_fee_paid')
+                .eq('registration_fee_payment_reference', clientReference)
+                .maybeSingle()
+
+            if (!regErr && regShipment) {
+                if (paymentStatus === 'paid' && !regShipment.registration_fee_paid) {
+                    await supabase
+                        .from('shipments')
+                        .update({
+                            registration_fee_paid: true,
+                            status: 'awaiting_arrival'
+                        })
+                        .eq('id', regShipment.id)
+                    console.log(`Shipment ${regShipment.id} registration fee marked paid`)
+                }
+                return NextResponse.json({
+                    message: 'Registration fee callback processed',
+                    reference: clientReference,
+                    type: 'package_registration_fee'
+                })
+            }
+        }
+
+        console.error('Order not found for reference:', clientReference)
+        return NextResponse.json({
+            message: 'Order not found',
+            reference: clientReference
+        }, { status: 200 }) // Return 200 to stop Hubtel from retrying
+
+    } catch (error: any) {
+        console.error('Error processing Hubtel callback:', error)
+        return NextResponse.json({
+            error: 'Internal server error',
+            message: error.message
+        }, { status: 200 })
+    }
 }

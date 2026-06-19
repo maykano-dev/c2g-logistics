@@ -3,12 +3,23 @@ import { createClient } from '@supabase/supabase-js';
 // We use the admin client here to bypass RLS for rate limits and session management
 // Because this runs on the server, we use the service role key.
 function getSupabaseAdmin() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Supabase admin keys missing');
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    throw new Error('Supabase URL missing');
   }
+  
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to anon key. Some admin functions may fail due to RLS.');
+  }
+
+  if (!key) {
+    throw new Error('Supabase keys missing');
+  }
+
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    key
   );
 }
 

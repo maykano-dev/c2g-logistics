@@ -1,6 +1,6 @@
 "use client";
 
-import { LinkIcon, UploadCloud, Info, Calculator, Ship, Plane, Zap, Loader2, Plus, Trash2 } from "lucide-react";
+import { LinkIcon, UploadCloud, Info, Calculator, Ship, Plane, Zap, Loader2, Plus, Trash2, ImageIcon, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useState, useActionState, useEffect } from "react";
 import { createLinkOrder } from "../actions";
@@ -11,10 +11,13 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
   
   // Multi-item State
   const [items, setItems] = useState([
-    { id: Date.now().toString(), product_link: '', cny_price: 0, quantity: 1, notes: '' }
+    { id: 'item_1', product_link: '', cny_price: 0, quantity: 1, notes: '' }
   ]);
   
   const [itemFileNames, setItemFileNames] = useState<Record<string, string>>({});
+  const [itemPreviews, setItemPreviews] = useState<Record<string, string>>({});
+  const [shippingMode, setShippingMode] = useState<string>('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const [state, action, isPending] = useActionState(createLinkOrder, null);
 
@@ -37,14 +40,15 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
 
   const handleRemoveItem = (idToRemove: string) => {
     if (items.length === 1) return; // Must have at least one item
-    setItems(items.filter(item => item.id !== idToRemove));
+    if (window.confirm("Are you sure you want to remove this item?")) {
+      setItems(items.filter(item => item.id !== idToRemove));
+    }
   };
 
   const updateItem = (id: string, field: string, value: any) => {
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
 
-  return (
   return (
     <form action={action} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
@@ -73,7 +77,7 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                     <button 
                       type="button" 
                       onClick={() => handleRemoveItem(item.id)}
-                      className="text-destructive hover:bg-destructive/10 p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-semibold"
+                      className="text-red-500 hover:bg-red-500/10 p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-semibold"
                     >
                       <Trash2 className="w-4 h-4" /> Remove
                     </button>
@@ -142,28 +146,46 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
                 </div>
 
                 {/* Image Upload for Item */}
-                <div className="space-y-2 mt-4 pt-4 border-t border-border/50">
-                  <label className="text-sm font-medium text-destructive flex items-center gap-2">
-                    Item Screenshot (MANDATORY) *
+                <div className="space-y-3 mt-6 pt-6 border-t border-border/50">
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    Item Screenshot <span className="text-amber-500">(MANDATORY) *</span>
                   </label>
-                  <div className="relative border-2 border-dashed border-border/50 rounded-xl p-6 flex flex-col items-center justify-center bg-secondary/10 hover:bg-secondary/20 transition-colors cursor-pointer group">
-                    <input 
-                      type="file" 
-                      name={`screenshot_${item.id}`}
-                      accept="image/*" 
-                      required 
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          const file = e.target.files[0];
-                          setItemFileNames(prev => ({...prev, [item.id]: file.name}));
-                        }
-                      }}
-                    />
-                    <div className="p-3 bg-background rounded-full mb-3 group-hover:scale-110 transition-transform shadow-sm">
-                      <UploadCloud className="w-5 h-5 text-primary" />
+                  <div className="grid grid-cols-2 gap-4 h-32">
+                    {/* Upload Side */}
+                    <div className="relative border-2 border-dashed border-border/50 rounded-xl p-4 flex flex-col items-center justify-center bg-secondary/10 hover:bg-secondary/20 transition-colors cursor-pointer group h-full">
+                      <input 
+                        type="file" 
+                        name={`screenshot_${item.id}`}
+                        accept="image/*" 
+                        required 
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const file = e.target.files[0];
+                            setItemFileNames(prev => ({...prev, [item.id]: file.name}));
+                            setItemPreviews(prev => ({...prev, [item.id]: URL.createObjectURL(file)}));
+                          }
+                        }}
+                      />
+                      <div className="p-3 bg-background rounded-full mb-2 group-hover:scale-110 transition-transform shadow-sm">
+                        <UploadCloud className="w-5 h-5 text-primary" />
+                      </div>
+                      <p className="text-xs font-medium text-center text-muted-foreground px-2 line-clamp-1">
+                        {itemFileNames[item.id] || "Click to browse"}
+                      </p>
                     </div>
-                    <p className="text-sm font-medium text-center">{itemFileNames[item.id] || "Click to browse or drag and drop"}</p>
+
+                    {/* Preview Side */}
+                    <div className="border border-border/50 rounded-xl flex items-center justify-center bg-black/20 h-full overflow-hidden relative">
+                      {itemPreviews[item.id] ? (
+                        <img src={itemPreviews[item.id]} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-muted-foreground/50">
+                          <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
+                          <span className="text-[10px] uppercase font-bold tracking-wider">Preview</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -180,14 +202,61 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
 
           <div className="glass-panel p-6 md:p-8 space-y-6">
             {/* Shipping Mode */}
-            <div className="space-y-3">
+            <div className="space-y-3 relative">
               <label className="text-sm font-medium">Shipping Mode <span className="text-destructive">*</span></label>
-              <select name="shipping" required defaultValue="" className="flex h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors appearance-none cursor-pointer">
-                <option value="" disabled>Select a shipping mode</option>
-                <option value="express">Air Express</option>
-                <option value="normal">Air Normal</option>
-                <option value="sea">Sea Freight</option>
-              </select>
+              <input type="hidden" name="shipping" value={shippingMode} required />
+              
+              <button 
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center justify-between h-12 w-full rounded-md border border-input bg-background/50 px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer shadow-sm hover:bg-secondary/20"
+                >
+                  <div className="flex items-center gap-2">
+                    {shippingMode === 'express' ? <><Zap className="w-4 h-4 text-orange-500" /> Air Express</> : 
+                     shippingMode === 'normal' ? <><Plane className="w-4 h-4 text-blue-500" /> Air Normal</> : 
+                     shippingMode === 'sea' ? <><Ship className="w-4 h-4 text-green-500" /> Sea Freight</> : 
+                     <span className="text-muted-foreground">Select a shipping mode</span>}
+                  </div>
+                  <ChevronDown className="w-4 h-4 opacity-50" />
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute top-[72px] left-0 right-0 bg-background border border-border rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-100">
+                    <button 
+                      type="button"
+                      onClick={() => { setShippingMode('express'); setIsDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-secondary/50 flex items-center gap-3 border-b border-border/50"
+                    >
+                      <Zap className="w-5 h-5 text-orange-500" />
+                      <div>
+                        <div className="font-semibold text-orange-500">Air Express</div>
+                        <div className="text-xs text-muted-foreground">3 Days • $44/kg</div>
+                      </div>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => { setShippingMode('normal'); setIsDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-secondary/50 flex items-center gap-3 border-b border-border/50"
+                    >
+                      <Plane className="w-5 h-5 text-blue-500" />
+                      <div>
+                        <div className="font-semibold text-blue-500">Air Normal</div>
+                        <div className="text-xs text-muted-foreground">12 Days • $25/kg</div>
+                      </div>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => { setShippingMode('sea'); setIsDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-secondary/50 flex items-center gap-3"
+                    >
+                      <Ship className="w-5 h-5 text-green-500" />
+                      <div>
+                        <div className="font-semibold text-green-500">Sea Freight</div>
+                        <div className="text-xs text-muted-foreground">50-60 Days • $250/CBM</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
             </div>
 
             {/* Shipping Mode Information */}
@@ -276,7 +345,7 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
 
             <div className="mt-4 text-xs text-center text-muted-foreground flex items-start gap-2 bg-background p-3 rounded-lg">
               <Info className="w-4 h-4 shrink-0 text-blue-500" />
-              <p className="text-left leading-tight">Shipping fees are calculated separately and will be updated in your dashboard.</p>
+              <p className="text-left leading-tight font-bold">The shipping fee will be invoiced once the items get to Ghana.</p>
             </div>
             <div className="mt-6 flex flex-col gap-3">
               <button 

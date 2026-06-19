@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { CreateLinkOrderSchema, UpdateLinkOrderSchema } from '@/utils/security-schemas'
+import { initializeHubtelPayment, mergeNotesWithHubtelCheckout } from '../../../utils/hubtel'
 
 export async function getLinkOrders() {
   const supabase = await createClient()
@@ -147,6 +148,39 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
   // Use the first item's details as the primary fallback, store everything in items JSON
   const primaryItem = items[0];
 
+  // Generate Payment Reference
+  const payment_reference = `C2G-ORDER-${Date.now()}`;
+
+  // Fetch Customer Details
+  const { data: customer } = await supabase
+    .from('customers')
+    .select('name, email, phone')
+    .eq('id', user.id)
+    .single();
+
+  // Initialize Hubtel Payment
+  let checkoutData = null;
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://c2g-logistics.com';
+  
+  try {
+      checkoutData = await initializeHubtelPayment({
+          amount: totalGhs,
+          reference: payment_reference,
+          customerName: customer?.name || user.email,
+          customerEmail: user.email,
+          customerPhone: customer?.phone || undefined,
+          description: `Link Order - C2G Logistics`,
+          returnUrl: `${baseUrl}/payment-status?reference=${payment_reference}&checkoutid={checkoutid}`,
+          cancelUrl: `${baseUrl}/payment-status?reference=${payment_reference}&status=cancelled`,
+          callbackUrl: `${baseUrl}/api/hubtel/callback`
+      });
+  } catch (err: any) {
+      console.error('Hubtel Init Error:', err);
+      return { error: `Failed to initialize payment: ${err.message}` };
+  }
+
+  const finalNotes = mergeNotesWithHubtelCheckout(primaryItem.notes, checkoutData.checkoutId);
+
   const { error: insertError } = await supabase
     .from('orders')
     .insert({
@@ -156,13 +190,14 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
       product_name: primaryItem.product_link.substring(0, 80) + (items.length > 1 ? ` (+${items.length - 1} more items)` : ''),
       cny_price: itemCostCny,
       quantity: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
-      notes: primaryItem.notes,
+      notes: finalNotes,
       items: items,
       shipping_mode,
       screenshot_url: primaryItem.screenshot_url,
       total: totalGhs,
       order_status: 'pending_payment',
-      payment_status: 'pending'
+      payment_status: 'pending',
+      payment_reference: payment_reference
     })
 
   if (insertError) {
@@ -170,7 +205,7 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
     return { error: insertError.message || 'Failed to create order' }
   }
 
-  return { success: true, redirectUrl: '/dashboard/orders' }
+  return { success: true, redirectUrl: checkoutData.checkoutUrl }
 }
 
 export async function updateLinkOrder(id: string, prevState: any, formData: FormData) {

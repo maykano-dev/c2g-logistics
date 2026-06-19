@@ -31,7 +31,6 @@ export default function DashboardClientLayout({
     { name: "Packages", href: "/dashboard/packages", icon: Package },
     { name: "Orders", href: "/dashboard/orders", icon: ClipboardList },
     { name: "Warehouse", href: "/dashboard/warehouse", icon: MapPin },
-    { name: "C2G Mall", href: "/shop", icon: ShoppingCart },
   ];
 
   return (
@@ -57,7 +56,7 @@ export default function DashboardClientLayout({
                 href={link.href} 
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${
                   isActive 
-                    ? "bg-primary/10 text-primary" 
+                    ? "bg-primary text-primary-foreground shadow-md" 
                     : "text-muted-foreground hover:bg-white/5 dark:hover:bg-black/20 hover:text-foreground"
                 }`}
               >
