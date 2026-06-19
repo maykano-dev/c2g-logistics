@@ -4,19 +4,21 @@ import { Home, ShoppingCart, Package, User, Heart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "./cart-context";
+import { useWishlist } from "./wishlist-context";
 import { motion } from "framer-motion";
 
 const NAV_ITEMS = [
   { href: "/shop", label: "Home", icon: Home },
   { href: "/dashboard/mall-orders", label: "Orders", icon: Package },
-  { href: "/cart", label: "Cart", icon: ShoppingCart, showBadge: true },
-  { href: "/wishlist", label: "Wishlist", icon: Heart },
+  { href: "/cart", label: "Cart", icon: ShoppingCart, badge: "cart" },
+  { href: "/wishlist", label: "Wishlist", icon: Heart, badge: "wishlist" },
   { href: "/dashboard", label: "Account", icon: User },
 ];
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
 
   return (
     <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[380px]">
@@ -85,9 +87,14 @@ export default function MobileBottomNav() {
                     }`}
                     style={{ width: "22px", height: "22px", strokeWidth: isActive ? 2.5 : 2 }}
                   />
-                  {link.showBadge && cartCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 bg-primary text-primary-foreground rounded-full text-[9px] font-bold flex items-center justify-center px-1 shadow-lg">
+                  {link.badge === "cart" && cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 bg-primary text-primary-foreground rounded-full text-[9px] font-bold flex items-center justify-center px-1 shadow-lg animate-in zoom-in-50">
                       {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                  {link.badge === "wishlist" && wishlistCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 bg-rose-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center px-1 shadow-lg animate-in zoom-in-50">
+                      {wishlistCount > 99 ? "99+" : wishlistCount}
                     </span>
                   )}
                 </div>

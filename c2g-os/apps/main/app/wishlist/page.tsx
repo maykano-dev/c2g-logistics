@@ -38,40 +38,40 @@ export default function WishlistPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
             {items.map(item => (
-              <div key={item.id} className="bg-card rounded-2xl border border-border overflow-hidden group hover:shadow-xl hover:shadow-primary/5 transition-all flex flex-col">
-                <Link href={`/shop/product/${item.id}`} className="relative aspect-square block overflow-hidden bg-secondary">
+              <div key={item.id} className="bg-card rounded-xl border border-border overflow-hidden group hover:shadow-xl hover:shadow-primary/10 transition-all flex flex-col relative">
+                <Link href={`/shop/product/${item.id}`} className="relative aspect-square block overflow-hidden bg-secondary/50">
                   <img 
                     src={item.imageUrl} 
                     alt={item.name} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      removeFromWishlist(item.id);
-                    }}
-                    className="absolute top-3 right-3 w-10 h-10 bg-white/90 dark:bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
                 </Link>
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    removeFromWishlist(item.id);
+                  }}
+                  className="absolute top-2 right-2 w-8 h-8 bg-background/80 backdrop-blur-md rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-all shadow-sm z-10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
                 
-                <div className="p-4 flex flex-col flex-1">
-                  <Link href={`/shop/product/${item.id}`} className="font-bold text-foreground line-clamp-2 hover:text-primary transition-colors mb-2">
+                <div className="p-3 flex flex-col flex-1">
+                  <Link href={`/shop/product/${item.id}`} className="font-semibold text-sm text-foreground line-clamp-2 hover:text-primary transition-colors mb-2 leading-tight">
                     {item.name}
                   </Link>
-                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
+                  <div className="mt-auto pt-2 flex items-end justify-between">
                     <div className="flex flex-col">
-                      <span className="font-extrabold text-primary">₵{item.priceGhs.toFixed(2)}</span>
+                      <span className="font-extrabold text-primary text-sm sm:text-base">₵{item.priceGhs.toFixed(2)}</span>
                       <span className="text-[10px] text-muted-foreground line-through">¥{item.priceCny.toFixed(2)}</span>
                     </div>
                     <Link 
                       href={`/shop/product/${item.id}`}
-                      className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+                      className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
                     >
-                      <ShoppingCart className="w-5 h-5" />
+                      <ShoppingCart className="w-4 h-4" />
                     </Link>
                   </div>
                 </div>

@@ -2,11 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, MapPin, Mail, Phone } from "lucide-react";
 
-export function Footer() {
+export function Footer({ hideCta = false }: { hideCta?: boolean }) {
   return (
     <footer className="w-full bg-secondary border-t border-border mt-auto">
       {/* Footer CTA */}
-      <div className="bg-primary relative overflow-hidden">
+      {!hideCta && (
+        <div className="bg-primary relative overflow-hidden">
         {/* Background elements */}
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay pointer-events-none" />
         <div className="absolute -top-[50%] -right-[10%] w-[50%] h-[200%] bg-white/10 blur-[100px] rounded-full pointer-events-none" />
@@ -22,8 +23,9 @@ export function Footer() {
           >
             Get a Quote <ArrowRight className="w-4 h-4" />
           </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Footer Content */}
       <div className="container mx-auto px-4 py-16">

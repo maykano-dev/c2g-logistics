@@ -48,10 +48,10 @@ export async function dismissAnnouncement(announcementId: string) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData?.user) return { success: false };
 
-  const { error } = await supabase.from("user_dismissed_announcements").insert({
+  const { error } = await supabase.from("user_dismissed_announcements").upsert({
     user_id: userData.user.id,
-    announcement_id: announcementId,
-  });
+    announcement_id: parseInt(announcementId),
+  }, { onConflict: "user_id, announcement_id" });
 
   return { success: !error };
 }
@@ -63,12 +63,12 @@ export async function dismissAllAnnouncements(announcementIds: string[]) {
 
   const dismissals = announcementIds.map((id) => ({
     user_id: userData.user.id,
-    announcement_id: id,
+    announcement_id: parseInt(id),
   }));
 
   const { error } = await supabase
     .from("user_dismissed_announcements")
-    .insert(dismissals);
+    .upsert(dismissals, { onConflict: "user_id, announcement_id" });
 
   return { success: !error };
 }
