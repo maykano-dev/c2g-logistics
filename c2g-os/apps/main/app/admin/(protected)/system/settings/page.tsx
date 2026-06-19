@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Megaphone, Save } from 'lucide-react';
+import { adminUpdateSettings } from '@/app/admin/settings-actions';
 
 export default function AdminSettingsView() {
   const [settings, setSettings] = useState<any>(null);
@@ -18,19 +19,26 @@ export default function AdminSettingsView() {
     const supabase = createClient();
     
     const { data, error } = await supabase
-      .from('admin_settings')
+      .from('settings')
       .select('*')
       .limit(1)
       .single();
 
     if (data && !error) {
-      setSettings(data);
+      setSettings({
+        id: data.id,
+        exchange_rate_cny_to_ghs: data.exchange_rate_cny_to_ghs || 14.5,
+        service_fee_percentage: data.rates?.service_fee_percentage || 5,
+        maintenance_mode: data.maintenance_mode || false,
+        rates: data.rates || {}
+      });
     } else {
       // Setup default empty state if no row exists yet
       setSettings({
-        exchange_rate: 14.5,
+        exchange_rate_cny_to_ghs: 14.5,
         service_fee_percentage: 5,
-        maintenance_mode: false
+        maintenance_mode: false,
+        rates: {}
       });
     }
     setLoading(false);
@@ -38,22 +46,13 @@ export default function AdminSettingsView() {
 
   const handleSave = async () => {
     setSaving(true);
-    const supabase = createClient();
-    // Assuming there's only 1 row or upsert mechanism
-    const { error } = await supabase
-      .from('admin_settings')
-      .update({
-        exchange_rate: settings.exchange_rate,
-        service_fee_percentage: settings.service_fee_percentage,
-        maintenance_mode: settings.maintenance_mode
-      })
-      .eq('id', settings.id || 1); // fallback to id 1 if not fetched
+    const res = await adminUpdateSettings(settings);
       
-    if (!error) {
+    if (res.success) {
       alert('Settings saved successfully!');
     } else {
-      console.error(error);
-      alert('Failed to save settings.');
+      console.error(res.error);
+      alert('Failed to save settings: ' + res.error);
     }
     setSaving(false);
   };
@@ -85,8 +84,8 @@ export default function AdminSettingsView() {
             <input 
               type="number" 
               step="0.01"
-              value={settings?.exchange_rate || 0}
-              onChange={e => setSettings({...settings, exchange_rate: parseFloat(e.target.value)})}
+              value={settings?.exchange_rate_cny_to_ghs || 0}
+              onChange={e => setSettings({...settings, exchange_rate_cny_to_ghs: parseFloat(e.target.value)})}
               className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>

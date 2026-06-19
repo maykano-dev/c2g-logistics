@@ -28,10 +28,10 @@ export async function getDashboardStats() {
       supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'awaiting_payment'),
       supabase.from('ecom_orders').select('*', { count: 'exact', head: true }),
       supabase.from('products').select('*', { count: 'exact', head: true }),
-      supabase.from('customers').select('*', { count: 'exact', head: true }).eq('account_type', 'importer'),
+      supabase.from('customers').select('*', { count: 'exact', head: true }).in('role', ['importer', 'admin']),
       supabase.from('incoming_packages').select('*', { count: 'exact', head: true }).eq('status', 'received'),
       supabase.from('incoming_packages').select('*', { count: 'exact', head: true }).eq('status', 'shipped'),
-      supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'paid').eq('status', 'pending')
+      supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'paid').eq('order_status', 'pending')
     ]);
 
     // 2. Revenue Calculation

@@ -1,8 +1,50 @@
 'use client';
 
-import { Users, Mail, Phone, MapPin, Search, Filter, Plus, UserPlus, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Mail, Phone, MapPin, Search, Filter, Plus, UserPlus, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+import { adminSetEmployeeStatus } from '@/app/admin/employee-actions';
 
 export default function EmployeesDirectoryView() {
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    setLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (data && !error) {
+      setEmployees(data);
+    }
+    setLoading(false);
+  };
+
+  const handleStatusChange = async (id: string, status: string) => {
+    const res = await adminSetEmployeeStatus(id, status);
+    if (res.success) {
+      setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status } : emp));
+    } else {
+      alert('Failed to update status: ' + res.error);
+    }
+  };
+
+  const filtered = employees.filter(emp => {
+    const matchesSearch = emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || emp.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -22,16 +64,22 @@ export default function EmployeesDirectoryView() {
           <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input 
             type="text"
-            placeholder="Search employees by name, role, or department..."
+            placeholder="Search employees by name, email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
           />
         </div>
         <div className="flex gap-2">
-          <select className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-sm rounded-lg px-4 focus:outline-none focus:border-indigo-500">
-            <option>All Branches</option>
-            <option>China Warehouse</option>
-            <option>Ghana HQ</option>
-            <option>Remote</option>
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-sm rounded-lg px-4 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="rejected">Rejected</option>
           </select>
           <button className="px-4 h-10 border border-zinc-800 bg-zinc-950 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-zinc-800 transition-colors shrink-0">
             <Filter className="w-4 h-4" /> Filters
@@ -39,58 +87,74 @@ export default function EmployeesDirectoryView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          { name: 'David Boakye', role: 'Warehouse Lead', branch: 'China Warehouse', email: 'david@c2g.com', phone: '+86 150 0000 0000', status: 'active' },
-          { name: 'Sarah Mensah', role: 'Procurement Officer', branch: 'Ghana HQ', email: 'sarah@c2g.com', phone: '+233 24 000 0000', status: 'active' },
-          { name: 'Kwame Osei', role: 'Logistics Coordinator', branch: 'China Warehouse', email: 'kwame@c2g.com', phone: '+86 150 1111 1111', status: 'on_leave' },
-          { name: 'Abena Yeboah', role: 'Customer Support', branch: 'Remote', email: 'abena@c2g.com', phone: '+233 20 000 0000', status: 'active' },
-          { name: 'Michael Chen', role: 'QC Inspector', branch: 'China Warehouse', email: 'michael@c2g.com', phone: '+86 138 0000 0000', status: 'active' },
-          { name: 'Emmanuel Tech', role: 'System Admin', branch: 'Ghana HQ', email: 'emmanuel@c2g.com', phone: '+233 55 000 0000', status: 'active' },
-        ].map((emp, i) => (
-          <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-indigo-500/50 transition-colors group relative overflow-hidden">
-            <div className={`absolute top-0 left-0 w-1 h-full ${emp.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
-            
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex gap-3">
-                <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-lg font-bold text-zinc-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors">
-                  {emp.name.split(' ').map(n => n[0]).join('')}
+      {loading ? (
+        <div className="text-center p-12 text-zinc-500">Loading directory...</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center p-12 text-zinc-500">No employees found.</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((emp) => (
+            <div key={emp.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-indigo-500/50 transition-colors group relative overflow-hidden">
+              <div className={`absolute top-0 left-0 w-1 h-full ${
+                emp.status === 'active' ? 'bg-emerald-500' : 
+                emp.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
+              }`}></div>
+              
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex gap-3">
+                  <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-lg font-bold text-zinc-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors">
+                    {emp.full_name?.split(' ').map((n: string) => n[0]).join('').substring(0,2).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">{emp.full_name}</h3>
+                    <p className="text-xs text-zinc-400 mt-0.5 capitalize">{emp.staff_role || 'No Role Assigned'}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">{emp.name}</h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">{emp.role}</p>
+                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded ${
+                  emp.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 
+                  emp.status === 'pending' ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
+                }`}>
+                  {emp.status}
+                </span>
+              </div>
+
+              <div className="space-y-2 mt-6">
+                <div className="flex items-center gap-3 text-xs text-zinc-400">
+                  <Mail className="w-3.5 h-3.5 text-zinc-500" /> {emp.email}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-zinc-400">
+                  <Phone className="w-3.5 h-3.5 text-zinc-500" /> {emp.phone || 'No phone'}
+                </div>
+                {/* Branches would be joined from a branches table if we had one, mapping to generic text for now */}
+                <div className="flex items-center gap-3 text-xs text-zinc-400">
+                  <MapPin className="w-3.5 h-3.5 text-zinc-500" /> C2G Location
                 </div>
               </div>
-              <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded ${
-                emp.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
-              }`}>
-                {emp.status.replace('_', ' ')}
-              </span>
-            </div>
 
-            <div className="space-y-2 mt-6">
-              <div className="flex items-center gap-3 text-xs text-zinc-400">
-                <Mail className="w-3.5 h-3.5 text-zinc-500" /> {emp.email}
-              </div>
-              <div className="flex items-center gap-3 text-xs text-zinc-400">
-                <Phone className="w-3.5 h-3.5 text-zinc-500" /> {emp.phone}
-              </div>
-              <div className="flex items-center gap-3 text-xs text-zinc-400">
-                <MapPin className="w-3.5 h-3.5 text-zinc-500" /> {emp.branch}
+              <div className="mt-6 pt-4 border-t border-zinc-800 flex justify-between items-center">
+                 <button className="text-xs font-bold text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+                   <FileText className="w-3 h-3" /> HR File
+                 </button>
+                 
+                 {emp.status === 'pending' ? (
+                   <div className="flex gap-2">
+                     <button onClick={() => handleStatusChange(emp.id, 'active')} className="text-emerald-500 hover:bg-emerald-500/20 p-1.5 rounded-lg transition-colors">
+                       <CheckCircle2 className="w-4 h-4" />
+                     </button>
+                     <button onClick={() => handleStatusChange(emp.id, 'rejected')} className="text-red-500 hover:bg-red-500/20 p-1.5 rounded-lg transition-colors">
+                       <XCircle className="w-4 h-4" />
+                     </button>
+                   </div>
+                 ) : (
+                   <button className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
+                     Manage Role
+                   </button>
+                 )}
               </div>
             </div>
-
-            <div className="mt-6 pt-4 border-t border-zinc-800 flex justify-between">
-               <button className="text-xs font-bold text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
-                 <FileText className="w-3 h-3" /> HR File
-               </button>
-               <button className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
-                 Manage Role
-               </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

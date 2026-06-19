@@ -98,9 +98,9 @@ export async function getRecentActivity() {
   // Ideally this queries a unified 'notification_log' or 'order_status_history'.
   // For now, we'll fetch recent notifications.
   const { data: activities } = await supabase
-    .from('notification_log')
+    .from('notifications')
     .select('id, type, title, message, created_at')
-    .eq('customer_id', user.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(5)
 

@@ -51,7 +51,7 @@ export default function MissionControlView() {
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .eq('payment_status', 'paid')
-        .eq('status', 'pending');
+        .eq('order_status', 'pending');
 
       // Mocking missing tables for now until they are fully populated/built
       setMetrics({

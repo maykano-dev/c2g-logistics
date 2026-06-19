@@ -99,7 +99,7 @@ export default function AdminMallOrdersView() {
                       <p className="text-[10px] text-zinc-500">{order.customer_phone || order.user_id}</p>
                     </td>
                     <td className="p-4">
-                      {getStatusBadge(order.status || order.payment_status)}
+                      {getStatusBadge(order.order_status || order.payment_status)}
                     </td>
                     <td className="p-4 text-sm text-zinc-300 font-medium">₵{order.total_amount ? Number(order.total_amount).toFixed(2) : '0.00'}</td>
                     <td className="p-4 text-right">

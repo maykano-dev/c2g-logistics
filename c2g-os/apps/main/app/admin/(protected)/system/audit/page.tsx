@@ -1,9 +1,69 @@
 'use client';
 
-import { ShieldCheck, Search, Filter, Terminal, Activity, AlertTriangle, Key, Trash2, Edit, LogIn } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShieldCheck, Search, Filter, Terminal, Activity, AlertTriangle, Key, Trash2, Edit, LogIn, Database } from 'lucide-react';
 import { format } from 'date-fns';
+import { createClient } from '@/utils/supabase/client';
 
 export default function AuditLogsView() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [stats, setStats] = useState({ total24h: 0, failedLogins: 0, destructive: 0 });
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    const supabase = createClient();
+    
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select('*, admins(email, name)')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (data && !error) {
+      setLogs(data);
+      
+      // Calculate basic stats for top cards
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      
+      let failed = 0;
+      let deleteCount = 0;
+      let total24 = 0;
+
+      data.forEach(log => {
+        const logDate = new Date(log.created_at);
+        if (logDate > twentyFourHoursAgo) total24++;
+        if (log.action.includes('FAILED')) failed++;
+        if (log.action.includes('DELETE') || log.action.includes('REMOVE')) deleteCount++;
+      });
+
+      setStats({ total24h: total24, failedLogins: failed, destructive: deleteCount });
+    }
+    setLoading(false);
+  };
+
+  const getActionIcon = (action: string) => {
+    if (action.includes('DELETE') || action.includes('REMOVE')) return Trash2;
+    if (action.includes('FAILED')) return Key;
+    if (action.includes('LOGIN')) return LogIn;
+    if (action.includes('UPDATE') || action.includes('EDIT')) return Edit;
+    if (action.includes('APPROVE') || action.includes('VERIFY')) return ShieldCheck;
+    return Database;
+  };
+
+  const filteredLogs = logs.filter(log => 
+    log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.entity_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.admins?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.ip_address?.includes(searchTerm)
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -20,21 +80,21 @@ export default function AuditLogsView() {
            <div className="p-3 bg-indigo-500/10 rounded-lg text-indigo-500"><Activity className="w-6 h-6"/></div>
            <div>
              <p className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Total Events (24h)</p>
-             <p className="text-2xl font-black text-white">1,402</p>
+             <p className="text-2xl font-black text-white">{stats.total24h}</p>
            </div>
         </div>
         <div className="bg-zinc-900 border border-amber-500/30 p-4 rounded-xl flex items-center gap-4">
            <div className="p-3 bg-amber-500/10 rounded-lg text-amber-500"><AlertTriangle className="w-6 h-6"/></div>
            <div>
              <p className="text-xs text-amber-500 uppercase font-bold tracking-widest mb-1">Failed Logins</p>
-             <p className="text-2xl font-black text-white">14</p>
+             <p className="text-2xl font-black text-white">{stats.failedLogins}</p>
            </div>
         </div>
         <div className="bg-zinc-900 border border-red-500/30 p-4 rounded-xl flex items-center gap-4">
            <div className="p-3 bg-red-500/10 rounded-lg text-red-500"><Trash2 className="w-6 h-6"/></div>
            <div>
              <p className="text-xs text-red-500 uppercase font-bold tracking-widest mb-1">Destructive Actions</p>
-             <p className="text-2xl font-black text-white">3</p>
+             <p className="text-2xl font-black text-white">{stats.destructive}</p>
            </div>
         </div>
       </div>
@@ -48,7 +108,13 @@ export default function AuditLogsView() {
            <div className="flex gap-2">
              <div className="relative">
                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-               <input type="text" placeholder="Filter logs..." className="h-8 bg-zinc-900 border border-zinc-700 rounded-lg pl-9 pr-3 text-xs text-white focus:border-indigo-500 focus:outline-none" />
+               <input 
+                 type="text" 
+                 placeholder="Filter logs..." 
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="h-8 bg-zinc-900 border border-zinc-700 rounded-lg pl-9 pr-3 text-xs text-white focus:border-indigo-500 focus:outline-none" 
+               />
              </div>
              <button className="p-2 border border-zinc-700 text-zinc-400 hover:text-white rounded-lg"><Filter className="w-4 h-4"/></button>
            </div>
@@ -66,30 +132,34 @@ export default function AuditLogsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/30 text-zinc-400">
-              {[
-                { time: new Date().toISOString(), actor: 'admin@c2g.com', type: 'UPDATE', icon: Edit, target: 'orders [id=9021]', ip: '192.168.1.1' },
-                { time: new Date(Date.now() - 5000).toISOString(), actor: 'finance@c2g.com', type: 'APPROVE', icon: ShieldCheck, target: 'withdrawals [id=44]', ip: '10.0.0.8' },
-                { time: new Date(Date.now() - 15000).toISOString(), actor: 'system', type: 'DELETE', icon: Trash2, target: 'expired_sessions', ip: '127.0.0.1' },
-                { time: new Date(Date.now() - 45000).toISOString(), actor: 'qc@c2g.com', type: 'LOGIN_SUCCESS', icon: LogIn, target: 'auth', ip: '192.168.1.45' },
-                { time: new Date(Date.now() - 60000).toISOString(), actor: 'unknown', type: 'LOGIN_FAILED', icon: Key, target: 'auth', ip: '142.250.190.46' },
-                { time: new Date(Date.now() - 120000).toISOString(), actor: 'admin@c2g.com', type: 'UPDATE', icon: Edit, target: 'products [sku=A99]', ip: '192.168.1.1' },
-              ].map((log, i) => (
-                <tr key={i} className="hover:bg-zinc-800/20 transition-colors">
-                  <td className="py-3 text-zinc-500">{format(new Date(log.time), 'yyyy-MM-dd HH:mm:ss')}</td>
-                  <td className="py-3 text-indigo-400">{log.actor}</td>
-                  <td className="py-3">
-                    <span className={`px-2 py-0.5 rounded border flex items-center gap-1 w-fit ${
-                      log.type === 'DELETE' ? 'text-red-400 border-red-500/20 bg-red-500/10' :
-                      log.type.includes('FAILED') ? 'text-amber-400 border-amber-500/20 bg-amber-500/10' :
-                      'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
-                    }`}>
-                      <log.icon className="w-3 h-3" /> {log.type}
-                    </span>
-                  </td>
-                  <td className="py-3 text-zinc-300">{log.target}</td>
-                  <td className="py-3 text-zinc-600">{log.ip}</td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan={5} className="py-8 text-center text-zinc-500">Loading audit stream...</td></tr>
+              ) : filteredLogs.length === 0 ? (
+                <tr><td colSpan={5} className="py-8 text-center text-zinc-500">No events found matching filter.</td></tr>
+              ) : (
+                filteredLogs.map((log) => {
+                  const Icon = getActionIcon(log.action);
+                  return (
+                    <tr key={log.id} className="hover:bg-zinc-800/20 transition-colors">
+                      <td className="py-3 text-zinc-500">{format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss')}</td>
+                      <td className="py-3 text-indigo-400">{log.admins?.name || log.admins?.email || log.user_id || 'System'}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-0.5 rounded border flex items-center gap-1 w-fit ${
+                          log.action.includes('DELETE') ? 'text-red-400 border-red-500/20 bg-red-500/10' :
+                          log.action.includes('FAILED') ? 'text-amber-400 border-amber-500/20 bg-amber-500/10' :
+                          'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
+                        }`}>
+                          <Icon className="w-3 h-3" /> {log.action}
+                        </span>
+                      </td>
+                      <td className="py-3 text-zinc-300">
+                        {log.entity_type} {log.entity_id ? `[id=${log.entity_id}]` : ''}
+                      </td>
+                      <td className="py-3 text-zinc-600">{log.ip_address || '127.0.0.1'}</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

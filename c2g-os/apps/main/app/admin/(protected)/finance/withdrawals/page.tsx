@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Wallet, Search, Filter, CheckCircle2, XCircle, AlertTriangle, ShieldCheck, Banknote } from 'lucide-react';
 import { format } from 'date-fns';
+import { adminHandleWithdrawal } from '@/app/admin/withdrawal-actions';
 
 export default function WithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
@@ -53,14 +54,13 @@ export default function WithdrawalsPage() {
   };
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
-    const supabase = createClient();
-    const newStatus = action === 'approve' ? 'approved' : 'rejected';
-    
-    // Attempt DB update
-    await supabase.from('withdrawals').update({ status: newStatus }).eq('id', id);
-    
-    // Update local state instantly
-    setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: newStatus } : w));
+    const res = await adminHandleWithdrawal(id, action);
+    if (res.success) {
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+      setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: newStatus } : w));
+    } else {
+      alert(res.error);
+    }
   };
 
   const canApprove = (requiredTier: string) => {

@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
 import AdminLogin from '@/components/admin/admin-login';
-import { Lock } from 'lucide-react';
+import { verifyAdminPin } from './actions';
 
 export default function AdminSecretEntry() {
   const [unlocked, setUnlocked] = useState(false);
   const [pin, setPin] = useState('');
-  const MASTER_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || '9999'; // Note: For true security, don't expose in NEXT_PUBLIC in production if possible, but this is a pre-auth layer.
+  const [error, setError] = useState('');
+  const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Keep focus on the hidden input to capture keystrokes
+  // Keep focus on hidden input
   useEffect(() => {
     const handleGlobalClick = () => {
       if (!unlocked && inputRef.current) {
@@ -22,10 +23,20 @@ export default function AdminSecretEntry() {
   }, [unlocked]);
 
   useEffect(() => {
-    if (pin === MASTER_PIN) {
-      setUnlocked(true);
+    if (pin.length >= 4) {
+      startTransition(async () => {
+        const result = await verifyAdminPin(pin);
+        if (result.success) {
+          setUnlocked(true);
+          setError('');
+        } else {
+          // Wrong PIN — clear after brief delay so the user doesn't know exactly when it checked
+          setTimeout(() => setPin(''), 300);
+          setError('');
+        }
+      });
     }
-  }, [pin, MASTER_PIN]);
+  }, [pin]);
 
   if (unlocked) {
     return <AdminLogin />;
@@ -34,8 +45,9 @@ export default function AdminSecretEntry() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
       {/* 
-        This is purposefully designed to look like a broken or blank page.
-        Only a subtle lock icon appears if they tap the screen.
+        Purposefully designed to look like a broken or blank page.
+        Only a subtle lock icon appears if they interact.
+        PIN is now verified server-side — no credentials in browser bundle.
       */}
       <input 
         ref={inputRef}
@@ -45,12 +57,8 @@ export default function AdminSecretEntry() {
         className="absolute opacity-0 w-1 h-1"
         autoFocus
         autoComplete="off"
+        disabled={isPending}
       />
-      
-      {/* Easter egg: slightly visible lock icon that fades in if they interact */}
-      <div className="opacity-0 hover:opacity-5 transition-opacity cursor-default select-none pointer-events-none">
-        <Lock className="w-12 h-12 text-white/20" />
-      </div>
     </div>
   );
 }

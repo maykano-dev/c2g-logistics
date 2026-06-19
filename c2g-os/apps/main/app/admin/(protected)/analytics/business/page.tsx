@@ -1,8 +1,59 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import { BarChart3, TrendingUp, Users, PackageOpen, CreditCard, ArrowUpRight, ArrowDownRight, Target } from 'lucide-react';
 
 export default function AnalyticsOverview() {
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    customers: 0,
+    packages: 0,
+    savings: 0,
+    mallRevenue: 0,
+    shippingRevenue: 0,
+    wholesaleRevenue: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      const supabase = createClient();
+      setLoading(true);
+
+      const [
+        { data: ecomOrders },
+        { data: orders },
+        { data: customersCount }
+      ] = await Promise.all([
+        supabase.from('ecom_orders').select('total_amount'),
+        supabase.from('orders').select('total'),
+        supabase.from('customers').select('id', { count: 'exact', head: true })
+      ]);
+
+      let mallRev = 0;
+      if (ecomOrders) {
+        mallRev = ecomOrders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
+      }
+
+      let procRev = 0;
+      if (orders) {
+        procRev = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      }
+
+      setStats({
+        totalRevenue: mallRev + procRev,
+        customers: customersCount?.count || 0,
+        packages: 1204, // Placeholder until package stats are defined
+        savings: 4200,  // Placeholder
+        mallRevenue: mallRev,
+        shippingRevenue: procRev * 0.4, // Estimated
+        wholesaleRevenue: procRev * 0.1 // Estimated
+      });
+      setLoading(false);
+    }
+    fetchStats();
+  }, []);
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       
@@ -27,10 +78,10 @@ export default function AnalyticsOverview() {
       {/* Top Level KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Revenue', value: '₵124,500', trend: '+14.2%', up: true, icon: TrendingUp, color: 'text-emerald-500' },
-          { label: 'Active Customers', value: '8,421', trend: '+5.4%', up: true, icon: Users, color: 'text-indigo-500' },
-          { label: 'Packages Delivered', value: '1,204', trend: '-2.1%', up: false, icon: PackageOpen, color: 'text-amber-500' },
-          { label: 'Procurement Savings', value: '¥4,200', trend: '+18.9%', up: true, icon: CreditCard, color: 'text-fuchsia-500' },
+          { label: 'Total Revenue', value: `₵${stats.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`, trend: '+14.2%', up: true, icon: TrendingUp, color: 'text-emerald-500' },
+          { label: 'Active Customers', value: stats.customers.toLocaleString(), trend: '+5.4%', up: true, icon: Users, color: 'text-indigo-500' },
+          { label: 'Packages Delivered', value: stats.packages.toLocaleString(), trend: '-2.1%', up: false, icon: PackageOpen, color: 'text-amber-500' },
+          { label: 'Procurement Savings', value: `¥${stats.savings.toLocaleString()}`, trend: '+18.9%', up: true, icon: CreditCard, color: 'text-fuchsia-500' },
         ].map((kpi, i) => (
           <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <div className="flex justify-between items-start mb-4">
@@ -56,9 +107,9 @@ export default function AnalyticsOverview() {
           
           <div className="space-y-6">
             {[
-              { channel: 'C2G Mall Sales', amount: '₵84,200', pct: 65, color: 'bg-indigo-500' },
-              { channel: 'Shipping Fees (Air & Sea)', amount: '₵32,100', pct: 25, color: 'bg-emerald-500' },
-              { channel: 'Importer Wholesale', amount: '₵8,200', pct: 10, color: 'bg-amber-500' },
+              { channel: 'C2G Mall Sales', amount: `₵${stats.mallRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`, pct: (stats.mallRevenue / Math.max(stats.totalRevenue, 1)) * 100, color: 'bg-indigo-500' },
+              { channel: 'Shipping Fees (Air & Sea)', amount: `₵${stats.shippingRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`, pct: (stats.shippingRevenue / Math.max(stats.totalRevenue, 1)) * 100, color: 'bg-emerald-500' },
+              { channel: 'Importer Wholesale', amount: `₵${stats.wholesaleRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`, pct: (stats.wholesaleRevenue / Math.max(stats.totalRevenue, 1)) * 100, color: 'bg-amber-500' },
             ].map((item, i) => (
               <div key={i}>
                 <div className="flex justify-between items-end mb-2">

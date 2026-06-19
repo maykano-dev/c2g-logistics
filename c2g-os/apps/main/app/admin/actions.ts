@@ -4,6 +4,43 @@ import { createClient } from '@/utils/supabase/server';
 import speakeasy from 'speakeasy';
 import { cookies } from 'next/headers';
 
+/**
+ * Verifies the admin PIN server-side against the database.
+ * The PIN is stored in the `admins` table as `master_pin`.
+ * This replaces the insecure NEXT_PUBLIC_ADMIN_PIN env variable.
+ */
+export async function verifyAdminPin(pin: string): Promise<{ success: boolean; error?: string }> {
+  if (!pin || pin.length < 4) {
+    return { success: false, error: 'Invalid PIN' };
+  }
+
+  const supabase = await createClient();
+
+  // Check against master_pin stored in admins table (first active admin row)
+  const { data, error } = await supabase
+    .from('admins')
+    .select('master_pin')
+    .eq('status', 'active')
+    .limit(1)
+    .single();
+
+  if (error || !data) {
+    // Fallback to env variable for initial setup scenarios
+    const envPin = process.env.ADMIN_MASTER_PIN;
+    if (envPin && pin === envPin) {
+      return { success: true };
+    }
+    return { success: false, error: 'Could not verify PIN' };
+  }
+
+  // Direct comparison (in production you should hash this with bcrypt)
+  if (data.master_pin === pin) {
+    return { success: true };
+  }
+
+  return { success: false, error: 'Incorrect PIN' };
+}
+
 export async function verifyAdminCredentials(email: string, pass: string) {
   const supabase = await createClient();
   

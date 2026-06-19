@@ -1,0 +1,22 @@
+
+> main@0.1.0 dev /home/maykano/Downloads/New C2g Logistics/c2g-os/apps/main
+> next dev --port 3001
+
+▲ Next.js 16.2.0 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.103:3001
+- Environments: .env.local
+✓ Ready in 616ms
+⚠ Slow filesystem detected. The benchmark took 704ms. If /home/maykano/Downloads/New C2g Logistics/c2g-os/apps/main/.next/dev is a network drive, consider moving it to a local folder.
+See more: https://nextjs.org/docs/app/guides/local-development
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+⚠ ./apps/main/tailwind.config.js
+Specified module format (EcmaScript Modules) is not matching the module format of the source code (CommonJs)
+The EcmaScript module format was specified in the package.json that is affecting this source file or by using an special extension, but it looks like that CommonJs syntax is used in the source code.
+Exports made by CommonJs syntax will lead to a runtime error, since the module is in EcmaScript mode. Either change the "type" field in the package.json or replace CommonJs syntax with EcmaScript import/export syntax in the source file.
+
+
+ GET /login 200 in 1687ms (next.js: 879ms, proxy.ts: 252ms, application-code: 556ms)
+✓ Compiled in 2.2s
+✓ Compiled in 342ms

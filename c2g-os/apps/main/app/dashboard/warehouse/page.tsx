@@ -1,6 +1,22 @@
 import { Copy, MapPin, Building2, Phone, User, CheckCircle2 } from "lucide-react";
+import { createClient } from '@/utils/supabase/server';
 
-export default function WarehouseAddressPage() {
+export default async function WarehouseAddressPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  let customerId = 'C2G-CUST-XXXX';
+  if (user) {
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('customer_unique_id')
+      .eq('id', user.id)
+      .single();
+    if (customer?.customer_unique_id) {
+      customerId = customer.customer_unique_id;
+    }
+  }
+
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
       <div>
@@ -30,7 +46,7 @@ export default function WarehouseAddressPage() {
               <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Receiver Name (Include your ID)</span>
               <div className="flex items-center justify-between">
                 <span className="font-bold text-lg flex items-center gap-2">
-                  <User className="w-4 h-4 text-primary" /> C2G-CUST-9082
+                  <User className="w-4 h-4 text-primary" /> {customerId}
                 </span>
                 <Copy className="w-4 h-4 text-muted-foreground group-hover/copy:text-primary transition-colors" />
               </div>
@@ -61,7 +77,7 @@ export default function WarehouseAddressPage() {
               <div className="flex items-start justify-between gap-4">
                 <span className="font-bold flex items-start gap-2 leading-tight">
                   <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" /> 
-                  No. 123 Logistics Park, Airport Road, Baiyun District (C2G-CUST-9082)
+                  No. 123 Logistics Park, Airport Road, Baiyun District ({customerId})
                 </span>
                 <Copy className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5 group-hover/copy:text-primary transition-colors" />
               </div>
@@ -69,7 +85,7 @@ export default function WarehouseAddressPage() {
           </div>
           
           <div className="mt-6 text-sm text-muted-foreground bg-primary/5 p-4 rounded-lg border border-primary/10">
-            <strong>Important:</strong> Always ensure your unique ID (C2G-CUST-9082) is included in the receiver name or detailed address so we can identify your packages.
+            <strong>Important:</strong> Always ensure your unique ID ({customerId}) is included in the receiver name or detailed address so we can identify your packages.
           </div>
         </div>
 

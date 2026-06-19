@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Megaphone, Plus, Image as ImageIcon, Send, Edit, Trash2, Search, Video, ImagePlus, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { adminHandleGalleryStatus } from '@/app/admin/gallery-actions';
 
 type TabType = 'promotions' | 'announcements' | 'broadcasts' | 'ads' | 'gallery' | 'searchLogs';
 
@@ -42,6 +43,20 @@ export default function AdminMarketingView() {
     }
     
     setLoading(false);
+  };
+
+  const handleGalleryAction = async (id: string, action: 'approve' | 'reject' | 'delete') => {
+    const res = await adminHandleGalleryStatus(id, action);
+    if (res.success) {
+      if (action === 'delete') {
+        setData(prev => prev.filter(item => item.id !== id));
+      } else {
+        const newStatus = action === 'approve' ? 'approved' : 'rejected';
+        setData(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
+      }
+    } else {
+      alert('Action failed: ' + res.error);
+    }
   };
 
   return (
@@ -173,15 +188,15 @@ export default function AdminMarketingView() {
                         <div className="flex items-center justify-end gap-2">
                           {item.status === 'pending' && (
                             <>
-                              <button className="p-2 text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded-lg transition-colors" title="Approve">
+                              <button onClick={() => handleGalleryAction(item.id, 'approve')} className="p-2 text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded-lg transition-colors" title="Approve">
                                 <CheckCircle className="w-4 h-4" />
                               </button>
-                              <button className="p-2 text-amber-400 hover:text-white hover:bg-amber-500/20 rounded-lg transition-colors" title="Reject">
+                              <button onClick={() => handleGalleryAction(item.id, 'reject')} className="p-2 text-amber-400 hover:text-white hover:bg-amber-500/20 rounded-lg transition-colors" title="Reject">
                                 <XCircle className="w-4 h-4" />
                               </button>
                             </>
                           )}
-                          <button className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors">
+                          <button onClick={() => handleGalleryAction(item.id, 'delete')} className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors" title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>

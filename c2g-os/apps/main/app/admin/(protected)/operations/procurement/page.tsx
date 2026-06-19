@@ -46,7 +46,8 @@ export default function AdminOrdersView() {
   };
 
   const filteredOrders = orders.filter(o => 
-    o.order_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    o.id?.toString().includes(searchTerm) ||
+    o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -97,18 +98,18 @@ export default function AdminOrdersView() {
                 filteredOrders.map(order => (
                   <tr key={order.id} className="hover:bg-zinc-800/50 transition-colors group">
                     <td className="p-4">
-                      <p className="text-sm text-white font-mono font-medium">{order.order_id || 'N/A'}</p>
+                      <p className="text-sm text-white font-mono font-medium">#{order.id}</p>
                       <p className="text-[10px] text-zinc-500 mt-1">{format(new Date(order.created_at), 'MMM dd, yyyy HH:mm')}</p>
                     </td>
                     <td className="p-4">
-                      <p className="text-sm text-zinc-200">{order.customers?.name || 'Unknown'}</p>
+                      <p className="text-sm text-zinc-200">{order.customer_name || order.customers?.name || 'Unknown'}</p>
                       <p className="text-[10px] text-zinc-500">{order.customers?.email}</p>
                     </td>
-                    <td className="p-4 text-sm text-zinc-300 capitalize">{order.platform}</td>
+                    <td className="p-4 text-sm text-zinc-300 capitalize">{order.platform || 'Link Order'}</td>
                     <td className="p-4">
-                      {getStatusBadge(order.status)}
+                      {getStatusBadge(order.order_status)}
                     </td>
-                    <td className="p-4 text-sm text-zinc-300 font-medium">¥{order.total_amount_cny?.toFixed(2) || '0.00'}</td>
+                    <td className="p-4 text-sm text-zinc-300 font-medium">¥{order.total ? Number(order.total).toFixed(2) : '0.00'}</td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link href={`/admin/operations/procurement/${order.id}`} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" title="View Details">

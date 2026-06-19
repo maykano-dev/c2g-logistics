@@ -22,7 +22,7 @@ export default function AdminPackagesView() {
     if (activeTab === 'incoming') {
       const { data, error } = await supabase
         .from('incoming_packages')
-        .select('*')
+        .select('*, customers(name, phone)')
         .order('created_at', { ascending: false });
       if (data && !error) setPackages(data);
     } else if (activeTab === 'scanned') {
@@ -45,7 +45,7 @@ export default function AdminPackagesView() {
   const filteredPackages = packages.filter(p => {
     if (activeTab === 'incoming') {
       return p.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             p.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
+             p.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     } else if (activeTab === 'scanned') {
       return p.scanned_tracking?.toLowerCase().includes(searchTerm.toLowerCase()) ||
              p.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -140,15 +140,15 @@ export default function AdminPackagesView() {
                         </>
                       ) : (
                         <>
-                          <p className="text-sm text-zinc-200">{pkg.customer_name || 'Unknown'}</p>
+                          <p className="text-sm text-zinc-200">{activeTab === 'incoming' ? pkg.customers?.name : pkg.customer_name || 'Unknown'}</p>
                           {activeTab === 'incoming' && (
-                            <p className="text-[10px] text-zinc-500">{pkg.customer_phone || pkg.user_id}</p>
+                            <p className="text-[10px] text-zinc-500">{pkg.customers?.phone || pkg.customer_id}</p>
                           )}
                         </>
                       )}
                     </td>
                     <td className="p-4 text-sm text-zinc-300">
-                      {activeTab === 'incoming' ? (pkg.courier || 'N/A') : 
+                      {activeTab === 'incoming' ? (pkg.status || 'N/A') : 
                        (activeTab === 'scanned' ? (pkg.scan_result === 'success' ? 'Added to DB' : pkg.scan_result || 'N/A') :
                        (
                          <div>
@@ -159,7 +159,7 @@ export default function AdminPackagesView() {
                     </td>
                     <td className="p-4 text-sm text-zinc-300">
                       {activeTab === 'incoming' ? 
-                        (pkg.expected_date ? format(new Date(pkg.expected_date), 'MMM dd, yyyy') : 'Unknown') :
+                        (pkg.created_at ? format(new Date(pkg.created_at), 'MMM dd, yyyy') : 'Unknown') :
                         (activeTab === 'scanned' ? 
                           (pkg.scanned_at ? format(new Date(pkg.scanned_at), 'MMM dd, yyyy HH:mm') : 'Unknown') :
                           (pkg.arrival_date ? format(new Date(pkg.arrival_date), 'MMM dd, yyyy HH:mm') : 'Unknown')

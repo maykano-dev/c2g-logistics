@@ -84,10 +84,10 @@ export default async function MallOrdersPage() {
                 </div>
                 
                 <div className="flex flex-col items-end gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
-                    {formatStatusLabel(order.status)}
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(order.order_status)}`}>
+                    {formatStatusLabel(order.order_status)}
                   </span>
-                  {order.payment_status === 'pending' && order.status === 'pending_payment' && (
+                  {order.payment_status === 'pending' && order.order_status === 'pending_payment' && (
                     <span className="text-xs text-amber-500 font-medium animate-pulse flex items-center gap-1">
                       Awaiting Payment
                     </span>
@@ -111,7 +111,7 @@ export default async function MallOrdersPage() {
                 </div>
                 
                 <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  {order.status === 'pending_payment' ? (
+                  {order.order_status === 'pending_payment' ? (
                     <button className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 shadow-lg shadow-primary/25">
                       Pay Now
                     </button>

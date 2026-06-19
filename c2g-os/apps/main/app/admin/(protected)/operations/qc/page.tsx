@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Search, Filter, Camera, CheckCircle2, XCircle, AlertCircle, PackageCheck, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import { adminUpdateQCStatus } from '@/app/admin/qc-actions';
 
 export default function QualityControlView() {
   const [inspections, setInspections] = useState<any[]>([]);
@@ -50,17 +51,12 @@ export default function QualityControlView() {
   );
 
   const handleUpdateQC = async (id: string, newStatus: string) => {
-    const supabase = createClient();
-    
-    // Optimistic update
-    setInspections(prev => prev.map(i => i.id === id ? { ...i, status: newStatus, inspected_at: new Date().toISOString() } : i));
-    
-    // DB update
-    await supabase.from('qc_inspections').update({ 
-      status: newStatus,
-      inspected_at: new Date().toISOString(),
-      inspector: 'System Admin' // In real app, fetch from auth
-    }).eq('id', id);
+    const res = await adminUpdateQCStatus(id, newStatus);
+    if (res.success) {
+      setInspections(prev => prev.map(i => i.id === id ? { ...i, status: newStatus, inspected_at: new Date().toISOString() } : i));
+    } else {
+      alert('Action failed: ' + res.error);
+    }
   };
 
   return (

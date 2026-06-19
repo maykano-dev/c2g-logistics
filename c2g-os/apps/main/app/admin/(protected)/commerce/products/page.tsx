@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Search, Filter, Plus, Edit, Trash2, Package, Tag, ArrowUpRight, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { adminDeleteProduct } from '@/app/admin/product-actions';
 
 export default function ProductsCatalogView() {
   const [products, setProducts] = useState<any[]>([]);
@@ -30,6 +31,16 @@ export default function ProductsCatalogView() {
       setProducts(data);
     }
     setLoading(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    const res = await adminDeleteProduct(id);
+    if (res.success) {
+      setProducts(prev => prev.filter(p => p.id !== id));
+    } else {
+      alert('Failed to delete: ' + res.error);
+    }
   };
 
   const filtered = products.filter(p => 
@@ -148,7 +159,7 @@ export default function ProductsCatalogView() {
                            <button className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg transition-colors" title="Edit Product">
                              <Edit className="w-4 h-4" />
                            </button>
-                           <button className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors" title="Delete">
+                           <button onClick={() => handleDelete(product.id)} className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors" title="Delete">
                              <Trash2 className="w-4 h-4" />
                            </button>
                          </div>
