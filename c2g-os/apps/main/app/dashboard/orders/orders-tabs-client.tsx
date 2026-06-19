@@ -76,8 +76,8 @@ export default function OrdersTabsClient({
               ))
             ) : (
               <div className="glass-panel p-12 text-center flex flex-col items-center justify-center border-dashed">
-                <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-4">
-                  <PackageSearch className="w-8 h-8 text-muted-foreground opacity-50" />
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                  <PackageSearch className="w-8 h-8 text-primary opacity-80" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">No Link Orders Yet</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
@@ -85,7 +85,7 @@ export default function OrdersTabsClient({
                 </p>
                 <Link 
                   href="/dashboard/orders/new" 
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-6 gap-2"
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold transition-all bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-6 gap-2"
                 >
                   Place Your First Order
                 </Link>
@@ -104,7 +104,7 @@ export default function OrdersTabsClient({
             ) : (
               <div className="glass-panel p-12 text-center flex flex-col items-center justify-center border-dashed">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                  <ShoppingBag className="w-8 h-8 text-primary opacity-50" />
+                  <ShoppingBag className="w-8 h-8 text-primary opacity-80" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">No Mall Orders Yet</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
@@ -112,7 +112,7 @@ export default function OrdersTabsClient({
                 </p>
                 <Link 
                   href="/shop" 
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-6 gap-2"
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold transition-all bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-6 gap-2"
                 >
                   Browse the Mall
                 </Link>
