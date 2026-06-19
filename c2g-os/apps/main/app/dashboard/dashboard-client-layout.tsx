@@ -14,7 +14,8 @@ import {
   LogOut,
   Menu,
   X,
-  ShoppingCart
+  ShoppingCart,
+  ClipboardList
 } from "lucide-react";
 import { logout } from "../auth/actions";
 
@@ -28,7 +29,7 @@ export default function DashboardClientLayout({
   const navLinks = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "Packages", href: "/dashboard/packages", icon: Package },
-    { name: "Orders", href: "/dashboard/orders", icon: LinkIcon },
+    { name: "Orders", href: "/dashboard/orders", icon: ClipboardList },
     { name: "Warehouse", href: "/dashboard/warehouse", icon: MapPin },
     { name: "C2G Mall", href: "/shop", icon: ShoppingCart },
   ];
