@@ -46,12 +46,21 @@ export default async function DashboardOverview() {
   return (
     <div className="space-y-8 animate-fade-in pb-10">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-        <p className="text-xl font-extrabold mt-2 text-foreground">
-          Welcome back, <span className="text-primary">{stats.userName}</span>!
-        </p>
-        <p className="text-muted-foreground mt-1">Here's what's happening with your imports.</p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+          <p className="text-xl font-extrabold mt-2 text-foreground">
+            Welcome back, <span className="text-primary">{stats.userName}</span>!
+          </p>
+          <p className="text-muted-foreground mt-1">Here's what's happening with your imports.</p>
+        </div>
+        <Link 
+          href="/shop" 
+          className="inline-flex items-center justify-center bg-primary text-primary-foreground font-bold px-6 py-3 rounded-full hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 whitespace-nowrap gap-2 w-fit sm:mb-2 hover:scale-105"
+        >
+          <ShoppingCart className="w-4 h-4" />
+          Shop Now
+        </Link>
       </div>
 
       {/* Summary Cards - Mobile Horizontal Scroll, Desktop Grid */}
