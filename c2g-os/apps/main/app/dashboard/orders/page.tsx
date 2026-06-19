@@ -15,19 +15,19 @@ export default async function OrdersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Your Orders</h1>
           <p className="text-muted-foreground mt-1">Manage and track all your purchases.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
           <Link 
             href="/dashboard/orders/new" 
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 gap-2 shadow-sm hover:scale-[1.02]"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-full sm:w-[180px] gap-2 shadow-sm hover:scale-[1.02]"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 shrink-0" />
             Place Link Order
           </Link>
           <Link 
             href="/shop" 
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all border-2 border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 h-10 px-4 gap-2 shadow-sm hover:scale-[1.02]"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all border-2 border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 h-11 w-full sm:w-[180px] gap-2 shadow-sm hover:scale-[1.02]"
           >
-            <ShoppingCart className="w-4 h-4" />
+            <ShoppingCart className="w-4 h-4 shrink-0" />
             Go to Mall
           </Link>
         </div>

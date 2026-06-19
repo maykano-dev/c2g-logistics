@@ -6,6 +6,8 @@ import Link from "next/link";
 import { LinkOrderCard } from "./link-order-card";
 import { MallOrderCard } from "./mall-order-card";
 
+import { motion } from "framer-motion";
+
 export default function OrdersTabsClient({ 
   linkOrders, 
   mallOrders 
@@ -18,30 +20,46 @@ export default function OrdersTabsClient({
   return (
     <div className="space-y-6">
       {/* Tabs Navigation */}
-      <div className="flex p-1 bg-secondary/50 rounded-xl w-fit border border-border/50 shadow-inner">
+      <div className="flex p-1 bg-secondary/50 rounded-xl w-fit border border-border/50 shadow-inner relative">
         <button
           onClick={() => setActiveTab("link")}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-300 ${
+          className={`relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors duration-300 ${
             activeTab === "link"
-              ? "bg-background text-foreground shadow-sm"
+              ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
+          {activeTab === "link" && (
+            <motion.div
+              layoutId="orders-active-tab"
+              className="absolute inset-0 bg-primary rounded-lg -z-10 shadow-sm"
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            />
+          )}
           <LinkIcon className="w-4 h-4" />
           Link Orders
-          <span className="ml-1.5 px-2 py-0.5 rounded-md bg-secondary text-xs">{linkOrders.length}</span>
+          <span className={`ml-1.5 px-2 py-0.5 rounded-md text-xs transition-colors ${activeTab === "link" ? "bg-black/20 text-white" : "bg-background/80 text-foreground"}`}>
+            {linkOrders.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("mall")}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-300 ${
+          className={`relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors duration-300 ${
             activeTab === "mall"
-              ? "bg-primary text-primary-foreground shadow-sm"
+              ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground hover:bg-white/5"
           }`}
         >
+          {activeTab === "mall" && (
+            <motion.div
+              layoutId="orders-active-tab"
+              className="absolute inset-0 bg-primary rounded-lg -z-10 shadow-sm"
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            />
+          )}
           <ShoppingBag className="w-4 h-4" />
           Mall Orders
-          <span className={`ml-1.5 px-2 py-0.5 rounded-md text-xs ${activeTab === "mall" ? "bg-black/20 text-white" : "bg-secondary"}`}>
+          <span className={`ml-1.5 px-2 py-0.5 rounded-md text-xs transition-colors ${activeTab === "mall" ? "bg-black/20 text-white" : "bg-background/80 text-foreground"}`}>
             {mallOrders.length}
           </span>
         </button>
