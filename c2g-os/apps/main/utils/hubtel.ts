@@ -187,7 +187,7 @@ export async function fetchHubtelTransactionStatusLocal(
 export function extractHubtelCheckoutId(notes: string | null | undefined): string | null {
     if (!notes || typeof notes !== 'string') return null
     const m = notes.match(/HUBTEL_CHECKOUT:([^\s\n]+)/)
-    return m ? m[1].trim() : null
+    return m && m[1] ? m[1].trim() : null
 }
 
 export function mergeNotesWithHubtelCheckout(existingNotes: string | null | undefined, checkoutId: string | undefined): string | null {

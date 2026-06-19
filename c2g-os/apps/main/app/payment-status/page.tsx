@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Loader2, CheckCircle2, XCircle, ArrowRight, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 
-export default function PaymentStatusPage() {
+function PaymentStatusContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -191,5 +191,17 @@ export default function PaymentStatusPage() {
         </div>
       </motion.div>
     </div>
+  )
+}
+
+export default function PaymentStatusPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+      </div>
+    }>
+      <PaymentStatusContent />
+    </Suspense>
   )
 }

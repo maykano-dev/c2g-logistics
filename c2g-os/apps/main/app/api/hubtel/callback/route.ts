@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { revalidatePath } from 'next/cache'
 import { 
     fetchHubtelTransactionStatusLocal, 
     HUBTEL_RATE_LIMIT_ERROR, 
@@ -228,6 +229,8 @@ export async function POST(req: Request) {
                         .update({ shipping_fee_paid: true })
                         .eq('id', shipment.id)
                     console.log(`Shipment ${shipment.id} shipping fee marked paid`)
+                    revalidatePath('/dashboard/packages')
+                    revalidatePath(`/dashboard/packages/${shipment.id}`)
                 }
                 return NextResponse.json({
                     message: 'Shipment callback processed',
@@ -282,6 +285,8 @@ export async function POST(req: Request) {
                         })
                         .eq('id', regShipment.id)
                     console.log(`Shipment ${regShipment.id} registration fee marked paid`)
+                    revalidatePath('/dashboard/packages')
+                    revalidatePath(`/dashboard/packages/${regShipment.id}`)
                 }
                 return NextResponse.json({
                     message: 'Registration fee callback processed',

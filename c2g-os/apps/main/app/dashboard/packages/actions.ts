@@ -17,7 +17,7 @@ export async function getPackages() {
     .from('shipments')
     .select('*')
     .eq('customer_id', user.id)
-    .in('status', ['awaiting_arrival', 'in_warehouse', 'pending_payment', 'pending'])
+    .in('status', ['awaiting_arrival', 'in_warehouse', 'pending_payment', 'pending', 'clearing_customs'])
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -89,4 +89,26 @@ export async function registerPackages(formData: FormData) {
 
   revalidatePath('/dashboard/packages');
   return { success: true, count: trackingNumbers.length };
+}
+
+export async function updatePackageStatus(id: string, status: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Unauthorized');
+
+  const { error } = await supabase
+    .from('shipments')
+    .update({ status })
+    .eq('id', id)
+    .eq('customer_id', user.id);
+
+  if (error) {
+    console.error('Error updating status:', error);
+    throw new Error('Failed to update status');
+  }
+
+  revalidatePath(`/dashboard/packages/${id}`);
+  revalidatePath('/dashboard/packages');
+  return { success: true };
 }

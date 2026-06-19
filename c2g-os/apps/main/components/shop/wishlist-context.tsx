@@ -31,8 +31,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         const { getDbWishlist } = await import("../../app/shop/actions");
         const res = await getDbWishlist();
         if (res.success && res.items) {
-          setItems(res.items);
-          localStorage.setItem("c2g_mall_wishlist", JSON.stringify(res.items));
+          const validItems = res.items.filter(Boolean) as WishlistItem[];
+          setItems(validItems);
+          localStorage.setItem("c2g_mall_wishlist", JSON.stringify(validItems));
         } else {
           // Load from local storage fallback
           const saved = localStorage.getItem("c2g_mall_wishlist");

@@ -72,9 +72,27 @@ function calculateHeading(from: any, to: any) {
   return ((Math.atan2(dLng, dLat) * (180 / Math.PI)) + 360) % 360;
 }
 
-const planeSVG = `<img src="/plane-3d.png" style="width:100%; height:100%; object-fit:contain; filter: drop-shadow(0px 8px 12px rgba(0,0,0,0.5)); transform: scale(1.4) scaleX(-1);" />`;
+const planeSVG = `
+  <div style="width: 20px; height: 20px; background-color: #3b82f6; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #3b82f6; animation: mapPulseAir 2s infinite;"></div>
+  <style>
+    @keyframes mapPulseAir {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+  </style>
+`;
 
-const shipSVG = `<img src="/ship-3d.png" style="width:100%; height:100%; object-fit:contain; filter: drop-shadow(0px 12px 16px rgba(0,0,0,0.6)); transform: scale(-2.5, 2.5) translateY(10%);" />`;
+const shipSVG = `
+  <div style="width: 20px; height: 20px; background-color: #f97316; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #f97316; animation: mapPulse 2s infinite;"></div>
+  <style>
+    @keyframes mapPulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(249, 115, 22, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+    }
+  </style>
+`;
 
 export default function TrackingMap({ isAir, progress }: { isAir: boolean, progress: number }) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -109,11 +127,16 @@ export default function TrackingMap({ isAir, progress }: { isAir: boolean, progr
     map.fitBounds(maxBounds, { padding: [50, 50] });
 
     // Custom Marker
-    const iconHtml = `<div style="width:60px; height:60px; display:flex; align-items:center; justify-content:center; transition: transform 0.5s ease;" id="dynamic-transport-icon">${isAir ? planeSVG : shipSVG}</div>`;
+    const iconHtml = `<div style="width:20px; height:20px; display:flex; align-items:center; justify-content:center; transition: transform 0.5s ease;" id="dynamic-transport-icon">${isAir ? planeSVG : shipSVG}</div>`;
     
     const startNode = activeRoute[0] || { lat: 0, lng: 0 };
     shipMarkerRef.current = L.marker([startNode.lat, startNode.lng], {
-      icon: L.divIcon({ className: '', html: iconHtml, iconSize: [60, 60], iconAnchor: [30, 30] }),
+      icon: L.divIcon({ 
+        className: '', 
+        html: iconHtml, 
+        iconSize: [20, 20], 
+        iconAnchor: [10, 10] 
+      }),
       zIndexOffset: 1000
     }).addTo(map);
 
