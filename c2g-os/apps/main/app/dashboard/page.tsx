@@ -50,7 +50,7 @@ export default async function DashboardOverview() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
           <p className="text-xl font-extrabold mt-2 text-foreground">
-            Welcome back, <span className="text-primary">{stats.userName}</span>!
+            Welcome back, <span className="text-primary uppercase">{stats.userName}</span>!
           </p>
           <p className="text-muted-foreground mt-1">Here's what's happening with your imports.</p>
         </div>
