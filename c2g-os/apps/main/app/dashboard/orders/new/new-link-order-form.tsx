@@ -45,9 +45,10 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  return (
+    <form action={action} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
-        <form action={action} className="space-y-6">
+        <div className="space-y-6">
           {state?.error && (
             <div className="p-4 text-sm font-medium bg-destructive/10 text-destructive rounded-xl border border-destructive/20">
               {state.error}
@@ -181,54 +182,59 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
             {/* Shipping Mode */}
             <div className="space-y-3">
               <label className="text-sm font-medium">Shipping Mode <span className="text-destructive">*</span></label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <label className="relative flex cursor-pointer rounded-xl border border-input bg-background/50 p-4 hover:bg-accent hover:text-accent-foreground has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                  <input type="radio" name="shipping" value="express" className="peer sr-only" required />
-                  <div className="flex flex-col gap-1 w-full text-center items-center">
-                    <Zap className="w-6 h-6 text-orange-500 mb-1" />
-                    <span className="font-semibold text-sm">Air Express</span>
-                  </div>
-                </label>
-                <label className="relative flex cursor-pointer rounded-xl border border-input bg-background/50 p-4 hover:bg-accent hover:text-accent-foreground has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                  <input type="radio" name="shipping" value="normal" className="peer sr-only" required />
-                  <div className="flex flex-col gap-1 w-full text-center items-center">
-                    <Plane className="w-6 h-6 text-blue-500 mb-1" />
-                    <span className="font-semibold text-sm">Air Normal</span>
-                  </div>
-                </label>
-                <label className="relative flex cursor-pointer rounded-xl border border-input bg-background/50 p-4 hover:bg-accent hover:text-accent-foreground has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                  <input type="radio" name="shipping" value="sea" className="peer sr-only" required />
-                  <div className="flex flex-col gap-1 w-full text-center items-center">
-                    <Ship className="w-6 h-6 text-green-500 mb-1" />
-                    <span className="font-semibold text-sm">Sea Freight</span>
-                  </div>
-                </label>
-              </div>
+              <select name="shipping" required defaultValue="" className="flex h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors appearance-none cursor-pointer">
+                <option value="" disabled>Select a shipping mode</option>
+                <option value="express">Air Express</option>
+                <option value="normal">Air Normal</option>
+                <option value="sea">Sea Freight</option>
+              </select>
             </div>
 
+            {/* Shipping Mode Information */}
+            <div className="mt-6 pt-6 border-t border-border/50">
+              <h3 className="font-bold mb-4 flex items-center gap-2">
+                <Info className="w-4 h-4 text-primary" />
+                Shipping Mode Details
+              </h3>
+              
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                  <div className="flex items-center gap-2 font-semibold text-orange-500">
+                    <Zap className="w-4 h-4" /> Air Express
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold">3 days</div>
+                    <div className="text-xs opacity-80">$44/kg</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <div className="flex items-center gap-2 font-semibold text-blue-500">
+                    <Plane className="w-4 h-4" /> Air Normal
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold">12 days</div>
+                    <div className="text-xs opacity-80">$25/kg</div>
+                  </div>
+                </div>
 
+                <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="flex items-center gap-2 font-semibold text-green-500">
+                    <Ship className="w-4 h-4" /> Sea Freight
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold">50-60 days</div>
+                    <div className="text-xs opacity-80">$250/CBM</div>
+                  </div>
+                </div>
+              </div>
 
-            <div className="pt-4 border-t border-border/50 flex justify-end gap-3">
-              <Link href="/dashboard/orders" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8">
-                Cancel
-              </Link>
-              <button 
-                type="submit" 
-                disabled={isPending}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-11 px-8 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Proceed to Payment"
-                )}
-              </button>
+              <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
+                Exact shipping fee will be communicated via WhatsApp after your item has been purchased and is ready to ship. Rates above are estimates.
+              </p>
             </div>
           </div>
-        </form>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -272,53 +278,28 @@ export function NewLinkOrderForm({ exchangeRate }: { exchangeRate: number }) {
               <Info className="w-4 h-4 shrink-0 text-blue-500" />
               <p className="text-left leading-tight">Shipping fees are calculated separately and will be updated in your dashboard.</p>
             </div>
-          </div>
-        </div>
-
-        {/* Shipping Mode Information */}
-        <div className="glass-panel p-5">
-          <h3 className="font-bold mb-4 flex items-center gap-2">
-            <Info className="w-4 h-4 text-primary" />
-            Shipping Mode Information
-          </h3>
-          
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-              <div className="flex items-center gap-2 font-semibold text-orange-500">
-                <Zap className="w-4 h-4" /> Air Express
-              </div>
-              <div className="text-right">
-                <div className="font-bold">3 days</div>
-                <div className="text-xs opacity-80">$44/kg</div>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <div className="flex items-center gap-2 font-semibold text-blue-500">
-                <Plane className="w-4 h-4" /> Air Normal
-              </div>
-              <div className="text-right">
-                <div className="font-bold">12 days</div>
-                <div className="text-xs opacity-80">$25/kg</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-              <div className="flex items-center gap-2 font-semibold text-green-500">
-                <Ship className="w-4 h-4" /> Sea Freight
-              </div>
-              <div className="text-right">
-                <div className="font-bold">50-60 days</div>
-                <div className="text-xs opacity-80">$250/CBM</div>
-              </div>
+            <div className="mt-6 flex flex-col gap-3">
+              <button 
+                type="submit" 
+                disabled={isPending}
+                className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Proceed to Payment"
+                )}
+              </button>
+              <Link href="/dashboard/orders" className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12">
+                Cancel
+              </Link>
             </div>
           </div>
-
-          <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-            Exact shipping fee will be communicated via WhatsApp after your item has been purchased and is ready to ship. Rates above are estimates.
-          </p>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
