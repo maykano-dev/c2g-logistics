@@ -81,7 +81,7 @@ export default function OrdersTabsClient({
                 </div>
                 <h3 className="text-xl font-bold mb-2">No Link Orders Yet</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                  You haven't placed any "Buy For Me" orders yet. Click the button above to get started.
+                  You haven't placed any "Buy For Me" orders yet. Click the button below to get started.
                 </p>
                 <Link 
                   href="/dashboard/orders/new" 
