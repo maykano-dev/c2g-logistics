@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ClientFooter } from "../components/client-footer";
@@ -16,6 +16,23 @@ export const metadata: Metadata = {
     template: "%s | C2G Logistics",
   },
   description: "C2G Logistics is Ghana's trusted platform for shopping, importing, and shipping products from China. Buy For Me, Warehouse Address, Air & Sea Freight.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "C2G Logistics",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -35,7 +52,7 @@ export default function RootLayout({
       <body className={outfit.className}>
         <CartProvider>
           <WishlistProvider>
-            <div className="min-h-screen bg-background text-foreground flex flex-col">
+            <div className="min-h-[100dvh] bg-background text-foreground flex flex-col w-full overflow-x-hidden">
               <ServiceWorkerRegister />
               <OfflineIndicator />
               {children}

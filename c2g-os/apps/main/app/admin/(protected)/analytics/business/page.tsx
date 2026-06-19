@@ -24,11 +24,11 @@ export default function AnalyticsOverview() {
       const [
         { data: ecomOrders },
         { data: orders },
-        { data: customersCount }
+        { count: customersCount }
       ] = await Promise.all([
         supabase.from('ecom_orders').select('total_amount'),
         supabase.from('orders').select('total'),
-        supabase.from('customers').select('id', { count: 'exact', head: true })
+        supabase.from('customers').select('*', { count: 'exact', head: true })
       ]);
 
       let mallRev = 0;
@@ -43,7 +43,7 @@ export default function AnalyticsOverview() {
 
       setStats({
         totalRevenue: mallRev + procRev,
-        customers: customersCount?.count || 0,
+        customers: customersCount || 0,
         packages: 1204, // Placeholder until package stats are defined
         savings: 4200,  // Placeholder
         mallRevenue: mallRev,
