@@ -139,8 +139,8 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
                   <LinkIcon className="w-8 h-8 text-muted-foreground" />
                 )}
               </div>
-              <div className="pt-2">
-                <h2 className="text-xl font-bold pr-20">{order.product_name || 'Link Order Item'}</h2>
+              <div className="pt-2 min-w-0 flex-1">
+                <h2 className="text-xl font-bold pr-2 sm:pr-20 break-all sm:break-words line-clamp-2 sm:line-clamp-3">{order.product_name || 'Link Order Item'}</h2>
                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                   <span>Qty: {order.quantity || 1}</span>
                   <span className="w-1 h-1 rounded-full bg-border" />
