@@ -93,6 +93,18 @@ export function PushPrompt() {
     if (permission === 'granted') {
       await subscribeUser();
       setShowPrompt(false);
+      
+      // Fire success notification immediately
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.showNotification("Notifications Enabled! 🎉", {
+            body: "You will now receive instant updates about your packages and orders.",
+            icon: "/icons/icon-192x192.png",
+            badge: "/icons/icon-192x192.png",
+            vibrate: [200, 100, 200]
+          });
+        });
+      }
     } else {
       setShowPrompt(false);
     }
