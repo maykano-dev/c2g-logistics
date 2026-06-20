@@ -44,7 +44,7 @@ export default function AdminMobileNav() {
 
       {/* Drawer Content */}
       <div 
-        className={`fixed top-0 left-0 h-full w-72 bg-zinc-950 border-r border-zinc-800 z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-72 bg-zinc-950 border-r border-zinc-800 z-50 transform transition-transform duration-300 ease-in-out flex flex-col pt-[env(safe-area-inset-top)] ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
