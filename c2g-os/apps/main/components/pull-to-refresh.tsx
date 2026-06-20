@@ -24,13 +24,13 @@ export default function PullToRefresh({ children, className = "" }: PullToRefres
     if (!el) return;
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (el.scrollTop === 0) {
+      if (el.scrollTop === 0 && e.touches[0]) {
         setStartY(e.touches[0].clientY);
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (el.scrollTop > 0 || startY === 0) return;
+      if (el.scrollTop > 0 || startY === 0 || !e.touches[0]) return;
       
       const y = e.touches[0].clientY;
       const pullDistance = y - startY;
