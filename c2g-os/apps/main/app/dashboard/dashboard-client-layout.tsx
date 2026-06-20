@@ -57,7 +57,7 @@ export default function DashboardClientLayout({
   return (
     <div className="h-screen h-[100dvh] overflow-hidden bg-background flex flex-col md:flex-row relative">
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 glass border-r border-border/50 sticky top-0 h-screen overflow-y-auto z-50">
+      <aside className="hidden md:flex flex-col w-64 glass border-r border-border/50 sticky top-0 h-screen overflow-y-auto z-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 relative flex items-center justify-center">
@@ -116,7 +116,7 @@ export default function DashboardClientLayout({
         <div className="fixed bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full animate-pulse delay-1000 -z-10" />
 
         {/* Mobile Header */}
-        <header className="md:hidden h-14 glass border-b border-border/50 flex items-center justify-between px-4 sticky top-0 z-40 w-full shrink-0">
+        <header className="md:hidden h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] glass border-b border-border/50 flex items-center justify-between px-4 sticky top-0 z-40 w-full shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 relative flex items-center justify-center -ml-1">
               <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="32px" className="object-contain" />
@@ -136,7 +136,7 @@ export default function DashboardClientLayout({
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden md:flex h-16 glass border-b border-border/50 items-center justify-end px-6 sticky top-0 z-40 w-full shrink-0">
+        <header className="hidden md:flex h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] glass border-b border-border/50 items-center justify-end px-6 sticky top-0 z-40 w-full shrink-0">
           <div className="flex items-center gap-4">
             <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20">
               <Bell className="w-5 h-5" />
@@ -147,7 +147,7 @@ export default function DashboardClientLayout({
         </header>
 
         {/* Content */}
-        <div className="flex-1 p-4 md:p-6 lg:p-8 pb-32 md:pb-8 z-0 w-full">
+        <div className="flex-1 p-4 md:p-6 lg:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8 z-0 w-full">
           {children}
         </div>
       </main>
@@ -172,7 +172,7 @@ function MobileNav({
   pathname: string;
 }) {
   return (
-    <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-[380px]">
+    <nav className="md:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-[380px]">
       {/* Outer fully-pill liquid glass shell */}
       <div
         className="relative flex items-center justify-between rounded-full p-2"
