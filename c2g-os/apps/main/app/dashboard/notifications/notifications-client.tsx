@@ -15,6 +15,15 @@ export default function NotificationsClient({ initialNotifications }: { initialN
     router.refresh(); // Refresh to update bell icon count
   };
 
+  const handleNotificationClick = async (notification: any) => {
+    if (!notification.is_read) {
+      await handleMarkAsRead(notification.id);
+    }
+    if (notification.link) {
+      router.push(notification.link);
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     await markAllAsRead();
@@ -22,13 +31,12 @@ export default function NotificationsClient({ initialNotifications }: { initialN
   };
 
   const getIcon = (type: string) => {
-    switch(type) {
-      case 'payment': return <CreditCard className="w-5 h-5 text-green-500" />;
-      case 'shipment': return <Package className="w-5 h-5 text-blue-500" />;
-      case 'order': return <ShoppingBag className="w-5 h-5 text-purple-500" />;
-      case 'warehouse': return <MapPin className="w-5 h-5 text-orange-500" />;
-      default: return <Bell className="w-5 h-5 text-primary" />;
-    }
+    if (!type) return <Bell className="w-5 h-5 text-primary" />;
+    if (type.includes('payment')) return <CreditCard className="w-5 h-5 text-green-500" />;
+    if (type.includes('package') || type.includes('shipment')) return <Package className="w-5 h-5 text-blue-500" />;
+    if (type.includes('order')) return <ShoppingBag className="w-5 h-5 text-purple-500" />;
+    if (type.includes('warehouse')) return <MapPin className="w-5 h-5 text-orange-500" />;
+    return <Bell className="w-5 h-5 text-primary" />;
   };
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -59,10 +67,10 @@ export default function NotificationsClient({ initialNotifications }: { initialN
           notifications.map((notification) => (
             <div 
               key={notification.id}
-              onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
+              onClick={() => handleNotificationClick(notification)}
               className={`flex items-start gap-4 p-4 rounded-2xl border transition-all ${
                 notification.is_read 
-                  ? 'bg-background/50 border-border/50 opacity-70' 
+                  ? 'bg-background/50 border-border/50 opacity-70 cursor-pointer hover:bg-secondary/20' 
                   : 'bg-secondary/40 border-primary/20 shadow-sm cursor-pointer hover:bg-secondary/60'
               }`}
             >

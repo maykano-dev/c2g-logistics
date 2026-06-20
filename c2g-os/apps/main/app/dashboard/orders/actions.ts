@@ -186,6 +186,17 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
     return { error: insertError?.message || 'Failed to create order' }
   }
 
+  // Create notification asynchronously without blocking
+  import('@/utils/notifications').then(({ createNotification }) => {
+    createNotification({
+      userId: user.id,
+      title: 'Order Placed successfully',
+      message: `Your link order #${newOrder.id.toString().split('-').pop()?.substring(0,8)} has been placed and is pending payment.`,
+      type: 'link_order_created',
+      link: `/dashboard/orders/${newOrder.id}`
+    });
+  }).catch(e => console.warn('Failed to dispatch notification:', e));
+
   // Initialize Hubtel Payment
   let checkoutData = null;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://c2g-logistics.com';

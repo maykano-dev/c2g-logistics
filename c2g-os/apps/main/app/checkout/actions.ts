@@ -173,5 +173,16 @@ export async function createEcomOrder(orderData: any) {
   const primaryIdStr = String(primaryId).replace(/-/g, '');
   const primaryOrderIdFormatted = `MALL-${primaryIdStr.slice(-4).toUpperCase()}`;
 
+  // Create notification asynchronously without blocking
+  import('@/utils/notifications').then(({ createNotification }) => {
+    createNotification({
+      userId: userId,
+      title: 'Order Placed successfully',
+      message: `Your mall order #${primaryOrderIdFormatted} has been placed and is pending payment.`,
+      type: 'ecom_order_created',
+      link: `/dashboard/orders/mall/${primaryId}`
+    });
+  }).catch(e => console.warn('Failed to dispatch notification:', e));
+
   return { success: true, orderId: primaryOrderIdFormatted, id: primaryId };
 }

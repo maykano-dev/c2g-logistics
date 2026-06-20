@@ -87,6 +87,19 @@ export async function registerPackages(formData: FormData) {
     throw new Error('Failed to register package(s)');
   }
 
+  // Notify user
+  import('@/utils/notifications').then(({ createNotification }) => {
+    if (data && data.length > 0) {
+      createNotification({
+        userId: user.id,
+        title: 'Package Registered',
+        message: `Successfully registered ${data.length} package(s). Please pay the registration fee to proceed.`,
+        type: 'package_registered',
+        link: `/dashboard/packages`
+      });
+    }
+  }).catch(e => console.warn('Failed to dispatch notification:', e));
+
   revalidatePath('/dashboard/packages');
   return { success: true, count: trackingNumbers.length };
 }

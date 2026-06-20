@@ -24,52 +24,24 @@ export async function POST(req: Request) {
     if (newRecord.status === "delivered" && oldRecord.status !== "delivered") {
       const customerId = newRecord.customer_id;
       const orderId = newRecord.id;
+      const orderIdFormatted = orderId.slice(0, 8);
 
       if (!customerId) {
         return NextResponse.json({ message: "No customer ID found on order" }, { status: 200 });
       }
 
-      // 1. Fetch user's push subscriptions
-      const { data: subscriptions, error: subError } = await supabaseAdmin
-        .from("push_subscriptions")
-        .select("subscription")
-        .eq("user_id", customerId);
+      // Create in-app notification and push automatically
+      const { createNotification } = await import("../../../../utils/notifications");
+      
+      await createNotification({
+        userId: customerId,
+        title: "Order Delivered 🎉",
+        message: `Your order #${orderIdFormatted} has been delivered!`,
+        type: "order_delivered",
+        link: `/dashboard/orders/mall/${orderId}`
+      });
 
-      if (subError) {
-        console.error("Error fetching push subscriptions:", subError);
-      }
-
-      // 2. Create in-app notification
-      const { error: notifError } = await supabaseAdmin
-        .from("notifications")
-        .insert({
-          user_id: customerId,
-          title: "Order Delivered!",
-          message: `Your C2G Mall order #${orderId.slice(0,8)} has been delivered. Tap to leave a review!`,
-          link: `/dashboard/mall-orders/${orderId}`,
-          read: false,
-        });
-
-      if (notifError) {
-        console.error("Error creating in-app notification:", notifError);
-      }
-
-      // 3. Send Push Notifications
-      if (subscriptions && subscriptions.length > 0) {
-        const pushPayload = {
-          title: "Order Delivered! 📦",
-          body: `Your C2G Mall order has arrived. Tap to review your items!`,
-          url: `/dashboard/mall-orders/${orderId}`,
-        };
-
-        const pushPromises = subscriptions.map((sub: any) =>
-          sendPushNotification(sub.subscription, pushPayload)
-        );
-
-        await Promise.allSettled(pushPromises);
-      }
-
-      return NextResponse.json({ success: true, message: "Review notifications sent" });
+      return NextResponse.json({ success: true, message: "Order delivery notifications sent" });
     }
 
     return NextResponse.json({ message: "Ignored: Status not delivered" }, { status: 200 });

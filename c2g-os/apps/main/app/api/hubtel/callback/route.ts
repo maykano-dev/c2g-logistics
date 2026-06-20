@@ -7,6 +7,7 @@ import {
     HUBTEL_NO_MATCH,
     mergeNotesWithHubtelCheckout
 } from '../../../../utils/hubtel'
+import { createNotification } from '../../../../utils/notifications'
 
 function normalizeHubtelCallbackCode(raw: unknown): string {
     if (raw === undefined || raw === null) return ''
@@ -166,6 +167,14 @@ export async function POST(req: Request) {
             console.log(`Link order ${linkOrder.id} updated from Hubtel callback: ${paymentStatus}`)
             
             if (paymentStatus === 'paid') {
+                createNotification({
+                    userId: linkOrder.customer_id,
+                    title: 'Payment Confirmed',
+                    message: `Payment for Link Order #${linkOrder.id.toString().split('-').pop()?.substring(0,8)} was successful.`,
+                    type: 'payment_success',
+                    link: `/dashboard/orders/${linkOrder.id}`
+                });
+
                 try {
                     await supabase.functions.invoke('telegram-notify', {
                         body: {
@@ -201,6 +210,14 @@ export async function POST(req: Request) {
                     })
                 } catch (e) { console.warn('Failed to send link-order admin notification:', e) }
             } else if (paymentStatus === 'failed') {
+                createNotification({
+                    userId: linkOrder.customer_id,
+                    title: 'Payment Failed',
+                    message: `Payment for Link Order #${linkOrder.id.toString().split('-').pop()?.substring(0,8)} failed.`,
+                    type: 'payment_failed',
+                    link: `/dashboard/orders/${linkOrder.id}`
+                });
+
                 try {
                     await supabase.functions.invoke('telegram-notify', {
                         body: {
@@ -260,6 +277,14 @@ export async function POST(req: Request) {
             console.log(`Ecom Order ${ecomOrder.id} updated: ${paymentStatus}`)
 
             if (paymentStatus === 'paid') {
+                createNotification({
+                    userId: ecomOrder.customer_id,
+                    title: 'Payment Confirmed',
+                    message: `Payment for Mall Order #${ecomOrder.order_id} was successful.`,
+                    type: 'payment_success',
+                    link: `/dashboard/orders/mall/${ecomOrder.id}`
+                });
+
                 try {
                     await supabase.functions.invoke('send-order-email', {
                         body: {
@@ -304,6 +329,14 @@ export async function POST(req: Request) {
                     })
                 } catch (e) { console.warn('Failed to send admin notification:', e) }
             } else if (paymentStatus === 'failed') {
+                createNotification({
+                    userId: ecomOrder.customer_id,
+                    title: 'Payment Failed',
+                    message: `Payment for Mall Order #${ecomOrder.order_id} failed.`,
+                    type: 'payment_failed',
+                    link: `/dashboard/orders/mall/${ecomOrder.id}`
+                });
+
                 try {
                     await supabase.functions.invoke('telegram-notify', {
                         body: {
@@ -345,6 +378,14 @@ export async function POST(req: Request) {
                         .eq('id', shipment.id)
                     console.log(`Shipment ${shipment.id} shipping fee marked paid`)
                     
+                    createNotification({
+                        userId: shipment.customer_id,
+                        title: 'Shipping Fee Paid',
+                        message: `Shipping fee for package ${shipment.tracking_number || shipment.id.toString().slice(-6)} was paid successfully.`,
+                        type: 'payment_success',
+                        link: `/dashboard/packages/${shipment.id}`
+                    });
+
                     try {
                         await supabase.functions.invoke('telegram-notify', {
                             body: {
@@ -406,6 +447,14 @@ export async function POST(req: Request) {
                         .eq('id', shipFeeOrder.id)
                     console.log(`Ecom order ${shipFeeOrder.id} shipping fee marked paid`)
                     
+                    createNotification({
+                        userId: shipFeeOrder.customer_id,
+                        title: 'Shipping Fee Paid',
+                        message: `Shipping fee for Mall Order #${shipFeeOrder.id.toString().slice(-4)} was paid successfully.`,
+                        type: 'payment_success',
+                        link: `/dashboard/orders/mall/${shipFeeOrder.id}`
+                    });
+
                     try {
                         await supabase.functions.invoke('telegram-notify', {
                             body: {
@@ -449,6 +498,14 @@ export async function POST(req: Request) {
                         .eq('id', regShipment.id)
                     console.log(`Shipment ${regShipment.id} registration fee marked paid`)
                     
+                    createNotification({
+                        userId: regShipment.customer_id,
+                        title: 'Registration Fee Paid',
+                        message: `Registration fee for package ${regShipment.tracking_number || 'N/A'} was paid successfully.`,
+                        type: 'payment_success',
+                        link: `/dashboard/packages/${regShipment.id}`
+                    });
+
                     try {
                         await supabase.functions.invoke('telegram-notify', {
                             body: {

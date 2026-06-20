@@ -34,36 +34,16 @@ export async function POST(req: Request) {
         .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 
-      // Fetch user's push subscriptions
-      const { data: subscriptions, error: subError } = await supabaseAdmin
-        .from("push_subscriptions")
-        .select("subscription")
-        .eq("user_id", customerId);
-
-      if (subError) console.error("Error fetching push subscriptions:", subError);
-
-      // Create in-app notification
-      await supabaseAdmin.from("notifications").insert({
-        user_id: customerId,
-        title: "Package Status Updated",
+      // Create in-app notification and send push notification automatically
+      const { createNotification } = await import("../../../../utils/notifications");
+      
+      await createNotification({
+        userId: customerId,
+        title: "Package Status Updated 🚚",
         message: `Package ${trackingNumber} is now ${formattedStatus}.`,
-        link: `/dashboard/packages/${trackingNumber}`,
-        read: false,
+        type: "package_status_update",
+        link: `/dashboard/packages/${newRecord.id}`
       });
-
-      // Send Push Notifications
-      if (subscriptions && subscriptions.length > 0) {
-        const pushPayload = {
-          title: "Package Update 🚚",
-          body: `Package ${trackingNumber} is now ${formattedStatus}.`,
-          url: `/dashboard/packages/${trackingNumber}`,
-        };
-
-        const pushPromises = subscriptions.map((sub: any) =>
-          sendPushNotification(sub.subscription, pushPayload)
-        );
-        await Promise.allSettled(pushPromises);
-      }
 
       return NextResponse.json({ success: true, message: "Package status notifications sent" });
     }
