@@ -128,7 +128,6 @@ export function MallOrderCard({ order }: { order: any }) {
             <p className="text-xs text-muted-foreground mb-1">Items: {totalQuantity}</p>
             <p className="text-sm font-black text-primary">
               {formatCurrency(order.total_amount || 0)}
-              {Number(order.total_cost_ghs) > 0 && <span className="text-xs font-normal text-muted-foreground ml-2">≈ ¥{(order.total_cost_ghs * (order.rate_at_purchase || 0.52)).toFixed(2)}</span>}
             </p>
           </div>
         </div>

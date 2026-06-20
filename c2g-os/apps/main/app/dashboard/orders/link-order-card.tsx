@@ -123,7 +123,6 @@ export function LinkOrderCard({ order }: { order: any }) {
             <p className="text-xs text-muted-foreground mb-1">Qty: {order.quantity || 1}</p>
             <p className="text-sm font-black text-primary">
               {formatCurrency(order.total || 0)}
-              {Number(order.cny_price) > 0 && <span className="text-xs font-normal text-muted-foreground ml-2">≈ ¥{order.cny_price}</span>}
             </p>
           </div>
         </div>
