@@ -9,6 +9,7 @@ export async function createNotification({
   title,
   message,
   type,
+  priority = "info",
   link,
   metadata,
 }: {
@@ -16,6 +17,7 @@ export async function createNotification({
   title: string;
   message: string;
   type: string;
+  priority?: "critical" | "important" | "info" | "marketing";
   link?: string;
   metadata?: any;
 }) {
@@ -36,6 +38,7 @@ export async function createNotification({
       title,
       message,
       type,
+      priority,
       link,
       metadata: metadata || {},
       is_read: false,
@@ -49,7 +52,7 @@ export async function createNotification({
     // 2. Fetch Push Subscriptions
     const { data: subscriptions, error: subError } = await supabaseAdmin
       .from("push_subscriptions")
-      .select("subscription")
+      .select("endpoint, p256dh, auth")
       .eq("user_id", userId);
 
     if (subError) {
@@ -64,9 +67,16 @@ export async function createNotification({
         url: link || "/dashboard/notifications",
       };
 
-      const pushPromises = subscriptions.map((sub: any) =>
-        sendPushNotification(sub.subscription, pushPayload)
-      );
+      const pushPromises = subscriptions.map((sub: any) => {
+        const pushSubscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth
+          }
+        };
+        return sendPushNotification(pushSubscription, pushPayload);
+      });
       await Promise.allSettled(pushPromises);
     }
 

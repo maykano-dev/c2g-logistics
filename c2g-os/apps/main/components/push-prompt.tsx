@@ -39,17 +39,20 @@ export function PushPrompt() {
     navigator.serviceWorker.register('/sw.js').then((registration) => {
       console.log('Service Worker registered with scope:', registration.scope);
       
+      const dismissed = localStorage.getItem('pushPromptResponded');
+      
       // Check current permission state
       if (Notification.permission === 'default') {
-        // We haven't asked yet, maybe show prompt
-        // Let's only show prompt if they haven't dismissed it this session
-        const dismissed = sessionStorage.getItem('pushPromptDismissed');
         if (!dismissed) {
           setShowPrompt(true);
         }
       } else if (Notification.permission === 'granted') {
-        // Make sure we have a subscription and it's saved in DB
+        // If granted but we haven't saved their preference as 'responded', do it now
+        if (!dismissed) localStorage.setItem('pushPromptResponded', 'true');
+        // Ensure we have a subscription and it's saved in DB
         subscribeUser(registration);
+      } else if (Notification.permission === 'denied') {
+        if (!dismissed) localStorage.setItem('pushPromptResponded', 'true');
       }
     }).catch(err => {
       console.error('Service worker registration failed:', err);
@@ -86,14 +89,17 @@ export function PushPrompt() {
 
   const handleEnable = async () => {
     const permission = await Notification.requestPermission();
+    localStorage.setItem('pushPromptResponded', 'true');
     if (permission === 'granted') {
       await subscribeUser();
+      setShowPrompt(false);
+    } else {
       setShowPrompt(false);
     }
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem('pushPromptDismissed', 'true');
+    localStorage.setItem('pushPromptResponded', 'true');
     setShowPrompt(false);
   };
 

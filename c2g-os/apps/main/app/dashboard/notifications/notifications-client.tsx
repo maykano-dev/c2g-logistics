@@ -31,12 +31,33 @@ export default function NotificationsClient({ initialNotifications }: { initialN
   };
 
   const getIcon = (type: string) => {
-    if (!type) return <Bell className="w-5 h-5 text-primary" />;
-    if (type.includes('payment')) return <CreditCard className="w-5 h-5 text-green-500" />;
-    if (type.includes('package') || type.includes('shipment')) return <Package className="w-5 h-5 text-blue-500" />;
-    if (type.includes('order')) return <ShoppingBag className="w-5 h-5 text-purple-500" />;
-    if (type.includes('warehouse')) return <MapPin className="w-5 h-5 text-orange-500" />;
-    return <Bell className="w-5 h-5 text-primary" />;
+    if (!type) return <Bell className="w-5 h-5" />;
+    if (type.includes('payment')) return <CreditCard className="w-5 h-5" />;
+    if (type.includes('package') || type.includes('shipment')) return <Package className="w-5 h-5" />;
+    if (type.includes('order')) return <ShoppingBag className="w-5 h-5" />;
+    if (type.includes('warehouse')) return <MapPin className="w-5 h-5" />;
+    return <Bell className="w-5 h-5" />;
+  };
+
+  const getPriorityStyles = (priority: string, isRead: boolean) => {
+    if (isRead) return { 
+      bg: 'bg-background/50 hover:bg-secondary/20', 
+      border: 'border-border/50', 
+      iconBg: 'bg-secondary text-muted-foreground',
+      opacity: 'opacity-70'
+    };
+    
+    switch (priority) {
+      case 'critical':
+        return { bg: 'bg-destructive/10 hover:bg-destructive/20', border: 'border-destructive/30', iconBg: 'bg-background shadow-sm text-destructive', opacity: '' };
+      case 'important':
+        return { bg: 'bg-amber-500/10 hover:bg-amber-500/20', border: 'border-amber-500/30', iconBg: 'bg-background shadow-sm text-amber-500', opacity: '' };
+      case 'marketing':
+        return { bg: 'bg-green-500/10 hover:bg-green-500/20', border: 'border-green-500/30', iconBg: 'bg-background shadow-sm text-green-500', opacity: '' };
+      case 'info':
+      default:
+        return { bg: 'bg-secondary/40 hover:bg-secondary/60', border: 'border-primary/20', iconBg: 'bg-background shadow-sm text-primary', opacity: '' };
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -64,43 +85,43 @@ export default function NotificationsClient({ initialNotifications }: { initialN
 
       <div className="space-y-3">
         {notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <div 
-              key={notification.id}
-              onClick={() => handleNotificationClick(notification)}
-              className={`flex items-start gap-4 p-4 rounded-2xl border transition-all ${
-                notification.is_read 
-                  ? 'bg-background/50 border-border/50 opacity-70 cursor-pointer hover:bg-secondary/20' 
-                  : 'bg-secondary/40 border-primary/20 shadow-sm cursor-pointer hover:bg-secondary/60'
-              }`}
-            >
-              <div className={`mt-0.5 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notification.is_read ? 'bg-secondary' : 'bg-background shadow-sm'}`}>
-                {getIcon(notification.type)}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between gap-4">
-                  <h4 className={`font-bold ${notification.is_read ? 'text-foreground/80' : 'text-foreground'}`}>
-                    {notification.title}
-                  </h4>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(notification.created_at).toLocaleString('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
+          notifications.map((notification) => {
+            const styles = getPriorityStyles(notification.priority, notification.is_read);
+            
+            return (
+              <div 
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer shadow-sm ${styles.bg} ${styles.border} ${styles.opacity}`}
+              >
+                <div className={`mt-0.5 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${styles.iconBg}`}>
+                  {getIcon(notification.type)}
                 </div>
-                <p className={`text-sm mt-1 ${notification.is_read ? 'text-muted-foreground' : 'text-foreground/90 font-medium'}`}>
-                  {notification.message}
-                </p>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <h4 className={`font-bold ${notification.is_read ? 'text-foreground/80' : 'text-foreground'}`}>
+                      {notification.title}
+                    </h4>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(notification.created_at).toLocaleString('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className={`text-sm mt-1 ${notification.is_read ? 'text-muted-foreground' : 'text-foreground/90 font-medium'}`}>
+                    {notification.message}
+                  </p>
+                </div>
+                {!notification.is_read && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
+                    className="p-2 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-background"
+                    title="Mark as read"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              {!notification.is_read && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
-                  className="p-2 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-background"
-                  title="Mark as read"
-                >
-                  <Check className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="text-center py-12 px-4 glass-panel border-dashed">
             <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-4">
