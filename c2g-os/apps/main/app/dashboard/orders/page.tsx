@@ -1,5 +1,6 @@
-import { Plus, PackageSearch, ShoppingCart } from "lucide-react";
+import { Plus, PackageSearch, ShoppingCart, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getLinkOrders, getMallOrders } from "./actions";
 import OrdersTabsClient from "./orders-tabs-client";
 
@@ -33,7 +34,9 @@ export default async function OrdersPage() {
         </div>
       </div>
 
-      <OrdersTabsClient linkOrders={linkOrders} mallOrders={mallOrders} />
+      <Suspense fallback={<div className="flex items-center justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+        <OrdersTabsClient linkOrders={linkOrders} mallOrders={mallOrders} />
+      </Suspense>
     </div>
   );
 }
