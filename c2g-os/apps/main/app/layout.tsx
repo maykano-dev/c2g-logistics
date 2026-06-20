@@ -55,6 +55,18 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "C2G Logistics",
+    startupImage: [
+      { url: "/logo.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" }, // iPhone 14 Pro Max
+      { url: "/logo.png", media: "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" }, // iPhone 14 Pro
+      { url: "/logo.png", media: "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" }, // iPhone 13 Pro Max
+      { url: "/logo.png", media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" }, // iPhone 13 Pro
+      { url: "/logo.png", media: "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" }, // iPhone X/11 Pro
+    ]
+  },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/apple-icon.png",
   },
   formatDetection: {
     telephone: false,
