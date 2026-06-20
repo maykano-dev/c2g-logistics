@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { CreateLinkOrderSchema, UpdateLinkOrderSchema } from '@/utils/security-schemas'
 import { initializeHubtelPayment, mergeNotesWithHubtelCheckout } from '../../../utils/hubtel'
+import { uploadImage } from '@/utils/image-service'
 
 export async function getLinkOrders() {
   const supabase = await createClient()
@@ -73,15 +74,10 @@ export async function getLinkOrder(id: string) {
   return { ...order, history: history || [] }
 }
 
+import { getCachedSettings } from '@/utils/cache'
+
 export async function getSettings() {
-  const supabase = await createClient()
-  const { data: settings } = await supabase
-    .from('settings')
-    .select('*')
-    .eq('id', 1)
-    .single()
-  
-  return settings
+  return await getCachedSettings()
 }
 
 export async function createLinkOrder(prevState: any, formData: FormData) {
@@ -113,26 +109,15 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
       return { error: `Screenshot is required for item ${i + 1}` };
     }
 
-    const fileExt = screenshot.name.split('.').pop()
-    const fileName = `${user.id}-${item.id}-${Date.now()}.${fileExt}`
-    
-    const { error: uploadError } = await supabase.storage
-      .from('order-screenshots')
-      .upload(fileName, screenshot, {
-        cacheControl: '3600',
-        upsert: false
-      })
+    const fileBuffer = Buffer.from(await screenshot.arrayBuffer());
+    const uploadResult = await uploadImage(fileBuffer, screenshot.name);
 
-    if (uploadError) {
-      console.error('Upload Error:', uploadError)
-      return { error: `Failed to upload screenshot for item ${i + 1}` }
+    if (!uploadResult.success || !uploadResult.url) {
+      console.error('Upload Error:', uploadResult.error)
+      return { error: `Failed to upload screenshot for item ${i + 1}: ${uploadResult.error || 'Unknown error'}` }
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from('order-screenshots')
-      .getPublicUrl(fileName)
-
-    item.screenshot_url = publicUrlData.publicUrl;
+    item.screenshot_url = uploadResult.url;
   }
 
   // Fetch exchange rate and admin fees
@@ -168,6 +153,39 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
     .eq('id', user.id)
     .single();
 
+  // Map UI shipping mode to Database constraint
+  const db_shipping_mode = shipping_mode === 'normal' ? 'air_normal' : 
+                           shipping_mode === 'express' ? 'air_express' : 
+                           shipping_mode;
+
+  // Insert Order FIRST so it is saved even if payment fails
+  const { data: newOrder, error: insertError } = await supabase
+    .from('orders')
+    .insert({
+      customer_id: user.id,
+      customer_name: customer?.name || user.email,
+      type: 'link_order',
+      product_link: primaryItem.product_link,
+      product_name: primaryItem.product_link.substring(0, 80) + (items.length > 1 ? ` (+${items.length - 1} more items)` : ''),
+      cny_price: itemCostCny,
+      quantity: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
+      notes: primaryItem.notes || '',
+      items: items,
+      shipping_mode: db_shipping_mode,
+      screenshot_url: primaryItem.screenshot_url,
+      total: totalGhs,
+      order_status: 'pending_payment',
+      payment_status: 'pending',
+      payment_reference: payment_reference
+    })
+    .select()
+    .single()
+
+  if (insertError || !newOrder) {
+    console.error('Insert Error:', insertError)
+    return { error: insertError?.message || 'Failed to create order' }
+  }
+
   // Initialize Hubtel Payment
   let checkoutData = null;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://c2g-logistics.com';
@@ -182,40 +200,23 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
           description: `Link Order - C2G Logistics`,
           returnUrl: `${baseUrl}/payment-status?reference=${payment_reference}&checkoutid={checkoutid}`,
           cancelUrl: `${baseUrl}/payment-status?reference=${payment_reference}&status=cancelled`,
-          callbackUrl: `${baseUrl}/api/hubtel/callback`
+          callbackUrl: `${baseUrl}/api/hubtel/callback`,
+          hubtelApiId: process.env.HUBTEL_API_ID || process.env.HUBTEL_CLIENT_ID || settings?.hubtel_api_id,
+          hubtelApiKey: process.env.HUBTEL_API_KEY || process.env.HUBTEL_CLIENT_SECRET || settings?.hubtel_api_key,
+          hubtelMerchantAccount: process.env.HUBTEL_MERCHANT_ACCOUNT || settings?.hubtel_merchant_account
       });
+      
+      // Update order notes with checkout ID
+      const finalNotes = mergeNotesWithHubtelCheckout(newOrder.notes, checkoutData.checkoutId);
+      await supabase.from('orders').update({ notes: finalNotes }).eq('id', newOrder.id);
+      
+      return { success: true, redirectUrl: checkoutData.checkoutUrl };
+
   } catch (err: any) {
       console.error('Hubtel Init Error:', err);
-      return { error: `Failed to initialize payment: ${err.message}` };
+      // Order is saved, but payment failed. Redirect to the order details page so they can try again later.
+      return { success: true, redirectUrl: `/dashboard/orders/${newOrder.id}` };
   }
-
-  const finalNotes = mergeNotesWithHubtelCheckout(primaryItem.notes, checkoutData.checkoutId);
-
-  const { error: insertError } = await supabase
-    .from('orders')
-    .insert({
-      customer_id: user.id,
-      type: 'link_order',
-      product_link: primaryItem.product_link,
-      product_name: primaryItem.product_link.substring(0, 80) + (items.length > 1 ? ` (+${items.length - 1} more items)` : ''),
-      cny_price: itemCostCny,
-      quantity: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
-      notes: finalNotes,
-      items: items,
-      shipping_mode,
-      screenshot_url: primaryItem.screenshot_url,
-      total: totalGhs,
-      order_status: 'pending_payment',
-      payment_status: 'pending',
-      payment_reference: payment_reference
-    })
-
-  if (insertError) {
-    console.error('Insert Error:', insertError)
-    return { error: insertError.message || 'Failed to create order' }
-  }
-
-  return { success: true, redirectUrl: checkoutData.checkoutUrl }
 }
 
 export async function updateLinkOrder(id: string, prevState: any, formData: FormData) {
@@ -227,7 +228,7 @@ export async function updateLinkOrder(id: string, prevState: any, formData: Form
   // Verify ownership and payment status
   const { data: order } = await supabase
     .from('orders')
-    .select('payment_status, created_at')
+    .select('payment_status, created_at, items, screenshot_url, notes')
     .eq('id', id)
     .eq('customer_id', user.id)
     .single()
@@ -237,40 +238,70 @@ export async function updateLinkOrder(id: string, prevState: any, formData: Form
     return { error: 'Cannot edit a paid order' }
   }
 
-  const quantityRaw = parseInt(formData.get('quantity') as string)
-  const notesRaw = formData.get('notes') as string
-  const shipping_modeRaw = formData.get('shipping') as string
+  const itemsJsonStr = formData.get('items_json') as string;
+  const shipping_mode = formData.get('shipping') as string;
 
-  const validation = UpdateLinkOrderSchema.safeParse({
-    quantity: quantityRaw,
-    notes: notesRaw,
-    shipping_mode: shipping_modeRaw,
-  });
-
-  if (!validation.success) {
-    return { error: validation.error.issues[0]?.message || 'Validation failed' };
+  if (!itemsJsonStr || !shipping_mode) {
+    return { error: 'Missing required fields' };
   }
 
-  const { quantity, notes, shipping_mode } = validation.data;
+  let items = JSON.parse(itemsJsonStr);
 
-  // We should ideally recalculate the total based on the original CNY price
-  // But we need to fetch the cny_price from the order
-  const { data: fullOrder } = await supabase.from('orders').select('cny_price').eq('id', id).single()
-  
+  // Upload screenshots for each item if there's a new file
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const screenshot = formData.get(`screenshot_${item.id}`) as File | null;
+    
+    if (screenshot && screenshot.size > 0) {
+      const fileBuffer = Buffer.from(await screenshot.arrayBuffer());
+      const uploadResult = await uploadImage(fileBuffer, screenshot.name);
+
+      if (!uploadResult.success || !uploadResult.url) {
+        console.error('Upload Error:', uploadResult.error)
+        return { error: `Failed to upload screenshot for item ${i + 1}: ${uploadResult.error || 'Unknown error'}` }
+      }
+
+      item.screenshot_url = uploadResult.url;
+    }
+    // If no new screenshot was uploaded, the client passed the existing item.screenshot_url back in the JSON
+  }
+
   const settings = await getSettings()
   const exchangeRate = settings?.rate_link_orders || settings?.rate_shop_products || 0.5200
+  const serviceFeePercentage = settings?.service_fee_percentage != null ? settings.service_fee_percentage / 100 : 0.15;
+  const minServiceFee = settings?.minimum_service_fee || 5;
+  const localDeliveryPercentage = settings?.local_delivery_percentage != null ? settings.local_delivery_percentage / 100 : 0;
+  const minLocalDeliveryFee = settings?.minimum_local_delivery_fee || 0;
 
-  const itemCostCny = (fullOrder?.cny_price || 0) * quantity
-  const itemCostGhs = itemCostCny / exchangeRate
-  const serviceFee = itemCostGhs * 0.05
-  const totalGhs = itemCostGhs + serviceFee
+  // Calculate totals securely on the server
+  const itemCostCny = items.reduce((sum: number, item: any) => sum + (item.cny_price * item.quantity), 0);
+  const itemCostGhs = itemCostCny / exchangeRate;
+  
+  const calculatedServiceFee = itemCostGhs * serviceFeePercentage;
+  const serviceFee = Math.max(calculatedServiceFee, minServiceFee);
+
+  const calculatedLocalDelivery = itemCostGhs * localDeliveryPercentage;
+  const localDelivery = Math.max(calculatedLocalDelivery, minLocalDeliveryFee);
+
+  const totalGhs = itemCostGhs + serviceFee + localDelivery;
+
+  const primaryItem = items[0];
+
+  const db_shipping_mode = shipping_mode === 'normal' ? 'air_normal' : 
+                           shipping_mode === 'express' ? 'air_express' : 
+                           shipping_mode;
 
   const { error: updateError } = await supabase
     .from('orders')
     .update({
-      quantity,
-      notes,
-      shipping_mode,
+      product_link: primaryItem.product_link,
+      product_name: primaryItem.product_link.substring(0, 80) + (items.length > 1 ? ` (+${items.length - 1} more items)` : ''),
+      cny_price: itemCostCny,
+      quantity: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
+      notes: order.notes, // keep existing notes containing hubtel checkout ids
+      items: items,
+      shipping_mode: db_shipping_mode,
+      screenshot_url: primaryItem.screenshot_url || order.screenshot_url,
       total: totalGhs,
     })
     .eq('id', id)

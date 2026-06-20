@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadImage } from "@/utils/image-service";
+import { uploadImage, deleteImage } from "@/utils/image-service";
 import { createClient } from "@/utils/supabase/server";
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -72,6 +72,37 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error("Upload API error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    // 1. Auth check
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const imageIdOrUrl = searchParams.get("id") || searchParams.get("url");
+
+    if (!imageIdOrUrl) {
+      return NextResponse.json({ error: "No image ID or URL provided" }, { status: 400 });
+    }
+
+    // 2. Call image abstraction layer
+    const result = await deleteImage(imageIdOrUrl);
+
+    if (!result) {
+      return NextResponse.json({ error: "Failed to delete image" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: "Image deleted successfully" });
+  } catch (error: any) {
+    console.error("Delete API error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

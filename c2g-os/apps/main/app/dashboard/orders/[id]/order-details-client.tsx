@@ -205,57 +205,96 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
               )}
             </div>
           </div>
-        </div>        {/* Timeline Horizontal Layout */}
+        </div>        {/* Order Details Body */}
         <div className="w-full">
-          <div className="glass-panel p-6">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-8">
-              <Clock className="w-4 h-4" /> Timeline
-            </h3>
+          <div className="glass-panel p-6 space-y-4">
+            <h3 className="font-bold border-b border-border/50 pb-2 mb-4">Order Summary</h3>
             
-            <div className="relative flex flex-col md:flex-row gap-6 md:gap-4 overflow-x-auto pb-6 pt-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {/* Horizontal Connecting Line (Desktop) */}
-              <div className="hidden md:block absolute top-[23px] left-[5%] right-[5%] h-[2px] bg-secondary z-0"></div>
-              {/* Vertical Connecting Line (Mobile) */}
-              <div className="md:hidden absolute left-[15px] top-4 bottom-4 w-[2px] bg-secondary z-0"></div>
-              
-              {timeline.map((step, i) => {
-                const Icon = step.Icon;
-                return (
-                  <div key={i} className={`relative flex md:flex-col items-start md:items-center gap-4 md:gap-4 flex-1 min-w-[160px] transition-all duration-500 ${step.completed ? 'opacity-100' : 'opacity-40 grayscale'}`}>
-                    {/* Timeline Node */}
-                    <div className={`relative z-10 w-8 h-8 shrink-0 rounded-full flex items-center justify-center border-[3px] transition-all duration-500 ${
-                      step.isCurrent
-                        ? 'bg-primary border-background text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.6)] scale-125 animate-pulse'
-                        : step.completed 
-                          ? 'bg-primary border-background text-primary-foreground scale-110' 
-                          : 'bg-secondary border-background text-muted-foreground'
-                    }`}>
-                      {step.completed && !step.isCurrent ? <CheckCircle2 className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Order ID</span>
+              <span className="font-mono text-sm font-medium">{order.id}</span>
+            </div>
+            
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Date Placed</span>
+              <span className="font-medium">
+                {new Date(order.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+
+            {/* Items display */}
+            {order.items && Array.isArray(order.items) && order.items.length > 0 ? (
+              <div className="py-4 border-b border-border/50 space-y-3">
+                <span className="text-muted-foreground block mb-2">Order Items</span>
+                {order.items.map((item: any, idx: number) => (
+                  <div key={item.id || idx} className="bg-secondary/20 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-border/50">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm">Item {idx + 1}</span>
+                      <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                        View Product <ExternalLink className="w-3 h-3" />
+                      </a>
                     </div>
-                    
-                    {/* Timeline Content Card */}
-                    <div className={`mt-0 md:mt-2 text-left md:text-center w-full p-4 rounded-2xl border backdrop-blur-md transition-all duration-300 hover:-translate-y-1 ${
-                      step.isCurrent 
-                        ? 'bg-primary/10 border-primary/40 shadow-lg shadow-primary/5' 
-                        : step.completed
-                          ? 'bg-secondary/40 border-border/60 hover:bg-secondary/60 hover:shadow-md'
-                          : 'bg-background/50 border-border/30'
-                    }`}>
-                      <p className={`text-sm font-bold tracking-wide leading-tight ${step.isCurrent ? 'text-primary' : step.completed ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {step.status}
-                      </p>
-                      {step.date ? (
-                        <p className="text-[11px] text-muted-foreground mt-1.5 font-medium uppercase tracking-wider">{step.date}</p>
-                      ) : step.completed ? (
-                        <p className="text-[11px] text-muted-foreground mt-1.5 font-medium uppercase tracking-wider">Completed</p>
-                      ) : (
-                        <p className="text-[11px] text-muted-foreground/50 mt-1.5 italic uppercase tracking-wider">Pending</p>
-                      )}
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-muted-foreground">Qty: <span className="text-foreground font-medium">{item.quantity}</span></span>
+                      <span className="text-muted-foreground">Price: <span className="text-foreground font-medium">¥{item.cny_price}</span></span>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-sm font-bold">Total Items Price (CNY)</span>
+                  <span className="font-bold">¥{order.cny_price}</span>
+                </div>
+              </div>
+            ) : (
+              // Fallback for older orders without items array
+              <>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-muted-foreground">Product Link</span>
+                  <a href={order.product_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1 text-sm font-medium">
+                    View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-muted-foreground">Item Price (CNY)</span>
+                  <span className="font-medium">¥{order.cny_price || 0}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-muted-foreground">Quantity</span>
+                  <span className="font-medium">{order.quantity || 1}</span>
+                </div>
+              </>
+            )}
+
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Shipping Mode</span>
+              <span className="font-medium capitalize flex items-center gap-1.5">
+                {order.shipping_mode === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
+                {order.shipping_mode?.replace('_', ' ') || 'Air Express'}
+              </span>
             </div>
+
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Total Cost (GHS)</span>
+              <span className="font-bold text-primary">{formatCurrency(order.total || 0)}</span>
+            </div>
+
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Order Status</span>
+              <span className="font-medium capitalize">{order.order_status?.replace(/_/g, ' ') || 'Pending'}</span>
+            </div>
+
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Payment Status</span>
+              <span className="font-medium capitalize">{order.payment_status?.replace(/_/g, ' ') || 'Pending'}</span>
+            </div>
+
+            {order.notes && (
+              <div className="py-2 border-b border-border/50">
+                <span className="text-muted-foreground block mb-1">Notes</span>
+                <p className="text-sm bg-secondary/30 p-3 rounded-lg border border-border/30 whitespace-pre-wrap">{order.notes}</p>
+              </div>
+            )}
+            
           </div>
         </div>
       </div>

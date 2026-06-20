@@ -82,7 +82,7 @@ export async function POST(req: Request) {
         const clientReference = String(data.ClientReference ?? data.clientReference ?? '').trim()
         const checkoutId = data.CheckoutId ?? data.checkoutId
         const salesInvoiceId = data.SalesInvoiceId ?? data.salesInvoiceId
-        const amount = data.Amount ?? data.amount as number
+        const amount = Number(data.Amount ?? data.amount) || 0
         const customerPhone = data.CustomerPhoneNumber ?? data.customerPhoneNumber
         const paymentDetails = data.PaymentDetails ?? data.paymentDetails
         const description = data.Description ?? data.description
@@ -165,6 +165,59 @@ export async function POST(req: Request) {
             
             console.log(`Link order ${linkOrder.id} updated from Hubtel callback: ${paymentStatus}`)
             
+            if (paymentStatus === 'paid') {
+                try {
+                    await supabase.functions.invoke('telegram-notify', {
+                        body: {
+                            customer_id: linkOrder.customer_id,
+                            type: 'order_payment_success',
+                            title: '💳 Payment Confirmed!',
+                            message: `Your payment has been confirmed successfully.\n\nYour order is now being processed.`,
+                            data: {
+                                'Order ID': `#LO-${linkOrder.id.toString().slice(-4)}`,
+                                'Amount Paid': `₵${(Number(linkOrder.total) || 0).toFixed(2)}`,
+                                'Payment Reference': clientReference
+                            },
+                            priority: 'high'
+                        }
+                    })
+                } catch (e) { console.warn('Failed to send link-order Telegram notification:', e) }
+
+                try {
+                    await supabase.functions.invoke('telegram-admin-notify', {
+                        body: {
+                            type: 'payment_received',
+                            title: '💰 Link Order Payment Received',
+                            message: `A link order payment has been successfully received via Hubtel.`,
+                            data: {
+                                'Order ID': `#LO-${linkOrder.id.toString().slice(-4)}`,
+                                'Customer': linkOrder.customer_name || 'Unknown',
+                                'Amount': `₵${(Number(linkOrder.total) || 0).toFixed(2)}`,
+                                'Payment': (paymentDetails as any)?.PaymentType || (paymentDetails as any)?.paymentType || 'Mobile Money',
+                                'Order Type': 'Link Order'
+                            },
+                            priority: 'high'
+                        }
+                    })
+                } catch (e) { console.warn('Failed to send link-order admin notification:', e) }
+            } else if (paymentStatus === 'failed') {
+                try {
+                    await supabase.functions.invoke('telegram-notify', {
+                        body: {
+                            customer_id: linkOrder.customer_id,
+                            type: 'order_payment_failed',
+                            title: '❌ Payment Failed',
+                            message: `Your payment could not be processed.\n\nPlease try again or contact support.`,
+                            data: {
+                                'Order ID': `#LO-${linkOrder.id.toString().slice(-4)}`,
+                                'Description': description || 'Payment failed'
+                            },
+                            priority: 'high'
+                        }
+                    })
+                } catch (e) { console.warn('Failed to send link-order failed payment notification:', e) }
+            }
+
             return NextResponse.json({
                 message: 'Link order callback processed successfully',
                 reference: clientReference,
@@ -206,6 +259,68 @@ export async function POST(req: Request) {
             if (updateError) throw updateError
             console.log(`Ecom Order ${ecomOrder.id} updated: ${paymentStatus}`)
 
+            if (paymentStatus === 'paid') {
+                try {
+                    await supabase.functions.invoke('send-order-email', {
+                        body: {
+                            orderId: ecomOrder.id,
+                            customerEmail: ecomOrder.customer_email,
+                            customerName: ecomOrder.customer_name
+                        }
+                    })
+                } catch (e) { console.warn('Failed to send order confirmation email:', e) }
+
+                try {
+                    await supabase.functions.invoke('telegram-notify', {
+                        body: {
+                            customer_id: ecomOrder.customer_id,
+                            type: 'order_payment_success',
+                            title: '💳 Payment Confirmed!',
+                            message: `Your payment has been confirmed successfully.\n\nYour order is now being processed.`,
+                            data: {
+                                'Order ID': `#MALL-${ecomOrder.order_id}`,
+                                'Amount Paid': `₵${amount.toFixed(2)}`,
+                                'Payment Reference': clientReference
+                            },
+                            priority: 'high'
+                        }
+                    })
+                } catch (e) { console.warn('Failed to send Telegram notification:', e) }
+
+                try {
+                    await supabase.functions.invoke('telegram-admin-notify', {
+                        body: {
+                            type: 'payment_received',
+                            title: '💰 New Paid Order!',
+                            message: `A payment has been successfully received via Hubtel.`,
+                            data: {
+                                'Order ID': `#MALL-${ecomOrder.order_id}`,
+                                'Customer': ecomOrder.customer_name,
+                                'Amount': `₵${amount.toFixed(2)}`,
+                                'Payment': (paymentDetails as any)?.PaymentType || (paymentDetails as any)?.paymentType || 'Mobile Money'
+                            },
+                            priority: 'high'
+                        }
+                    })
+                } catch (e) { console.warn('Failed to send admin notification:', e) }
+            } else if (paymentStatus === 'failed') {
+                try {
+                    await supabase.functions.invoke('telegram-notify', {
+                        body: {
+                            customer_id: ecomOrder.customer_id,
+                            type: 'order_payment_failed',
+                            title: '❌ Payment Failed',
+                            message: `Your payment could not be processed.\n\nPlease try again or contact support.`,
+                            data: {
+                                'Order ID': `#MALL-${ecomOrder.order_id}`,
+                                'Description': description || 'Payment failed'
+                            },
+                            priority: 'high'
+                        }
+                    })
+                } catch (e) { console.warn('Failed to send failed payment notification:', e) }
+            }
+
             return NextResponse.json({
                 message: 'Ecom order callback processed successfully',
                 reference: clientReference,
@@ -218,7 +333,7 @@ export async function POST(req: Request) {
         if (clientReference.startsWith('SHIPMENT-')) {
             const { data: shipment, error: shipErr } = await supabase
                 .from('shipments')
-                .select('id, shipping_fee_paid')
+                .select('id, shipping_fee_paid, customer_id, tracking_number')
                 .eq('shipping_fee_payment_reference', clientReference)
                 .maybeSingle()
 
@@ -229,6 +344,38 @@ export async function POST(req: Request) {
                         .update({ shipping_fee_paid: true })
                         .eq('id', shipment.id)
                     console.log(`Shipment ${shipment.id} shipping fee marked paid`)
+                    
+                    try {
+                        await supabase.functions.invoke('telegram-notify', {
+                            body: {
+                                customer_id: shipment.customer_id,
+                                type: 'shipment_shipping_fee_paid',
+                                title: '✅ Shipping Fee Paid!',
+                                message: `Your shipping fee has been paid successfully.\n\nYour shipment will be processed for delivery.`,
+                                data: {
+                                    'Tracking #': shipment.tracking_number || shipment.id.toString().slice(-6),
+                                    'Amount': `₵${amount.toFixed(2)}`
+                                },
+                                priority: 'medium'
+                            }
+                        })
+                    } catch (e) { console.warn('Telegram notify (shipment fee):', e) }
+
+                    try {
+                        await supabase.functions.invoke('telegram-admin-notify', {
+                            body: {
+                                type: 'shipment_shipping_fee_paid',
+                                title: '💰 Shipment Shipping Fee Paid',
+                                message: `Hubtel callback confirmed a shipment shipping fee.`,
+                                data: {
+                                    'Shipment ID': `TRK-${shipment.id.toString().slice(-6)}`,
+                                    'Amount': `₵${amount.toFixed(2)}`
+                                },
+                                priority: 'low'
+                            }
+                        })
+                    } catch (e) { console.warn('Admin telegram (shipment fee):', e) }
+                    
                     revalidatePath('/dashboard/packages')
                     revalidatePath(`/dashboard/packages/${shipment.id}`)
                 }
@@ -244,7 +391,7 @@ export async function POST(req: Request) {
         if (clientReference.startsWith('SHIPPING_') || clientReference.startsWith('C2G-SHIPPING-') || clientReference.startsWith('SHIP-')) {
             const { data: shipFeeOrder, error: sfoErr } = await supabase
                 .from('ecom_orders')
-                .select('id, shipping_fee_paid')
+                .select('id, shipping_fee_paid, customer_id')
                 .eq('shipping_fee_payment_reference', clientReference)
                 .maybeSingle()
 
@@ -258,6 +405,22 @@ export async function POST(req: Request) {
                         })
                         .eq('id', shipFeeOrder.id)
                     console.log(`Ecom order ${shipFeeOrder.id} shipping fee marked paid`)
+                    
+                    try {
+                        await supabase.functions.invoke('telegram-notify', {
+                            body: {
+                                customer_id: shipFeeOrder.customer_id,
+                                type: 'order_shipping_fee_paid',
+                                title: '✅ Shipping Fee Paid!',
+                                message: `Your shipping fee has been paid successfully.\n\nYour order will be processed for shipment.`,
+                                data: {
+                                    'Order ID': `#MALL-${shipFeeOrder.id.toString().slice(-4)}`,
+                                    'Amount': `₵${amount.toFixed(2)}`
+                                },
+                                priority: 'medium'
+                            }
+                        })
+                    } catch (e) { console.warn('Telegram notify (order shipping fee):', e) }
                 }
                 return NextResponse.json({
                     message: 'Ecom shipping fee callback processed',
@@ -271,7 +434,7 @@ export async function POST(req: Request) {
         if (clientReference.startsWith('REG-')) {
             const { data: regShipment, error: regErr } = await supabase
                 .from('shipments')
-                .select('id, registration_fee_paid')
+                .select('id, registration_fee_paid, customer_id, tracking_number')
                 .eq('registration_fee_payment_reference', clientReference)
                 .maybeSingle()
 
@@ -285,6 +448,38 @@ export async function POST(req: Request) {
                         })
                         .eq('id', regShipment.id)
                     console.log(`Shipment ${regShipment.id} registration fee marked paid`)
+                    
+                    try {
+                        await supabase.functions.invoke('telegram-notify', {
+                            body: {
+                                customer_id: regShipment.customer_id,
+                                type: 'package_registered',
+                                title: '📦 Package Registered!',
+                                message: `Your package with tracking number ${regShipment.tracking_number || 'N/A'} has been successfully registered and the processing fee paid.\n\nIt is now visible to admins and awaiting arrival.`,
+                                data: {
+                                    'Shipment ID': `TRK-${regShipment.id.toString().slice(-6)}`,
+                                    'Tracking #': regShipment.tracking_number || 'N/A'
+                                },
+                                priority: 'medium'
+                            }
+                        })
+                    } catch (e) { console.warn('Notification error:', e) }
+
+                    try {
+                        await supabase.functions.invoke('telegram-admin-notify', {
+                            body: {
+                                type: 'package_registered',
+                                title: '🆕 New Package Registered',
+                                message: `A new package has been registered and the fee paid.`,
+                                data: {
+                                    'Shipment ID': `TRK-${regShipment.id.toString().slice(-6)}`,
+                                    'Tracking #': regShipment.tracking_number || 'N/A'
+                                },
+                                priority: 'low'
+                            }
+                        })
+                    } catch (e) { console.warn('Admin notification error:', e) }
+                    
                     revalidatePath('/dashboard/packages')
                     revalidatePath(`/dashboard/packages/${regShipment.id}`)
                 }

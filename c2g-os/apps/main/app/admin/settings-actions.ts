@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function adminUpdateSettings(settingsData: any) {
   const supabase = await createClient();
@@ -40,6 +40,8 @@ export async function adminUpdateSettings(settingsData: any) {
     });
 
     revalidatePath('/admin/(protected)/system/settings');
+    // @ts-ignore - Next.js types might be out of sync
+    revalidateTag('settings');
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Failed to update settings' };

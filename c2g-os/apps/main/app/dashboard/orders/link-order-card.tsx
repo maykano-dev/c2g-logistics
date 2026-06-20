@@ -1,10 +1,15 @@
 "use client";
 
-import { Link as LinkIcon, Plane, Ship, CreditCard, Edit, Map } from "lucide-react";
+import { Link as LinkIcon, Plane, Ship, CreditCard, Edit, Map, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useModal } from "@/components/providers/modal-provider";
 
 export function LinkOrderCard({ order }: { order: any }) {
   const router = useRouter();
+  const [isPaying, setIsPaying] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const { showAlert } = useModal();
 
   // Helper to format currency
   const formatCurrency = (amount: number) => `₵${parseFloat((amount || 0).toString()).toFixed(2)}`;
@@ -85,7 +90,7 @@ export function LinkOrderCard({ order }: { order: any }) {
             <p className="text-xs text-muted-foreground mb-1">Qty: {order.quantity || 1}</p>
             <p className="text-sm font-black text-primary">
               {formatCurrency(order.total || 0)}
-              {order.cny_price && <span className="text-xs font-normal text-muted-foreground ml-2">≈ ¥{order.cny_price}</span>}
+              {Number(order.cny_price) > 0 && <span className="text-xs font-normal text-muted-foreground ml-2">≈ ¥{order.cny_price}</span>}
             </p>
           </div>
         </div>
@@ -95,7 +100,7 @@ export function LinkOrderCard({ order }: { order: any }) {
             <span className="text-muted-foreground">Shipping Mode</span>
             <span className="font-semibold flex items-center gap-1.5 capitalize">
               {order.shipping_mode === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
-              {order.shipping_mode || 'Air Express'}
+              {order.shipping_mode?.replace('_', ' ') || 'Air Express'}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
@@ -111,17 +116,49 @@ export function LinkOrderCard({ order }: { order: any }) {
           {!isPaid ? (
             <>
               <button 
-                onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/orders/edit/${order.id}`); }}
-                className="p-2 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border"
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setIsEditing(true);
+                  router.push(`/dashboard/orders/edit/${order.id}`); 
+                }}
+                disabled={isEditing || isPaying}
+                className="p-2 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border disabled:opacity-50"
                 title="Edit Order"
               >
-                <Edit className="w-5 h-5" />
+                {isEditing ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Edit className="w-5 h-5" />}
               </button>
               <button 
-                onClick={(e) => { e.stopPropagation(); /* Handle Pay via Hubtel */ }}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 gap-2 flex-1 shadow-lg shadow-destructive/20"
+                onClick={async (e) => { 
+                  e.stopPropagation(); 
+                  if (isPaying) return;
+                  setIsPaying(true);
+                  try {
+                    const res = await fetch('/api/hubtel/initialize', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ orderId: order.id })
+                    });
+                    const data = await res.json();
+                    if (data.checkoutUrl) {
+                      window.location.href = data.checkoutUrl;
+                    } else {
+                      showAlert({ title: 'Payment Error', message: data.error || 'Failed to initialize payment.', type: 'danger' });
+                      setIsPaying(false);
+                    }
+                  } catch (err) {
+                    showAlert({ title: 'Network Error', message: 'Network error. Please try again.', type: 'danger' });
+                    setIsPaying(false);
+                  }
+                }}
+                disabled={isPaying || !order.total || parseFloat(order.total) <= 0}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors h-10 px-4 gap-2 flex-1 shadow-lg disabled:opacity-50 disabled:pointer-events-none ${
+                  (!order.total || parseFloat(order.total) <= 0) 
+                    ? 'bg-muted text-muted-foreground shadow-none cursor-not-allowed' 
+                    : 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-destructive/20'
+                }`}
+                title={(!order.total || parseFloat(order.total) <= 0) ? "Wait for an admin to set the price" : "Pay Now"}
               >
-                <CreditCard className="w-4 h-4" /> Pay Now
+                <CreditCard className="w-4 h-4" /> {isPaying ? 'Redirecting...' : 'Pay Now'}
               </button>
             </>
           ) : (

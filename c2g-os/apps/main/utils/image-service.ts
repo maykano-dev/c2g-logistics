@@ -22,43 +22,47 @@ export interface ImageUploadResult {
  * to a lightweight WebP format on the backend before being sent to the storage provider.
  */
 export async function uploadImage(fileBuffer: Buffer, fileName: string): Promise<ImageUploadResult> {
-  if (!IMGBB_API_KEY) {
-    console.error("Missing IMGBB_API_KEY");
-    return { success: false, error: "Storage provider configuration missing. Add IMGBB_API_KEY to your .env" };
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("Missing Supabase configuration");
+    return { success: false, error: "Supabase configuration missing in .env" };
   }
 
   try {
     // 1. Backend Processing: Convert any image format to highly-optimized WebP
-    // This reduces a 2MB image down to roughly ~200KB or less without visible quality loss.
     const optimizedBuffer = await sharp(fileBuffer)
       .webp({ quality: 80, effort: 6 })
       .resize({ width: 1200, withoutEnlargement: true }) // Max width 1200px
       .toBuffer();
 
-    // 2. Upload to Storage Provider (ImgBB)
+    // 2. Upload using Supabase Edge Function
     const base64Image = optimizedBuffer.toString('base64');
-    
-    const formData = new FormData();
-    formData.append('key', IMGBB_API_KEY);
-    formData.append('image', base64Image);
-    formData.append('name', fileName.replace(/\.[^/.]+$/, "") + ".webp");
 
-    const response = await fetch('https://api.imgbb.com/1/upload', {
+    const response = await fetch(`${supabaseUrl}/functions/v1/imgbb-upload`, {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        fileData: base64Image,
+        fileName: fileName.replace(/\.[^/.]+$/, "") + ".webp"
+      })
     });
 
     const data = await response.json();
 
-    if (data.success) {
+    if (response.ok && data.url) {
       return {
         success: true,
-        url: data.data.url, // URL of the uploaded WebP image
-        id: data.data.id,
+        url: data.url, 
+        id: data.public_id,
       };
     } else {
-      console.error("ImgBB Upload Error:", data);
-      return { success: false, error: data.error?.message || "Upload failed" };
+      console.error("Edge Function Upload Error:", data);
+      return { success: false, error: data.error || "Upload failed" };
     }
   } catch (error: any) {
     console.error("Error in uploadImage:", error);

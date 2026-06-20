@@ -1,5 +1,6 @@
 import { ShoppingBag, Package, MapPin, Clock } from "lucide-react";
 import { getMallOrders } from "./actions";
+import { MallOrderPayButton } from "./mall-order-pay-button";
 
 export default async function MallOrdersPage() {
   const { orders, error } = await getMallOrders();
@@ -112,17 +113,15 @@ export default async function MallOrdersPage() {
                 
                 <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2 sm:gap-3">
                   {order.order_status === 'pending_payment' ? (
-                    <button className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 shadow-lg shadow-primary/25">
-                      Pay Now
-                    </button>
+                    <MallOrderPayButton orderId={order.id} />
                   ) : (
-                    <button className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                    <a href={`/dashboard/orders/${order.id}?track=true`} className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                       Track Package
-                    </button>
+                    </a>
                   )}
-                  <button className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                  <a href={`/dashboard/mall-orders/${order.id}`} className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                     View Details
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>

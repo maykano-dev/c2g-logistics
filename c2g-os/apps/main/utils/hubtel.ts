@@ -34,10 +34,6 @@ export type HubtelStatusNormalized = {
     rawResponse: Record<string, unknown>
 }
 
-// Fixed credentials for RMSC as requested
-const HUBTEL_RMSC_MERCHANT_ACCOUNT = '116';
-const HUBTEL_RMSC_AUTH = 'Basic V25aTnBxSj2IwM0M2ZU3Yw==';
-
 export async function fetchHubtelTransactionStatusLocal(
     input: HubtelStatusInput
 ): Promise<HubtelStatusNormalized> {
@@ -60,11 +56,28 @@ export async function fetchHubtelTransactionStatusLocal(
         params.append('clientReference', hubtelTransactionId)
     }
 
+    // Fetch credentials dynamically
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: settings } = await supabase.from('settings').select('hubtel_api_id, hubtel_api_key, hubtel_merchant_account').eq('id', 1).single();
+
+    const hubtelApiId = (process.env.HUBTEL_API_ID || process.env.HUBTEL_CLIENT_ID || settings?.hubtel_api_id)?.trim();
+    const hubtelApiKey = (process.env.HUBTEL_API_KEY || process.env.HUBTEL_CLIENT_SECRET || settings?.hubtel_api_key)?.trim();
+    const hubtelMerchantAccount = (process.env.HUBTEL_MERCHANT_ACCOUNT || settings?.hubtel_merchant_account)?.trim();
+
+    if (!hubtelApiId || !hubtelApiKey || !hubtelMerchantAccount) {
+        throw new Error('Hubtel gateway credentials not configured');
+    }
+
+    const authString = `Basic ${Buffer.from(`${hubtelApiId}:${hubtelApiKey}`).toString('base64')}`;
+
     const apiUrl =
-        `https://rmsc.hubtel.com/v1/merchantaccount/merchants/${encodeURIComponent(HUBTEL_RMSC_MERCHANT_ACCOUNT)}/transactions/status?${params.toString()}`
+        `https://rmsc.hubtel.com/v1/merchantaccount/merchants/${encodeURIComponent(hubtelMerchantAccount)}/transactions/status?${params.toString()}`
 
     console.log('Checking Hubtel transaction status (RMSC):', {
-        merchantAccount: HUBTEL_RMSC_MERCHANT_ACCOUNT,
+        merchantAccount: hubtelMerchantAccount,
         clientReference,
         hubtelTransactionId,
         networkTransactionId
@@ -73,7 +86,7 @@ export async function fetchHubtelTransactionStatusLocal(
     const hubtelResponse = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-            Authorization: HUBTEL_RMSC_AUTH,
+            Authorization: authString,
             'Content-Type': 'application/json'
         }
     })
@@ -180,7 +193,7 @@ export async function fetchHubtelTransactionStatusLocal(
         paymentMethod: (transactionData.paymentMethod ?? (transactionData as { PaymentMethod?: string }).PaymentMethod) as string | undefined,
         date: (transactionData.date ?? (transactionData as { StartDate?: string }).StartDate) as string | undefined,
         isFulfilled: transactionData.isFulfilled as boolean | undefined,
-        rawResponse: { ...transactionData, _debugMerchantAccount: HUBTEL_RMSC_MERCHANT_ACCOUNT }
+        rawResponse: { ...transactionData, _debugMerchantAccount: hubtelMerchantAccount }
     }
 }
 
@@ -228,11 +241,8 @@ export async function initializeHubtelPayment({
     hubtelApiKey?: string,
     hubtelMerchantAccount?: string
 }) {
-    const authString = (hubtelApiId && hubtelApiKey) 
-        ? `Basic ${btoa(`${hubtelApiId}:${hubtelApiKey}`)}`
-        : HUBTEL_RMSC_AUTH;
-        
-    const merchantAccount = hubtelMerchantAccount || HUBTEL_RMSC_MERCHANT_ACCOUNT;
+    const authString = `Basic ${Buffer.from(`${hubtelApiId}:${hubtelApiKey}`).toString('base64')}`;
+    const merchantAccount = hubtelMerchantAccount;
 
     const hubtelPayload = {
         totalAmount: amount,

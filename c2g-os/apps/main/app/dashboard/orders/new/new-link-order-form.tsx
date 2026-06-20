@@ -38,7 +38,11 @@ export function NewLinkOrderForm({
 
   useEffect(() => {
     if (state?.success && state?.redirectUrl) {
-      router.push(state.redirectUrl);
+      if (state.redirectUrl.startsWith('http')) {
+        window.location.href = state.redirectUrl;
+      } else {
+        router.push(state.redirectUrl);
+      }
     }
   }, [state, router]);
 
@@ -75,6 +79,12 @@ export function NewLinkOrderForm({
 
     if (hasError) {
       setErrors(newErrors);
+      setTimeout(() => {
+        const firstError = document.querySelector('.error-highlight');
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
       return;
     }
     
@@ -129,7 +139,7 @@ export function NewLinkOrderForm({
       <div className="lg:col-span-2 space-y-6">
         <div className="space-y-6">
           {state?.error && (
-            <div className="p-4 text-sm font-medium bg-destructive/10 text-destructive rounded-xl border border-destructive/20">
+            <div className="p-4 text-sm font-medium bg-red-100 border border-red-200 shadow-sm text-red-600 rounded-xl border border-destructive/20">
               {state.error}
             </div>
           )}
@@ -163,7 +173,7 @@ export function NewLinkOrderForm({
                 <div className="space-y-2">
                   <label className="text-sm font-semibold flex items-center gap-2">
                     <LinkIcon className="w-4 h-4 text-primary" />
-                    Product Link (From 1688, Taobao, etc.) <span className="text-destructive">*</span>
+                    Product Link (From 1688, Taobao, etc.) <span className="text-red-600">*</span>
                   </label>
                   <input 
                     type="url" 
@@ -174,18 +184,18 @@ export function NewLinkOrderForm({
                     }}
                     placeholder="e.g., https://item.taobao.com/item.htm?id=..." 
                     className={`flex h-11 w-full rounded-md border bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors backdrop-blur-sm ${
-                      errors[`link_${item.id}`] ? 'border-destructive bg-destructive/5' : 'border-input'
+                      errors[`link_${item.id}`] ? 'border-red-500 bg-red-500/5 error-highlight' : 'border-input'
                     }`}
                   />
                   {errors[`link_${item.id}`] && (
-                    <p className="text-destructive text-sm font-bold mt-1 bg-destructive/10 px-2 py-1 rounded w-max">{errors[`link_${item.id}`]}</p>
+                    <p className="text-red-600 text-sm font-bold mt-1 bg-red-100 border border-red-200 shadow-sm px-2 py-1 rounded w-max">{errors[`link_${item.id}`]}</p>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Item Price */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Item Price (in Chinese Yuan ¥) <span className="text-destructive">*</span></label>
+                    <label className="text-sm font-medium">Item Price (in Chinese Yuan ¥) <span className="text-red-600">*</span></label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">¥</span>
                       <input 
@@ -199,18 +209,18 @@ export function NewLinkOrderForm({
                           if (errors[`price_${item.id}`]) setErrors(prev => ({...prev, [`price_${item.id}`]: ''}));
                         }}
                         className={`flex h-11 w-full rounded-md border bg-background/50 pl-8 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${
-                          errors[`price_${item.id}`] ? 'border-destructive bg-destructive/5' : 'border-input'
+                          errors[`price_${item.id}`] ? 'border-red-500 bg-red-500/5 error-highlight' : 'border-input'
                         }`} 
                       />
                     </div>
                     {errors[`price_${item.id}`] && (
-                      <p className="text-destructive text-sm font-bold mt-1 bg-destructive/10 px-2 py-1 rounded w-max">{errors[`price_${item.id}`]}</p>
+                      <p className="text-red-600 text-sm font-bold mt-1 bg-red-100 border border-red-200 shadow-sm px-2 py-1 rounded w-max">{errors[`price_${item.id}`]}</p>
                     )}
                   </div>
 
                   {/* Quantity */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Quantity <span className="text-destructive">*</span></label>
+                    <label className="text-sm font-medium">Quantity <span className="text-red-600">*</span></label>
                     <input 
                       type="number" 
                       min="1" 
@@ -220,11 +230,11 @@ export function NewLinkOrderForm({
                         if (errors[`qty_${item.id}`]) setErrors(prev => ({...prev, [`qty_${item.id}`]: ''}));
                       }}
                       className={`flex h-11 w-full rounded-md border bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${
-                        errors[`qty_${item.id}`] ? 'border-destructive bg-destructive/5' : 'border-input'
+                        errors[`qty_${item.id}`] ? 'border-red-500 bg-red-500/5 error-highlight' : 'border-input'
                       }`} 
                     />
                     {errors[`qty_${item.id}`] && (
-                      <p className="text-destructive text-sm font-bold mt-1 bg-destructive/10 px-2 py-1 rounded w-max">{errors[`qty_${item.id}`]}</p>
+                      <p className="text-red-600 text-sm font-bold mt-1 bg-red-100 border border-red-200 shadow-sm px-2 py-1 rounded w-max">{errors[`qty_${item.id}`]}</p>
                     )}
                   </div>
                 </div>
@@ -249,7 +259,7 @@ export function NewLinkOrderForm({
                   <div className="grid grid-cols-2 gap-4 h-32">
                     {/* Upload Side */}
                     <div className={`relative border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center bg-secondary/10 hover:bg-secondary/20 transition-colors cursor-pointer group h-full ${
-                      errors[`screenshot_${item.id}`] ? 'border-destructive bg-destructive/5' : 'border-border/50'
+                      errors[`screenshot_${item.id}`] ? 'border-red-500 bg-red-500/5 error-highlight' : 'border-border/50'
                     }`}>
                       <input 
                         type="file" 
@@ -266,7 +276,7 @@ export function NewLinkOrderForm({
                         }}
                       />
                       <div className="p-3 bg-background rounded-full mb-2 group-hover:scale-110 transition-transform shadow-sm">
-                        <UploadCloud className={`w-5 h-5 ${errors[`screenshot_${item.id}`] ? 'text-destructive' : 'text-primary'}`} />
+                        <UploadCloud className={`w-5 h-5 ${errors[`screenshot_${item.id}`] ? 'text-red-600' : 'text-primary'}`} />
                       </div>
                       <p className="text-xs font-medium text-center text-muted-foreground px-2 line-clamp-1">
                         {itemFileNames[item.id] || "Click to browse"}
@@ -286,7 +296,7 @@ export function NewLinkOrderForm({
                     </div>
                   </div>
                   {errors[`screenshot_${item.id}`] && (
-                    <p className="text-destructive text-sm font-bold mt-2 bg-destructive/10 px-2 py-1 rounded w-max inline-block">{errors[`screenshot_${item.id}`]}</p>
+                    <p className="text-red-600 text-sm font-bold mt-2 bg-red-100 border border-red-200 shadow-sm px-2 py-1 rounded w-max inline-block">{errors[`screenshot_${item.id}`]}</p>
                   )}
                 </div>
               </div>
@@ -304,14 +314,14 @@ export function NewLinkOrderForm({
           <div className="glass-panel p-6 md:p-8 space-y-6">
             {/* Shipping Mode */}
             <div className="space-y-3 relative">
-              <label className="text-sm font-medium">Shipping Mode <span className="text-destructive">*</span></label>
+              <label className="text-sm font-medium">Shipping Mode <span className="text-red-600">*</span></label>
               <input type="hidden" name="shipping" value={shippingMode} />
               
               <button 
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`flex items-center justify-between h-12 w-full rounded-md border bg-background/50 px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer shadow-sm hover:bg-secondary/20 ${
-                    errors['shipping'] ? 'border-destructive bg-destructive/5' : 'border-input'
+                    errors['shipping'] ? 'border-red-500 bg-red-500/5 error-highlight' : 'border-input'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -323,7 +333,7 @@ export function NewLinkOrderForm({
                   <ChevronDown className="w-4 h-4 opacity-50" />
                 </button>
                 {errors['shipping'] && (
-                  <p className="text-destructive text-sm font-bold mt-1 bg-destructive/10 px-2 py-1 rounded w-max">{errors['shipping']}</p>
+                  <p className="text-red-600 text-sm font-bold mt-1 bg-red-100 border border-red-200 shadow-sm px-2 py-1 rounded w-max">{errors['shipping']}</p>
                 )}
 
                 {isDropdownOpen && (
@@ -427,7 +437,7 @@ export function NewLinkOrderForm({
             <Calculator className="w-5 h-5 text-primary" />
             <h3 className="font-bold">Live Cost Summary</h3>
             {errors['total'] && (
-              <p className="text-destructive text-sm font-bold bg-destructive/10 px-3 py-2 rounded-md mb-2">{errors['total']}</p>
+              <p className="text-red-600 text-sm font-bold bg-red-100 border border-red-200 shadow-sm px-3 py-2 rounded-md mb-2">{errors['total']}</p>
             )}
           </div>
           
@@ -466,14 +476,14 @@ export function NewLinkOrderForm({
             </div>
             <div className="mt-6 flex flex-col gap-3">
               {errors['total'] && (
-                <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-lg flex items-center gap-2 text-destructive">
+                <div className="bg-red-100 border border-red-200 shadow-sm border border-destructive/20 p-3 rounded-lg flex items-center gap-2 text-red-600">
                   <Info className="w-4 h-4 shrink-0" />
                   <p className="text-sm font-bold leading-tight">{errors['total']}</p>
                 </div>
               )}
               <button 
                 type="submit" 
-                disabled={isPending}
+                disabled={isPending || Object.keys(errors).length > 0}
                 className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none"
               >
                 {isPending ? (

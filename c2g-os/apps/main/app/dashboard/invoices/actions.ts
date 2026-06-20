@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
-
+import { getCachedSettings } from '@/utils/cache';
 export async function getInvoices() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -93,7 +93,7 @@ export async function getInvoiceDetail(invoiceId: string) {
   const [type, ...idParts] = invoiceId.split('_');
   const id = idParts.join('_');
 
-  const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
+  const settings = await getCachedSettings();
 
   if (type === 'link') {
     const { data: order } = await supabase.from('orders').select('*').eq('id', id).eq('customer_id', user.id).single();

@@ -1,27 +1,55 @@
 import { Copy, MapPin, Building2, Phone, User, CheckCircle2 } from "lucide-react";
 import { createClient } from '@/utils/supabase/server';
+import { CopyAddressButton } from './copy-button';
 
 export default async function WarehouseAddressPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   let customerId = 'C2G-CUST-XXXX';
+  let customerName = 'Customer';
   if (user) {
     const { data: customer } = await supabase
       .from('customers')
-      .select('customer_unique_id')
+      .select('customer_unique_id, name')
       .eq('id', user.id)
       .single();
     if (customer?.customer_unique_id) {
       customerId = customer.customer_unique_id;
     }
+    if (customer?.name) {
+      customerName = customer.name.split(' ')[0];
+    }
   }
+
+  // Fetch directly to avoid Next.js cache staleness and RLS anon-key issues
+  const { data: addresses, error } = await supabase
+    .from('warehouse_addresses')
+    .select('*')
+    .order('is_default', { ascending: false });
+
+  if (error) {
+    console.error("Error fetching warehouse addresses:", error);
+  }
+
+  const defaultWarehouse = addresses?.find(a => a.is_default) || addresses?.[0];
+
+  const warehouseName = defaultWarehouse?.name || "Guangzhou Warehouse";
+  const warehousePhone = defaultWarehouse?.phone || "+86 17835112914";
+  const warehouseAddress = defaultWarehouse?.address || "Address Line 1: 迎泽大街79号理工大学迎西校区内太原理工大学(清泽田径场)\nCity: 太原市\nProvince: 山西省\nDistrict: 万柏林区\nPostal Code: 030024\nCountry: China";
 
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Warehouse Addresses</h1>
         <p className="text-muted-foreground mt-1">Use these addresses when shopping on Chinese e-commerce platforms.</p>
+        
+        <div className="mt-6 bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-lg flex items-center gap-3 animate-pulse">
+          <span className="text-xl">⚠️</span>
+          <span className="font-bold text-sm tracking-wide">
+            PLEASE DO NOT TRANSLATE THE ADDRESS DETAILS TO ENGLISH. USE IT AS IT IS.
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -30,59 +58,24 @@ export default async function WarehouseAddressPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] -mr-10 -mt-10 pointer-events-none" />
           
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+            <div className="w-12 h-12 shrink-0 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
               <span className="text-2xl">🇨🇳</span>
             </div>
-            <div>
-              <h2 className="text-xl font-bold">Guangzhou Warehouse</h2>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold whitespace-nowrap tracking-tight">{warehouseName}</h2>
               <p className="text-sm text-green-500 flex items-center gap-1 font-medium">
-                <CheckCircle2 className="w-4 h-4" /> Receiving Packages
+                <CheckCircle2 className="w-4 h-4 shrink-0" /> Receiving Packages
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 flex flex-col gap-1 relative group/copy cursor-pointer hover:bg-secondary/50 transition-colors">
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Receiver Name (Include your ID)</span>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-lg flex items-center gap-2">
-                  <User className="w-4 h-4 text-primary" /> {customerId}
-                </span>
-                <Copy className="w-4 h-4 text-muted-foreground group-hover/copy:text-primary transition-colors" />
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 flex flex-col gap-1 relative group/copy cursor-pointer hover:bg-secondary/50 transition-colors">
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Phone Number</span>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-lg flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-primary" /> 138-0013-8000
-                </span>
-                <Copy className="w-4 h-4 text-muted-foreground group-hover/copy:text-primary transition-colors" />
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 flex flex-col gap-1 relative group/copy cursor-pointer hover:bg-secondary/50 transition-colors">
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Province / City / District</span>
-              <div className="flex items-center justify-between">
-                <span className="font-bold flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-primary" /> Guangdong Province, Guangzhou City, Baiyun District
-                </span>
-                <Copy className="w-4 h-4 text-muted-foreground group-hover/copy:text-primary transition-colors" />
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 flex flex-col gap-1 relative group/copy cursor-pointer hover:bg-secondary/50 transition-colors">
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Detailed Address</span>
-              <div className="flex items-start justify-between gap-4">
-                <span className="font-bold flex items-start gap-2 leading-tight">
-                  <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" /> 
-                  No. 123 Logistics Park, Airport Road, Baiyun District ({customerId})
-                </span>
-                <Copy className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5 group-hover/copy:text-primary transition-colors" />
-              </div>
-            </div>
+          <div className="bg-secondary/10 p-6 rounded-xl border border-primary/20 text-[14px] leading-[1.8] text-foreground/90 font-medium whitespace-pre-wrap">
+{`Name: ${customerName} [${customerId}]
+${warehouseAddress?.trim()}
+Phone: ${warehousePhone}`}
           </div>
+          
+          <CopyAddressButton addressText={`Name: ${customerName} [${customerId}]\n${warehouseAddress}\nPhone: ${warehousePhone}`} />
           
           <div className="mt-6 text-sm text-muted-foreground bg-primary/5 p-4 rounded-lg border border-primary/10">
             <strong>Important:</strong> Always ensure your unique ID ({customerId}) is included in the receiver name or detailed address so we can identify your packages.
@@ -116,9 +109,14 @@ export default async function WarehouseAddressPage() {
             <p className="text-sm text-muted-foreground mb-4">
               If you are having trouble adding the address to a specific platform, our support team can help you.
             </p>
-            <button className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4">
+            <a 
+              href="https://wa.me/233241465282"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4"
+            >
               Contact Support
-            </button>
+            </a>
           </div>
         </div>
       </div>
