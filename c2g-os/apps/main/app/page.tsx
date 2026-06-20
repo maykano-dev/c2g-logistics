@@ -531,13 +531,13 @@ export default function LandingPage() {
               <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:scale-[1.02]">
                 Create Free Account
               </Link>
-              <button className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input glass hover:bg-accent hover:text-accent-foreground h-12 px-8">
+              <Link href="/get-quote" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input glass hover:bg-accent hover:text-accent-foreground h-12 px-8">
                 Get Shipping Quote
-              </button>
+              </Link>
             </div>
-            <p className="pt-4 text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+            <Link href="/contact" className="pt-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors block mx-auto w-fit">
               Contact Us
-            </p>
+            </Link>
           </div>
         </section>
 
