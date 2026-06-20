@@ -1,5 +1,3 @@
-import sharp from 'sharp';
-
 /**
  * Image Abstraction Layer for C2G Mall.
  * 
@@ -31,6 +29,9 @@ export async function uploadImage(fileBuffer: Buffer, fileName: string): Promise
   }
 
   try {
+    // Dynamically import sharp to prevent top-level module initialization crashes on Netlify Functions
+    const sharp = (await import('sharp')).default;
+
     // 1. Backend Processing: Convert any image format to highly-optimized WebP
     const optimizedBuffer = await sharp(fileBuffer)
       .webp({ quality: 80, effort: 6 })
