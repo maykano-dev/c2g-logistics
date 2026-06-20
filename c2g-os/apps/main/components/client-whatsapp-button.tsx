@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 export function ClientWhatsAppButton() {
   const pathname = usePathname();
   
-  // Hide whatsapp button on admin and auth pages
-  const hideRoutes = ["/admin", "/login", "/signup", "/forgot-password"];
+  // Hide whatsapp button on admin, auth, and dashboard pages
+  const hideRoutes = ["/admin", "/login", "/signup", "/forgot-password", "/dashboard", "/employee", "/importer-dashboard"];
   const shouldHide = hideRoutes.some(route => pathname?.startsWith(route));
 
   if (shouldHide) {
