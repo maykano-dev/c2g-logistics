@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { logout } from "../auth/actions";
 import { useWishlist } from "@/components/shop/wishlist-context";
-import PullToRefresh from "@/components/pull-to-refresh";
 
 export default function DashboardClientLayout({
   children,
@@ -148,9 +147,9 @@ export default function DashboardClientLayout({
         </header>
 
         {/* Content */}
-        <PullToRefresh className="flex-1 p-4 md:p-6 lg:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8 z-0 w-full">
+        <div className="flex-1 p-4 md:p-6 lg:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8 z-0 w-full">
           {children}
-        </PullToRefresh>
+        </div>
       </main>
 
       <AnnouncementsOverlay />
