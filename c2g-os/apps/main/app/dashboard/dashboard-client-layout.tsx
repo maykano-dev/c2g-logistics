@@ -127,7 +127,11 @@ export default function DashboardClientLayout({
           <div className="flex items-center gap-3">
             <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-background" />
+              {stats?.unreadNotificationsCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-[9px] font-bold text-white flex items-center justify-center rounded-full border border-background">
+                  {stats.unreadNotificationsCount > 9 ? '9+' : stats.unreadNotificationsCount}
+                </span>
+              )}
             </Link>
             <Link href="/dashboard/settings" className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-accent border-2 border-background shadow-sm flex items-center justify-center overflow-hidden">
               <Settings className="w-3.5 h-3.5 text-white mix-blend-overlay" />
@@ -140,7 +144,11 @@ export default function DashboardClientLayout({
           <div className="flex items-center gap-4">
             <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-background" />
+              {stats?.unreadNotificationsCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-[9px] font-bold text-white flex items-center justify-center rounded-full border border-background">
+                  {stats.unreadNotificationsCount > 9 ? '9+' : stats.unreadNotificationsCount}
+                </span>
+              )}
             </Link>
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent border-2 border-background shadow-sm" />
           </div>

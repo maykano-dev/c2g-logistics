@@ -93,6 +93,13 @@ export async function getDashboardStats() {
     .eq('customer_id', user.id)
     .or('status.eq.pending_payment,registration_fee_paid.eq.false,shipping_fee_paid.eq.false')
 
+  // 10. Unread Notifications Count
+  const { count: unreadNotificationsCount } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('is_read', false)
+
   return {
     transitOrdersCount: transitOrdersCount || 0,
     readyForPickupCount: (pickupOrdersCount || 0) + (pickupShipmentsCount || 0),
@@ -103,6 +110,7 @@ export async function getDashboardStats() {
     incomingPackagesCount: incomingPackagesCount || 0,
     linkOrdersCount: linkOrdersCount || 0,
     pendingPackagesCount: pendingPackagesCount || 0,
+    unreadNotificationsCount: unreadNotificationsCount || 0,
     userName,
   }
 }

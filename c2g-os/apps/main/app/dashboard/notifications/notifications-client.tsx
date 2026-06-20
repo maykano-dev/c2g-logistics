@@ -1,18 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { markAsRead, markAllAsRead } from './actions';
-import { Bell, Check, CheckCircle2, Package, MapPin, CreditCard, ShoppingBag } from 'lucide-react';
+import { markAsRead, markAllAsRead, deleteNotification } from './actions';
+import { Bell, Check, CheckCircle2, Package, MapPin, CreditCard, ShoppingBag, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function NotificationsClient({ initialNotifications }: { initialNotifications: any[] }) {
   const [notifications, setNotifications] = useState(initialNotifications);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
 
   const handleMarkAsRead = async (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     await markAsRead(id);
     router.refresh(); // Refresh to update bell icon count
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeletingId(id);
+    await deleteNotification(id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    setDeletingId(null);
+    router.refresh();
   };
 
   const handleNotificationClick = async (notification: any) => {
@@ -110,15 +120,25 @@ export default function NotificationsClient({ initialNotifications }: { initialN
                     {notification.message}
                   </p>
                 </div>
-                {!notification.is_read && (
+                <div className="flex items-center gap-1 shrink-0">
+                  {!notification.is_read && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
+                      className="p-2 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-background"
+                      title="Mark as read"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                  )}
                   <button 
-                    onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
-                    className="p-2 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-background"
-                    title="Mark as read"
+                    onClick={(e) => handleDelete(e, notification.id)}
+                    disabled={deletingId === notification.id}
+                    className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-full hover:bg-background disabled:opacity-50"
+                    title="Delete notification"
                   >
-                    <Check className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                )}
+                </div>
               </div>
             );
           })

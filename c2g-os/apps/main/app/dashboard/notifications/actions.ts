@@ -47,3 +47,18 @@ export async function markAllAsRead() {
     
   return { success: true };
 }
+
+export async function deleteNotification(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return { error: 'Unauthorized' };
+
+  await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+    
+  return { success: true };
+}
