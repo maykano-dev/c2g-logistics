@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { broadcastNotification } from '@/utils/notifications';
 
 export async function createAnnouncement(title: string, content: string, targetAudience: string = 'all') {
   const supabase = await createClient();
@@ -39,6 +40,15 @@ export async function createAnnouncement(title: string, content: string, targetA
       details: { title, target_audience: targetAudience },
       ip_address: 'server'
     });
+
+    // Trigger background broadcast notification to all users
+    broadcastNotification({
+      title: "New Announcement",
+      message: title,
+      type: "system",
+      priority: "important",
+      link: "/dashboard/notifications" // or a dedicated announcements page
+    }).catch(console.error);
 
     revalidatePath('/admin/(protected)/customers/announcements');
     return { success: true };

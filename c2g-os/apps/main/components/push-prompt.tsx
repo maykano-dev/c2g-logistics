@@ -105,6 +105,22 @@ export function PushPrompt() {
           } as any);
         });
       }
+
+      // Save to database so it appears in the Notification Center
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('notifications').insert({
+            user_id: user.id,
+            title: "Notifications Enabled! 🎉",
+            message: "You will now receive instant updates about your packages and orders.",
+            type: "system",
+            is_read: false
+          });
+        }
+      } catch (e) {
+        console.error("Failed to save welcome notification to DB:", e);
+      }
     } else {
       setShowPrompt(false);
     }

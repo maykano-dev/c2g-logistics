@@ -86,3 +86,83 @@ export async function createNotification({
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Broadcasts a notification to all users.
+ */
+export async function broadcastNotification({
+  title,
+  message,
+  type = "system",
+  priority = "info",
+  link,
+}: {
+  title: string;
+  message: string;
+  type?: string;
+  priority?: "critical" | "important" | "info" | "marketing";
+  link?: string;
+}) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) return { success: false };
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+  try {
+    // 1. Fetch all users from 'customers' (or whatever main user table exists, we'll just fetch from auth or a known table)
+    // Actually, 'customers' contains the user_id for all clients.
+    const { data: users } = await supabaseAdmin.from("customers").select("user_id");
+    
+    if (users && users.length > 0) {
+      // 2. Insert In-App Notifications in batches of 500
+      const notifications = users.map(u => ({
+        user_id: u.user_id,
+        title,
+        message,
+        type,
+        priority,
+        link,
+        is_read: false,
+      }));
+
+      // Supabase has a limit per insert, so chunking is safer
+      const chunkSize = 500;
+      for (let i = 0; i < notifications.length; i += chunkSize) {
+        const chunk = notifications.slice(i, i + chunkSize);
+        await supabaseAdmin.from("notifications").insert(chunk);
+      }
+    }
+
+    // 3. Fetch Push Subscriptions and broadcast web push
+    const { data: subscriptions } = await supabaseAdmin
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth");
+
+    if (subscriptions && subscriptions.length > 0) {
+      const pushPayload = {
+        title,
+        body: message,
+        url: link || "/dashboard/notifications",
+      };
+
+      const pushPromises = subscriptions.map((sub: any) => {
+        const pushSubscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth
+          }
+        };
+        return sendPushNotification(pushSubscription, pushPayload);
+      });
+      await Promise.allSettled(pushPromises);
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("broadcastNotification error:", err);
+    return { success: false, error: err.message };
+  }
+}
