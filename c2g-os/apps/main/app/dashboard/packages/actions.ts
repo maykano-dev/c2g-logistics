@@ -112,3 +112,35 @@ export async function updatePackageStatus(id: string, status: string) {
   revalidatePath('/dashboard/packages');
   return { success: true };
 }
+
+export async function deletePackage(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  // Verify it's unpaid
+  const { data: pkg } = await supabase
+    .from('shipments')
+    .select('registration_fee_paid')
+    .eq('id', id)
+    .eq('customer_id', user.id)
+    .single();
+    
+  if (!pkg) return { error: 'Package not found' };
+  if (pkg.registration_fee_paid) return { error: 'Cannot delete a paid package' };
+
+  const { error } = await supabase
+    .from('shipments')
+    .delete()
+    .eq('id', id)
+    .eq('customer_id', user.id);
+
+  if (error) {
+    console.error('Error deleting package:', error);
+    return { error: 'Failed to delete package' };
+  }
+
+  revalidatePath('/dashboard/packages');
+  return { success: true };
+}

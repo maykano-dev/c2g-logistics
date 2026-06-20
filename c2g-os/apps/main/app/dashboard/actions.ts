@@ -86,6 +86,13 @@ export async function getDashboardStats() {
     .eq('customer_id', user.id)
     .eq('type', 'link_order')
 
+  // 9. Unpaid Packages
+  const { count: pendingPackagesCount } = await supabase
+    .from('shipments')
+    .select('*', { count: 'exact', head: true })
+    .eq('customer_id', user.id)
+    .or('status.eq.pending_payment,registration_fee_paid.eq.false,shipping_fee_paid.eq.false')
+
   return {
     transitOrdersCount: transitOrdersCount || 0,
     readyForPickupCount: (pickupOrdersCount || 0) + (pickupShipmentsCount || 0),
@@ -95,6 +102,7 @@ export async function getDashboardStats() {
     inWarehouseCount: inWarehouseCount || 0,
     incomingPackagesCount: incomingPackagesCount || 0,
     linkOrdersCount: linkOrdersCount || 0,
+    pendingPackagesCount: pendingPackagesCount || 0,
     userName,
   }
 }

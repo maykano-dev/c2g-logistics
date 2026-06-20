@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Heart, ShoppingCart, Eye, Flame, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./cart-context";
+import { useWishlist } from "./wishlist-context";
 
 function DemandBadge({ label }: { label: string }) {
   if (label === "high") {
@@ -32,7 +33,8 @@ export default function ProductCard({
   exchangeRate: number;
   variant?: "grid" | "scroll";
 }) {
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(String(product.id));
   const { addToCart } = useCart();
 
   const images =
@@ -85,7 +87,17 @@ export default function ProductCard({
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsWishlisted(!isWishlisted);
+    if (isWishlisted) {
+      removeFromWishlist(String(product.id));
+    } else {
+      addToWishlist({
+        id: String(product.id),
+        name: product.name,
+        imageUrl,
+        priceGhs,
+        priceCny,
+      });
+    }
   };
 
   const isScroll = variant === "scroll";
@@ -99,33 +111,44 @@ export default function ProductCard({
       }`}
     >
       {/* Image Area */}
-      <Link
-        href={`/shop/product/${product.id}`}
-        className="relative block aspect-square overflow-hidden bg-secondary/30"
-      >
-        <img
-          src={imageUrl}
-          alt={product.name}
-          loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
-        />
+      <div className="relative aspect-square overflow-hidden bg-secondary/30">
+        <Link
+          href={`/shop/product/${product.id}`}
+          className="block w-full h-full"
+        >
+          <img
+            src={imageUrl}
+            alt={product.name}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
+          />
+
+          {/* Out of Stock */}
+          {product.stock <= 0 && !hasVariants && (
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
+              <span className="bg-destructive text-destructive-foreground px-3 py-1 rounded-md text-xs font-bold">
+                Sold Out
+              </span>
+            </div>
+          )}
+
+          {/* Quick View overlay */}
+          <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 hidden md:block">
+            <div className="flex items-center justify-center gap-2">
+              <span className="flex items-center gap-1 text-white text-xs font-medium">
+                <Eye className="w-3.5 h-3.5" /> Quick View
+              </span>
+            </div>
+          </div>
+        </Link>
 
         {/* Demand Badge */}
         <DemandBadge label={demandLabel} />
 
-        {/* Out of Stock */}
-        {product.stock <= 0 && !hasVariants && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="bg-destructive text-destructive-foreground px-3 py-1 rounded-md text-xs font-bold">
-              Sold Out
-            </span>
-          </div>
-        )}
-
         {/* Wishlist Heart */}
         <button
           onClick={handleWishlist}
-          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md flex items-center justify-center opacity-100 transition-all z-10 hover:scale-110 shadow-sm border border-border/20"
+          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md flex items-center justify-center opacity-100 transition-all z-10 hover:scale-110 shadow-sm border border-border/20 cursor-pointer"
         >
           <Heart
             className={`w-4 h-4 transition-colors ${
@@ -135,16 +158,7 @@ export default function ProductCard({
             }`}
           />
         </button>
-
-        {/* Quick View overlay */}
-        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 hidden md:block">
-          <div className="flex items-center justify-center gap-2">
-            <span className="flex items-center gap-1 text-white text-xs font-medium">
-              <Eye className="w-3.5 h-3.5" /> Quick View
-            </span>
-          </div>
-        </div>
-      </Link>
+      </div>
 
       {/* Card Body */}
       <div className="p-3 sm:p-3.5 flex flex-col flex-grow">

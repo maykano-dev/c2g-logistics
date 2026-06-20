@@ -32,19 +32,66 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Load from local storage
-    const saved = localStorage.getItem("c2g_mall_cart");
-    if (saved) {
+    async function loadCart() {
+      const saved = localStorage.getItem("c2g_mall_cart");
+      let localItems: CartItem[] = [];
+      if (saved) {
+        try {
+          localItems = JSON.parse(saved);
+        } catch (e) {}
+      }
+
       try {
-        setItems(JSON.parse(saved));
-      } catch (e) {}
+        const { getDbCart, syncDbCart } = await import("../../app/shop/actions");
+        const res = await getDbCart();
+        
+        if (res.success) {
+          // User is logged in
+          const dbItems = (res.items || []) as CartItem[];
+          if (dbItems.length > 0) {
+            // Merge db and local items
+            const merged = [...dbItems];
+            let changed = false;
+            localItems.forEach(localItem => {
+              const existing = merged.find(i => i.id === localItem.id);
+              if (!existing) {
+                merged.push(localItem);
+                changed = true;
+              }
+            });
+            setItems(merged);
+            localStorage.setItem("c2g_mall_cart", JSON.stringify(merged));
+            if (changed) {
+              await syncDbCart(merged);
+            }
+          } else if (localItems.length > 0) {
+            // DB is empty, push local items to DB
+            setItems(localItems);
+            await syncDbCart(localItems);
+          } else {
+            // Both empty
+            setItems([]);
+          }
+        } else {
+          // Not logged in or error
+          setItems(localItems);
+        }
+      } catch (err) {
+        setItems(localItems);
+      } finally {
+        setIsLoaded(true);
+      }
     }
-    setIsLoaded(true);
+    loadCart();
   }, []);
 
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem("c2g_mall_cart", JSON.stringify(items));
+      // Fire and forget DB sync (safe to fail if not logged in)
+      import("../../app/shop/actions").then(({ syncDbCart }) => {
+        syncDbCart(items).catch(() => {});
+      });
     }
   }, [items, isLoaded]);
 

@@ -24,30 +24,38 @@ export async function createEcomOrder(orderData: any) {
   
   // 1. Fetch fresh product data to get cost and importer info
   const productIds = validatedData.items.map((item: any) => item.productId);
-  const { data: products } = await supabase
+  const { data: products, error: productsError } = await supabase
     .from("products")
     .select("id, importer_id, cost_price_cny, selling_price_ghs")
     .in("id", productIds);
 
+  if (productsError) {
+    secureLog("Error fetching products", { error: productsError, productIds });
+  }
+
   const productMap = new Map();
-  products?.forEach(p => productMap.set(p.id, p));
+  products?.forEach(p => productMap.set(String(p.id), p));
 
   const variantIds = validatedData.items.filter((i: any) => i.variantId).map((i: any) => i.variantId);
-  const { data: variants } = variantIds.length > 0 ? await supabase
+  const { data: variants, error: variantsError } = variantIds.length > 0 ? await supabase
     .from("product_variants")
     .select("id, cost_price_cny, selling_price_ghs")
-    .in("id", variantIds) : { data: [] };
+    .in("id", variantIds) : { data: [], error: null };
+    
+  if (variantsError) {
+    secureLog("Error fetching variants", { error: variantsError, variantIds });
+  }
     
   const variantMap = new Map();
-  variants?.forEach(v => variantMap.set(v.id, v));
+  variants?.forEach(v => variantMap.set(String(v.id), v));
 
   // 2. Group items by importer_id
   const itemsByImporter = new Map<string | null, any[]>();
   
   for (const item of validatedData.items) {
-    const productInfo = productMap.get(item.productId);
+    const productInfo = productMap.get(String(item.productId));
     if (!productInfo) {
-      return { success: false, error: `Product not found: ${item.productId}` };
+      return { success: false, error: `One or more items in your cart (ID: ${item.productId}) are no longer available in the store. Please remove them from your cart to proceed.` };
     }
     
     const importerId = productInfo.importer_id || null;
@@ -57,7 +65,7 @@ export async function createEcomOrder(orderData: any) {
     let trueCostPriceCny = productInfo.cost_price_cny || item.priceCny || 0;
 
     if (item.variantId) {
-      const variantInfo = variantMap.get(item.variantId);
+      const variantInfo = variantMap.get(String(item.variantId));
       if (variantInfo) {
         if (variantInfo.selling_price_ghs) trueSellingPriceGhs = variantInfo.selling_price_ghs;
         if (variantInfo.cost_price_cny) trueCostPriceCny = variantInfo.cost_price_cny;

@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { Metadata } from "next";
 import DashboardClientLayout from "./dashboard-client-layout";
 import { PushPrompt } from "../../components/push-prompt";
+import { getDashboardStats } from "./actions";
 
 export const metadata: Metadata = {
   title: "Dashboard | C2G Logistics",
@@ -23,10 +24,12 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const stats = await getDashboardStats();
+
   // Pass children to the client layout for navigation and framer-motion animations
   return (
     <>
-      <DashboardClientLayout>
+      <DashboardClientLayout stats={stats}>
         {children}
       </DashboardClientLayout>
       <PushPrompt />

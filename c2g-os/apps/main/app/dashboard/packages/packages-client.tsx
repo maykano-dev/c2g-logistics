@@ -1,18 +1,24 @@
 'use client';
 
-import { useState } from "react";
-import { Package, PlusCircle, Search, Filter, Lock } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Package, PlusCircle, Search, Filter, Lock, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import PackagePayButton from "./package-pay-button";
+import { useModal } from "@/components/providers/modal-provider";
+import { deletePackage } from "./actions";
+import { useRouter } from "next/navigation";
 
 interface PackagesClientProps {
   packages: any[];
 }
 
 export default function PackagesClient({ packages }: PackagesClientProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const { showConfirm, showAlert } = useModal();
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const getStatusDisplay = (status: string, registrationFeePaid: boolean) => {
     if (status === 'pending_payment' && !registrationFeePaid) {
@@ -50,6 +56,27 @@ export default function PackagesClient({ packages }: PackagesClientProps) {
 
     return matchesSearch && matchesStatus;
   });
+
+  const handleDelete = async (e: React.MouseEvent, pkgId: string) => {
+    e.stopPropagation();
+    const confirmed = await showConfirm({
+      title: 'Delete Package',
+      message: 'Are you sure you want to delete this package? This action cannot be undone.',
+      confirmText: 'Delete',
+      type: 'danger',
+    });
+    
+    if (confirmed) {
+      setIsDeleting(pkgId);
+      const result = await deletePackage(pkgId);
+      if (result.error) {
+        showAlert({ title: 'Error', message: result.error, type: 'danger' });
+      } else {
+        router.refresh();
+      }
+      setIsDeleting(null);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -163,9 +190,21 @@ export default function PackagesClient({ packages }: PackagesClientProps) {
                       <p className="text-xs text-muted-foreground">{new Date(pkg.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusDisplay.className}`}>
-                    {statusDisplay.label}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {needsPayment && (
+                      <button 
+                        onClick={(e) => handleDelete(e, pkg.id)}
+                        disabled={isDeleting === pkg.id}
+                        className="p-1 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 border border-transparent"
+                        title="Delete Package"
+                      >
+                        {isDeleting === pkg.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    )}
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusDisplay.className}`}>
+                      {statusDisplay.label}
+                    </span>
+                  </div>
                 </div>
 
                 <p className="font-medium mb-4 text-sm line-clamp-2">{pkg.items_description}</p>

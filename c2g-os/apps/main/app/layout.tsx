@@ -56,7 +56,7 @@ export default function RootLayout({
         <ModalProvider>
           <CartProvider>
             <WishlistProvider>
-              <div className="min-h-[100dvh] bg-background text-foreground flex flex-col w-full overflow-x-hidden">
+              <div className="min-h-[100dvh] bg-background text-foreground flex flex-col w-full">
                 <ServiceWorkerRegister />
               <OfflineIndicator />
               {children}

@@ -1,15 +1,17 @@
 "use client";
 
-import { Link as LinkIcon, Plane, Ship, CreditCard, Edit, Map, Loader2 } from "lucide-react";
+import { Link as LinkIcon, Plane, Ship, CreditCard, Edit, Map, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useModal } from "@/components/providers/modal-provider";
+import { deleteLinkOrder } from "./actions";
 
 export function LinkOrderCard({ order }: { order: any }) {
   const router = useRouter();
   const [isPaying, setIsPaying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const { showAlert } = useModal();
+  const [isPendingDelete, startDelete] = useTransition();
+  const { showAlert, showConfirm } = useModal();
 
   // Helper to format currency
   const formatCurrency = (amount: number) => `₵${parseFloat((amount || 0).toString()).toFixed(2)}`;
@@ -51,13 +53,44 @@ export function LinkOrderCard({ order }: { order: any }) {
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const confirmed = await showConfirm({
+      title: 'Delete Order',
+      message: 'Are you sure you want to delete this order? This action cannot be undone.',
+      confirmText: 'Delete',
+      type: 'danger',
+    });
+    
+    if (confirmed) {
+      startDelete(async () => {
+        const result = await deleteLinkOrder(order.id);
+        if (result.error) {
+          showAlert({ title: 'Error', message: result.error, type: 'danger' });
+        } else {
+          router.refresh();
+        }
+      });
+    }
+  };
+
   return (
     <div 
       className="glass-panel p-6 overflow-hidden flex flex-col relative transition-all duration-300 hover:border-primary/50 cursor-pointer group"
       onClick={() => router.push(`/dashboard/orders/${order.id}`)}
     >
       {/* Absolute Payment Status Badge */}
-      <div className="absolute top-6 right-6">
+      <div className="absolute top-6 right-6 flex items-center gap-2">
+          {!isPaid && (
+            <button 
+              onClick={handleDelete}
+              disabled={isPendingDelete || isPaying || isEditing}
+              className="p-1 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 border border-transparent"
+              title="Delete Order"
+            >
+              {isPendingDelete ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            </button>
+          )}
           <span className={`px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${
             isPaid 
               ? 'bg-green-500/10 text-green-500 border-green-500/20' 
@@ -121,7 +154,7 @@ export function LinkOrderCard({ order }: { order: any }) {
                   setIsEditing(true);
                   router.push(`/dashboard/orders/edit/${order.id}`); 
                 }}
-                disabled={isEditing || isPaying}
+                disabled={isEditing || isPaying || isPendingDelete}
                 className="p-2 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border disabled:opacity-50"
                 title="Edit Order"
               >

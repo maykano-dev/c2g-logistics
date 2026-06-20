@@ -5,17 +5,8 @@ dotenv.config({ path: '/home/maykano/Downloads/New C2g Logistics/c2g-os/apps/mai
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 async function test() {
-  const { data: settings } = await supabase
-      .from('settings')
-      .select('*')
-      .eq('id', 1)
-      .single();
-
-  console.log("Settings:", settings);
-  
-  // Find a pending link order
-  const { data: orders } = await supabase.from('orders').select('*').eq('payment_status', 'pending').limit(1);
-  console.log("Pending order:", orders);
+  const { data: p } = await supabase.from('products').select('*').limit(1);
+  console.log("Product:", p);
 }
 
 test();

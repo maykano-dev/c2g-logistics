@@ -67,7 +67,7 @@ export default function WishlistPage() {
                   <div className="mt-auto pt-2 flex items-end justify-between">
                     <div className="flex flex-col">
                       <span className="font-extrabold text-primary text-sm sm:text-base">₵{item.priceGhs.toFixed(2)}</span>
-                      <span className="text-[10px] text-muted-foreground line-through">¥{item.priceCny.toFixed(2)}</span>
+                      <span className="text-[10px] text-muted-foreground font-medium">≈ ¥{item.priceCny.toFixed(2)}</span>
                     </div>
                     <Link 
                       href={`/shop/product/${item.id}`}

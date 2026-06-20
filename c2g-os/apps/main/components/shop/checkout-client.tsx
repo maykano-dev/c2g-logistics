@@ -4,10 +4,25 @@ import { useState, useEffect } from "react";
 import { useCart } from "./cart-context";
 import { useRouter } from "next/navigation";
 import { createEcomOrder } from "../../app/checkout/actions";
-import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck, Calculator, Info, Plane, Zap, Loader2 } from "lucide-react";
 import { useModal } from "@/components/providers/modal-provider";
+import Link from "next/link";
 
-export default function CheckoutClient({ initialProfile, exchangeRate }: { initialProfile: any, exchangeRate: number }) {
+export default function CheckoutClient({ 
+  initialProfile, 
+  exchangeRate,
+  serviceFeePercentage,
+  minServiceFee,
+  localDeliveryPercentage,
+  minLocalDeliveryFee
+}: { 
+  initialProfile: any, 
+  exchangeRate: number,
+  serviceFeePercentage: number,
+  minServiceFee: number,
+  localDeliveryPercentage: number,
+  minLocalDeliveryFee: number
+}) {
   const { items, cartTotalGhs, clearCart } = useCart();
   const router = useRouter();
   const { showAlert } = useModal();
@@ -27,8 +42,14 @@ export default function CheckoutClient({ initialProfile, exchangeRate }: { initi
     }
   }, [items, router, loading]);
 
-  const serviceFee = cartTotalGhs * 0.05; // 5% service fee
-  const totalAmount = cartTotalGhs + serviceFee; // Exclude shipping cost until it arrives
+  // DB-driven Calculations
+  const calculatedServiceFee = cartTotalGhs * (serviceFeePercentage / 100);
+  const serviceFee = Math.max(calculatedServiceFee, minServiceFee);
+  
+  const calculatedLocalDelivery = cartTotalGhs * (localDeliveryPercentage / 100);
+  const localDelivery = Math.max(calculatedLocalDelivery, minLocalDeliveryFee); 
+  
+  const totalAmount = cartTotalGhs + serviceFee + localDelivery; // Exclude shipping cost until it arrives
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +67,7 @@ export default function CheckoutClient({ initialProfile, exchangeRate }: { initi
       items,
       subtotal: cartTotalGhs,
       serviceFee,
-      shippingCost: 0,
+      shippingCost: localDelivery, // Maps local delivery to the DB's initial shipping_cost
       totalAmount,
       exchangeRate,
       reference,
@@ -98,15 +119,15 @@ export default function CheckoutClient({ initialProfile, exchangeRate }: { initi
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Full Name</label>
+                <label className="text-sm font-medium">Full Name <span className="text-red-600">*</span></label>
                 <input required type="text" value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} className="flex h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Phone Number</label>
+                <label className="text-sm font-medium">Phone Number <span className="text-red-600">*</span></label>
                 <input required type="tel" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} className="flex h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-medium">Delivery Address (Ghana)</label>
+                <label className="text-sm font-medium">Delivery Address (Ghana) <span className="text-red-600">*</span></label>
                 <textarea required rows={3} value={formData.address} onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))} placeholder="Street, Neighborhood, City..." className="flex w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
               </div>
               <div className="space-y-2 md:col-span-2">
@@ -119,103 +140,137 @@ export default function CheckoutClient({ initialProfile, exchangeRate }: { initi
           {/* 2. Shipping Method */}
           <div className="glass-panel p-6">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 border-b border-border/50 pb-4">
-              <Ship className="w-5 h-5 text-primary" /> Shipping Method
+              <Ship className="w-5 h-5 text-primary" /> International Shipping Method
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className={`relative flex flex-col items-start p-4 cursor-pointer rounded-xl border-2 transition-all ${shippingMethod === "sea" ? "border-primary bg-primary/5" : "border-border bg-background hover:bg-secondary/50"}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <label className={`relative flex flex-col items-start p-4 cursor-pointer rounded-xl border-2 transition-all ${shippingMethod === "sea" ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:bg-secondary/50"}`}>
                 <input type="radio" name="shipping" value="sea" className="sr-only" checked={shippingMethod === "sea"} onChange={() => setShippingMethod("sea")} />
                 <div className="flex items-center justify-between w-full mb-1">
-                  <span className="font-bold">Sea Freight</span>
+                  <span className="font-bold flex items-center gap-2"><Ship className="w-4 h-4 text-green-500" /> Sea Freight</span>
                   {shippingMethod === "sea" && <CheckCircle2 className="w-5 h-5 text-primary" />}
                 </div>
-                <span className="text-sm text-muted-foreground">45 - 60 Days</span>
-                <span className="text-xs text-muted-foreground mt-2 font-medium bg-secondary px-2 py-1 rounded">Best for heavy/bulky items</span>
+                <span className="text-sm text-muted-foreground mt-1">50 - 60 Days</span>
+                <span className="text-xs font-medium text-green-500 mt-2">$250/CBM</span>
               </label>
 
-              <label className={`relative flex flex-col items-start p-4 cursor-pointer rounded-xl border-2 transition-all ${shippingMethod === "normal" ? "border-primary bg-primary/5" : "border-border bg-background hover:bg-secondary/50"}`}>
+              <label className={`relative flex flex-col items-start p-4 cursor-pointer rounded-xl border-2 transition-all ${shippingMethod === "normal" ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:bg-secondary/50"}`}>
                 <input type="radio" name="shipping" value="normal" className="sr-only" checked={shippingMethod === "normal"} onChange={() => setShippingMethod("normal")} />
                 <div className="flex items-center justify-between w-full mb-1">
-                  <span className="font-bold">Air Freight</span>
+                  <span className="font-bold flex items-center gap-2"><Plane className="w-4 h-4 text-blue-500" /> Air Normal</span>
                   {shippingMethod === "normal" && <CheckCircle2 className="w-5 h-5 text-primary" />}
                 </div>
-                <span className="text-sm text-muted-foreground">10 - 14 Days</span>
-                <span className="text-xs text-muted-foreground mt-2 font-medium bg-secondary px-2 py-1 rounded">Fastest delivery</span>
+                <span className="text-sm text-muted-foreground mt-1">10 - 14 Days</span>
+                <span className="text-xs font-medium text-blue-500 mt-2">$25/kg</span>
+              </label>
+
+              <label className={`relative flex flex-col items-start p-4 cursor-pointer rounded-xl border-2 transition-all md:col-span-2 ${shippingMethod === "express" ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:bg-secondary/50"}`}>
+                <input type="radio" name="shipping" value="express" className="sr-only" checked={shippingMethod === "express"} onChange={() => setShippingMethod("express")} />
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="font-bold flex items-center gap-2"><Zap className="w-4 h-4 text-orange-500" /> Air Express</span>
+                  {shippingMethod === "express" && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                </div>
+                <span className="text-sm text-muted-foreground mt-1">3 - 5 Days</span>
+                <span className="text-xs font-medium text-orange-500 mt-2">$44/kg</span>
               </label>
             </div>
-            <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-green-500" /> International shipping costs are calculated and billed when items arrive in Ghana.</p>
+            
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              The international shipping fee will be invoiced to your dashboard once the items arrive in Ghana. The rates above are estimates and subject to change.
+            </p>
           </div>
 
         </form>
       </div>
 
       {/* Right Column: Order Summary & Payment */}
-      <div className="w-full lg:w-96 shrink-0 space-y-6">
+      <div className="w-full lg:w-[400px] shrink-0 space-y-6">
         
-        {/* Order Items Summary */}
+        {/* Order Items Preview */}
         <div className="glass-panel p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-border/50 pb-4">
-            <ShoppingBag className="w-5 h-5 text-primary" /> Order Details
+            <ShoppingBag className="w-5 h-5 text-primary" /> Cart Items
           </h2>
-          <div className="space-y-4 max-h-64 overflow-y-auto pr-2 mb-4">
+          <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
             {items.map(item => (
               <div key={item.id} className="flex gap-3 text-sm">
                 <img src={item.imageUrl} alt="" className="w-12 h-12 rounded object-cover border border-border" />
                 <div className="flex-1">
                   <div className="font-medium line-clamp-1">{item.name}</div>
-                  <div className="text-muted-foreground">Qty: {item.quantity}</div>
+                  <div className="text-muted-foreground text-xs mt-0.5">Qty: {item.quantity}</div>
                 </div>
-                <div className="font-bold text-right">
+                <div className="font-bold text-right shrink-0">
                   ₵{(item.priceGhs * item.quantity).toFixed(2)}
                 </div>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Live Cost Summary */}
+        <div className="glass-panel overflow-hidden sticky top-24">
+          <div className="bg-primary/10 p-4 border-b border-border/50 flex items-center gap-2">
+            <Calculator className="w-5 h-5 text-primary" />
+            <h3 className="font-bold text-lg">Live Cost Summary</h3>
+          </div>
           
-          <div className="space-y-3 pt-4 border-t border-border/50 text-sm">
-            <div className="flex justify-between text-muted-foreground">
-              <span>Items Subtotal</span>
-              <span>₵{cartTotalGhs.toFixed(2)}</span>
+          <div className="p-5 space-y-4">
+            <div className="bg-secondary/30 p-3 rounded-lg border border-border/50 text-xs">
+              <p className="font-semibold mb-1">Using Platform Rate: 1 GHS = {exchangeRate.toFixed(4)} CNY</p>
+              <p className="text-muted-foreground">The exchange rates used on C2G reflect the actual rates applied in mainland China, not the rates shown on Google.</p>
             </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>Service Fee (5%)</span>
-              <span>₵{serviceFee.toFixed(2)}</span>
+
+            <div className="space-y-3 pt-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Items Subtotal</span>
+                <span className="font-medium">₵{cartTotalGhs.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Service Fee</span>
+                <span className="font-medium">₵{serviceFee.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Local Delivery (China)</span>
+                <span className="font-medium">₵{localDelivery.toFixed(2)}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>Int. Shipping</span>
-              <span className="text-amber-500 font-medium">Billed later</span>
+
+            <div className="border-t border-border/50 pt-4 mt-2">
+              <div className="flex justify-between items-center">
+                <span className="font-bold">Total Estimated Cost</span>
+                <span className="font-bold text-primary text-xl tracking-tight">₵{totalAmount.toFixed(2)}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-right mt-1">(Excl. Int. Shipping)</p>
             </div>
-            <div className="flex justify-between items-center pt-3 border-t border-border/50">
-              <span className="font-bold">Total to Pay Now</span>
-              <span className="text-2xl font-extrabold text-primary">₵{totalAmount.toFixed(2)}</span>
+
+            <div className="mt-4 text-xs text-center text-muted-foreground flex items-start gap-2 bg-background p-3 rounded-lg">
+              <Info className="w-4 h-4 shrink-0 text-blue-500" />
+              <p className="text-left leading-tight font-bold">The international shipping fee will be invoiced once the items get to Ghana.</p>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3">
+              <button 
+                type="submit"
+                form="checkout-form"
+                disabled={loading || items.length === 0}
+                className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing Payment...
+                  </>
+                ) : (
+                  <>Pay ₵{totalAmount.toFixed(2)} <ChevronRight className="w-5 h-5" /></>
+                )}
+              </button>
+              
+              <div className="mt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
+                <ShieldCheck className="w-4 h-4 text-green-500" /> Secure SSL Encrypted Checkout
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Payment Button */}
-        <div className="glass-panel p-6 sticky top-24">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2 border-b border-border/50 pb-4">
-            <CreditCard className="w-5 h-5 text-primary" /> Payment
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            You will be redirected securely to Paystack to complete your Mobile Money or Card payment.
-          </p>
-          <button 
-            type="submit"
-            form="checkout-form"
-            disabled={loading}
-            className="w-full h-14 inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 disabled:opacity-50 gap-2"
-          >
-            {loading ? (
-              <span className="animate-pulse">Processing Secure Checkout...</span>
-            ) : (
-              <>Pay ₵{totalAmount.toFixed(2)} <ChevronRight className="w-5 h-5" /></>
-            )}
-          </button>
-          
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
-            <ShieldCheck className="w-4 h-4 text-green-500" /> Secure SSL Encrypted Checkout
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link as LinkIcon, ShoppingBag, PackageSearch } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LinkOrderCard } from "./link-order-card";
 import { MallOrderCard } from "./mall-order-card";
 
@@ -15,14 +16,23 @@ export default function OrdersTabsClient({
   linkOrders: any[];
   mallOrders: any[];
 }) {
-  const [activeTab, setActiveTab] = useState<"link" | "mall">("link");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams.get("tab") === "mall" ? "mall" : "link";
+  
+  const [activeTab, setActiveTab] = useState<"link" | "mall">(defaultTab);
+
+  const handleTabChange = (tab: "link" | "mall") => {
+    setActiveTab(tab);
+    router.replace(`/dashboard/orders?tab=${tab}`, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
       {/* Tabs Navigation */}
       <div className="flex p-1 bg-secondary/50 rounded-xl w-fit border border-border/50 shadow-inner relative">
         <button
-          onClick={() => setActiveTab("link")}
+          onClick={() => handleTabChange("link")}
           className={`relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors duration-300 ${
             activeTab === "link"
               ? "text-primary-foreground"
@@ -43,7 +53,7 @@ export default function OrdersTabsClient({
           </span>
         </button>
         <button
-          onClick={() => setActiveTab("mall")}
+          onClick={() => handleTabChange("mall")}
           className={`relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors duration-300 ${
             activeTab === "mall"
               ? "text-primary-foreground"

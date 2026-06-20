@@ -15,22 +15,43 @@ import {
   Menu,
   X,
   ShoppingCart,
-  ClipboardList
+  ClipboardList,
+  Heart
 } from "lucide-react";
 import { logout } from "../auth/actions";
+import { useWishlist } from "@/components/shop/wishlist-context";
 
 export default function DashboardClientLayout({
   children,
+  stats,
 }: {
   children: React.ReactNode;
+  stats?: any;
 }) {
   const pathname = usePathname();
+  const { items: wishlistItems } = useWishlist();
 
   const navLinks = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Packages", href: "/dashboard/packages", icon: Package },
-    { name: "Orders", href: "/dashboard/orders", icon: ClipboardList },
+    { 
+      name: "Packages", 
+      href: "/dashboard/packages", 
+      icon: Package,
+      count: stats?.pendingPackagesCount || 0
+    },
+    { 
+      name: "Orders", 
+      href: "/dashboard/orders", 
+      icon: ClipboardList,
+      count: stats?.pendingPaymentsCount || 0
+    },
     { name: "Warehouse", href: "/dashboard/warehouse", icon: MapPin },
+    { 
+      name: "Wishlist", 
+      href: "/dashboard/wishlist", 
+      icon: Heart,
+      count: wishlistItems?.length || 0
+    },
   ];
 
   return (
@@ -40,7 +61,7 @@ export default function DashboardClientLayout({
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 relative flex items-center justify-center">
-              <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
+              <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="32px" className="object-contain" />
             </div>
             <span className="font-bold text-xl tracking-tight">C2G Logistics</span>
           </Link>
@@ -54,14 +75,21 @@ export default function DashboardClientLayout({
               <Link 
                 key={link.name} 
                 href={link.href} 
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-colors ${
                   isActive 
                     ? "bg-primary text-primary-foreground shadow-md" 
                     : "text-muted-foreground hover:bg-white/5 dark:hover:bg-black/20 hover:text-foreground"
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                {link.name}
+                <div className="flex items-center gap-3">
+                  <Icon className="w-5 h-5" />
+                  {link.name}
+                </div>
+                {link.count > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-destructive/10 text-destructive'}`}>
+                    {link.count}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -91,7 +119,7 @@ export default function DashboardClientLayout({
         <header className="md:hidden h-14 glass border-b border-border/50 flex items-center justify-between px-4 sticky top-0 z-40 w-full shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 relative flex items-center justify-center -ml-1">
-              <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
+              <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="32px" className="object-contain" />
             </div>
             <span className="font-bold tracking-tight text-foreground">C2G Logistics</span>
           </div>
@@ -127,7 +155,7 @@ export default function DashboardClientLayout({
       <AnnouncementsOverlay />
 
       {/* Mobile Bottom Navigation — Liquid Glass Animated Pill */}
-      <MobileNav navLinks={navLinks} pathname={pathname} />
+      <MobileNav navLinks={navLinks as any} pathname={pathname} />
     </div>
   );
 }
@@ -140,7 +168,7 @@ function MobileNav({
   navLinks,
   pathname,
 }: {
-  navLinks: { name: string; href: string; icon: React.ElementType }[];
+  navLinks: { name: string; href: string; icon: React.ElementType; count?: number }[];
   pathname: string;
 }) {
   return (
@@ -194,6 +222,13 @@ function MobileNav({
                   }}
                 />
               )}
+
+              {/* Badge Counter overlay */}
+              {link.count && link.count > 0 ? (
+                <div className={`absolute top-1.5 right-1 z-30 flex items-center justify-center bg-destructive text-white rounded-full text-[9px] font-bold shadow-lg shadow-destructive/40 border border-background/20 transition-all ${isActive ? 'w-4 h-4 right-1' : 'w-4 h-4 right-1'}`}>
+                  {link.count > 9 ? '9+' : link.count}
+                </div>
+              ) : null}
 
               {/* Icon & Text Container */}
               <div className="relative z-20 flex items-center gap-2">

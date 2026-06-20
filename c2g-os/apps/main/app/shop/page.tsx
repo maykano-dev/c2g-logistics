@@ -13,7 +13,7 @@ import ProductSection from "../../components/shop/product-section";
 import MobileBottomNav from "../../components/shop/mobile-bottom-nav";
 import FloatingCart from "../../components/shop/floating-cart";
 import ShopLayoutWrapper from "../../components/shop/shop-layout-wrapper";
-import { Search, ShoppingBag, ArrowRight, Flame, Sparkles, Trophy } from "lucide-react";
+import { Search, ShoppingBag, ArrowRight, ArrowLeft, Flame, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
@@ -50,14 +50,14 @@ export default async function ShopPage({
   const { products: newProducts } = newArrivalsResult;
   const { products: bestProducts } = bestSellersResult;
 
-  const isSearching = !!(resolvedParams.query || (resolvedParams.category && resolvedParams.category !== "all"));
+  const isSearching = !!(resolvedParams.query || (resolvedParams.category && resolvedParams.category !== "all") || resolvedParams.sort);
   const isFirstPage = !currentPage || currentPage === 1;
   const showHeroAndSections = !isSearching && isFirstPage;
   const hasProducts = products && products.length > 0;
 
   return (
-    <div className="bg-background min-h-screen pb-20 md:pb-8">
-      {/* Sticky Shop Header (Search + Category Chips) */}
+    <div className="bg-background min-h-screen pb-20 md:pb-8 pt-14 md:pt-16">
+      {/* Fixed Shop Header (Search + Category Chips) */}
       <Suspense fallback={<div className="h-28 bg-background" />}>
         <ShopHeader />
       </Suspense>
@@ -186,12 +186,24 @@ export default async function ShopPage({
           /* ═══════════ SEARCH / CATEGORY VIEW ═══════════ */
           <div className="w-full py-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-            <div>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/shop"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-foreground" />
+              </Link>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
                 {resolvedParams.query
                   ? `Results for "${resolvedParams.query}"`
-                  : resolvedParams.category
+                  : resolvedParams.category && resolvedParams.category !== "all"
                   ? `${resolvedParams.category.charAt(0).toUpperCase() + resolvedParams.category.slice(1)}`
+                  : resolvedParams.sort === 'trending'
+                  ? 'Trending Now'
+                  : resolvedParams.sort === 'newest'
+                  ? 'New Arrivals'
+                  : resolvedParams.sort === 'popular'
+                  ? 'Best Sellers'
                   : "All Products"}
               </h2>
             </div>

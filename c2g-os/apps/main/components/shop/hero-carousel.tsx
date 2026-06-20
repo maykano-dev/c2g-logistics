@@ -48,7 +48,7 @@ export default function HeroCarousel({ products }: { products: any[] }) {
             <Link
               key={product.id}
               href={`/shop/product/${product.id}`}
-              className="w-full shrink-0 relative h-[180px] sm:h-[300px] md:h-[360px] flex items-center justify-between px-2 sm:px-16 overflow-hidden group"
+              className="w-full shrink-0 relative h-[220px] sm:h-[300px] md:h-[360px] flex items-center justify-between px-3 sm:px-16 overflow-hidden group"
             >
               {/* Dynamic Dominant Color Background */}
               <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
@@ -60,7 +60,7 @@ export default function HeroCarousel({ products }: { products: any[] }) {
                   className="object-cover scale-[2] blur-3xl opacity-70"
                 />
                 {/* Black to Transparent gradient to ensure text readability */}
-                <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-background/20" />
+                <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/20" />
               </div>
               {/* Decorative elements */}
               <div className="absolute inset-0 opacity-20 z-0">
@@ -68,20 +68,20 @@ export default function HeroCarousel({ products }: { products: any[] }) {
                 <div className="absolute bottom-8 right-16 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
               </div>
 
-              <div className="relative z-10 w-3/5 sm:max-w-lg flex-1 py-4 sm:py-8 pl-4 sm:pl-0">
-                <span className="inline-block px-2 sm:px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 sm:mb-4 border border-white/30">
+              <div className="relative z-10 w-[65%] sm:max-w-lg flex-1 py-4 sm:py-8 pl-2 sm:pl-0">
+                <span className="inline-block px-2 sm:px-3 py-0.5 sm:py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-[9px] sm:text-xs font-bold uppercase tracking-wider mb-1.5 sm:mb-4 border border-white/30">
                   #{index + 1} Best Seller
                 </span>
-                <h2 className="text-xl sm:text-3xl md:text-5xl font-black text-white mb-2 sm:mb-4 drop-shadow-lg leading-tight line-clamp-2 sm:line-clamp-3">
+                <h2 className="text-lg sm:text-3xl md:text-5xl font-black text-white mb-2 sm:mb-4 drop-shadow-lg leading-tight line-clamp-2 sm:line-clamp-3">
                   {product.name}
                 </h2>
-                <div className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-white text-gray-900 rounded-full font-black text-xs sm:text-sm shadow-xl group-hover:scale-105 transition-transform">
+                <div className="inline-flex items-center px-3 sm:px-6 py-1.5 sm:py-3 bg-white text-gray-900 rounded-full font-black text-[11px] sm:text-sm shadow-xl group-hover:scale-105 transition-transform">
                   Shop Now
                 </div>
               </div>
 
-              <div className="relative z-10 w-2/5 sm:w-1/3 h-full flex items-center justify-center py-4 pr-4 sm:p-8 ml-auto">
-                <div className="relative w-full aspect-square max-w-[120px] sm:max-w-[280px] rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl transform rotate-3 group-hover:rotate-0 transition-transform duration-500 border-2 sm:border-4 border-white/20">
+              <div className="relative z-10 w-[35%] sm:w-1/3 h-full flex items-center justify-center py-4 pr-2 sm:p-8 ml-auto">
+                <div className="relative w-full aspect-square max-w-[110px] sm:max-w-[280px] rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl transform rotate-3 group-hover:rotate-0 transition-transform duration-500 border-2 sm:border-4 border-white/20">
                   <Image src={imageUrl} alt={product.name} fill className="object-cover" />
                 </div>
               </div>
@@ -105,15 +105,15 @@ export default function HeroCarousel({ products }: { products: any[] }) {
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+      <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
         {products.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrentSlide(i)}
-            className={`h-2 rounded-full transition-all duration-300 ${
+            className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
               i === currentSlide
-                ? "bg-white w-8"
-                : "bg-white/40 w-2 hover:bg-white/60"
+                ? "bg-white w-6 sm:w-8"
+                : "bg-white/40 w-1.5 sm:w-2 hover:bg-white/60"
             }`}
           />
         ))}

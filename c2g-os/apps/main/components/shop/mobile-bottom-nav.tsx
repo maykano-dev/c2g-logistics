@@ -9,7 +9,6 @@ import { motion } from "framer-motion";
 
 const NAV_ITEMS = [
   { href: "/shop", label: "Home", icon: Home },
-  { href: "/dashboard/mall-orders", label: "Orders", icon: Package },
   { href: "/cart", label: "Cart", icon: ShoppingCart, badge: "cart" },
   { href: "/wishlist", label: "Wishlist", icon: Heart, badge: "wishlist" },
   { href: "/dashboard", label: "Account", icon: User },

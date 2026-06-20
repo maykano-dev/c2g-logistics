@@ -498,10 +498,15 @@ export async function addDbWishlist(productId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false };
 
-  await supabase.from("wishlist").upsert({
+  const { error } = await supabase.from("wishlist").insert({
     customer_id: user.id,
     product_id: parseInt(productId)
-  }, { onConflict: "customer_id, product_id" }).select();
+  });
+  
+  if (error && error.code !== '23505') {
+    console.error("Failed to add to wishlist", error);
+    return { success: false };
+  }
   
   return { success: true };
 }
@@ -515,5 +520,46 @@ export async function removeDbWishlist(productId: string) {
     .delete()
     .match({ customer_id: user.id, product_id: parseInt(productId) });
     
+  return { success: true };
+}
+
+export async function clearDbWishlist() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false };
+
+  await supabase.from("wishlist")
+    .delete()
+    .eq("customer_id", user.id);
+    
+  return { success: true };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Cart Sync via User Metadata
+// ═══════════════════════════════════════════════════════════════════
+export async function getDbCart() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, items: [] };
+
+  const cartData = user.user_metadata?.cart || [];
+  return { success: true, items: cartData };
+}
+
+export async function syncDbCart(items: any[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false };
+
+  const { error } = await supabase.auth.updateUser({
+    data: { cart: items }
+  });
+
+  if (error) {
+    console.error("Error syncing cart", error);
+    return { success: false, error: error.message };
+  }
+
   return { success: true };
 }

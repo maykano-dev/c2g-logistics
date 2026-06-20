@@ -344,3 +344,33 @@ export async function cancelLinkOrder(id: string) {
 
   return { success: true, redirectUrl: '/dashboard/orders' }
 }
+
+export async function deleteLinkOrder(id: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: order } = await supabase
+    .from('orders')
+    .select('payment_status')
+    .eq('id', id)
+    .eq('customer_id', user.id)
+    .single()
+
+  if (!order) return { error: 'Order not found' }
+  if (order.payment_status === 'paid' || order.payment_status === 'Paid') {
+    return { error: 'Cannot delete a paid order' }
+  }
+
+  const { error: deleteError } = await supabase
+    .from('orders')
+    .delete()
+    .eq('id', id)
+
+  if (deleteError) {
+    return { error: deleteError.message || 'Failed to delete order' }
+  }
+
+  return { success: true, redirectUrl: '/dashboard/orders' }
+}
