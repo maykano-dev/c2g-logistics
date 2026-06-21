@@ -281,7 +281,7 @@ export default function ImporterRegisterClient() {
                 <label className="text-sm font-semibold text-muted-foreground">Store Logo (Optional)</label>
                 <div className="flex items-center gap-4 w-full sm:w-1/2">
                   {(formData.storeLogo || uploadingLogo) && (
-                    <div className="relative w-16 h-16 shrink-0 rounded-xl border border-input bg-secondary/30 flex items-center justify-center overflow-hidden">
+                    <div className="relative w-24 h-24 shrink-0 rounded-xl border border-input bg-secondary/30 flex items-center justify-center overflow-hidden">
                       {formData.storeLogo && (
                         <img src={formData.storeLogo} alt="Logo" className={`w-full h-full object-cover transition-opacity ${uploadingLogo ? 'opacity-50' : 'opacity-100'}`} />
                       )}
