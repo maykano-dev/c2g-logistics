@@ -2,12 +2,15 @@
 
 import { Package, Plus, Search, Edit2, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getImporterProducts } from "./actions";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const router = useRouter();
 
   useEffect(() => {
     async function loadProducts() {
@@ -20,7 +23,9 @@ export default function ProductsPage() {
     loadProducts();
   }, []);
 
-  const handleEdit = (id: string) => alert(`Editing product: ${id}`);
+  const handleEdit = (id: string) => {
+    router.push(`/importer-dashboard/products/${id}/edit`);
+  };
   const handleDelete = (id: string) => {
     if (confirm(`Are you sure you want to delete product: ${id}?`)) {
       alert(`Deleted product: ${id}`);

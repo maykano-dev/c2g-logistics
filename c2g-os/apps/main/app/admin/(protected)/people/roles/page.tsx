@@ -44,7 +44,7 @@ export default function AdminTeamView() {
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-950/50">
@@ -91,6 +91,42 @@ export default function AdminTeamView() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card Layout */}
+        <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+          {loading ? (
+            <div className="p-8 text-center text-zinc-500">Loading team...</div>
+          ) : admins.length === 0 ? (
+            <div className="p-8 text-center text-zinc-500">No admins found.</div>
+          ) : (
+            admins.map(admin => (
+              <div key={admin.id} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-1 pr-4 break-all">
+                    <p className="text-sm text-white font-mono">{admin.user_id}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 flex items-center gap-1 w-fit">
+                    <ShieldAlert className="w-3 h-3" /> Super Admin
+                  </span>
+
+                  <div className="flex items-center gap-3">
+                    {admin.totp_enabled ? (
+                      <span className="text-[10px] font-bold uppercase text-emerald-500">2FA On</span>
+                    ) : (
+                      <span className="text-[10px] font-bold uppercase text-red-500">2FA Off</span>
+                    )}
+                    <button className="p-2 text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg transition-colors">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

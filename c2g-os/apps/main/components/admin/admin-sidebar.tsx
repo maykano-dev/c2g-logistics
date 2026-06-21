@@ -30,7 +30,7 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-6 px-4 space-y-6">
+      <div className="flex-1 overflow-y-auto py-6 px-4 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {ADMIN_NAV_GROUPS.map((group, index) => (
           <div key={index} className="space-y-2">
             <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 ml-4 mb-2">

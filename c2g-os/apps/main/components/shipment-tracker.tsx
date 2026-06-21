@@ -320,8 +320,11 @@ export function ShipmentTracker({
   }, [shipmentStartDate, duration, isAir, activeRoute, activeStages]);
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-background/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto custom-scrollbar">
-      <div className="w-full max-w-4xl bg-black border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col relative animate-in fade-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[99999] bg-background/80 backdrop-blur-md flex items-center justify-center p-0 md:p-6 overflow-y-auto custom-scrollbar" onClick={onClose}>
+      <div 
+        className="w-full h-full md:h-auto max-w-4xl bg-black md:border border-border shadow-2xl md:rounded-2xl overflow-hidden flex flex-col md:max-h-[90vh] max-h-[100dvh] relative animate-in fade-in zoom-in-95 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border bg-card/50">

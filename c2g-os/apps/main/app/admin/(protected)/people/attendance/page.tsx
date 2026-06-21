@@ -69,7 +69,7 @@ export default function AttendanceView() {
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-950/50">
@@ -145,6 +145,78 @@ export default function AttendanceView() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card Layout */}
+        <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+          {filtered.length === 0 ? (
+            <div className="p-8 text-center text-zinc-500">No attendance records found.</div>
+          ) : (
+            filtered.map(record => (
+              <div key={record.id} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-bold text-white">{record.employee}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{record.role}</p>
+                  </div>
+                  <div>
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit ${
+                      record.status === 'clocked_in' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                      record.status === 'clocked_out' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                      'bg-red-500/10 text-red-500 border border-red-500/20'
+                    }`}>
+                      {record.status === 'clocked_in' && <CheckCircle2 className="w-3 h-3" />}
+                      {record.status === 'clocked_out' && <Clock className="w-3 h-3" />}
+                      {record.status === 'absent' && <XCircle className="w-3 h-3" />}
+                      {record.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                  <div className="col-span-2 sm:col-span-1">
+                    <p className="text-xs text-zinc-500 mb-1">Time Log</p>
+                    {record.status === 'absent' ? (
+                      <span className="text-sm text-zinc-600 italic">No logs today</span>
+                    ) : (
+                      <>
+                        <div className="text-sm text-zinc-200">
+                          <span className="text-zinc-500 text-[10px] w-6 inline-block">IN:</span> 
+                          {record.time_in ? format(record.time_in, 'hh:mm a') : '--'}
+                          {record.time_in && record.time_in.getHours() >= 9 && <span className="ml-2 text-[10px] text-amber-500 font-bold bg-amber-500/10 px-1 rounded">LATE</span>}
+                        </div>
+                        <div className="text-sm text-zinc-400 mt-0.5">
+                          <span className="text-zinc-600 text-[10px] w-6 inline-block">OUT:</span> 
+                          {record.time_out ? format(record.time_out, 'hh:mm a') : '--'}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {record.device_ip && (
+                    <div className="col-span-2 sm:col-span-1 mt-2 sm:mt-0 border-t border-zinc-800 sm:border-0 pt-2 sm:pt-0">
+                      <p className="text-xs text-zinc-500 mb-1 flex items-center gap-1"><MonitorSmartphone className="w-3 h-3" /> Device Check</p>
+                      <p className="text-xs font-mono text-zinc-300">{record.device_ip}</p>
+                      <p className="text-[10px] text-emerald-500 mt-0.5">Verified Network</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end mt-1">
+                  {record.warnings >= 3 ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-red-500 font-black text-sm">{record.warnings} Warnings</span>
+                      <span className="text-[10px] font-bold uppercase text-red-400 bg-red-500/10 px-2 py-0.5 rounded">Flagged</span>
+                    </div>
+                  ) : record.warnings > 0 ? (
+                    <span className="text-amber-500 font-bold text-xs">{record.warnings} Warnings</span>
+                  ) : (
+                    <span className="text-zinc-600 text-xs">0 Warnings</span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

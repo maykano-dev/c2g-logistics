@@ -45,7 +45,7 @@ export default async function AdminProtectedLayout({
       {/* Main Content Area */}
       <div className="flex-1 lg:pl-72 flex flex-col min-h-screen w-full min-w-0">
         {/* Mobile Header/Nav */}
-        <div className="lg:hidden sticky top-0 z-20 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
+        <div className="lg:hidden sticky top-0 z-20">
           <AdminMobileNav />
         </div>
 

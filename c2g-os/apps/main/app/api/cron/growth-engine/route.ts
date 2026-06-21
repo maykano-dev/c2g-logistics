@@ -144,6 +144,131 @@ export async function GET(request: Request) {
       }
     }
 
+    // 4. UNPAID MALL ORDERS (> 24 hours old)
+    const { data: unpaidMallOrders, error: ecomOrderError } = await supabase
+      .from('ecom_orders')
+      .select('id, customer_id, created_at, order_id, total_amount, shipping_cost')
+      .eq('payment_status', 'pending')
+      .lte('created_at', twentyFourHoursAgo.toISOString())
+      .gte('created_at', fortyEightHoursAgo.toISOString());
+
+    if (ecomOrderError) throw ecomOrderError;
+
+    for (const order of unpaidMallOrders || []) {
+      const { data: existing } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', order.customer_id)
+        .eq('type', 'reminder_unpaid_mall_order')
+        .contains('metadata', { order_id: order.id });
+
+      if (!existing || existing.length === 0) {
+        const total = (order.total_amount || 0) + (order.shipping_cost || 0);
+        await createNotification({
+          userId: order.customer_id,
+          title: 'Unpaid Mall Order',
+          message: `🛒 Your mall order (${order.order_id || 'N/A'}) is waiting for payment. Complete your payment of GHS ${total.toFixed(2)} to avoid cancellation.`,
+          type: 'reminder_unpaid_mall_order',
+          priority: 'critical',
+          link: `/dashboard/orders`,
+          metadata: { order_id: order.id, sent_from: 'cron_growth_engine' }
+        });
+        results.unpaid_orders = (results.unpaid_orders || 0) + 1;
+      }
+    }
+
+    // 5. UNPAID SHIPPING FEES (ecom_orders, shipments, orders)
+    // For ecom_orders
+    const { data: unpaidShippingEcom } = await supabase
+      .from('ecom_orders')
+      .select('id, customer_id, order_id, shipping_cost')
+      .gt('shipping_cost', 0)
+      .eq('shipping_fee_paid', false)
+      .lte('created_at', twentyFourHoursAgo.toISOString())
+      .gte('created_at', fortyEightHoursAgo.toISOString());
+
+    for (const order of unpaidShippingEcom || []) {
+      const { data: existing } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', order.customer_id)
+        .eq('type', 'reminder_unpaid_shipping_ecom')
+        .contains('metadata', { order_id: order.id });
+
+      if (!existing || existing.length === 0) {
+        await createNotification({
+          userId: order.customer_id,
+          title: 'Unpaid Shipping Fee',
+          message: `🚢 Your mall order (${order.order_id}) has arrived but has an unpaid shipping fee of GHS ${order.shipping_cost}. Pay now to schedule delivery.`,
+          type: 'reminder_unpaid_shipping_ecom',
+          priority: 'critical',
+          link: `/dashboard/invoices`,
+          metadata: { order_id: order.id, sent_from: 'cron_growth_engine' }
+        });
+      }
+    }
+
+    // For shipments
+    const { data: unpaidShippingShipments } = await supabase
+      .from('shipments')
+      .select('id, customer_id, tracking_number, shipping_cost')
+      .gt('shipping_cost', 0)
+      .eq('shipping_fee_paid', false)
+      .lte('created_at', twentyFourHoursAgo.toISOString())
+      .gte('created_at', fortyEightHoursAgo.toISOString());
+
+    for (const pkg of unpaidShippingShipments || []) {
+      const { data: existing } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', pkg.customer_id)
+        .eq('type', 'reminder_unpaid_shipping_pkg')
+        .contains('metadata', { package_id: pkg.id });
+
+      if (!existing || existing.length === 0) {
+        await createNotification({
+          userId: pkg.customer_id,
+          title: 'Unpaid Shipping Fee',
+          message: `🚢 Your package (${pkg.tracking_number}) has an unpaid shipping fee of GHS ${pkg.shipping_cost}. Pay now to schedule delivery.`,
+          type: 'reminder_unpaid_shipping_pkg',
+          priority: 'critical',
+          link: `/dashboard/invoices`,
+          metadata: { package_id: pkg.id, sent_from: 'cron_growth_engine' }
+        });
+      }
+    }
+
+    // For orders
+    const { data: unpaidShippingOrders } = await supabase
+      .from('orders')
+      .select('id, customer_id, shipping_cost')
+      .gt('shipping_cost', 0)
+      .eq('shipping_fee_paid', false)
+      .lte('created_at', twentyFourHoursAgo.toISOString())
+      .gte('created_at', fortyEightHoursAgo.toISOString());
+
+    for (const order of unpaidShippingOrders || []) {
+      const { data: existing } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', order.customer_id)
+        .eq('type', 'reminder_unpaid_shipping_order')
+        .contains('metadata', { order_id: order.id });
+
+      if (!existing || existing.length === 0) {
+        const shortId = order.id.toString().split('-').pop()?.substring(0,8);
+        await createNotification({
+          userId: order.customer_id,
+          title: 'Unpaid Shipping Fee',
+          message: `🚢 Your link order #${shortId} has an unpaid shipping fee of GHS ${order.shipping_cost}. Pay now to schedule delivery.`,
+          type: 'reminder_unpaid_shipping_order',
+          priority: 'critical',
+          link: `/dashboard/invoices`,
+          metadata: { order_id: order.id, sent_from: 'cron_growth_engine' }
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, results });
 
   } catch (err: any) {

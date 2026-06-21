@@ -98,7 +98,7 @@ export default function ImportersView() {
                <button className="p-2 border border-zinc-700 text-zinc-400 hover:text-white rounded-lg"><Filter className="w-4 h-4"/></button>
              </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto hidden md:block">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-900/50 text-xs text-zinc-500 uppercase">
@@ -165,6 +165,72 @@ export default function ImportersView() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+            {loading ? (
+              <div className="p-8 text-center text-zinc-500">Loading accounts...</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-8 text-center text-zinc-500">No importers found.</div>
+            ) : (
+              filtered.map(imp => (
+                <div key={imp.id} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg shrink-0">
+                        <Building2 className="w-5 h-5"/>
+                      </div>
+                      <div>
+                        <p className="font-bold text-white text-sm">{imp.business_name || 'Unnamed Business'}</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">{imp.customers?.email}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Status & Tier</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${
+                          imp.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          imp.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                          'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                          {imp.status}
+                        </span>
+                        {imp.status === 'active' && (
+                          <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-bold uppercase rounded border border-purple-500/20">
+                            Tier 1
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Wallet Balance</p>
+                      <p className="font-mono font-bold text-zinc-300 text-sm">
+                        ₵{(parseFloat(imp.wallet_balance || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end">
+                    {imp.status === 'pending' ? (
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleAction(imp.id, 'approve')} className="p-2 text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-lg transition-colors" title="Approve Account">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleAction(imp.id, 'reject')} className="p-2 text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg transition-colors" title="Reject Application">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-500 text-xs">—</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

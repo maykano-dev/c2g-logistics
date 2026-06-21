@@ -138,7 +138,7 @@ export default function PaymentsView() {
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-950/50">
@@ -194,6 +194,60 @@ export default function PaymentsView() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card Layout */}
+        <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+          {loading ? (
+            <div className="py-8 text-center text-zinc-500">Loading ledger...</div>
+          ) : filtered.length === 0 ? (
+            <div className="py-8 text-center text-zinc-500">No transactions found.</div>
+          ) : (
+            filtered.map((txn, i) => (
+              <div key={i} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-bold text-white">{txn.type}</p>
+                    <p className="text-xs font-medium text-zinc-400">{txn.user}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-mono text-zinc-500">{txn.id?.toString().substring(0,8)}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 w-fit ${
+                      txn.status === 'success' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                      txn.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                      'bg-red-500/10 text-red-500 border-red-500/20'
+                    }`}>
+                      {txn.status === 'success' && <CheckCircle2 className="w-3 h-3"/>}
+                      {txn.status === 'failed' && <AlertTriangle className="w-3 h-3"/>}
+                      {txn.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                  <div>
+                    <p className="text-xs text-zinc-500 mb-1">Method</p>
+                    <p className="text-xs text-zinc-300 capitalize">{txn.method}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500 mb-1">Amount</p>
+                    <p className="font-mono font-bold text-white text-sm">
+                      ₵{txn.amount.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-600">{format(new Date(txn.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                  <button className="text-zinc-400 hover:text-white transition-colors p-2 hover:bg-zinc-800 rounded-lg">
+                    <FileText className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

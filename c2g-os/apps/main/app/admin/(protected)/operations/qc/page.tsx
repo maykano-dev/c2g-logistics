@@ -120,7 +120,7 @@ export default function QualityControlView() {
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-950/50">
@@ -185,6 +185,65 @@ export default function QualityControlView() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card Layout */}
+        <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+          {loading ? (
+            <div className="p-8 text-center text-zinc-500">Loading QC queue...</div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center text-zinc-500">No packages in queue.</div>
+          ) : (
+            filtered.map(item => (
+              <div key={item.id} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-mono font-medium text-white">{item.tracking_number}</p>
+                    <p className="text-xs text-zinc-500">{item.package_id}</p>
+                  </div>
+                  <div>
+                    <span className={`px-2 py-1 rounded flex items-center gap-1 w-fit text-[10px] font-bold uppercase tracking-wider ${
+                      item.status === 'passed' ? 'bg-emerald-500/10 text-emerald-500' :
+                      item.status === 'failed' ? 'bg-red-500/10 text-red-500' :
+                      item.status === 'replacement_requested' ? 'bg-amber-500/10 text-amber-500' :
+                      'bg-zinc-800 text-zinc-400'
+                    }`}>
+                      {item.status === 'passed' && <CheckCircle2 className="w-3 h-3" />}
+                      {item.status === 'failed' && <XCircle className="w-3 h-3" />}
+                      {item.status === 'replacement_requested' && <AlertTriangle className="w-3 h-3" />}
+                      {item.status === 'pending' && <AlertCircle className="w-3 h-3" />}
+                      {item.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                  {item.notes ? (
+                    <p className="text-xs text-zinc-300">{item.notes}</p>
+                  ) : (
+                    <p className="text-xs text-zinc-600 italic">No notes added.</p>
+                  )}
+                  {item.inspected_at && <p className="text-[10px] text-zinc-500 mt-2">By {item.inspector || 'System'} at {format(new Date(item.inspected_at), 'HH:mm')}</p>}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <button className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded hover:bg-indigo-500/20 transition-colors">
+                    <Camera className="w-3 h-3" /> {item.status === 'pending' ? 'Add Photo' : 'View (2)'}
+                  </button>
+                  <div>
+                    {item.status === 'pending' ? (
+                       <div className="flex items-center gap-2">
+                         <button onClick={() => handleUpdateQC(item.id, 'passed')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors">Pass</button>
+                         <button onClick={() => handleUpdateQC(item.id, 'failed')} className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors">Fail</button>
+                       </div>
+                    ) : (
+                      <button className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">Edit</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

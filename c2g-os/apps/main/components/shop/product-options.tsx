@@ -111,11 +111,34 @@ export default function ProductOptions({ product, variants, exchangeRate, option
     setTimeout(() => setAdded(false), 2000);
   };
 
+  const renderPrice = () => {
+    if (currentVariant) {
+      return `₵${displayPriceGhs.toFixed(2)}`;
+    }
+    
+    if (variants.length > 0) {
+      const prices = variants
+        .map((v: any) => parseFloat(v.selling_price_ghs || v.price))
+        .filter((p: number) => !isNaN(p) && p > 0);
+        
+      if (prices.length > 0) {
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        if (minPrice === maxPrice) {
+          return `₵${minPrice.toFixed(2)}`;
+        }
+        return `₵${minPrice.toFixed(2)} - ₵${maxPrice.toFixed(2)}`;
+      }
+    }
+    
+    return `₵${displayPriceGhs.toFixed(2)}`;
+  };
+
   return (
     <div className="space-y-8">
       {/* Price */}
       <div className="flex items-baseline gap-2">
-        <span className="text-4xl font-extrabold text-primary font-sans tracking-tight">₵{displayPriceGhs.toFixed(2)}</span>
+        <span className="text-4xl font-extrabold text-primary font-sans tracking-tight">{renderPrice()}</span>
       </div>
 
       {/* Options */}

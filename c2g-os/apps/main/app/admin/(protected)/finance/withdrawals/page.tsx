@@ -115,7 +115,7 @@ export default function WithdrawalsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         <div className="md:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto hidden md:block">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/50">
@@ -183,6 +183,74 @@ export default function WithdrawalsPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+            {loading ? (
+              <div className="p-8 text-center text-zinc-500">Loading requests...</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-8 text-center text-zinc-500">No withdrawal requests found.</div>
+            ) : (
+              filtered.map(req => (
+                <div key={req.id} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium text-white">{req.customer?.name || 'Unknown'}</p>
+                      <p className="text-[10px] text-zinc-500">{format(new Date(req.created_at), 'MMM dd, yyyy HH:mm')}</p>
+                    </div>
+                    <div>
+                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                        req.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
+                        req.status === 'rejected' ? 'bg-red-500/10 text-red-500' :
+                        'bg-yellow-500/10 text-yellow-500'
+                      }`}>
+                        {req.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Amount</p>
+                      <p className="font-mono font-bold text-white text-sm">₵{req.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Required Auth</p>
+                      <span className={`px-2 py-0.5 flex items-center gap-1 w-fit rounded text-[10px] font-bold uppercase tracking-wider ${
+                        req.required_tier === 'founder' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                        req.required_tier === 'manager' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                        'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                      }`}>
+                        {req.required_tier === 'founder' && <ShieldCheck className="w-3 h-3"/>}
+                        {req.required_tier}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end mt-1">
+                    {req.status === 'pending' && (
+                      <div className="flex items-center gap-2">
+                        {canApprove(req.required_tier) ? (
+                          <>
+                            <button onClick={() => handleAction(req.id, 'approve')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Approve
+                            </button>
+                            <button onClick={() => handleAction(req.id, 'reject')} className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1">
+                              <XCircle className="w-3 h-3" /> Reject
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-1.5 rounded-lg border border-red-500/20">
+                            <AlertTriangle className="w-3 h-3" /> Needs {req.required_tier}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

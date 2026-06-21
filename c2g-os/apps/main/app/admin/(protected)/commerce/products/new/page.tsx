@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Package } from 'lucide-react';
 import { ProductForm } from '@/components/admin/product-form';
-import { importerCreateProduct } from '@/app/importer-dashboard/products/actions';
+import { adminCreateProduct } from '@/app/admin/product-actions';
 import { useModal } from '@/components/providers/modal-provider';
 
 export default function NewProductView() {
@@ -23,13 +23,13 @@ export default function NewProductView() {
       stock: data.stock ? parseInt(data.stock) : 0,
     };
 
-    const res = await importerCreateProduct(payload);
+    const res = await adminCreateProduct(payload);
     
     setIsSubmitting(false);
 
     if (res.success) {
       showAlert({ title: 'Success', message: 'Product created successfully!', type: 'success' });
-      router.push('/importer-dashboard/products');
+      router.push('/admin/commerce/products');
     } else {
       showAlert({ title: 'Error', message: res.error || 'Failed to create product', type: 'danger' });
     }
@@ -50,7 +50,7 @@ export default function NewProductView() {
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
             <Package className="w-6 h-6 text-indigo-500" /> Create New Product
           </h1>
-          <p className="text-zinc-400 mt-1">Upload an item from China to sell on your Storefront.</p>
+          <p className="text-zinc-400 mt-1">Add a new item to the C2G Mall catalog.</p>
         </div>
       </div>
 

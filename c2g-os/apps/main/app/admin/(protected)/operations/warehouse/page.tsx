@@ -102,7 +102,7 @@ export default function AdminPackagesView() {
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-950/50">
@@ -181,6 +181,73 @@ export default function AdminPackagesView() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card Layout */}
+        <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+          {loading ? (
+            <div className="p-8 text-center text-zinc-500">Loading packages...</div>
+          ) : filteredPackages.length === 0 ? (
+            <div className="p-8 text-center text-zinc-500">No packages found for this tab.</div>
+          ) : (
+            filteredPackages.map(pkg => (
+              <div key={pkg.id} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm text-white font-mono font-medium">
+                      {activeTab === 'incoming' ? pkg.tracking_number : (activeTab === 'scanned' ? pkg.scanned_tracking : pkg.tracking_number)}
+                    </p>
+                    {activeTab !== 'unmatched' && (
+                      <p className="text-xs text-zinc-500">{activeTab === 'incoming' ? pkg.customers?.name : pkg.customer_name || 'Unknown'}</p>
+                    )}
+                  </div>
+                  <div>
+                    {activeTab === 'unmatched' ? (
+                      <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold ${pkg.status === 'pending' ? 'bg-red-500/10 text-red-500' : 'bg-zinc-500/10 text-zinc-500'}`}>{pkg.status}</span>
+                    ) : (
+                      <span className="px-2 py-1 rounded text-[10px] uppercase font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        {activeTab === 'incoming' ? (pkg.status || 'Expected') : (pkg.scan_result === 'success' ? 'Added' : pkg.scan_result || 'Scanned')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/50 text-xs">
+                  {activeTab === 'unmatched' ? (
+                    <>
+                      <div><span className="text-zinc-500">Weight:</span> <span className="text-zinc-300 ml-1">{pkg.weight ? `${pkg.weight} kg` : 'N/A'}</span></div>
+                      <div><span className="text-zinc-500">CBM:</span> <span className="text-zinc-300 ml-1">{pkg.cbm ? `${pkg.cbm} CBM` : 'N/A'}</span></div>
+                      {pkg.notes && <div className="col-span-2 text-zinc-400 mt-1">{pkg.notes}</div>}
+                    </>
+                  ) : (
+                    <>
+                      <div className="col-span-2"><span className="text-zinc-500">Contact:</span> <span className="text-zinc-300 ml-1">{activeTab === 'incoming' ? pkg.customers?.phone || pkg.customer_id : pkg.customer_id}</span></div>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] text-zinc-600">
+                    {activeTab === 'incoming' ? 
+                      (pkg.created_at ? format(new Date(pkg.created_at), 'MMM dd, yyyy') : 'Unknown') :
+                      (activeTab === 'scanned' ? 
+                        (pkg.scanned_at ? format(new Date(pkg.scanned_at), 'MMM dd, yyyy HH:mm') : 'Unknown') :
+                        (pkg.arrival_date ? format(new Date(pkg.arrival_date), 'MMM dd, yyyy HH:mm') : 'Unknown')
+                      )
+                    }
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 bg-zinc-800/50 text-zinc-400 hover:text-white rounded-xl transition-colors">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl transition-colors">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

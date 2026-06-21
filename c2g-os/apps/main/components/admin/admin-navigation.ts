@@ -36,8 +36,6 @@ export const ADMIN_NAV_GROUPS = [
       { name: 'Procurement (B4M)', href: '/admin/operations/procurement', icon: ShoppingCart },
       { name: 'China Warehouse', href: '/admin/operations/warehouse', icon: PackageCheck },
       { name: 'Shipments', href: '/admin/operations/shipments', icon: Ship },
-      { name: 'Ghana Operations', href: '/admin/operations/ghana', icon: Container },
-      { name: 'Quality Control', href: '/admin/operations/qc', icon: SearchCheck },
     ]
   },
   {

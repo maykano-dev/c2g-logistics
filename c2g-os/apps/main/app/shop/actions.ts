@@ -303,7 +303,15 @@ export async function getProductDetails(id: string) {
     const { data: fallback, error: fallbackError } = await supabase
       .from("products")
       .select(
-        `*, product_images (id, image_url, is_primary, media_type), product_variants (id, sku, price, price_cny, stock)`
+        `*, product_images (id, image_url, is_primary, media_type),  product_variants (
+    id,
+    sku,
+    price,
+    price_cny,
+    selling_price_ghs,
+    cost_price_cny,
+    stock
+  )`
       )
       .eq("id", id)
       .single();

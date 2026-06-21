@@ -121,7 +121,8 @@ export default function AuditLogsView() {
         </div>
         
         <div className="flex-1 overflow-y-auto p-4 bg-[#0c0c0e] font-mono text-xs">
-          <table className="w-full text-left border-collapse">
+          <div className="hidden md:block">
+            <table className="w-full text-left border-collapse">
             <thead>
               <tr className="text-zinc-500 border-b border-zinc-800/50">
                 <th className="pb-2 font-normal">Timestamp</th>
@@ -161,7 +162,45 @@ export default function AuditLogsView() {
                 })
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden flex flex-col gap-3">
+            {loading ? (
+              <div className="py-8 text-center text-zinc-500">Loading audit stream...</div>
+            ) : filteredLogs.length === 0 ? (
+              <div className="py-8 text-center text-zinc-500">No events found matching filter.</div>
+            ) : (
+              filteredLogs.map((log) => {
+                const Icon = getActionIcon(log.action);
+                return (
+                  <div key={log.id} className="p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className={`px-2 py-0.5 rounded border flex items-center gap-1 w-fit text-[10px] ${
+                        log.action.includes('DELETE') ? 'text-red-400 border-red-500/20 bg-red-500/10' :
+                        log.action.includes('FAILED') ? 'text-amber-400 border-amber-500/20 bg-amber-500/10' :
+                        'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
+                      }`}>
+                        <Icon className="w-3 h-3" /> {log.action}
+                      </span>
+                      <span className="text-[10px] text-zinc-500">{format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss')}</span>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="text-sm text-zinc-300">
+                        {log.entity_type} {log.entity_id ? <span className="text-zinc-500">[{log.entity_id}]</span> : ''}
+                      </p>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/50">
+                        <span className="text-indigo-400 font-medium">{log.admins?.name || log.admins?.email || log.user_id || 'System'}</span>
+                        <span className="text-zinc-600">{log.ip_address || '127.0.0.1'}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>

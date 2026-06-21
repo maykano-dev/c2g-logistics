@@ -104,7 +104,7 @@ export default async function ProductPage({
       Object.keys(combo).forEach((k) => optionTypes.add(k));
     }
     
-    if (v.image_url) {
+    if (v.image_url && !variantImages.some(img => img.image_url === v.image_url)) {
       variantImages.push({
         id: `variant-img-${v.id}`,
         image_url: v.image_url,
@@ -115,7 +115,12 @@ export default async function ProductPage({
   });
 
   // Merge variant images into product images for the gallery
-  const allImages = [...(product.product_images || []), ...variantImages];
+  const rawImages = [...(product.product_images || []), ...variantImages];
+  
+  // Fully deduplicate all images by URL
+  const allImages = rawImages.filter((img, index, self) => 
+    index === self.findIndex((t) => t.image_url === img.image_url)
+  );
 
   // Fetch similar products
   const { products: similarProducts, exchangeRate: simExRate } =

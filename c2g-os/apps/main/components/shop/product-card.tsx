@@ -191,7 +191,24 @@ export default function ProductCard({
         <div className="mt-auto pt-2">
           <div className="flex items-baseline gap-1.5 mb-2.5">
             <span className="font-extrabold text-base sm:text-lg text-primary leading-none font-sans tracking-tight">
-              ₵{priceGhs.toFixed(2)}
+              {(() => {
+                if (hasVariants && product.product_variants.length > 0) {
+                  const prices = product.product_variants
+                    .map((v: any) => parseFloat(v.selling_price_ghs || v.price))
+                    .filter((p: number) => !isNaN(p) && p > 0);
+                  
+                  if (prices.length > 0) {
+                    const minPrice = Math.min(...prices);
+                    const maxPrice = Math.max(...prices);
+                    if (minPrice === maxPrice) {
+                      return `₵${minPrice.toFixed(2)}`;
+                    } else {
+                      return `₵${minPrice.toFixed(2)} - ₵${maxPrice.toFixed(2)}`;
+                    }
+                  }
+                }
+                return `₵${priceGhs.toFixed(2)}`;
+              })()}
             </span>
           </div>
 
