@@ -23,7 +23,7 @@ export default function ImportersView() {
     
     const { data, error } = await supabase
       .from('importers')
-      .select('*, customers(email, name)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (data && !error) {
@@ -64,7 +64,7 @@ export default function ImportersView() {
 
   const filtered = importers.filter(imp => 
     imp.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    imp.customers?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    imp.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -123,7 +123,7 @@ export default function ImportersView() {
                           </div>
                           <div>
                             <p className="font-bold text-white">{imp.business_name || 'Unnamed Business'}</p>
-                            <p className="text-[10px] text-zinc-500 mt-1">{imp.customers?.email}</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">{imp.email}</p>
                           </div>
                         </div>
                       </td>
@@ -183,7 +183,7 @@ export default function ImportersView() {
                       </div>
                       <div>
                         <p className="font-bold text-white text-sm">{imp.business_name || 'Unnamed Business'}</p>
-                        <p className="text-[10px] text-zinc-500 mt-1">{imp.customers?.email}</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">{imp.email}</p>
                       </div>
                     </div>
                   </div>
