@@ -22,12 +22,12 @@ export default function ImporterRegisterClient() {
   const [success, setSuccess] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingSelfie, setUploadingSelfie] = useState(false);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
     fullName: '', email: '', whatsapp: '', sameAsMomo: false, password: '',
-    storeName: '', storeSlug: '', businessDescription: '', storeLogo: '',
-    idType: 'Ghana Card', idNumber: '',
+    storeName: '', storeSlug: '', businessDescription: '', storeLogo: '', faceVerificationUrl: '',
     experience: 'Less than 6 months', sourcingPlatforms: [] as string[], categories: [] as string[], estimatedOrders: '1 - 20',
     agreeFraud: false, agreePayout: false, agreeTerms: false, agreePrivacy: false
   });
@@ -63,7 +63,7 @@ export default function ImporterRegisterClient() {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => {
           let { width, height } = img;
           if (width > maxWidth || height > maxHeight) {
@@ -119,6 +119,38 @@ export default function ImporterRegisterClient() {
       setFormData(prev => ({ ...prev, storeLogo: '' })); // Revert preview on error
     } finally {
       setUploadingLogo(false);
+    }
+  };
+
+  const handleSelfieUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show local preview instantly
+    const previewUrl = URL.createObjectURL(file);
+    setFormData(prev => ({ ...prev, faceVerificationUrl: previewUrl }));
+
+    setUploadingSelfie(true);
+    setError(null);
+    try {
+      let fileToUpload = file;
+      if (file.size > 500 * 1024) {
+        fileToUpload = await resizeImage(file);
+      }
+
+      const form = new FormData();
+      form.append('file', fileToUpload);
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Failed to upload selfie');
+      
+      setFormData(prev => ({ ...prev, faceVerificationUrl: data.url }));
+    } catch (err: any) {
+      setError(err.message || 'Error uploading selfie');
+      setFormData(prev => ({ ...prev, faceVerificationUrl: '' })); // Revert preview
+    } finally {
+      setUploadingSelfie(false);
     }
   };
 
@@ -305,53 +337,34 @@ export default function ImporterRegisterClient() {
           {currentStep === 3 && (
             <div className="space-y-6 animate-fade-in">
               <div className="mb-4">
-                <h2 className="text-xl font-bold flex items-center gap-2"><FileCheck className="w-5 h-5 text-primary" /> Identity Verification</h2>
+                <h2 className="text-xl font-bold flex items-center gap-2"><FileCheck className="w-5 h-5 text-primary" /> Face Verification</h2>
                 <p className="text-sm text-muted-foreground mt-1">This dramatically reduces fraud and protects our ecosystem.</p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">ID Type <span className="text-destructive">*</span></label>
-                  <select name="idType" value={formData.idType} onChange={handleInputChange} className="w-full h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary">
-                    <option>Ghana Card</option>
-                    <option>Passport</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">ID Number <span className="text-destructive">*</span></label>
-                  <input type="text" name="idNumber" required value={formData.idNumber} onChange={handleInputChange} className="w-full flex h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary uppercase font-mono" placeholder="GHA-123456789-0" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">ID Front <span className="text-destructive">*</span></label>
-                  <div className="flex h-24 items-center justify-center w-full rounded-xl border border-dashed border-primary/50 bg-primary/5 cursor-pointer text-sm text-primary hover:bg-primary/10 transition-colors">
-                    <div className="text-center"><Upload className="w-5 h-5 mx-auto mb-1" /> Upload Front</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">ID Back <span className="text-destructive">*</span></label>
-                  <div className="flex h-24 items-center justify-center w-full rounded-xl border border-dashed border-primary/50 bg-primary/5 cursor-pointer text-sm text-primary hover:bg-primary/10 transition-colors">
-                    <div className="text-center"><Upload className="w-5 h-5 mx-auto mb-1" /> Upload Back</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 mt-4">
-                <label className="text-sm font-semibold">Selfie Verification <span className="text-destructive">*</span></label>
-                <p className="text-xs text-muted-foreground mb-2">Take a selfie holding your ID next to your face.</p>
-                <div className="flex h-32 items-center justify-center w-full rounded-xl border border-dashed border-blue-500/50 bg-blue-500/5 cursor-pointer text-sm text-blue-500 hover:bg-blue-500/10 transition-colors">
-                  <div className="text-center">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-2"><CheckCircle2 className="w-5 h-5" /></div>
-                    Upload Selfie
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Selfie Upload <span className="text-destructive">*</span></label>
+                <p className="text-xs text-muted-foreground mb-4">Please upload a clear picture of your face.</p>
+                <div className="flex flex-col items-center gap-4">
+                  {(formData.faceVerificationUrl || uploadingSelfie) && (
+                    <div className="relative w-48 h-48 shrink-0 rounded-2xl border border-input bg-secondary/30 flex items-center justify-center overflow-hidden">
+                      {formData.faceVerificationUrl && (
+                        <img src={formData.faceVerificationUrl} alt="Selfie" className={`w-full h-full object-cover transition-opacity ${uploadingSelfie ? 'opacity-50' : 'opacity-100'}`} />
+                      )}
+                      {uploadingSelfie && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[2px]">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="relative flex h-16 w-full items-center justify-center rounded-xl border border-dashed border-primary/50 bg-primary/5 hover:bg-primary/10 cursor-pointer overflow-hidden transition-colors text-sm text-primary font-medium">
+                    <input type="file" accept="image/*" onChange={handleSelfieUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                    <Upload className="w-4 h-4 mr-2" /> {formData.faceVerificationUrl ? 'Change Selfie' : 'Upload Selfie'}
                   </div>
                 </div>
               </div>
             </div>
           )}
-
-
 
           {/* STEP 4: EXPERIENCE */}
           {currentStep === 4 && (

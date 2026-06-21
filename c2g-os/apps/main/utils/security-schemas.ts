@@ -58,7 +58,7 @@ export const ImporterRegistrationSchema = z.object({
   storeSlug: z.string().regex(/^[a-z0-9-]+$/, 'Store URL can only contain lowercase letters, numbers, and hyphens'),
   whatsapp: z.string().min(1, 'WhatsApp number is required'),
   email: z.string().email('Invalid email address'),
-  ghanaCard: z.string().min(1, 'Ghana Card is required'),
+  ghanaCard: z.string().optional(),
   businessDescription: z.string().optional(),
   password: z.string().optional(),
   fullName: z.string().optional(),
