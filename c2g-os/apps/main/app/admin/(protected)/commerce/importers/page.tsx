@@ -34,7 +34,7 @@ export default function ImportersView() {
       let vol = 0;
       data.forEach(imp => {
         if (imp.status === 'pending') pending++;
-        if (imp.status === 'active') vol += parseFloat(imp.wallet_balance || 0); // Using wallet balance as proxy for volume
+        if (imp.status === 'approved') vol += parseFloat(imp.wallet_balance || 0); // Using wallet balance as proxy for volume
       });
       setStats({ pendingCount: pending, totalVolume: vol });
     }
@@ -53,7 +53,7 @@ export default function ImportersView() {
 
     const res = await adminHandleImporterStatus(id, action);
     if (res.success) {
-      const newStatus = action === 'approve' ? 'active' : 'rejected';
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
       setImporters(prev => prev.map(imp => imp.id === id ? { ...imp, status: newStatus } : imp));
       setStats(prev => ({ ...prev, pendingCount: prev.pendingCount - 1 }));
       showAlert({ title: 'Success', message: `Importer application ${newStatus}.`, type: 'success' });
@@ -130,13 +130,13 @@ export default function ImportersView() {
                       <td className="p-4">
                         <div className="flex flex-col gap-1.5 items-start">
                           <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${
-                            imp.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                            imp.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
                             imp.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                             'bg-red-500/10 text-red-400 border-red-500/20'
                           }`}>
                             {imp.status}
                           </span>
-                          {imp.status === 'active' && (
+                          {imp.status === 'approved' && (
                             <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-bold uppercase rounded border border-purple-500/20">
                               Tier 1
                             </span>
@@ -193,13 +193,13 @@ export default function ImportersView() {
                       <p className="text-xs text-zinc-500 mb-1">Status & Tier</p>
                       <div className="flex flex-wrap gap-1.5">
                         <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${
-                          imp.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          imp.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
                           imp.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                           'bg-red-500/10 text-red-400 border-red-500/20'
                         }`}>
                           {imp.status}
                         </span>
-                        {imp.status === 'active' && (
+                        {imp.status === 'approved' && (
                           <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-bold uppercase rounded border border-purple-500/20">
                             Tier 1
                           </span>

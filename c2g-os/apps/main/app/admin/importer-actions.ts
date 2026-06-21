@@ -19,7 +19,7 @@ export async function adminHandleImporterStatus(importerId: string, action: 'app
   if (!admin) return { success: false, error: 'Unauthorized' };
 
   try {
-    const newStatus = action === 'approve' ? 'active' : 'rejected';
+    const newStatus = action === 'approve' ? 'approved' : 'rejected';
     
     const { error } = await supabase
       .from('importers')
