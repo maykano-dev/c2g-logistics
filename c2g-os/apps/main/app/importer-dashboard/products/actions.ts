@@ -5,6 +5,38 @@ import { revalidatePath } from 'next/cache';
 import { uploadImage } from '@/utils/image-service';
 import { AddProductSchema } from '@/utils/security-schemas';
 
+export async function getImporterProducts() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  // Get importer ID
+  const { data: importer } = await supabase
+    .from('importers')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!importer) return { success: false, error: 'Importer not found' };
+
+  const { data: products, error } = await supabase
+    .from('products')
+    .select(`
+      *,
+      product_images (id, image_url, is_primary)
+    `)
+    .eq('importer_id', importer.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching importer products:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, products: products || [] };
+}
+
 export async function addImporterProduct(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

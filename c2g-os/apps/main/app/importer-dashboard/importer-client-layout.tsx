@@ -2,23 +2,40 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Bell, Menu, X, ArrowLeft } from "lucide-react";
+import { LogOut, Bell, Menu, X, ArrowLeft, Store, Package, ShoppingBag, Wallet, Settings } from "lucide-react";
 import { logout } from "../auth/actions";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getNotifications } from "@/app/dashboard/notifications/actions";
 
 export default function ImporterDashboardClientLayout({
   children,
   user,
   importer,
-  navLinks,
 }: {
   children: React.ReactNode;
   user: any;
   importer: any;
-  navLinks: { name: string; href: string; icon: any }[];
 }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    async function loadNotifs() {
+      const data = await getNotifications();
+      const unread = data.filter((n: any) => !n.is_read).length;
+      setUnreadCount(unread);
+    }
+    loadNotifs();
+  }, [pathname]);
+
+  const navLinks = [
+    { name: "Overview", href: "/importer-dashboard", icon: Store },
+    { name: "Products", href: "/importer-dashboard/products", icon: Package },
+    { name: "Orders", href: "/importer-dashboard/orders", icon: ShoppingBag },
+    { name: "Profits & Wallet", href: "/importer-dashboard/wallet", icon: Wallet },
+    { name: "Settings", href: "/importer-dashboard/settings", icon: Settings },
+  ];
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row relative">
@@ -90,9 +107,17 @@ export default function ImporterDashboardClientLayout({
             <span className="font-bold tracking-tight text-foreground">{importer.business_name}</span>
           </div>
           
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 -mr-2">
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/importer-dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-secondary">
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-background" />
+              )}
+            </Link>
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 -mr-2">
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </header>
 
         {/* Mobile Menu Overlay */}
@@ -131,9 +156,12 @@ export default function ImporterDashboardClientLayout({
             </a>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10">
-              <Bell className="w-5 h-5" />
-            </button>
+            <Link href="/importer-dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 group">
+              <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              {unreadCount > 0 && (
+                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-background shadow-sm shadow-red-500/50 animate-pulse" />
+              )}
+            </Link>
           </div>
         </header>
 

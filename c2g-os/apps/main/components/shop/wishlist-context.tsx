@@ -8,6 +8,7 @@ export type WishlistItem = {
   imageUrl: string;
   priceGhs: number;
   priceCny: number;
+  storeSlug?: string;
 };
 
 type WishlistContextType = {
@@ -17,6 +18,7 @@ type WishlistContextType = {
   clearWishlist: () => void;
   isInWishlist: (id: string) => boolean;
   wishlistCount: number;
+  getFilteredWishlist: (storeSlug?: string, mode?: "mall" | "store" | "all") => WishlistItem[];
   isLoaded: boolean;
 };
 
@@ -113,10 +115,20 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     return items.some(i => i.id === id);
   };
 
+  const getFilteredWishlist = (storeSlug?: string, mode: "mall" | "store" | "all" = "all") => {
+    if (mode === "mall") {
+      return items.filter(i => !i.storeSlug);
+    }
+    if (mode === "store" && storeSlug) {
+      return items.filter(i => i.storeSlug === storeSlug);
+    }
+    return items; // "all"
+  };
+
   const wishlistCount = items.length;
 
   return (
-    <WishlistContext.Provider value={{ items, addToWishlist, removeFromWishlist, clearWishlist, isInWishlist, wishlistCount, isLoaded }}>
+    <WishlistContext.Provider value={{ items, addToWishlist, removeFromWishlist, clearWishlist, isInWishlist, wishlistCount, getFilteredWishlist, isLoaded }}>
       {children}
     </WishlistContext.Provider>
   );

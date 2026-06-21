@@ -1,30 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useWishlist } from "../../components/shop/wishlist-context";
+import { useWishlist } from "../../../../components/shop/wishlist-context";
 import { ShoppingCart, Trash2, HeartCrack, ChevronLeft } from "lucide-react";
-import { useState, useEffect } from "react";
+import MobileBottomNav from "../../../../components/shop/mobile-bottom-nav";
+import StoreHeader from "../../../../components/shop/store-header";
+import { use, useEffect, useState } from "react";
 
-import MobileBottomNav from "../../components/shop/mobile-bottom-nav";
-
-export default function WishlistPage() {
+export default function StoreWishlistPage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = use(params);
+  const storeSlug = resolvedParams.slug;
   const { getFilteredWishlist, removeFromWishlist } = useWishlist();
   
-  // Hydration safety
+  // To avoid hydration mismatch if items depend on local storage
   const [items, setItems] = useState<any[]>([]);
   useEffect(() => {
-    setItems(getFilteredWishlist(undefined, "mall"));
-  }, [getFilteredWishlist]);
+    setItems(getFilteredWishlist(storeSlug, "store"));
+  }, [getFilteredWishlist, storeSlug]);
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-12 pt-6 md:pt-10">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="min-h-screen bg-background pb-24 md:pb-12 pt-14 md:pt-16">
+      <StoreHeader />
+      <div className="max-w-5xl mx-auto px-4 mt-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <Link href="/shop" className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors">
+          <Link href={`/store/${storeSlug}`} className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">My Wishlist</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Store Wishlist</h1>
           <div className="ml-auto bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-bold">
             {items.length} {items.length === 1 ? 'Item' : 'Items'}
           </div>
@@ -40,17 +43,17 @@ export default function WishlistPage() {
               Save items you love here to easily find and buy them later.
             </p>
             <Link 
-              href="/shop"
+              href={`/store/${storeSlug}`}
               className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
             >
-              Start Shopping
+              Back to Store
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
             {items.map(item => (
               <div key={item.id} className="bg-card rounded-xl border border-border overflow-hidden group hover:shadow-xl hover:shadow-primary/10 transition-all flex flex-col relative">
-                <Link href={`/shop/product/${item.id}`} className="relative aspect-square block overflow-hidden bg-secondary/50">
+                <Link href={`/shop/product/${item.id}?store=${storeSlug}`} className="relative aspect-square block overflow-hidden bg-secondary/50">
                   <img 
                     src={item.imageUrl} 
                     alt={item.name} 
@@ -68,7 +71,7 @@ export default function WishlistPage() {
                 </button>
                 
                 <div className="p-3 flex flex-col flex-1">
-                  <Link href={`/shop/product/${item.id}`} className="font-semibold text-sm text-foreground line-clamp-2 hover:text-primary transition-colors mb-2 leading-tight">
+                  <Link href={`/shop/product/${item.id}?store=${storeSlug}`} className="font-semibold text-sm text-foreground line-clamp-2 hover:text-primary transition-colors mb-2 leading-tight">
                     {item.name}
                   </Link>
                   <div className="mt-auto pt-2 flex items-end justify-between">
@@ -77,7 +80,7 @@ export default function WishlistPage() {
                       <span className="text-[10px] text-muted-foreground font-medium">≈ ¥{item.priceCny.toFixed(2)}</span>
                     </div>
                     <Link 
-                      href={`/shop/product/${item.id}`}
+                      href={`/shop/product/${item.id}?store=${storeSlug}`}
                       className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
                     >
                       <ShoppingCart className="w-4 h-4" />

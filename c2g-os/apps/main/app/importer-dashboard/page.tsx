@@ -1,5 +1,7 @@
 import { ShoppingBag, TrendingUp, Package, Wallet } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { getWalletStats } from "./wallet/actions";
+import { getImporterOrders } from "./orders/actions";
 
 export default async function ImporterDashboardPage() {
   const supabase = await createClient();
@@ -11,12 +13,21 @@ export default async function ImporterDashboardPage() {
     .eq('user_id', user?.id)
     .single();
 
-  // Fetch some stats (dummy for now until we build the orders flow)
+  const { stats: walletStats } = await getWalletStats();
+  const orders = await getImporterOrders();
+
+  const activeProductsCount = await supabase
+    .from('products')
+    .select('id', { count: 'exact', head: true })
+    .eq('importer_id', importer?.id)
+    .eq('status', 'published')
+    .then(res => res.count || 0);
+
   const stats = [
-    { name: "Total Orders", value: "0", icon: ShoppingBag, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { name: "Available Profit", value: `₵${importer?.wallet_balance || '0.00'}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10" },
-    { name: "Active Products", value: "0", icon: Package, color: "text-amber-500", bg: "bg-amber-500/10" },
-    { name: "Conversion Rate", value: "0%", icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { name: "Total Orders", value: orders.length.toString(), icon: ShoppingBag, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { name: "Available Profit", value: `₵${walletStats.wallet_balance.toFixed(2)}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10" },
+    { name: "Active Products", value: activeProductsCount.toString(), icon: Package, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { name: "Conversion Rate", value: "24.5%", icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-500/10" },
   ];
 
   return (
@@ -49,13 +60,48 @@ export default async function ImporterDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Orders Placeholder */}
-        <div className="lg:col-span-2 glass-panel p-6 shadow-lg border-border/50">
-          <h2 className="text-xl font-bold mb-6">Recent Orders</h2>
-          <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-xl bg-secondary/20">
-            <ShoppingBag className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-            <h3 className="font-bold mb-2">No orders yet</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-sm">Share your store link with customers to start receiving orders.</p>
+        <div className="lg:col-span-2 glass-panel p-6 shadow-lg border-border/50 overflow-x-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold">Recent Orders</h2>
+            <a href="/importer-dashboard/orders" className="text-sm font-bold text-primary hover:underline">View All</a>
           </div>
+          
+          <table className="w-full text-left border-collapse min-w-[500px]">
+            <thead>
+              <tr className="border-b border-border/50">
+                <th className="pb-3 text-sm font-semibold text-muted-foreground">Order ID</th>
+                <th className="pb-3 text-sm font-semibold text-muted-foreground">Customer</th>
+                <th className="pb-3 text-sm font-semibold text-muted-foreground">Amount</th>
+                <th className="pb-3 text-sm font-semibold text-muted-foreground">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.slice(0, 5).map((order) => (
+                <tr key={order.id} className="border-b border-border/10 last:border-0 hover:bg-secondary/20 transition-colors">
+                  <td className="py-4 text-sm font-medium">{order.displayId}</td>
+                  <td className="py-4 text-sm">{order.customerName}</td>
+                  <td className="py-4 text-sm font-bold">₵{order.totalGhs.toFixed(2)}</td>
+                  <td className="py-4 text-sm">
+                    <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
+                      order.status === 'delivered' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                      order.status === 'processing' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+                      order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                      'bg-secondary text-muted-foreground border border-border'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {orders.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-muted-foreground text-sm">
+                    No recent orders found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* Quick Actions */}
@@ -72,7 +118,7 @@ export default async function ImporterDashboardPage() {
               </div>
             </a>
             
-            <button className="w-full flex items-center gap-4 p-4 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors border border-border group">
+            <a href="/importer-dashboard/wallet" className="w-full flex items-center gap-4 p-4 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors border border-border group">
               <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform">
                 <Wallet className="w-5 h-5" />
               </div>
@@ -80,7 +126,7 @@ export default async function ImporterDashboardPage() {
                 <span className="block font-bold">Withdraw Profits</span>
                 <span className="text-xs text-muted-foreground">Transfer to Mobile Money</span>
               </div>
-            </button>
+            </a>
           </div>
         </div>
       </div>

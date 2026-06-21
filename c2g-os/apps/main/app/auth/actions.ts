@@ -85,8 +85,16 @@ export async function login(prevState: any, formData: FormData) {
     await enforceSessionLimit(data.user.id);
   }
 
-  revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  revalidatePath('/', 'layout');
+  
+  const role = data.user?.user_metadata?.role;
+  if (role === 'importer') {
+    redirect('/importer-dashboard');
+  } else if (role === 'admin') {
+    redirect('/admin');
+  } else {
+    redirect('/dashboard');
+  }
 }
 
 export async function signup(prevState: any, formData: FormData) {

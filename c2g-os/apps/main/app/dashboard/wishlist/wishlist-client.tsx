@@ -87,7 +87,7 @@ export default function WishlistClient() {
           {items.map((item) => (
             <div key={item.id} className="glass-panel group overflow-hidden flex flex-col relative hover:border-primary/50 transition-colors">
               <Link 
-                href={`/shop/product/${item.id}`} 
+                href={item.storeSlug ? `/shop/product/${item.id}?store=${item.storeSlug}` : `/shop/product/${item.id}`} 
                 className="flex flex-col h-full w-full"
               >
                 <div className="relative aspect-square w-full bg-secondary/30">
@@ -98,6 +98,11 @@ export default function WishlistClient() {
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  {item.storeSlug && (
+                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[9px] font-bold px-2 py-1 rounded shadow-lg z-10">
+                      Store Item
+                    </div>
+                  )}
                 </div>
                 <div className="p-4 flex flex-col flex-1">
                   <h3 className="font-bold text-sm leading-tight mb-2 line-clamp-2 flex-1">{item.name}</h3>

@@ -39,13 +39,14 @@ export default function ImporterRegisterClient() {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => {
+        const newData = { ...prev, [name]: value };
+        if (name === 'storeName') {
+          newData.storeSlug = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        }
+        return newData;
+      });
     }
-  };
-
-  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    setFormData(prev => ({ ...prev, storeSlug: val }));
   };
 
   const handleMultiSelect = (name: 'sourcingPlatforms' | 'categories', value: string) => {
@@ -204,10 +205,10 @@ export default function ImporterRegisterClient() {
                   <input type="text" name="storeName" required value={formData.storeName} onChange={handleInputChange} className="w-full flex h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary" placeholder="e.g. Abena Imports" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold">Store Username <span className="text-destructive">*</span></label>
-                  <div className="relative flex items-center">
+                  <label className="text-sm font-semibold text-muted-foreground">Store Username (Auto-generated)</label>
+                  <div className="relative flex items-center opacity-70">
                     <span className="absolute left-3 text-xs text-muted-foreground font-mono">c2g.com/store/</span>
-                    <input type="text" name="storeSlug" required value={formData.storeSlug} onChange={handleSlugChange} className="w-full flex h-12 rounded-xl border border-input bg-background/50 pl-[105px] pr-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary font-mono text-primary" placeholder="abena-imports" />
+                    <input type="text" name="storeSlug" readOnly value={formData.storeSlug} className="w-full flex h-12 rounded-xl border border-input bg-secondary/50 pl-[105px] pr-3 py-2 text-sm font-mono text-muted-foreground cursor-not-allowed" placeholder="abena-imports" />
                   </div>
                 </div>
               </div>
@@ -220,18 +221,10 @@ export default function ImporterRegisterClient() {
                 <textarea name="businessDescription" required maxLength={250} value={formData.businessDescription} onChange={handleInputChange} className="w-full min-h-[100px] flex rounded-xl border border-input bg-background/50 px-3 py-3 text-sm focus-visible:ring-2 focus-visible:ring-primary resize-y" placeholder="We import fashion accessories, shoes and beauty products from China." />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-muted-foreground">Store Logo (Optional)</label>
-                  <div className="flex h-12 items-center justify-center w-full rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer text-sm text-muted-foreground">
-                    <Upload className="w-4 h-4 mr-2" /> Upload Logo
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-muted-foreground">Store Banner (Optional)</label>
-                  <div className="flex h-12 items-center justify-center w-full rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer text-sm text-muted-foreground">
-                    <Upload className="w-4 h-4 mr-2" /> Upload Banner
-                  </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-muted-foreground">Store Logo (Optional)</label>
+                <div className="flex h-12 items-center justify-center w-full sm:w-1/2 rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer text-sm text-muted-foreground">
+                  <Upload className="w-4 h-4 mr-2" /> Upload Logo
                 </div>
               </div>
             </div>

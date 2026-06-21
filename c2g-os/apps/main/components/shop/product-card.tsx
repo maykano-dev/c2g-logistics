@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Heart, ShoppingCart, Eye, Flame, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./cart-context";
@@ -84,6 +85,11 @@ export default function ProductCard({
     });
   };
 
+  const pathname = usePathname();
+  const isStore = pathname.startsWith("/store/");
+  const storeSlug = isStore ? pathname.split("/")[2] : null;
+  const productUrl = storeSlug ? `/shop/product/${product.id}?store=${storeSlug}` : `/shop/product/${product.id}`;
+
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -96,6 +102,7 @@ export default function ProductCard({
         imageUrl,
         priceGhs,
         priceCny,
+        storeSlug: storeSlug || undefined,
       });
     }
   };
@@ -113,7 +120,7 @@ export default function ProductCard({
       {/* Image Area */}
       <div className="relative aspect-square overflow-hidden bg-secondary/30">
         <Link
-          href={`/shop/product/${product.id}`}
+          href={productUrl}
           className="block w-full h-full"
         >
           <img
@@ -163,7 +170,7 @@ export default function ProductCard({
       {/* Card Body */}
       <div className="p-3 sm:p-3.5 flex flex-col flex-grow">
         <Link
-          href={`/shop/product/${product.id}`}
+          href={productUrl}
           className="group-hover:text-primary transition-colors"
         >
           <h3 className="font-medium text-xs sm:text-sm line-clamp-2 mb-1.5 leading-snug">
@@ -191,7 +198,7 @@ export default function ProductCard({
           {/* Add to Cart or View Options */}
           {hasVariants ? (
             <Link
-              href={`/shop/product/${product.id}`}
+              href={productUrl}
               className="w-full h-8 sm:h-9 flex items-center justify-center rounded-lg text-xs font-semibold transition-all border border-border bg-secondary/50 text-foreground hover:bg-secondary"
             >
               View Options

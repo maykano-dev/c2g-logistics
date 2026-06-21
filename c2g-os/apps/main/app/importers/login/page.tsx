@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { ArrowRight, CheckCircle2, Package, TrendingUp, Truck, Store } from "lucide-react";
+import { LoginForm } from "../../login/login-form";
 
 export const metadata: Metadata = {
   title: "Importer Login | C2G Logistics",
@@ -107,43 +108,7 @@ export default function ImporterLoginPage() {
               <p className="text-muted-foreground text-sm">Access your business dashboard</p>
             </div>
 
-            <form action="/login" method="POST" className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">Email Address</label>
-                <input 
-                  type="email" 
-                  name="email"
-                  required
-                  placeholder="you@company.com"
-                  className="w-full flex h-12 rounded-xl border border-input bg-background/50 px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary backdrop-blur-sm transition-all" 
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold">Password</label>
-                  <Link href="/forgot-password" className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
-                    Forgot password?
-                  </Link>
-                </div>
-                <input 
-                  type="password" 
-                  name="password"
-                  required
-                  placeholder="••••••••"
-                  className="w-full flex h-12 rounded-xl border border-input bg-background/50 px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary backdrop-blur-sm transition-all" 
-                />
-              </div>
-
-              <div className="pt-2">
-                <button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-primary hover:to-blue-600 text-white font-bold text-sm rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
-                >
-                  Sign In <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
+            <LoginForm />
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               Don't have a store yet?{" "}

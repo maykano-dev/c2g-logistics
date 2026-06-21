@@ -43,10 +43,15 @@ export async function generateMetadata({
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const storeSlug = typeof resolvedSearchParams.store === 'string' ? resolvedSearchParams.store : null;
+
   const { product, exchangeRate, error } = await getProductDetails(
     resolvedParams.id
   );
@@ -66,10 +71,10 @@ export default async function ProductPage({
           The product you're looking for doesn't exist or has been removed.
         </p>
         <Link
-          href="/shop"
+          href={storeSlug ? `/store/${storeSlug}` : "/shop"}
           className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:scale-105"
         >
-          Back to Mall
+          {storeSlug ? "Back to Store" : "Back to Mall"}
         </Link>
       </div>
     );
@@ -84,7 +89,6 @@ export default async function ProductPage({
   
   variants.forEach((v: any) => {
     let combo = v.combination || v.variant_options; // Fallback to legacy variant_options
-    console.log("Variant ID:", v.id, "Combo:", combo);
     
     if (typeof combo === 'string') {
       try {
@@ -123,10 +127,10 @@ export default async function ProductPage({
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6 overflow-hidden">
           <Link
-            href="/shop"
+            href={storeSlug ? `/store/${storeSlug}` : "/shop"}
             className="hover:text-primary transition-colors flex items-center gap-1 shrink-0"
           >
-            <ChevronLeft className="w-4 h-4" /> Mall
+            <ChevronLeft className="w-4 h-4" /> {storeSlug ? "Store Home" : "Mall"}
           </Link>
           <span className="text-border">/</span>
           <span className="capitalize shrink-0">
