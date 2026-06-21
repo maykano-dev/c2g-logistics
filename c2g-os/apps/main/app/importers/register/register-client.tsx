@@ -279,22 +279,23 @@ export default function ImporterRegisterClient() {
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-muted-foreground">Store Logo (Optional)</label>
-                <div className="relative flex h-16 items-center justify-center w-full sm:w-1/2 rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer overflow-hidden transition-colors text-sm text-muted-foreground">
-                  <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                  {formData.storeLogo ? (
-                    <div className="relative w-full h-full group">
-                      <img src={formData.storeLogo} alt="Logo" className={`w-full h-full object-contain p-1 transition-opacity ${uploadingLogo ? 'opacity-50' : 'opacity-100'}`} />
+                <div className="flex items-center gap-4 w-full sm:w-1/2">
+                  {(formData.storeLogo || uploadingLogo) && (
+                    <div className="relative w-16 h-16 shrink-0 rounded-xl border border-input bg-secondary/30 flex items-center justify-center overflow-hidden">
+                      {formData.storeLogo && (
+                        <img src={formData.storeLogo} alt="Logo" className={`w-full h-full object-cover transition-opacity ${uploadingLogo ? 'opacity-50' : 'opacity-100'}`} />
+                      )}
                       {uploadingLogo && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[2px]">
+                          <Loader2 className="w-5 h-5 animate-spin text-primary" />
                         </div>
                       )}
                     </div>
-                  ) : uploadingLogo ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  ) : (
-                    <><Upload className="w-4 h-4 mr-2" /> Upload Logo</>
                   )}
+                  <div className="relative flex h-16 flex-1 items-center justify-center rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer overflow-hidden transition-colors text-sm text-muted-foreground">
+                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                    <Upload className="w-4 h-4 mr-2" /> {formData.storeLogo ? 'Change Logo' : 'Upload Logo'}
+                  </div>
                 </div>
               </div>
             </div>
