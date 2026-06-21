@@ -268,7 +268,12 @@ export default function ImporterRegisterClient() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">WhatsApp Number <span className="text-destructive">*</span></label>
-                  <PhoneInput name="whatsapp" required />
+                  <PhoneInput 
+                    name="whatsapp" 
+                    required 
+                    value={formData.whatsapp} 
+                    onChange={(val) => setFormData(prev => ({ ...prev, whatsapp: val }))} 
+                  />
                   <label className="flex items-center gap-2 mt-2 cursor-pointer group">
                     <input type="checkbox" name="sameAsMomo" checked={formData.sameAsMomo} onChange={handleInputChange} className="w-4 h-4 rounded border-input text-primary focus:ring-primary bg-background" />
                     <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Same as MoMo number for payouts</span>

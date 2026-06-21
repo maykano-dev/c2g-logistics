@@ -14,11 +14,17 @@ const countries = [
   { code: "US", dial: "+1", name: "United States", flag: "🇺🇸" },
 ];
 
-export function PhoneInput({ name = "phone", required = true }: { name?: string; required?: boolean }) {
+export function PhoneInput({ name = "phone", required = true, value = "", onChange }: { name?: string; required?: boolean; value?: string; onChange?: (val: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(countries[0]);
-  const [phone, setPhone] = useState("");
+  
+  // Try to parse initial value if provided (format: "+233 241234567")
+  const initialDial = value ? value.split(' ')[0] : "+233";
+  const initialPhone = value ? value.split(' ').slice(1).join(' ') : "";
+  const initialCountry = countries.find(c => c.dial === initialDial) || countries[0];
+
+  const [selected, setSelected] = useState(initialCountry);
+  const [phone, setPhone] = useState(initialPhone);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -39,7 +45,7 @@ export function PhoneInput({ name = "phone", required = true }: { name?: string;
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Hidden input to submit the full combined phone number */}
-      <input type="hidden" name={name} value={`${selected?.dial || '+233'} ${phone}`} />
+      <input type="hidden" name={name} value={phone ? `${selected?.dial || '+233'} ${phone}` : ''} />
       
       <div className="flex h-11 w-full rounded-md border border-input bg-background/50 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors backdrop-blur-sm group">
         
@@ -58,7 +64,11 @@ export function PhoneInput({ name = "phone", required = true }: { name?: string;
         <input
           type="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value.replace(/[^0-9\s]/g, ""))}
+          onChange={(e) => {
+            const newPhone = e.target.value.replace(/[^0-9\s]/g, "");
+            setPhone(newPhone);
+            if (onChange) onChange(newPhone ? `${selected.dial} ${newPhone}` : "");
+          }}
           placeholder="24 123 4567"
           required={required}
           className="flex-1 bg-transparent px-3 py-2 outline-none placeholder:text-muted-foreground"
@@ -89,6 +99,7 @@ export function PhoneInput({ name = "phone", required = true }: { name?: string;
                     setSelected(country);
                     setIsOpen(false);
                     setSearch("");
+                    if (onChange) onChange(phone ? `${country.dial} ${phone}` : "");
                   }}
                   className={`w-full flex items-center gap-3 p-2 rounded-md text-sm hover:bg-primary/10 transition-colors ${selected?.code === country.code ? "bg-primary/20 font-bold" : ""}`}
                 >
