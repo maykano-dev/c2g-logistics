@@ -21,11 +21,12 @@ export default function ImporterRegisterClient() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
     fullName: '', email: '', whatsapp: '', sameAsMomo: false, password: '',
-    storeName: '', storeSlug: '', businessDescription: '',
+    storeName: '', storeSlug: '', businessDescription: '', storeLogo: '',
     idType: 'Ghana Card', idNumber: '',
     experience: 'Less than 6 months', sourcingPlatforms: [] as string[], categories: [] as string[], estimatedOrders: '1 - 20',
     agreeFraud: false, agreePayout: false, agreeTerms: false, agreePrivacy: false
@@ -56,6 +57,33 @@ export default function ImporterRegisterClient() {
         return { ...prev, [name]: [...current, value] };
       }
     });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Logo must be less than 2MB');
+      return;
+    }
+
+    setUploadingLogo(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Failed to upload logo');
+      
+      setFormData(prev => ({ ...prev, storeLogo: data.url }));
+    } catch (err: any) {
+      setError(err.message || 'Error uploading logo');
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   const nextStep = () => setCurrentStep(p => Math.min(p + 1, 5));
@@ -215,8 +243,15 @@ export default function ImporterRegisterClient() {
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-muted-foreground">Store Logo (Optional)</label>
-                <div className="flex h-12 items-center justify-center w-full sm:w-1/2 rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer text-sm text-muted-foreground">
-                  <Upload className="w-4 h-4 mr-2" /> Upload Logo
+                <div className="relative flex h-16 items-center justify-center w-full sm:w-1/2 rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer overflow-hidden transition-colors text-sm text-muted-foreground">
+                  <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                  {uploadingLogo ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  ) : formData.storeLogo ? (
+                    <img src={formData.storeLogo} alt="Logo" className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <><Upload className="w-4 h-4 mr-2" /> Upload Logo</>
+                  )}
                 </div>
               </div>
             </div>

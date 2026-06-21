@@ -15,6 +15,7 @@ export async function submitImporterRegistration(formData: FormData) {
   const businessDescriptionRaw = formData.get('businessDescription') as string;
   const passwordRaw = formData.get('password') as string;
   const fullNameRaw = formData.get('fullName') as string;
+  const storeLogoRaw = formData.get('storeLogo') as string;
   const sameAsMomo = formData.get('sameAsMomo') === 'true';
 
   const validation = ImporterRegistrationSchema.safeParse({
@@ -100,6 +101,7 @@ export async function submitImporterRegistration(formData: FormData) {
       ghana_card: ghanaCard,
       business_description: businessDescription,
       status: 'pending',
+      store_logo: storeLogoRaw,
       ...(sameAsMomo ? { momo_number: whatsapp } : {})
     });
 
