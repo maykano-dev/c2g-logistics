@@ -59,20 +59,55 @@ export default function ImporterRegisterClient() {
     });
   };
 
+  const resizeImage = (file: File, maxWidth: number = 800, maxHeight: number = 800): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width *= ratio;
+            height *= ratio;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(file);
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (!blob) return resolve(file);
+            resolve(new File([blob], file.name, { type: file.type, lastModified: Date.now() }));
+          }, file.type, 0.85);
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Logo must be less than 2MB');
-      return;
-    }
+    // Show local preview instantly
+    const previewUrl = URL.createObjectURL(file);
+    setFormData(prev => ({ ...prev, storeLogo: previewUrl }));
 
     setUploadingLogo(true);
     setError(null);
     try {
+      let fileToUpload = file;
+      if (file.size > 500 * 1024) {
+        fileToUpload = await resizeImage(file);
+      }
+
       const form = new FormData();
-      form.append('file', file);
+      form.append('file', fileToUpload);
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       const data = await res.json();
       
@@ -81,6 +116,7 @@ export default function ImporterRegisterClient() {
       setFormData(prev => ({ ...prev, storeLogo: data.url }));
     } catch (err: any) {
       setError(err.message || 'Error uploading logo');
+      setFormData(prev => ({ ...prev, storeLogo: '' })); // Revert preview on error
     } finally {
       setUploadingLogo(false);
     }
@@ -245,10 +281,17 @@ export default function ImporterRegisterClient() {
                 <label className="text-sm font-semibold text-muted-foreground">Store Logo (Optional)</label>
                 <div className="relative flex h-16 items-center justify-center w-full sm:w-1/2 rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer overflow-hidden transition-colors text-sm text-muted-foreground">
                   <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                  {uploadingLogo ? (
+                  {formData.storeLogo ? (
+                    <div className="relative w-full h-full group">
+                      <img src={formData.storeLogo} alt="Logo" className={`w-full h-full object-contain p-1 transition-opacity ${uploadingLogo ? 'opacity-50' : 'opacity-100'}`} />
+                      {uploadingLogo && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        </div>
+                      )}
+                    </div>
+                  ) : uploadingLogo ? (
                     <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  ) : formData.storeLogo ? (
-                    <img src={formData.storeLogo} alt="Logo" className="w-full h-full object-contain p-1" />
                   ) : (
                     <><Upload className="w-4 h-4 mr-2" /> Upload Logo</>
                   )}
