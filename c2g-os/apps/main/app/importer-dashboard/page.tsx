@@ -14,7 +14,8 @@ export default async function ImporterDashboardPage() {
     .single();
 
   const { stats: walletStats } = await getWalletStats();
-  const orders = await getImporterOrders();
+  const ordersResponse = await getImporterOrders();
+  const recentOrders = ordersResponse.success ? (ordersResponse.orders || []) : [];
 
   const activeProductsCount = await supabase
     .from('products')
@@ -23,9 +24,11 @@ export default async function ImporterDashboardPage() {
     .eq('status', 'published')
     .then(res => res.count || 0);
 
+  const walletBalance = walletStats?.wallet_balance || 0;
+
   const stats = [
-    { name: "Total Orders", value: orders.length.toString(), icon: ShoppingBag, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { name: "Available Profit", value: `₵${walletStats.wallet_balance.toFixed(2)}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10" },
+    { name: "Total Orders", value: recentOrders.length.toString(), icon: ShoppingBag, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { name: "Available Profit", value: `₵${walletBalance.toFixed(2)}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10" },
     { name: "Active Products", value: activeProductsCount.toString(), icon: Package, color: "text-amber-500", bg: "bg-amber-500/10" },
     { name: "Conversion Rate", value: "24.5%", icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-500/10" },
   ];
@@ -76,11 +79,11 @@ export default async function ImporterDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.slice(0, 5).map((order) => (
+              {recentOrders.slice(0, 5).map((order) => (
                 <tr key={order.id} className="border-b border-border/10 last:border-0 hover:bg-secondary/20 transition-colors">
-                  <td className="py-4 text-sm font-medium">{order.displayId}</td>
-                  <td className="py-4 text-sm">{order.customerName}</td>
-                  <td className="py-4 text-sm font-bold">₵{order.totalGhs.toFixed(2)}</td>
+                  <td className="py-4 text-sm font-medium">{order.id}</td>
+                  <td className="py-4 text-sm">{order.customer_name}</td>
+                  <td className="py-4 text-sm font-bold">₵{order.amount_ghs.toFixed(2)}</td>
                   <td className="py-4 text-sm">
                     <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
                       order.status === 'delivered' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
@@ -93,7 +96,7 @@ export default async function ImporterDashboardPage() {
                   </td>
                 </tr>
               ))}
-              {orders.length === 0 && (
+              {recentOrders.length === 0 && (
                 <tr>
                   <td colSpan={4} className="py-8 text-center text-muted-foreground text-sm">
                     No recent orders found.

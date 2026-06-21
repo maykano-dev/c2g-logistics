@@ -13,8 +13,8 @@ export default function WalletPage() {
     async function loadWallet() {
       const { success, stats, transactions } = await getWalletStats();
       if (success) {
-        setStats(stats);
-        setTransactions(transactions);
+        setStats(stats || { wallet_balance: 0, pending_clearance: 0, total_earned: 0 });
+        setTransactions(transactions || []);
       }
       setLoading(false);
     }
