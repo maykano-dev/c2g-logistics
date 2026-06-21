@@ -12,8 +12,9 @@ const STEPS = [
   { id: 1, name: 'Basic Info', icon: Store },
   { id: 2, name: 'Business', icon: Briefcase },
   { id: 3, name: 'Verification', icon: FileCheck },
-  { id: 4, name: 'Experience', icon: ShoppingBag },
-  { id: 5, name: 'Agreements', icon: ScrollText },
+  { id: 4, name: 'Payout', icon: CreditCard },
+  { id: 5, name: 'Experience', icon: ShoppingBag },
+  { id: 6, name: 'Agreements', icon: ScrollText },
 ];
 
 export default function ImporterRegisterClient() {
@@ -24,9 +25,10 @@ export default function ImporterRegisterClient() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    fullName: '', email: '', whatsapp: '', sameAsMomo: false, password: '',
+    fullName: '', email: '', phone: '', whatsapp: '', password: '',
     storeName: '', storeSlug: '', businessDescription: '',
     idType: 'Ghana Card', idNumber: '',
+    payoutMethod: 'Mobile Money', momoNetwork: 'MTN', momoNumber: '', momoName: '', bankName: '', bankAccount: '', bankAccountName: '',
     experience: 'Less than 6 months', sourcingPlatforms: [] as string[], categories: [] as string[], estimatedOrders: '1 - 20',
     agreeFraud: false, agreePayout: false, agreeTerms: false, agreePrivacy: false
   });
@@ -58,12 +60,12 @@ export default function ImporterRegisterClient() {
     });
   };
 
-  const nextStep = () => setCurrentStep(p => Math.min(p + 1, 5));
+  const nextStep = () => setCurrentStep(p => Math.min(p + 1, 6));
   const prevStep = () => setCurrentStep(p => Math.max(p - 1, 1));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       nextStep();
       return;
     }
@@ -125,7 +127,7 @@ export default function ImporterRegisterClient() {
       {/* Step Indicator */}
       <div className="mb-8 flex items-center justify-between relative">
         <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-border/50 z-0 rounded-full" />
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary z-0 rounded-full transition-all duration-300" style={{ width: `${((currentStep - 1) / 4) * 100}%` }} />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary z-0 rounded-full transition-all duration-300" style={{ width: `${((currentStep - 1) / 5) * 100}%` }} />
         
         {STEPS.map((step) => {
           const Icon = step.icon;
@@ -171,16 +173,22 @@ export default function ImporterRegisterClient() {
                   <input type="email" name="email" required value={formData.email} onChange={handleInputChange} className="w-full flex h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary" placeholder="john@example.com" />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-sm font-semibold">Phone Number <span className="text-destructive">*</span></label>
+                  <PhoneInput name="phone" required />
+                </div>
+                <div className="space-y-2">
                   <label className="text-sm font-semibold">WhatsApp Number <span className="text-destructive">*</span></label>
                   <PhoneInput name="whatsapp" required />
-                  <label className="flex items-center gap-2 mt-2 cursor-pointer group">
-                    <input type="checkbox" name="sameAsMomo" checked={formData.sameAsMomo} onChange={handleInputChange} className="w-4 h-4 rounded border-input text-primary focus:ring-primary bg-background" />
-                    <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Same as MoMo number for payouts</span>
-                  </label>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">Password <span className="text-destructive">*</span></label>
                   <input type="password" name="password" required value={formData.password} onChange={handleInputChange} className="w-full flex h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary" placeholder="••••••••" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-muted-foreground">Profile Photo (Optional)</label>
+                  <div className="flex h-12 items-center justify-center w-full rounded-xl border border-dashed border-input bg-background/30 hover:bg-background/50 cursor-pointer transition-colors text-sm text-muted-foreground">
+                    <Upload className="w-4 h-4 mr-2" /> Upload Photo
+                  </div>
                 </div>
               </div>
             </div>
@@ -272,10 +280,68 @@ export default function ImporterRegisterClient() {
             </div>
           )}
 
-
-
-          {/* STEP 4: EXPERIENCE */}
+          {/* STEP 4: PAYOUT */}
           {currentStep === 4 && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="mb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2"><CreditCard className="w-5 h-5 text-primary" /> Payout Information</h2>
+                <p className="text-sm text-muted-foreground mt-1">Where should we send your profits?</p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Preferred Payout Method <span className="text-destructive">*</span></label>
+                <div className="flex gap-4">
+                  <label className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border cursor-pointer transition-colors ${formData.payoutMethod === 'Mobile Money' ? 'border-primary bg-primary/10 text-primary font-bold' : 'border-input bg-background/50 hover:bg-secondary'}`}>
+                    <input type="radio" name="payoutMethod" value="Mobile Money" checked={formData.payoutMethod === 'Mobile Money'} onChange={handleInputChange} className="sr-only" />
+                    Mobile Money
+                  </label>
+                  <label className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border cursor-pointer transition-colors ${formData.payoutMethod === 'Bank Account' ? 'border-primary bg-primary/10 text-primary font-bold' : 'border-input bg-background/50 hover:bg-secondary'}`}>
+                    <input type="radio" name="payoutMethod" value="Bank Account" checked={formData.payoutMethod === 'Bank Account'} onChange={handleInputChange} className="sr-only" />
+                    Bank Account
+                  </label>
+                </div>
+              </div>
+
+              {formData.payoutMethod === 'Mobile Money' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 animate-fade-in">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Network <span className="text-destructive">*</span></label>
+                    <select name="momoNetwork" value={formData.momoNetwork} onChange={handleInputChange} className="w-full h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary">
+                      <option>MTN</option>
+                      <option>Telecel (Vodafone)</option>
+                      <option>AT (AirtelTigo)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">MoMo Number <span className="text-destructive">*</span></label>
+                    <PhoneInput name="momoNumber" required />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-semibold">Account Name <span className="text-destructive">*</span></label>
+                    <input type="text" name="momoName" value={formData.momoName} onChange={handleInputChange} className="w-full h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary" placeholder="Name registered to MoMo" />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 animate-fade-in">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Bank Name <span className="text-destructive">*</span></label>
+                    <input type="text" name="bankName" value={formData.bankName} onChange={handleInputChange} className="w-full h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary" placeholder="e.g. Ecobank" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Account Number <span className="text-destructive">*</span></label>
+                    <input type="text" name="bankAccount" value={formData.bankAccount} onChange={handleInputChange} className="w-full h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-semibold">Account Name <span className="text-destructive">*</span></label>
+                    <input type="text" name="bankAccountName" value={formData.bankAccountName} onChange={handleInputChange} className="w-full h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary" />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 5: EXPERIENCE */}
+          {currentStep === 5 && (
             <div className="space-y-6 animate-fade-in">
               <div className="mb-4">
                 <h2 className="text-xl font-bold flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-primary" /> Importer Information</h2>
@@ -327,8 +393,8 @@ export default function ImporterRegisterClient() {
             </div>
           )}
 
-          {/* STEP 5: AGREEMENTS */}
-          {currentStep === 5 && (
+          {/* STEP 6: AGREEMENTS */}
+          {currentStep === 6 && (
             <div className="space-y-6 animate-fade-in">
               <div className="mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-2"><ScrollText className="w-5 h-5 text-primary" /> Terms &amp; Agreements</h2>
@@ -375,7 +441,7 @@ export default function ImporterRegisterClient() {
               </button>
             ) : <div />}
 
-            {currentStep < 5 ? (
+            {currentStep < 6 ? (
               <button type="submit" className="px-8 py-3 rounded-xl font-bold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors flex items-center gap-2 ml-auto">
                 Next <ChevronRight className="w-4 h-4" />
               </button>

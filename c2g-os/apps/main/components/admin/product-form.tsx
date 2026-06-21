@@ -292,7 +292,7 @@ export function ProductForm({ initialData, onSubmit, onCancel, isSubmitting }: P
   const removeOptionValue = (optionId: string, valueId: string) => {
     setOptions(options.map(opt => {
       if (opt.id === optionId) {
-        return { ...opt, values: opt.values.filter(v => v.id !== valueId) };
+        return { ...opt, values: opt.values.filter((v: any) => v.id !== valueId) };
       }
       return opt;
     }));
@@ -307,7 +307,7 @@ export function ProductForm({ initialData, onSubmit, onCancel, isSubmitting }: P
     setOptions(opts => {
       opts.forEach(opt => {
         if (opt.id === optionId) {
-          opt.values.forEach(v => { if (v.id === valueId) currentCount = v.images.length; });
+          opt.values.forEach((v: any) => { if (v.id === valueId) currentCount = v.images.length; });
         }
       });
       return opts;
@@ -321,7 +321,7 @@ export function ProductForm({ initialData, onSubmit, onCancel, isSubmitting }: P
     
     // Add placeholders
     setOptions(opts => opts.map(opt => opt.id === optionId ? {
-      ...opt, values: opt.values.map(v => v.id === valueId ? { ...v, images: [...v.images, ...newUploads] } : v)
+      ...opt, values: opt.values.map((v: any) => v.id === valueId ? { ...v, images: [...v.images, ...newUploads] } : v)
     } : opt));
 
     // Process uploads
@@ -336,11 +336,11 @@ export function ProductForm({ initialData, onSubmit, onCancel, isSubmitting }: P
         if (!res.ok) throw new Error(data.error);
 
         setOptions(opts => opts.map(opt => opt.id === optionId ? {
-          ...opt, values: opt.values.map(v => {
+          ...opt, values: opt.values.map((v: any) => {
             if (v.id === valueId) {
-              const updatedImages = v.images.map(img => img.id === item.id ? { ...img, url: data.url, uploading: false } : img);
-              if (!updatedImages.some(img => img.isPrimary) && data.url) {
-                const index = updatedImages.findIndex(img => img.id === item.id);
+              const updatedImages = v.images.map((img: any) => img.id === item.id ? { ...img, url: data.url, uploading: false } : img);
+              if (!updatedImages.some((img: any) => img.isPrimary) && data.url) {
+                const index = updatedImages.findIndex((img: any) => img.id === item.id);
                 if (index !== -1) updatedImages[index].isPrimary = true;
               }
               return { ...v, images: updatedImages };
@@ -352,7 +352,7 @@ export function ProductForm({ initialData, onSubmit, onCancel, isSubmitting }: P
         showAlert({ title: 'Upload Failed', message: err.message, type: 'danger' });
         // remove failed
         setOptions(opts => opts.map(opt => opt.id === optionId ? {
-          ...opt, values: opt.values.map(v => v.id === valueId ? { ...v, images: v.images.filter(img => img.id !== item.id) } : v)
+          ...opt, values: opt.values.map((v: any) => v.id === valueId ? { ...v, images: v.images.filter((img: any) => img.id !== item.id) } : v)
         } : opt));
       }
     }
@@ -360,17 +360,17 @@ export function ProductForm({ initialData, onSubmit, onCancel, isSubmitting }: P
 
   const setVariantImagePrimary = (optionId: string, valueId: string, imageId: string) => {
     setOptions(opts => opts.map(opt => opt.id === optionId ? {
-      ...opt, values: opt.values.map(v => v.id === valueId ? {
-        ...v, images: v.images.map(img => ({ ...img, isPrimary: img.id === imageId }))
+      ...opt, values: opt.values.map((v: any) => v.id === valueId ? {
+        ...v, images: v.images.map((img: any) => ({ ...img, isPrimary: img.id === imageId }))
       } : v)
     } : opt));
   };
 
   const removeVariantImage = (optionId: string, valueId: string, imageId: string) => {
     setOptions(opts => opts.map(opt => opt.id === optionId ? {
-      ...opt, values: opt.values.map(v => {
+      ...opt, values: opt.values.map((v: any) => {
         if (v.id === valueId) {
-          const filtered = v.images.filter(img => img.id !== imageId);
+          const filtered = v.images.filter((img: any) => img.id !== imageId);
           if (filtered.length > 0 && !filtered.some((img: any) => img.isPrimary)) {
             filtered[0].isPrimary = true;
           }

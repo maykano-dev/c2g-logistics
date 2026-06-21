@@ -15,7 +15,7 @@ export async function submitImporterRegistration(formData: FormData) {
   const businessDescriptionRaw = formData.get('businessDescription') as string;
   const passwordRaw = formData.get('password') as string;
   const fullNameRaw = formData.get('fullName') as string;
-  const phoneRaw = formData.get('phone') as string;
+  const sameAsMomo = formData.get('sameAsMomo') === 'true';
 
   const validation = ImporterRegistrationSchema.safeParse({
     businessName: businessNameRaw,
@@ -26,14 +26,13 @@ export async function submitImporterRegistration(formData: FormData) {
     businessDescription: businessDescriptionRaw,
     password: passwordRaw,
     fullName: fullNameRaw,
-    phone: phoneRaw,
   });
 
   if (!validation.success) {
     return { success: false, error: validation.error.issues[0]?.message || 'Validation failed' };
   }
 
-  const { businessName, storeSlug, whatsapp, email, ghanaCard, businessDescription, password, fullName, phone } = validation.data;
+  const { businessName, storeSlug, whatsapp, email, ghanaCard, businessDescription, password, fullName } = validation.data;
 
   let currentUserId = user?.id;
 
@@ -48,7 +47,7 @@ export async function submitImporterRegistration(formData: FormData) {
       options: {
         data: {
           full_name: fullName,
-          phone: phone,
+          phone: whatsapp,
           role: 'importer'
         }
       }
@@ -100,7 +99,8 @@ export async function submitImporterRegistration(formData: FormData) {
       email,
       ghana_card: ghanaCard,
       business_description: businessDescription,
-      status: 'pending'
+      status: 'pending',
+      ...(sameAsMomo ? { momo_number: whatsapp } : {})
     });
 
   if (error) {
