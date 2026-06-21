@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Briefcase, TrendingUp, Filter, Search, CheckCircle2, XCircle, AlertTriangle, Building2 } from 'lucide-react';
+import { Users, Briefcase, TrendingUp, Filter, Search, CheckCircle2, XCircle, AlertTriangle, Building2, Ban, RotateCcw } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { adminHandleImporterStatus } from '@/app/admin/importer-actions';
 import { useModal } from "@/components/providers/modal-provider";
@@ -41,7 +41,7 @@ export default function ImportersView() {
     setLoading(false);
   };
 
-  const handleAction = async (id: string, action: 'approve' | 'reject') => {
+  const handleAction = async (id: string, action: 'approve' | 'reject' | 'suspend') => {
     const confirmed = await showConfirm({
       title: 'Confirm Action',
       message: `Are you sure you want to ${action} this importer application?`,
@@ -53,9 +53,11 @@ export default function ImportersView() {
 
     const res = await adminHandleImporterStatus(id, action);
     if (res.success) {
-      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+      const newStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'suspended';
       setImporters(prev => prev.map(imp => imp.id === id ? { ...imp, status: newStatus } : imp));
-      setStats(prev => ({ ...prev, pendingCount: prev.pendingCount - 1 }));
+      if (action === 'approve') {
+         setStats(prev => ({ ...prev, pendingCount: Math.max(0, prev.pendingCount - 1) }));
+      }
       showAlert({ title: 'Success', message: `Importer application ${newStatus}.`, type: 'success' });
     } else {
       showAlert({ title: 'Error', message: 'Action failed: ' + res.error, type: 'danger' });
@@ -147,18 +149,28 @@ export default function ImportersView() {
                         ₵{(parseFloat(imp.wallet_balance || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
                       </td>
                       <td className="p-4 text-right">
-                        {imp.status === 'pending' ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => handleAction(imp.id, 'approve')} className="p-2 text-emerald-500 hover:bg-emerald-500/20 rounded-lg transition-colors" title="Approve Account">
-                              <CheckCircle2 className="w-4 h-4" />
+                        <div className="flex items-center justify-end gap-2">
+                          {imp.status === 'pending' && (
+                            <>
+                              <button onClick={() => handleAction(imp.id, 'approve')} className="p-2 text-emerald-500 hover:bg-emerald-500/20 rounded-lg transition-colors" title="Approve Account">
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleAction(imp.id, 'reject')} className="p-2 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors" title="Reject Application">
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {imp.status === 'approved' && (
+                            <button onClick={() => handleAction(imp.id, 'suspend')} className="p-2 text-amber-500 hover:bg-amber-500/20 rounded-lg transition-colors" title="Suspend Account">
+                              <Ban className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleAction(imp.id, 'reject')} className="p-2 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors" title="Reject Application">
-                              <XCircle className="w-4 h-4" />
+                          )}
+                          {(imp.status === 'suspended' || imp.status === 'rejected') && (
+                            <button onClick={() => handleAction(imp.id, 'approve')} className="p-2 text-emerald-500 hover:bg-emerald-500/20 rounded-lg transition-colors" title="Reactivate Account">
+                              <RotateCcw className="w-4 h-4" />
                             </button>
-                          </div>
-                        ) : (
-                          <span className="text-zinc-500 text-xs">—</span>
-                        )}
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -214,18 +226,26 @@ export default function ImportersView() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end">
-                    {imp.status === 'pending' ? (
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => handleAction(imp.id, 'approve')} className="p-2 text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-lg transition-colors" title="Approve Account">
-                          <CheckCircle2 className="w-4 h-4" />
+                  <div className="flex items-center justify-end gap-2 mt-4">
+                    {imp.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleAction(imp.id, 'approve')} className="p-2 text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-lg transition-colors flex-1 flex items-center justify-center gap-2" title="Approve Account">
+                          <CheckCircle2 className="w-4 h-4" /> Approve
                         </button>
-                        <button onClick={() => handleAction(imp.id, 'reject')} className="p-2 text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg transition-colors" title="Reject Application">
-                          <XCircle className="w-4 h-4" />
+                        <button onClick={() => handleAction(imp.id, 'reject')} className="p-2 text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg transition-colors flex-1 flex items-center justify-center gap-2" title="Reject Application">
+                          <XCircle className="w-4 h-4" /> Reject
                         </button>
-                      </div>
-                    ) : (
-                      <span className="text-zinc-500 text-xs">—</span>
+                      </>
+                    )}
+                    {imp.status === 'approved' && (
+                      <button onClick={() => handleAction(imp.id, 'suspend')} className="p-2 text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-lg transition-colors flex-1 flex items-center justify-center gap-2" title="Suspend Account">
+                        <Ban className="w-4 h-4" /> Suspend
+                      </button>
+                    )}
+                    {(imp.status === 'suspended' || imp.status === 'rejected') && (
+                      <button onClick={() => handleAction(imp.id, 'approve')} className="p-2 text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-lg transition-colors flex-1 flex items-center justify-center gap-2" title="Reactivate Account">
+                        <RotateCcw className="w-4 h-4" /> Reactivate
+                      </button>
                     )}
                   </div>
                 </div>

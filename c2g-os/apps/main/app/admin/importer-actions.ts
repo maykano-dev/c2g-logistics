@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-export async function adminHandleImporterStatus(importerId: string, action: 'approve' | 'reject') {
+export async function adminHandleImporterStatus(importerId: string, action: 'approve' | 'reject' | 'suspend') {
   const supabase = await createClient();
   
   // Enforce admin check
@@ -19,7 +19,7 @@ export async function adminHandleImporterStatus(importerId: string, action: 'app
   if (!admin) return { success: false, error: 'Unauthorized' };
 
   try {
-    const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    const newStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'suspended';
     
     const { error } = await supabase
       .from('importers')
@@ -31,7 +31,7 @@ export async function adminHandleImporterStatus(importerId: string, action: 'app
     // Log the action
     await supabase.from('audit_logs').insert({
       user_id: user.id,
-      action: action === 'approve' ? 'APPROVE_IMPORTER' : 'REJECT_IMPORTER',
+      action: action === 'approve' ? 'APPROVE_IMPORTER' : action === 'reject' ? 'REJECT_IMPORTER' : 'SUSPEND_IMPORTER',
       entity_type: 'importer',
       entity_id: importerId,
       details: { new_status: newStatus },
