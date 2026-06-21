@@ -227,8 +227,8 @@ export default function ImporterRegisterClient() {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-muted-foreground">Store Username (Auto-generated)</label>
                   <div className="flex h-12 overflow-hidden rounded-xl border border-input bg-secondary/50 opacity-70">
-                    <span className="flex items-center justify-center px-3 text-xs text-muted-foreground font-mono bg-background/50 border-r border-input">c2g-logistics.com/store/</span>
-                    <input type="text" name="storeSlug" readOnly value={formData.storeSlug} className="flex-1 bg-transparent px-3 py-2 text-sm font-mono text-muted-foreground cursor-not-allowed outline-none" placeholder="abena-imports" />
+                    <span className="flex items-center justify-center px-3 text-xs text-muted-foreground font-mono bg-background/50 border-r border-input whitespace-nowrap shrink-0">c2g-logistics.com/store/</span>
+                    <input type="text" name="storeSlug" readOnly value={formData.storeSlug} className="flex-1 w-full min-w-0 bg-transparent px-3 py-2 text-sm font-mono text-muted-foreground cursor-not-allowed outline-none" placeholder="abena-imports" />
                   </div>
                 </div>
               </div>
