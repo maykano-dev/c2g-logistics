@@ -67,7 +67,7 @@ export function PhoneInput({ name = "phone", required = true, value = "", onChan
           onChange={(e) => {
             const newPhone = e.target.value.replace(/[^0-9\s]/g, "");
             setPhone(newPhone);
-            if (onChange) onChange(newPhone ? `${selected.dial} ${newPhone}` : "");
+            if (onChange) onChange(newPhone ? `${selected?.dial || '+233'} ${newPhone}` : "");
           }}
           placeholder="24 123 4567"
           required={required}
