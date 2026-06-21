@@ -219,7 +219,7 @@ export default function ImporterRegisterClient() {
             <div className="space-y-6 animate-fade-in">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Briefcase className="w-5 h-5 text-primary" /> Business Information</h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">Store Name <span className="text-destructive">*</span></label>
                   <input type="text" name="storeName" required value={formData.storeName} onChange={handleInputChange} className="w-full flex h-12 rounded-xl border border-input bg-background/50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary" placeholder="e.g. Abena Imports" />
