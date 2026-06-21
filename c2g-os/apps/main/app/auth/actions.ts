@@ -18,19 +18,19 @@ async function getClientContext() {
 export async function login(prevState: any, formData: FormData) {
   const supabase = await createClient();
   const { ip, ua } = await getClientContext();
-  const emailRaw = formData.get('email') as string
+  const emailRaw = (formData.get('email') as string || '').trim()
   const passwordRaw = formData.get('password') as string
 
   const validation = LoginSchema.safeParse({ email: emailRaw, password: passwordRaw });
   if (!validation.success) {
-    return { error: validation.error.issues[0]?.message || 'Validation failed' };
+    return { error: validation.error.issues[0]?.message || 'Validation failed', email: emailRaw };
   }
 
   const { email, password } = validation.data;
 
   const isAllowed = await checkRateLimit(ip, email);
   if (!isAllowed) {
-    return { error: 'Too many login attempts. Please try again later.' };
+    return { error: 'Too many login attempts. Please try again later.', email };
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -47,7 +47,7 @@ export async function login(prevState: any, formData: FormData) {
       errorMessage = 'The email or password you entered is incorrect.';
     }
 
-    return { error: errorMessage }
+    return { error: errorMessage, email }
   }
 
   // Check MFA (Two-Factor Authentication)
