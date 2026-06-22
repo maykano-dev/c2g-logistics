@@ -28,15 +28,16 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: authData } = await supabase.auth.getUser();
 
-    if (!authData?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const formData = await request.formData();
     const file = formData.get("file") as File;
+    const intent = formData.get("intent") as string;
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    if (!authData?.user && intent !== 'registration') {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 2. MIME type check

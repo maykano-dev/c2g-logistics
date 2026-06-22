@@ -108,6 +108,7 @@ export default function ImporterRegisterClient() {
 
       const form = new FormData();
       form.append('file', fileToUpload);
+      form.append('intent', 'registration');
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       const data = await res.json();
       
@@ -140,6 +141,7 @@ export default function ImporterRegisterClient() {
 
       const form = new FormData();
       form.append('file', fileToUpload);
+      form.append('intent', 'registration');
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       const data = await res.json();
       
