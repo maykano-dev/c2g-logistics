@@ -29,17 +29,9 @@ export async function uploadImage(fileBuffer: Buffer, fileName: string): Promise
   }
 
   try {
-    // Dynamically import sharp to prevent top-level module initialization crashes on Netlify Functions
-    const sharp = (await import('sharp')).default;
-
-    // 1. Backend Processing: Convert any image format to highly-optimized WebP
-    const optimizedBuffer = await sharp(fileBuffer)
-      .webp({ quality: 80, effort: 6 })
-      .resize({ width: 1200, withoutEnlargement: true }) // Max width 1200px
-      .toBuffer();
-
-    // 2. Upload using Supabase Edge Function
-    const base64Image = optimizedBuffer.toString('base64');
+    // Removed sharp processing to fix Netlify/Vercel serverless environment module errors.
+    // The image will be uploaded directly to ImgBB which handles hosting efficiently.
+    const base64Image = fileBuffer.toString('base64');
 
     const response = await fetch(`${supabaseUrl}/functions/v1/imgbb-upload`, {
       method: 'POST',
