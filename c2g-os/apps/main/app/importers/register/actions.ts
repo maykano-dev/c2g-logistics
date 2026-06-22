@@ -37,39 +37,49 @@ export async function submitImporterRegistration(formData: FormData) {
 
   let currentUserId = user?.id;
 
-  // If user is not logged in, we must create an account for them
+  // If user is not logged in, we must create an account for them or log them in
   if (!currentUserId) {
     if (!password || !fullName) {
       return { success: false, error: 'Password and Full Name are required to create an account.' };
     }
 
-    // Explicitly check if the email is already in use
-    const { data: existingCustomer } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('email', email)
-      .single();
+    // 1. Try to silently log them in first, in case they already have a Customer account
+    const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (signInData.user) {
+      // They already have an account and provided the correct password!
+      currentUserId = signInData.user.id;
+    } else {
+      // 2. They either don't have an account, or provided the wrong password for an existing account.
+      // Explicitly check if the email is already in use in customers table
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('email', email)
+        .single();
 
-    if (existingCustomer) {
-      return { success: false, error: 'An account with this email already exists. Please log in first.' };
-    }
-
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          phone: whatsapp,
-          role: 'importer'
-        }
+      if (existingCustomer) {
+        return { success: false, error: 'This email is already registered as a Customer. If this is your account, the password you entered is incorrect. Please click "Log in here" at the top.' };
       }
-    });
 
-    if (signUpError) {
-      return { success: false, error: signUpError.message };
+      // 3. Safe to sign up new user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone: whatsapp,
+            role: 'importer'
+          }
+        }
+      });
+
+      if (signUpError) {
+        return { success: false, error: signUpError.message };
+      }
+      currentUserId = signUpData.user?.id;
     }
-    currentUserId = signUpData.user?.id;
   }
 
   if (!currentUserId) {
@@ -122,7 +132,7 @@ export async function submitImporterRegistration(formData: FormData) {
     
     // Handle Supabase Auth obfuscated fake ID insertion failure (happens when email already exists)
     if (error.code === '23503' && error.message.includes('importers_user_id_fkey')) {
-      return { success: false, error: 'This email is already registered to an account. Please click "Log in here" at the top of the form.' };
+      return { success: false, error: 'This email is already registered as an account. The password you entered is incorrect. Please click "Log in here" at the top.' };
     }
     
     return { success: false, error: error.message || 'Failed to submit registration.' };
