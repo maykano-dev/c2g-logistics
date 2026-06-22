@@ -179,5 +179,15 @@ export async function resetPassword(prevState: any, formData: FormData) {
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  redirect('/login')
+
+  const headersList = await headers()
+  const referer = headersList.get('referer') || ''
+
+  if (referer.includes('/importer-dashboard')) {
+    redirect('/importers/login')
+  } else if (referer.includes('/admin')) {
+    redirect('/admin')
+  } else {
+    redirect('/login')
+  }
 }
