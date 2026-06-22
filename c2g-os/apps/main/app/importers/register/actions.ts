@@ -119,6 +119,12 @@ export async function submitImporterRegistration(formData: FormData) {
 
   if (error) {
     console.error('Registration error:', error);
+    
+    // Handle Supabase Auth obfuscated fake ID insertion failure (happens when email already exists)
+    if (error.code === '23503' && error.message.includes('importers_user_id_fkey')) {
+      return { success: false, error: 'This email is already registered to an account. Please click "Log in here" at the top of the form.' };
+    }
+    
     return { success: false, error: error.message || 'Failed to submit registration.' };
   }
 
