@@ -42,6 +42,18 @@ export async function submitImporterRegistration(formData: FormData) {
     if (!password || !fullName) {
       return { success: false, error: 'Password and Full Name are required to create an account.' };
     }
+
+    // Explicitly check if the email is already in use
+    const { data: existingCustomer } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existingCustomer) {
+      return { success: false, error: 'An account with this email already exists. Please log in first.' };
+    }
+
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,

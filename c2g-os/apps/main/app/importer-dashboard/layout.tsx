@@ -16,46 +16,36 @@ export default async function ImporterDashboardLayout({
 }) {
   const supabase = await createClient();
 
-  // const { data: { user }, error } = await supabase.auth.getUser();
+  const { data: { user }, error } = await supabase.auth.getUser();
   
-  // if (error || !user) {
-  //   redirect("/login");
-  // }
+  if (error || !user) {
+    redirect("/login");
+  }
 
-  // // Strict Guard: Must be an approved importer
-  // const { data: importer } = await supabase
-  //   .from('importers')
-  //   .select('*')
-  //   .eq('user_id', user.id)
-  //   .single();
+  // Strict Guard: Must be an approved importer
+  const { data: importer } = await supabase
+    .from('importers')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
 
-  // if (!importer) {
-  //   redirect("/importers/register");
-  // }
+  if (!importer) {
+    redirect("/importers/register");
+  }
 
-  // if (importer.status !== 'approved') {
-  //   return (
-  //     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
-  //       <div className="w-20 h-20 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mb-6">
-  //         <Store className="w-10 h-10" />
-  //       </div>
-  //       <h1 className="text-3xl font-bold mb-4">Account Pending Approval</h1>
-  //       <p className="text-muted-foreground max-w-md">
-  //         Your importer application is currently under review. We will notify you via WhatsApp or Email once your account is activated.
-  //       </p>
-  //     </div>
-  //   );
-  // }
-
-  // Mock user and importer for testing without authentication
-  const user = { id: 'mock-user-123', email: 'test@example.com' } as any;
-  const importer = { 
-    id: 'mock-importer-123', 
-    business_name: 'Test Store', 
-    store_slug: 'test-store',
-    status: 'approved',
-    profit_margin: 20
-  } as any;
+  if (importer.status !== 'approved') {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
+        <div className="w-20 h-20 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mb-6">
+          <Store className="w-10 h-10" />
+        </div>
+        <h1 className="text-3xl font-bold mb-4">Account Pending Approval</h1>
+        <p className="text-muted-foreground max-w-md">
+          Your importer application is currently under review. We will notify you via WhatsApp or Email once your account is activated.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <ImporterDashboardClientLayout user={user} importer={importer}>
