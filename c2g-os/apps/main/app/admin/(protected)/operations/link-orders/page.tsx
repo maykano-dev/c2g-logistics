@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { Search, Filter, Plus, Edit, Eye, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Filter, Plus, Edit, Eye, Clock, CheckCircle, XCircle, Link as LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
-export default function AdminOrdersView() {
+export default function AdminLinkOrdersView() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,16 +54,19 @@ export default function AdminOrdersView() {
     
     const isLinkOrder = !o.platform || o.platform.toLowerCase() === 'link' || o.platform.toLowerCase() === 'link order';
     
-    // STRICTLY filter out Link Orders for this page
-    return !isLinkOrder;
+    // STRICTLY filter for Link Orders
+    return isLinkOrder;
   });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Platform Procurement (B4M)</h1>
-          <p className="text-zinc-400">Manage automated 'Buy For Me' requests from integrated platforms (1688, Taobao, etc).</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+            <LinkIcon className="w-6 h-6 text-indigo-500" />
+            Link Orders
+          </h1>
+          <p className="text-zinc-400">Manage procurement requests sourced via external custom links.</p>
         </div>
       </div>
 
@@ -90,7 +93,7 @@ export default function AdminOrdersView() {
               <tr className="border-b border-zinc-800 bg-zinc-950/50">
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Date & ID</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Customer</th>
-                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Platform</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Link</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total (¥)</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Actions</th>
@@ -112,7 +115,15 @@ export default function AdminOrdersView() {
                       <p className="text-sm text-zinc-200">{order.customer_name || order.customers?.name || 'Unknown'}</p>
                       <p className="text-[10px] text-zinc-500">{order.customers?.email}</p>
                     </td>
-                    <td className="p-4 text-sm text-zinc-300 capitalize">{order.platform || 'Link Order'}</td>
+                    <td className="p-4">
+                      {order.product_link ? (
+                        <a href={order.product_link} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 text-sm flex items-center gap-1 w-fit">
+                          View Link <LinkIcon className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="text-zinc-500 text-xs">No Link</span>
+                      )}
+                    </td>
                     <td className="p-4">
                       {getStatusBadge(order.order_status)}
                     </td>
@@ -153,8 +164,14 @@ export default function AdminOrdersView() {
 
                 <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
                   <div>
-                    <p className="text-xs text-zinc-500 mb-1">Platform</p>
-                    <p className="text-sm text-zinc-300 capitalize">{order.platform || 'Link Order'}</p>
+                    <p className="text-xs text-zinc-500 mb-1">Product Link</p>
+                    {order.product_link ? (
+                        <a href={order.product_link} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 text-xs flex items-center gap-1 w-fit">
+                          Open <LinkIcon className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="text-zinc-500 text-xs">No Link</span>
+                      )}
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500 mb-1">Total Due</p>

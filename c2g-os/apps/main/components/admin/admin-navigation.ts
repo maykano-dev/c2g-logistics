@@ -19,7 +19,8 @@ import {
   FileText,
   BadgeAlert,
   SearchCheck,
-  Container
+  Container,
+  Link as LinkIcon
 } from 'lucide-react';
 
 export const ADMIN_NAV_GROUPS = [
@@ -33,6 +34,7 @@ export const ADMIN_NAV_GROUPS = [
   {
     group: 'Operations',
     items: [
+      { name: 'Link Orders', href: '/admin/operations/link-orders', icon: LinkIcon },
       { name: 'Procurement (B4M)', href: '/admin/operations/procurement', icon: ShoppingCart },
       { name: 'China Warehouse', href: '/admin/operations/warehouse', icon: PackageCheck },
       { name: 'Shipments', href: '/admin/operations/shipments', icon: Ship },
