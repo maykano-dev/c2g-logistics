@@ -52,7 +52,7 @@ export default function AdminOrdersView() {
       
     if (!matchesSearch) return false;
     
-    const isLinkOrder = !o.platform || o.platform.toLowerCase() === 'link' || o.platform.toLowerCase() === 'link order';
+    const isLinkOrder = o.type === 'link_order';
     
     // STRICTLY filter out Link Orders for this page
     return !isLinkOrder;
