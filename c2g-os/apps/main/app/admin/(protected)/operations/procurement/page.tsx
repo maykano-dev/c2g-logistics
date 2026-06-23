@@ -10,6 +10,7 @@ export default function AdminOrdersView() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     fetchOrders();
@@ -45,11 +46,20 @@ export default function AdminOrdersView() {
     }
   };
 
-  const filteredOrders = orders.filter(o => 
-    o.id?.toString().includes(searchTerm) ||
-    o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    o.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = orders.filter(o => {
+    const matchesSearch = o.id?.toString().includes(searchTerm) ||
+      o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+    if (!matchesSearch) return false;
+    
+    const isLinkOrder = !o.platform || o.platform.toLowerCase() === 'link' || o.platform.toLowerCase() === 'link order';
+    
+    if (activeTab === 'link') return isLinkOrder;
+    if (activeTab === 'platform') return !isLinkOrder;
+    
+    return true;
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -58,6 +68,29 @@ export default function AdminOrdersView() {
           <h1 className="text-2xl font-bold tracking-tight text-white">Procurement Orders</h1>
           <p className="text-zinc-400">Manage 'Buy For Me' requests from customers.</p>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+        <button 
+          onClick={() => setActiveTab('all')} 
+          className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${activeTab === 'all' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'}`}
+        >
+          All Orders
+        </button>
+        <button 
+          onClick={() => setActiveTab('link')} 
+          className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'link' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'}`}
+        >
+          Link Orders
+          {activeTab === 'link' && <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />}
+        </button>
+        <button 
+          onClick={() => setActiveTab('platform')} 
+          className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${activeTab === 'platform' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'}`}
+        >
+          Platform Orders (1688, etc.)
+        </button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-2xl">
