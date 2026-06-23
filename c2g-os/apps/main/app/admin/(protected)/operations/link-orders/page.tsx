@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { 
   Search, Filter, Plus, Edit, Eye, Clock, CheckCircle, XCircle, 
   Link as LinkIcon, Copy, X, ExternalLink, Image as ImageIcon, 
-  Box, User, CreditCard, Receipt
+  Box, User, CreditCard, Receipt, Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -38,13 +38,48 @@ export default function AdminLinkOrdersView() {
     setLoading(false);
   };
 
+  const getOrderItemsCount = (order: any) => {
+    if (Array.isArray(order.items) && order.items.length > 0) return order.items.length;
+    if (order.notes && order.notes.includes('JSON_ITEMS:')) {
+      try {
+        const parsed = JSON.parse(order.notes.split('JSON_ITEMS:')[1]);
+        if (Array.isArray(parsed)) return parsed.length;
+      } catch(e) {}
+    }
+    return 0;
+  };
+
+  const handleDeleteOrder = async (orderId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this link order? This action cannot be undone.')) {
+      const supabase = createClient();
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      if (!error) {
+        setOrders(orders.filter(o => o.id !== orderId));
+      } else {
+        alert('Failed to delete order.');
+        console.error(error);
+      }
+    }
+  };
+
   const handleCopyLinks = async (order: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    const items = Array.isArray(order.items) ? order.items : [];
+    let items = Array.isArray(order.items) ? order.items : [];
+    
+    if (order.notes && order.notes.includes('JSON_ITEMS:')) {
+      try {
+        const parsed = JSON.parse(order.notes.split('JSON_ITEMS:')[1]);
+        if (Array.isArray(parsed)) items = parsed;
+      } catch(e) {}
+    }
+    
     let linksToCopy = '';
     
     if (items.length > 1) {
-      linksToCopy = items.map((item: any) => item.product_link).filter(Boolean).join('\n');
+      linksToCopy = items.map((item: any) => item.link || item.product_link).filter(Boolean).join('\n');
+    } else if (items.length === 1) {
+      linksToCopy = items[0].link || items[0].product_link;
     } else {
       linksToCopy = order.product_link;
     }
@@ -153,7 +188,7 @@ export default function AdminLinkOrdersView() {
                             className="flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs transition-colors"
                           >
                             <Copy className="w-3 h-3" />
-                            {copiedLink === order.id ? 'Copied!' : (Array.isArray(order.items) && order.items.length > 1 ? 'Copy All' : 'Copy')}
+                            {copiedLink === order.id ? 'Copied!' : (getOrderItemsCount(order) > 1 ? 'Copy All' : 'Copy')}
                           </button>
                         </div>
                       ) : (
@@ -169,8 +204,8 @@ export default function AdminLinkOrdersView() {
                         <button onClick={() => setSelectedOrder(order)} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" title="View Details">
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button onClick={() => setSelectedOrder(order)} className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg transition-colors" title="Edit Status">
-                          <Edit className="w-4 h-4" />
+                        <button onClick={(e) => handleDeleteOrder(order.id, e)} className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors" title="Delete Order">
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -213,7 +248,7 @@ export default function AdminLinkOrdersView() {
                           className="flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs transition-colors w-fit"
                         >
                           <Copy className="w-3 h-3" />
-                          {copiedLink === order.id ? 'Copied!' : (Array.isArray(order.items) && order.items.length > 1 ? 'Copy All' : 'Copy')}
+                          {copiedLink === order.id ? 'Copied!' : (getOrderItemsCount(order) > 1 ? 'Copy All' : 'Copy')}
                         </button>
                       </div>
                     ) : (
@@ -232,8 +267,8 @@ export default function AdminLinkOrdersView() {
                     <button onClick={() => setSelectedOrder(order)} className="p-2 bg-zinc-800/50 text-zinc-400 hover:text-white rounded-xl transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setSelectedOrder(order)} className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl transition-colors">
-                      <Edit className="w-4 h-4" />
+                    <button onClick={(e) => handleDeleteOrder(order.id, e)} className="p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl transition-colors" title="Delete Order">
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -245,8 +280,14 @@ export default function AdminLinkOrdersView() {
 
       {/* Link Order Details Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+          onClick={() => setSelectedOrder(null)}
+        >
+          <div 
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
              {/* Header */}
              <div className="flex items-center justify-between p-6 border-b border-zinc-800 sticky top-0 bg-zinc-900/95 backdrop-blur-md z-10">
                <div>
