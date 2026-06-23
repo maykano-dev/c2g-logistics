@@ -1,13 +1,13 @@
-import { 
-  LayoutDashboard, 
+import {
+  LayoutDashboard,
   Activity,
-  ShoppingCart, 
-  Store, 
-  PackageSearch, 
-  Users, 
-  PackageCheck, 
-  Megaphone, 
-  ShieldCheck, 
+  ShoppingCart,
+  Store,
+  PackageSearch,
+  Users,
+  PackageCheck,
+  Megaphone,
+  ShieldCheck,
   Settings,
   Ship,
   Plane,
@@ -55,6 +55,14 @@ export const ADMIN_NAV_GROUPS = [
       { name: 'User Management', href: '/admin/customers/users', icon: Users },
       { name: 'Support Tickets', href: '/admin/customers/support', icon: BadgeAlert },
       { name: 'Announcements', href: '/admin/customers/announcements', icon: Megaphone },
+    ]
+  },
+  {
+    group: 'Finance',
+    items: [
+      { name: 'Payments', href: '/admin/finance/payments', icon: CreditCard },
+      { name: 'Revenue', href: '/admin/finance/revenue', icon: BarChart4 },
+      { name: 'Withdrawals', href: '/admin/finance/withdrawals', icon: Wallet },
     ]
   },
   {
