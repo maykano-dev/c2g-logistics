@@ -58,14 +58,6 @@ export const ADMIN_NAV_GROUPS = [
     ]
   },
   {
-    group: 'Finance',
-    items: [
-      { name: 'Payments', href: '/admin/finance/payments', icon: CreditCard },
-      { name: 'Revenue', href: '/admin/finance/revenue', icon: BarChart4 },
-      { name: 'Withdrawals', href: '/admin/finance/withdrawals', icon: Wallet },
-    ]
-  },
-  {
     group: 'People',
     items: [
       { name: 'Employees', href: '/admin/people/employees', icon: Briefcase },
