@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { use, useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { 
@@ -18,7 +18,9 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-export default function OrderProcurementDetail({ params }: { params: { id: string } }) {
+export default function OrderProcurementDetail({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const orderId = resolvedParams.id;
   const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
@@ -28,7 +30,7 @@ export default function OrderProcurementDetail({ params }: { params: { id: strin
 
   useEffect(() => {
     fetchOrderDetails();
-  }, [params.id]);
+  }, [orderId]);
 
   const fetchOrderDetails = async () => {
     setLoading(true);
@@ -36,8 +38,8 @@ export default function OrderProcurementDetail({ params }: { params: { id: strin
     
     const { data: orderData, error: orderErr } = await supabase
       .from('orders')
-      .select('*, customers(name, email, phone)')
-      .eq('id', params.id)
+      .select('*')
+      .eq('id', orderId)
       .single();
 
     if (orderData) {
@@ -46,7 +48,7 @@ export default function OrderProcurementDetail({ params }: { params: { id: strin
       const { data: activityData } = await supabase
         .from('order_activity_feed')
         .select('*, auth_users:author_id(email)')
-        .eq('order_id', params.id)
+        .eq('order_id', orderId)
         .order('created_at', { ascending: true });
         
       setActivities(activityData || []);
@@ -57,7 +59,7 @@ export default function OrderProcurementDetail({ params }: { params: { id: strin
 
   const handleUpdateStatus = async (newStatus: string) => {
     const supabase = createClient();
-    await supabase.from('orders').update({ status: newStatus }).eq('id', params.id);
+    await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
     await logActivity('status_change', `Status updated to: ${newStatus}`);
     fetchOrderDetails();
   };
@@ -68,7 +70,7 @@ export default function OrderProcurementDetail({ params }: { params: { id: strin
     if (!user) return;
     
     await supabase.from('order_activity_feed').insert({
-      order_id: params.id,
+      order_id: orderId,
       author_id: user.id,
       activity_type: type,
       content: content
@@ -161,9 +163,8 @@ export default function OrderProcurementDetail({ params }: { params: { id: strin
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2"><User className="w-4 h-4"/> Customer</h2>
-               <p className="text-white font-medium">{order.customers?.name || 'Unknown User'}</p>
-               <p className="text-zinc-400 text-sm mt-1">{order.customers?.email}</p>
-               <p className="text-zinc-400 text-sm mt-1">{order.customers?.phone}</p>
+               <p className="text-white font-medium">{order.customer_name || 'Unknown User'}</p>
+               <p className="text-zinc-400 text-sm mt-1">{order.customer_id ? `ID: ${order.customer_id.substring(0,8)}` : ''}</p>
             </div>
 
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
