@@ -312,81 +312,125 @@ export default function AdminLinkOrdersView() {
                 <div className="bg-zinc-950/50 border border-zinc-800/50 rounded-xl p-5">
                    <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2"><Box className="w-4 h-4" /> Product Details</h3>
                    
-                   {Array.isArray(selectedOrder.items) && selectedOrder.items.length > 1 ? (
-                     <div className="overflow-x-auto rounded-lg border border-zinc-800">
-                        <table className="w-full text-left text-sm">
-                          <thead className="bg-zinc-900 border-b border-zinc-800">
-                            <tr>
-                              <th className="p-3 font-medium text-zinc-400">#</th>
-                              <th className="p-3 font-medium text-zinc-400">Link</th>
-                              <th className="p-3 font-medium text-zinc-400 text-center">Qty</th>
-                              <th className="p-3 font-medium text-zinc-400 text-right">Price (¥)</th>
-                              <th className="p-3 font-medium text-zinc-400">Tracking #</th>
-                              <th className="p-3 font-medium text-zinc-400">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-zinc-800">
-                            {selectedOrder.items.map((item: any, idx: number) => (
-                               <tr key={idx} className="hover:bg-zinc-900/50 transition-colors">
-                                  <td className="p-3 text-zinc-500 font-mono">{idx + 1}</td>
-                                  <td className="p-3">
-                                    <div className="flex items-center gap-2">
-                                      <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 max-w-[200px] truncate">
-                                        View Link <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                                      </a>
-                                    </div>
-                                  </td>
-                                  <td className="p-3 text-center text-white">{item.quantity || 1}</td>
-                                  <td className="p-3 text-right text-zinc-300 font-medium">¥{item.price ? Number(item.price).toFixed(2) : '0.00'}</td>
-                                  <td className="p-3 text-zinc-300 font-mono">{item.tracking_number || '-'}</td>
-                                  <td className="p-3 text-zinc-400 text-xs capitalize">{item.status ? item.status.replace('_', ' ') : 'Pending'}</td>
-                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        <div className="mt-4 flex justify-between items-center px-2">
-                           <span className="text-sm text-zinc-400">Total Bundle Price</span>
-                           <span className="text-lg text-white font-medium">¥{selectedOrder.cny_price ? Number(selectedOrder.cny_price).toFixed(2) : '0.00'}</span>
-                        </div>
-                     </div>
-                   ) : (
-                     <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="col-span-2 bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-                             <span className="text-xs text-zinc-500 block mb-1">Product Link</span>
-                             <div className="flex items-center gap-2">
-                                <a href={selectedOrder.product_link} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 text-sm flex items-center gap-1 break-all">
-                                  {selectedOrder.product_link} <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                                </a>
-                                <button onClick={(e) => handleCopyLinks(selectedOrder, e)} className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-400 transition-colors shrink-0">
-                                  <Copy className="w-3 h-3" />
-                                </button>
-                             </div>
-                          </div>
-                          <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-                             <span className="text-xs text-zinc-500 block mb-1">Item Price</span>
-                             <p className="text-lg text-white font-medium">¥{selectedOrder.cny_price ? Number(selectedOrder.cny_price).toFixed(2) : '0.00'}</p>
-                          </div>
-                          <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-                             <span className="text-xs text-zinc-500 block mb-1">Quantity</span>
-                             <p className="text-lg text-white font-medium">{selectedOrder.quantity || 1}</p>
-                          </div>
-                          <div className="col-span-2 bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-                             <span className="text-xs text-zinc-500 block mb-1">Notes</span>
-                             <p className="text-sm text-zinc-300 whitespace-pre-wrap">{selectedOrder.notes || 'None'}</p>
-                          </div>
-                        </div>
+                   {(() => {
+                     const { items: parsedItems, notes: cleanNotes } = (() => {
+                        let displayItems = Array.isArray(selectedOrder.items) ? [...selectedOrder.items] : [];
+                        let displayNotes = selectedOrder.notes || '';
+                        
+                        if (displayNotes.includes('JSON_ITEMS:')) {
+                          try {
+                            const parts = displayNotes.split('JSON_ITEMS:');
+                            const jsonPart = parts[1];
+                            const parsedItems = JSON.parse(jsonPart);
+                            if (Array.isArray(parsedItems)) {
+                              displayItems = parsedItems.map((item: any) => ({
+                                product_link: item.link || item.product_link,
+                                price: item.price,
+                                quantity: item.qty || item.quantity,
+                                screenshot_url: item.screenshotUrl || item.screenshot_url,
+                                tracking_number: item.tracking_number,
+                                status: item.status
+                              }));
+                            }
+                            displayNotes = parts[0].replace(/HUBTEL_CHECKOUT:.*(\n|$)/g, '').trim();
+                          } catch (e) {
+                            console.error('Failed to parse JSON_ITEMS', e);
+                          }
+                        }
+                        
+                        if (displayItems.length === 0 && selectedOrder.product_link) {
+                          displayItems = [{
+                            product_link: selectedOrder.product_link,
+                            price: selectedOrder.cny_price,
+                            quantity: selectedOrder.quantity,
+                            screenshot_url: selectedOrder.screenshot_url
+                          }];
+                        }
+                        
+                        return { items: displayItems, notes: displayNotes };
+                     })();
 
-                        {selectedOrder.screenshot_url && (
-                          <div className="mt-4">
-                             <span className="text-xs text-zinc-500 block mb-2">Screenshot Preview</span>
-                             <a href={selectedOrder.screenshot_url} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-zinc-800 hover:border-indigo-500 transition-colors">
-                               <img src={selectedOrder.screenshot_url} alt="Order Screenshot" className="w-full h-auto" />
-                             </a>
-                          </div>
-                        )}
-                     </div>
-                   )}
+                     return (
+                       <div className="space-y-6">
+                         {cleanNotes && (
+                           <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+                             <span className="text-xs text-zinc-500 block mb-1">Notes</span>
+                             <p className="text-sm text-zinc-300 whitespace-pre-wrap">{cleanNotes}</p>
+                           </div>
+                         )}
+
+                         <div className="space-y-4">
+                           {parsedItems.map((item: any, idx: number) => (
+                             <div key={idx} className="flex flex-col sm:flex-row gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
+                               <div className="w-full sm:w-32 h-32 rounded-lg overflow-hidden shrink-0 bg-zinc-950 border border-zinc-800 flex items-center justify-center">
+                                 {item.screenshot_url ? (
+                                   <a href={item.screenshot_url} target="_blank" rel="noopener noreferrer" className="w-full h-full block">
+                                     <img src={item.screenshot_url} alt={`Item ${idx + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform" />
+                                   </a>
+                                 ) : (
+                                   <div className="flex flex-col items-center justify-center text-zinc-600 gap-2">
+                                     <ImageIcon className="w-8 h-8" />
+                                     <span className="text-[10px] uppercase tracking-wider">No Image</span>
+                                   </div>
+                                 )}
+                               </div>
+                               
+                               <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                 <div className="flex items-start justify-between gap-4 mb-3">
+                                   <div className="flex-1 min-w-0">
+                                     <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1 block">Item #{idx + 1}</span>
+                                     <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 text-sm font-medium break-all line-clamp-2">
+                                       {item.product_link || 'No Link Provided'}
+                                     </a>
+                                   </div>
+                                   <button 
+                                     onClick={(e) => {
+                                        e.stopPropagation();
+                                        if(item.product_link) {
+                                          navigator.clipboard.writeText(item.product_link);
+                                          setCopiedLink(`item-${idx}`);
+                                          setTimeout(() => setCopiedLink(null), 2000);
+                                        }
+                                     }} 
+                                     className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 transition-colors shrink-0"
+                                     title="Copy Link"
+                                   >
+                                     {copiedLink === `item-${idx}` ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                   </button>
+                                 </div>
+                                 
+                                 <div className="grid grid-cols-3 gap-2 py-2 border-y border-zinc-800/50 mb-3">
+                                   <div>
+                                     <span className="text-xs text-zinc-500 block mb-0.5">Price</span>
+                                     <span className="text-sm text-white font-medium">¥{item.price ? Number(item.price).toFixed(2) : '0.00'}</span>
+                                   </div>
+                                   <div>
+                                     <span className="text-xs text-zinc-500 block mb-0.5">Quantity</span>
+                                     <span className="text-sm text-white font-medium">{item.quantity || 1}</span>
+                                   </div>
+                                   <div>
+                                     <span className="text-xs text-zinc-500 block mb-0.5">Total</span>
+                                     <span className="text-sm text-indigo-400 font-medium">¥{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                                   </div>
+                                 </div>
+
+                                 <div className="flex flex-wrap gap-4">
+                                   <div>
+                                     <span className="text-xs text-zinc-500 block mb-0.5">Tracking #</span>
+                                     <span className="text-sm text-zinc-300 font-mono bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800/50">{item.tracking_number || 'N/A'}</span>
+                                   </div>
+                                   <div>
+                                     <span className="text-xs text-zinc-500 block mb-0.5">Item Status</span>
+                                     <span className="text-xs px-2 py-1 rounded bg-zinc-800 text-zinc-300 capitalize">{item.status ? item.status.replace('_', ' ') : 'Pending'}</span>
+                                   </div>
+                                 </div>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     );
+                   })()}
                 </div>
              </div>
           </div>
