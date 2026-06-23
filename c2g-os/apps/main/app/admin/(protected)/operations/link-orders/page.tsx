@@ -368,9 +368,15 @@ export default function AdminLinkOrdersView() {
                    <Clock className="w-4 h-4" /> Placed on {format(new Date(selectedOrder.created_at), 'MMM dd, yyyy HH:mm')}
                  </p>
                </div>
-               <button onClick={() => setSelectedOrder(null)} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors">
-                 <X className="w-6 h-6" />
-               </button>
+               <div className="flex items-center gap-4">
+                 <div className="hidden sm:block text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Total Due</p>
+                    <p className="text-lg font-black text-white">¥{selectedOrder.total ? Number(selectedOrder.total).toFixed(2) : '0.00'}</p>
+                 </div>
+                 <button onClick={() => setSelectedOrder(null)} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors">
+                   <X className="w-6 h-6" />
+                 </button>
+               </div>
              </div>
 
              {/* Body */}
@@ -395,7 +401,7 @@ export default function AdminLinkOrdersView() {
                 </div>
 
                 {/* Top Info Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Customer Card */}
                   <div className="bg-zinc-950/50 border border-zinc-800/50 rounded-xl p-5">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2"><User className="w-4 h-4" /> Customer</h3>
@@ -407,31 +413,6 @@ export default function AdminLinkOrdersView() {
                       <div className="flex justify-between items-center">
                         <span className="text-zinc-400 text-sm">ID</span>
                         <span className="text-zinc-300 font-mono text-sm">{selectedOrder.customer_unique_id || (selectedOrder.customer_id ? selectedOrder.customer_id.substring(0,8) : 'N/A')}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Financials Card */}
-                  <div className="bg-zinc-950/50 border border-zinc-800/50 rounded-xl p-5">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2"><Receipt className="w-4 h-4" /> Financials</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-zinc-400 text-sm">Total Due</span>
-                        <span className="text-white font-medium">¥{selectedOrder.total ? Number(selectedOrder.total).toFixed(2) : '0.00'}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-zinc-400 text-sm">Status</span>
-                        {getStatusBadge(selectedOrder.order_status)}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-zinc-400 text-sm">Payment</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${selectedOrder.payment_status === 'paid' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>
-                          {selectedOrder.payment_status ? selectedOrder.payment_status.replace('_', ' ') : 'Awaiting Payment'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-zinc-400 text-sm">Reference</span>
-                        <span className="text-zinc-300 font-mono text-xs">{selectedOrder.payment_reference || 'N/A'}</span>
                       </div>
                     </div>
                   </div>
