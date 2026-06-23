@@ -21,7 +21,7 @@ export default function AdminLinkOrdersView() {
     
     const { data, error } = await supabase
       .from('orders')
-      .select('*, customers(name, email)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (data && !error) {
@@ -47,8 +47,7 @@ export default function AdminLinkOrdersView() {
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.id?.toString().includes(searchTerm) ||
-      o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
       
     if (!matchesSearch) return false;
     
@@ -112,8 +111,8 @@ export default function AdminLinkOrdersView() {
                       <p className="text-[10px] text-zinc-500 mt-1">{format(new Date(order.created_at), 'MMM dd, yyyy HH:mm')}</p>
                     </td>
                     <td className="p-4">
-                      <p className="text-sm text-zinc-200">{order.customer_name || order.customers?.name || 'Unknown'}</p>
-                      <p className="text-[10px] text-zinc-500">{order.customers?.email}</p>
+                      <p className="text-sm text-zinc-200">{order.customer_name || 'Unknown'}</p>
+                      <p className="text-[10px] text-zinc-500 font-mono">{order.customer_id ? `ID: ${order.customer_id.substring(0,8)}` : ''}</p>
                     </td>
                     <td className="p-4">
                       {order.product_link ? (
@@ -157,7 +156,7 @@ export default function AdminLinkOrdersView() {
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col gap-1">
                     <p className="text-sm text-white font-mono font-medium">#{order.id}</p>
-                    <p className="text-xs text-zinc-500">{order.customer_name || order.customers?.name || 'Unknown'}</p>
+                    <p className="text-xs text-zinc-500">{order.customer_name || 'Unknown'}</p>
                   </div>
                   <div>{getStatusBadge(order.order_status)}</div>
                 </div>
