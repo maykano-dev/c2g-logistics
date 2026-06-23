@@ -1,14 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { 
   Search, Filter, Plus, Edit, Eye, Clock, CheckCircle, XCircle, 
   Link as LinkIcon, Copy, X, ExternalLink, Image as ImageIcon, 
-  Box, User, CreditCard, Receipt, Trash2
+  Box, User, CreditCard, Receipt, Trash2, Save, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { updateLinkOrderStatus, invoiceLinkOrderShipping, updateLinkOrderPaymentStatus } from './actions';
+
+const STATUS_OPTIONS = [
+  { value: 'pending_payment', label: 'Pending Payment', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' },
+  { value: 'processing', label: 'Processing', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
+  { value: 'purchased', label: 'Purchased', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' },
+  { value: 'in_warehouse', label: 'In Warehouse', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' },
+  { value: 'in_transit', label: 'In Transit', color: 'bg-purple-500/10 text-purple-400 border-purple-500/30' },
+  { value: 'clearing_customs', label: 'Clearance', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
+  { value: 'ready_for_pickup', label: 'Available for pickup', color: 'bg-teal-500/10 text-teal-400 border-teal-500/30' },
+  { value: 'shipped', label: 'Shipped', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' },
+  { value: 'delivered', label: 'Delivered', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' },
+  { value: 'cancelled', label: 'Cancelled', color: 'bg-red-500/10 text-red-400 border-red-500/30' }
+];
 
 export default function AdminLinkOrdersView() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -16,6 +30,53 @@ export default function AdminLinkOrdersView() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [shippingFeeInput, setShippingFeeInput] = useState<string>('');
+  const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleOpenModal = (order: any) => {
+    setSelectedOrder(order);
+    setShippingFeeInput(order.shipping_cost ? String(order.shipping_cost) : '');
+  };
+
+  const handleStatusChange = (id: number, newStatus: string) => {
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, order_status: newStatus } : o));
+    if (selectedOrder?.id === id) setSelectedOrder((prev: any) => ({ ...prev, order_status: newStatus }));
+    startTransition(async () => {
+      await updateLinkOrderStatus(id, newStatus);
+    });
+  };
+
+  const handlePaymentStatusChange = (id: number, newStatus: string) => {
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, payment_status: newStatus } : o));
+    if (selectedOrder?.id === id) setSelectedOrder((prev: any) => ({ ...prev, payment_status: newStatus }));
+    startTransition(async () => {
+      await updateLinkOrderPaymentStatus(id, newStatus);
+    });
+  };
+
+  const handleInvoiceShipping = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder || !shippingFeeInput) return;
+    const amount = parseFloat(shippingFeeInput);
+    if (isNaN(amount)) return;
+
+    startTransition(async () => {
+      const res = await invoiceLinkOrderShipping(selectedOrder.id, amount);
+      if (res.success) {
+        showToast('Shipping fee invoiced & user notified successfully!', 'success');
+        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, shipping_cost: amount } : o));
+        setSelectedOrder((prev: any) => ({ ...prev, shipping_cost: amount }));
+      } else {
+        showToast('Failed: ' + res.error, 'error');
+      }
+    });
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -120,6 +181,14 @@ export default function AdminLinkOrdersView() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl border ${toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-900/50 text-emerald-400' : 'bg-red-950/90 border-red-900/50 text-red-400'} animate-in slide-in-from-top-2 fade-in duration-300`}>
+          {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+          <span className="text-sm font-medium">{toast.message}</span>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
@@ -201,7 +270,7 @@ export default function AdminLinkOrdersView() {
                     <td className="p-4 text-sm text-zinc-300 font-medium">¥{order.total ? Number(order.total).toFixed(2) : '0.00'}</td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => setSelectedOrder(order)} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" title="View Details">
+                        <button onClick={() => handleOpenModal(order)} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" title="View Details">
                           <Eye className="w-4 h-4" />
                         </button>
                         <button onClick={(e) => handleDeleteOrder(order.id, e)} className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors" title="Delete Order">
@@ -264,7 +333,7 @@ export default function AdminLinkOrdersView() {
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] text-zinc-600">{format(new Date(order.created_at), 'MMM dd, yyyy HH:mm')}</p>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setSelectedOrder(order)} className="p-2 bg-zinc-800/50 text-zinc-400 hover:text-white rounded-xl transition-colors">
+                    <button onClick={() => handleOpenModal(order)} className="p-2 bg-zinc-800/50 text-zinc-400 hover:text-white rounded-xl transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
                     <button onClick={(e) => handleDeleteOrder(order.id, e)} className="p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl transition-colors" title="Delete Order">
@@ -306,8 +375,27 @@ export default function AdminLinkOrdersView() {
 
              {/* Body */}
              <div className="p-6 space-y-6">
+                {/* Control Bar */}
+                <div className="px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl flex flex-col sm:flex-row flex-wrap gap-4 items-center">
+                  <div className="w-full sm:flex-1 sm:min-w-[200px]">
+                    <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Order Status</label>
+                    <select value={selectedOrder.order_status || 'pending_payment'} onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)} disabled={isPending} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
+                      {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="w-full sm:flex-1 sm:min-w-[200px]">
+                    <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Payment Status</label>
+                    <select value={selectedOrder.payment_status || 'pending'} onChange={(e) => handlePaymentStatusChange(selectedOrder.id, e.target.value)} disabled={isPending} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
+                      <option value="pending">Pending</option>
+                      <option value="paid">Paid</option>
+                      <option value="failed">Failed</option>
+                      <option value="refunded">Refunded</option>
+                    </select>
+                  </div>
+                </div>
+
                 {/* Top Info Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Customer Card */}
                   <div className="bg-zinc-950/50 border border-zinc-800/50 rounded-xl p-5">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2"><User className="w-4 h-4" /> Customer</h3>
@@ -346,6 +434,29 @@ export default function AdminLinkOrdersView() {
                         <span className="text-zinc-300 font-mono text-xs">{selectedOrder.payment_reference || 'N/A'}</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Shipping Fee Card */}
+                  <div className="bg-zinc-950/50 border border-zinc-800/50 rounded-xl p-5 flex flex-col justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2"><CreditCard className="w-4 h-4" /> Invoice Shipping Fee</h3>
+                    <form onSubmit={handleInvoiceShipping} className="space-y-3">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">₵</span>
+                          <input 
+                            type="number" step="0.01" 
+                            value={shippingFeeInput} onChange={e => setShippingFeeInput(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 pl-8 pr-4 text-sm text-white outline-none focus:border-indigo-500"
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                        <button type="submit" disabled={isPending} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center gap-2 shrink-0">
+                          <Save className="w-4 h-4"/> {selectedOrder.shipping_cost ? 'Update' : 'Save'}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-zinc-500">{selectedOrder.shipping_cost ? 'Updating this will override the previous fee.' : 'Saving this will notify the user to pay.'}</p>
+                    </form>
                   </div>
                 </div>
 

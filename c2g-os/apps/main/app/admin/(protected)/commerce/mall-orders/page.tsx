@@ -90,6 +90,11 @@ export default function AdminMallOrdersView() {
     });
   };
 
+  const handleOpenModal = (order: any) => {
+    setSelectedOrder(order);
+    setShippingFeeInput(order.shipping_cost ? String(order.shipping_cost) : '');
+  };
+
   const handleInvoiceShipping = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrder || !shippingFeeInput) return;
@@ -264,7 +269,7 @@ export default function AdminMallOrdersView() {
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button 
-                            onClick={() => setSelectedOrder(order)}
+                            onClick={() => handleOpenModal(order)}
                             className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" 
                             title="View Details"
                           >
@@ -298,7 +303,7 @@ export default function AdminMallOrdersView() {
                         <p className="text-xs text-zinc-400 mt-0.5">{order.customer_name || 'Unknown'}</p>
                       </div>
                       <button 
-                        onClick={() => setSelectedOrder(order)}
+                        onClick={() => handleOpenModal(order)}
                         className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors" 
                         title="View Details"
                       >
@@ -454,31 +459,24 @@ export default function AdminMallOrdersView() {
 
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between">
                   <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4">Invoice Shipping Fee</h3>
-                  {selectedOrder.shipping_cost ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-400">Current Fee:</span>
-                      <span className="text-lg font-bold text-emerald-400">₵{selectedOrder.shipping_cost}</span>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleInvoiceShipping} className="space-y-3">
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">₵</span>
-                          <input 
-                            type="number" step="0.01" 
-                            value={shippingFeeInput} onChange={e => setShippingFeeInput(e.target.value)}
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 pl-8 pr-4 text-sm text-white outline-none focus:border-indigo-500"
-                            placeholder="0.00"
-                            required
-                          />
-                        </div>
-                        <button type="submit" disabled={isPending} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center gap-2">
-                          <Save className="w-4 h-4"/> Save
-                        </button>
+                  <form onSubmit={handleInvoiceShipping} className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">₵</span>
+                        <input 
+                          type="number" step="0.01" 
+                          value={shippingFeeInput} onChange={e => setShippingFeeInput(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 pl-8 pr-4 text-sm text-white outline-none focus:border-indigo-500"
+                          placeholder="0.00"
+                          required
+                        />
                       </div>
-                      <p className="text-[10px] text-zinc-500">Saving this will notify the user to pay.</p>
-                    </form>
-                  )}
+                      <button type="submit" disabled={isPending} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center gap-2 shrink-0">
+                        <Save className="w-4 h-4"/> {selectedOrder.shipping_cost ? 'Update' : 'Save'}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-zinc-500">{selectedOrder.shipping_cost ? 'Updating this will override the previous fee.' : 'Saving this will notify the user to pay.'}</p>
+                  </form>
                 </div>
               </div>
 
