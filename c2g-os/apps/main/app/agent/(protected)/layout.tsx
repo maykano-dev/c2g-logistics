@@ -16,16 +16,29 @@ export default async function AgentProtectedLayout({
     redirect('/login');
   }
 
-  // Verify the user is a C2G employee with the customer_service role
-  const { data: employee } = await supabase
-    .from('employees')
-    .select('staff_role, status')
-    .eq('id', user.id)
+  // Check if they are a super admin first, so you can test it without being an employee
+  const { data: admin } = await supabase
+    .from('admins')
+    .select('id')
+    .eq('user_id', user.id)
     .single();
 
-  if (!employee || employee.status !== 'active' || employee.staff_role !== 'customer_service') {
-    // If they aren't an active customer service agent, kick them out of the agent portal
-    redirect('/dashboard'); 
+  if (!admin) {
+    // If not an admin, verify they are a C2G employee
+    const { data: employee } = await supabase
+      .from('employees')
+      .select('staff_role, status')
+      .eq('id', user.id)
+      .single();
+
+    if (!employee || employee.status !== 'active') {
+      redirect('/dashboard'); 
+    }
+
+    const allowedRoles = ['customer_service', 'admin', 'founder', 'manager'];
+    if (!allowedRoles.includes(employee.staff_role)) {
+      redirect('/dashboard');
+    }
   }
 
   return (
