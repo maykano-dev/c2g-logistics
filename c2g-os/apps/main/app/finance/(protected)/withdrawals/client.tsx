@@ -5,6 +5,8 @@ import { Check, X, Search, Filter, AlertCircle, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { updateWithdrawalStatus } from "./actions";
 import { useModal } from "@/components/providers/modal-provider";
+import { downloadCSV } from "@/utils/export";
+import { Download } from "lucide-react";
 
 export default function WithdrawalsClient({ initialWithdrawals }: { initialWithdrawals: any[] }) {
   const [filter, setFilter] = useState("pending");
@@ -62,6 +64,20 @@ export default function WithdrawalsClient({ initialWithdrawals }: { initialWithd
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
         </select>
+        
+        <button 
+          onClick={() => downloadCSV(filtered.map(w => ({
+            ID: w.id,
+            Date: new Date(w.created_at).toLocaleString(),
+            Customer: w.customers?.name,
+            Amount: w.amount,
+            Status: w.status,
+            Tier: w.required_tier
+          })), 'withdrawals_export')}
+          className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
+        >
+          <Download className="w-4 h-4" /> Export CSV
+        </button>
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">

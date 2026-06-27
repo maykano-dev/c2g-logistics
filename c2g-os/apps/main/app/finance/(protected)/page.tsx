@@ -7,8 +7,12 @@ import {
   AlertTriangle, 
   Clock, 
   Receipt,
-  Truck
+  Truck,
+  BarChart3,
+  RefreshCcw
 } from 'lucide-react';
+import { RevenueBarChart, ProfitAreaChart } from './chart-client';
+import { ReconcileButton } from './reconcile-client';
 
 export const metadata = {
   title: 'Financial Health | C2G Finance ERP',
@@ -23,7 +27,25 @@ const mockData = {
   outstandingCustomerBalances: 4180,
   pendingProcurement: 18600, // CNY
   outstandingShippingFees: 9480,
-  overdueShippingCustomers: 37
+  overdueShippingCustomers: 37,
+  revenueByDay: [
+    { name: 'Mon', revenue: 4000 },
+    { name: 'Tue', revenue: 3000 },
+    { name: 'Wed', revenue: 2000 },
+    { name: 'Thu', revenue: 2780 },
+    { name: 'Fri', revenue: 1890 },
+    { name: 'Sat', revenue: 2390 },
+    { name: 'Sun', revenue: 3490 },
+  ],
+  profitByMonth: [
+    { name: 'Jan', profit: 4000 },
+    { name: 'Feb', profit: 3000 },
+    { name: 'Mar', profit: 2000 },
+    { name: 'Apr', profit: 2780 },
+    { name: 'May', profit: 1890 },
+    { name: 'Jun', profit: 2390 },
+    { name: 'Jul', profit: 3490 },
+  ]
 };
 
 export default async function FinanceDashboard() {
@@ -37,9 +59,12 @@ export default async function FinanceDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Financial Health Dashboard</h1>
-        <p className="text-zinc-400">Company overview, liabilities, and core metrics.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Financial Health Dashboard</h1>
+          <p className="text-zinc-400">Company overview, liabilities, and core metrics.</p>
+        </div>
+        <ReconcileButton />
       </div>
 
       {res.success === false && (
@@ -104,6 +129,31 @@ export default async function FinanceDashboard() {
           icon={TrendingDown}
           color="text-zinc-400"
         />
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid gap-4 md:grid-cols-2 mt-8">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-indigo-400" /> Revenue by Day
+            </h2>
+          </div>
+          <div className="h-[300px]">
+            <RevenueBarChart data={mockData.revenueByDay} />
+          </div>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-400" /> Profit by Month
+            </h2>
+          </div>
+          <div className="h-[300px]">
+            <ProfitAreaChart data={mockData.profitByMonth} />
+          </div>
+        </div>
       </div>
 
       {/* Debt Metrics */}

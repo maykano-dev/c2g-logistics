@@ -5,6 +5,7 @@ import { ArrowLeft, Download, ShieldAlert, Wallet, Settings2, Plus, Minus, Check
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { freezeWalletAction } from "./actions";
+import { downloadCSV } from "@/utils/export";
 
 export default function WalletLedgerClient({ wallet, transactions }: { wallet: any, transactions: any[] }) {
   const router = useRouter();
@@ -66,7 +67,10 @@ export default function WalletLedgerClient({ wallet, transactions }: { wallet: a
             {isFrozen ? "Unfreeze Wallet" : "Freeze Wallet"}
           </button>
           
-          <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors">
+          <button 
+            onClick={() => downloadCSV(transactions, `wallet_ledger_${wallet.id}`)}
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
+          >
             <Download className="w-4 h-4" /> Export CSV
           </button>
         </div>
