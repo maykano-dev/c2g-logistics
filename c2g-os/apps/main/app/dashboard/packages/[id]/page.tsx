@@ -20,6 +20,14 @@ export default async function PackageTrackingPage({ params }: { params: Promise<
     .eq('customer_id', user.id)
     .single();
 
+  const { data: wallet } = await supabase
+    .from('wallets')
+    .select('available_balance')
+    .eq('customer_id', user.id)
+    .single();
+    
+  const walletBalance = wallet ? parseFloat(wallet.available_balance || 0) : 0;
+
   if (error || !pkg) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
@@ -32,5 +40,5 @@ export default async function PackageTrackingPage({ params }: { params: Promise<
     );
   }
 
-  return <TrackerClient pkg={pkg} />;
+  return <TrackerClient pkg={pkg} walletBalance={walletBalance} />;
 }

@@ -2,8 +2,9 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { CreateLinkOrderSchema, UpdateLinkOrderSchema } from '@/utils/security-schemas'
-import { initializeHubtelPayment, mergeNotesWithHubtelCheckout } from '../../../utils/hubtel'
 import { uploadImage } from '@/utils/image-service'
+import { deductFromWallet } from '../wallet/actions'
+import { createNotification } from '@/utils/notifications'
 
 export async function getLinkOrders() {
   const supabase = await createClient()
@@ -197,37 +198,65 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
     });
   }).catch(e => console.warn('Failed to dispatch notification:', e));
 
-  // Initialize Hubtel Payment
-  let checkoutData = null;
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://c2g-logistics.com';
-  
-  try {
-      checkoutData = await initializeHubtelPayment({
-          amount: totalGhs,
-          reference: payment_reference,
-          customerName: customer?.name || user.email,
-          customerEmail: user.email,
-          customerPhone: customer?.phone || undefined,
-          description: `Link Order - C2G Logistics`,
-          returnUrl: `${baseUrl}/payment-status?reference=${payment_reference}&checkoutid={checkoutid}`,
-          cancelUrl: `${baseUrl}/payment-status?reference=${payment_reference}&status=cancelled`,
-          callbackUrl: `${baseUrl}/api/hubtel/callback`,
-          hubtelApiId: process.env.HUBTEL_API_ID || process.env.HUBTEL_CLIENT_ID || settings?.hubtel_api_id,
-          hubtelApiKey: process.env.HUBTEL_API_KEY || process.env.HUBTEL_CLIENT_SECRET || settings?.hubtel_api_key,
-          hubtelMerchantAccount: process.env.HUBTEL_MERCHANT_ACCOUNT || settings?.hubtel_merchant_account
-      });
-      
-      // Update order notes with checkout ID
-      const finalNotes = mergeNotesWithHubtelCheckout(newOrder.notes, checkoutData.checkoutId);
-      await supabase.from('orders').update({ notes: finalNotes }).eq('id', newOrder.id);
-      
-      return { success: true, redirectUrl: checkoutData.checkoutUrl };
+  // We no longer initialize Hubtel here. The user will pay from their wallet.
+  return { success: true, redirectUrl: `/dashboard/orders` };
+}
 
-  } catch (err: any) {
-      console.error('Hubtel Init Error:', err);
-      // Order is saved, but payment failed. Redirect to the order details page so they can try again later.
-      return { success: true, redirectUrl: `/dashboard/orders/${newOrder.id}` };
+export async function payLinkOrder(orderId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  // 1. Fetch order
+  const { data: order } = await supabase
+    .from('orders')
+    .select('id, total, payment_status, payment_reference')
+    .eq('id', orderId)
+    .eq('customer_id', user.id)
+    .single()
+
+  if (!order) return { success: false, error: 'Order not found' }
+  if (order.payment_status === 'paid' || order.payment_status === 'Paid') {
+    return { success: false, error: 'Order is already paid' }
   }
+  if (!order.total || parseFloat(order.total) <= 0) {
+    return { success: false, error: 'Invalid order total' }
+  }
+
+  // 2. Deduct from wallet
+  const amount = parseFloat(order.total);
+  const deductRes = await deductFromWallet(amount, 'link_order', `Payment for Link Order ${order.payment_reference}`, order.id);
+
+  if (!deductRes.success) {
+    return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
+  }
+
+  // 3. Update order status
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({
+      payment_status: 'paid',
+      order_status: 'processing'
+    })
+    .eq('id', order.id);
+
+  if (updateError) {
+    console.error('Error updating order after wallet payment:', updateError);
+    return { success: false, error: 'Failed to update order status, but wallet was deducted. Please contact support.' };
+  }
+
+  const shortId = String(order.id).split('-').pop()?.substring(0, 8) || order.id;
+  
+  createNotification({
+    userId: user.id,
+    title: 'Link Order Paid',
+    message: `Your payment of ₵${amount.toFixed(2)} for Link Order #${shortId} was successful. We will begin processing it shortly.`,
+    type: 'link_order_paid',
+    priority: 'important',
+    link: `/dashboard/orders/${order.id}`
+  }).catch(e => console.warn('Failed to dispatch notification:', e));
+
+  return { success: true };
 }
 
 export async function updateLinkOrder(id: string, prevState: any, formData: FormData) {

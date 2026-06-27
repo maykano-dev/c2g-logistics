@@ -15,6 +15,7 @@ import FloatingCart from "../../components/shop/floating-cart";
 import ShopLayoutWrapper from "../../components/shop/shop-layout-wrapper";
 import { Search, ShoppingBag, ArrowRight, ArrowLeft, Flame, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
+import { getSecureWalletBalance } from "../dashboard/wallet/shared-actions";
 
 export const metadata = {
   title: "C2G Mall | Best Online Shop in Ghana",
@@ -35,13 +36,14 @@ export default async function ShopPage({
   };
 
   // Fetch all data in parallel
-  const [allProductsResult, topPurchasedResult, trendingResult, newArrivalsResult, bestSellersResult] =
+  const [allProductsResult, topPurchasedResult, trendingResult, newArrivalsResult, bestSellersResult, walletRes] =
     await Promise.all([
       getShopProducts(paramsForProducts),
       getTopPurchasedProducts(5),
       getTrendingProducts(),
       getNewArrivals(),
       getBestSellers(),
+      getSecureWalletBalance(),
     ]);
 
   const { products, exchangeRate, error, currentPage, totalPages } = allProductsResult;
@@ -59,7 +61,7 @@ export default async function ShopPage({
     <div className="bg-background min-h-screen pb-20 md:pb-8 pt-14 md:pt-16">
       {/* Fixed Shop Header (Search + Category Chips) */}
       <Suspense fallback={<div className="h-28 bg-background" />}>
-        <ShopHeader />
+        <ShopHeader walletBalance={walletRes.available_balance} />
       </Suspense>
 
       <ShopLayoutWrapper>

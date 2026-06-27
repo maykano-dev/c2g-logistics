@@ -3,10 +3,13 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getLinkOrders, getMallOrders } from "./actions";
 import OrdersTabsClient from "./orders-tabs-client";
+import { getSecureWalletBalance } from "../wallet/shared-actions";
 
 export default async function OrdersPage() {
   const linkOrders = await getLinkOrders();
   const mallOrders = await getMallOrders();
+  const walletRes = await getSecureWalletBalance();
+  const walletBalance = walletRes.available_balance || 0;
 
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl mx-auto pb-10">
@@ -35,7 +38,7 @@ export default async function OrdersPage() {
       </div>
 
       <Suspense fallback={<div className="flex items-center justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
-        <OrdersTabsClient linkOrders={linkOrders} mallOrders={mallOrders} />
+        <OrdersTabsClient linkOrders={linkOrders} mallOrders={mallOrders} walletBalance={walletBalance} />
       </Suspense>
     </div>
   );

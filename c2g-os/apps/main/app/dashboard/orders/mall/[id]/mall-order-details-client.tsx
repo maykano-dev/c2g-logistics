@@ -100,6 +100,7 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
         pkg={adapterPkg} 
         onBack={() => setShowTracker(false)} 
         backLabel="Back to Order Details" 
+        walletBalance={0}
       />
     );
   }

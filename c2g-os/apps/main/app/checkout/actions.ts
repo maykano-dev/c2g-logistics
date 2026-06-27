@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { CheckoutSchema } from "@/utils/security-schemas";
 import { secureLog } from "@/utils/logger";
+import { deductFromWallet } from "../dashboard/wallet/actions";
 
 export async function createEcomOrder(orderData: any) {
   const supabase = await createClient();
@@ -122,8 +123,8 @@ export async function createEcomOrder(orderData: any) {
       total_profit_ghs: totalProfitGhs,
       importer_id: importerId,
       rate_at_purchase: validatedData.exchangeRate,
-      payment_status: 'pending',
-      order_status: 'pending_payment',
+      payment_status: validatedData.paymentGateway === 'wallet' ? 'paid' : 'pending',
+      order_status: validatedData.paymentGateway === 'wallet' ? 'processing' : 'pending_payment',
       payment_reference: validatedData.reference,
       payment_gateway: validatedData.paymentGateway || 'hubtel'
     };
@@ -140,6 +141,20 @@ export async function createEcomOrder(orderData: any) {
     }
     
     createdOrderIds.push(data.id);
+  }
+
+  // 4. Deduct from wallet if using wallet
+  if (validatedData.paymentGateway === 'wallet') {
+    const sumTotalAmount = (validatedData.subtotal || 0) + (validatedData.shippingCost || 0) + (validatedData.serviceFee || 0);
+    const deductRes = await deductFromWallet(sumTotalAmount, 'mall_order', `Payment for Mall Order ${validatedData.reference}`, createdOrderIds[0]);
+    
+    if (!deductRes.success) {
+      // Revert orders if deduction failed
+      for (const pid of createdOrderIds) {
+        await supabase.from("ecom_orders").delete().eq("id", pid);
+      }
+      return { success: false, error: deductRes.error || "Wallet deduction failed" };
+    }
   }
 
   // We return the primary created ID (or a combined string if we want)
@@ -175,11 +190,15 @@ export async function createEcomOrder(orderData: any) {
 
   // Create notification asynchronously without blocking
   import('@/utils/notifications').then(({ createNotification }) => {
+    const isWallet = validatedData.paymentGateway === 'wallet';
     createNotification({
       userId: userId,
       title: 'Order Placed successfully',
-      message: `Your mall order #${primaryOrderIdFormatted} has been placed and is pending payment.`,
+      message: isWallet 
+        ? `Your mall order #${primaryOrderIdFormatted} has been placed and paid successfully from your wallet.` 
+        : `Your mall order #${primaryOrderIdFormatted} has been placed and is pending payment.`,
       type: 'ecom_order_created',
+      priority: isWallet ? 'important' : 'info',
       link: `/dashboard/orders/mall/${primaryId}`
     });
   }).catch(e => console.warn('Failed to dispatch notification:', e));

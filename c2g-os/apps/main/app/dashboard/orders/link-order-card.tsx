@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useModal } from "@/components/providers/modal-provider";
 import { deleteLinkOrder } from "./actions";
+import WalletPaymentModal from "@/components/wallet/wallet-payment-modal";
 
-export function LinkOrderCard({ order }: { order: any }) {
+export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, walletBalance?: number }) {
   const router = useRouter();
   const [isPaying, setIsPaying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isPendingDelete, startDelete] = useTransition();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { showAlert, showConfirm } = useModal();
 
   // Helper to format currency
@@ -79,6 +81,25 @@ export function LinkOrderCard({ order }: { order: any }) {
       className="glass-panel p-6 overflow-hidden flex flex-col relative transition-all duration-300 hover:border-primary/50 cursor-pointer group"
       onClick={() => router.push(`/dashboard/orders/${order.id}`)}
     >
+      <WalletPaymentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={async () => {
+          setIsPaying(true);
+          const res = await import('./actions').then(m => m.payLinkOrder(order.id));
+          setIsPaying(false);
+          if (res.success) {
+            router.refresh();
+          } else {
+            throw new Error(res.error || 'Failed to process payment');
+          }
+        }}
+        amount={parseFloat(order.total) || 0}
+        walletBalance={walletBalance}
+        itemName={order.product_name || "Link Order"}
+        isProcessing={isPaying}
+      />
+      
       {/* Absolute Payment Status Badge */}
       <div className="absolute top-6 right-6 flex items-center gap-2">
           {!isPaid && (
@@ -160,37 +181,20 @@ export function LinkOrderCard({ order }: { order: any }) {
                 {isEditing ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Edit className="w-5 h-5" />}
               </button>
               <button 
-                onClick={async (e) => { 
+                onClick={(e) => { 
                   e.stopPropagation(); 
                   if (isPaying) return;
-                  setIsPaying(true);
-                  try {
-                    const res = await fetch('/api/hubtel/initialize', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ orderId: order.id })
-                    });
-                    const data = await res.json();
-                    if (data.checkoutUrl) {
-                      window.location.href = data.checkoutUrl;
-                    } else {
-                      showAlert({ title: 'Payment Error', message: data.error || 'Failed to initialize payment.', type: 'danger' });
-                      setIsPaying(false);
-                    }
-                  } catch (err) {
-                    showAlert({ title: 'Network Error', message: 'Network error. Please try again.', type: 'danger' });
-                    setIsPaying(false);
-                  }
+                  setIsModalOpen(true);
                 }}
                 disabled={isPaying || !order.total || parseFloat(order.total) <= 0}
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors h-10 px-4 gap-2 flex-1 shadow-lg disabled:opacity-50 disabled:pointer-events-none ${
                   (!order.total || parseFloat(order.total) <= 0) 
                     ? 'bg-muted text-muted-foreground shadow-none cursor-not-allowed' 
-                    : 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-destructive/20'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20'
                 }`}
                 title={(!order.total || parseFloat(order.total) <= 0) ? "Wait for an admin to set the price" : "Pay Now"}
               >
-                <CreditCard className="w-4 h-4" /> {isPaying ? 'Redirecting...' : 'Pay Now'}
+                <CreditCard className="w-4 h-4" /> Pay {formatCurrency(order.total || 0)}
               </button>
             </>
           ) : (

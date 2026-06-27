@@ -3,6 +3,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { RegisterPackagesSchema } from '@/utils/security-schemas';
+import { deductFromWallet } from '../wallet/actions';
+import { createNotification } from '@/utils/notifications';
 
 export async function getPackages() {
   const supabase = await createClient();
@@ -153,6 +155,60 @@ export async function deletePackage(id: string) {
     console.error('Error deleting package:', error);
     return { error: 'Failed to delete package' };
   }
+
+  revalidatePath('/dashboard/packages');
+  return { success: true };
+}
+
+export async function payPackageRegistrationFee(packageId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  // 1. Check if package belongs to user and is unpaid
+  const { data: pkg } = await supabase
+    .from('shipments')
+    .select('registration_fee_paid, tracking_number')
+    .eq('id', packageId)
+    .eq('customer_id', user.id)
+    .single();
+
+  if (!pkg) return { success: false, error: 'Package not found' };
+  if (pkg.registration_fee_paid) return { success: false, error: 'Fee already paid' };
+
+  // 2. Deduct from wallet
+  const feeAmount = 5; // Flat fee of 5 GHS
+  const ref = `REG-${packageId}`;
+  
+  const deductRes = await deductFromWallet(feeAmount, 'package_fee', `Package Registration Fee for ${pkg.tracking_number}`, packageId);
+  
+  if (!deductRes.success) {
+    return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
+  }
+
+  // 3. Update shipment status
+  const { error } = await supabase
+    .from('shipments')
+    .update({
+        registration_fee_paid: true,
+        status: 'awaiting_arrival',
+        registration_fee_payment_reference: ref
+    })
+    .eq('id', packageId);
+
+  if (error) {
+    console.error('Error updating shipment after fee payment:', error);
+    return { success: false, error: 'Failed to update package status, but wallet was deducted. Please contact support.' };
+  }
+
+  createNotification({
+    userId: user.id,
+    title: 'Registration Fee Paid',
+    message: `Your payment of ₵5 for package ${pkg.tracking_number} was successful. It will now be processed.`,
+    type: 'package_fee_paid',
+    priority: 'info',
+    link: `/dashboard/packages/${packageId}`
+  }).catch(e => console.warn('Failed to dispatch notification:', e));
 
   revalidatePath('/dashboard/packages');
   return { success: true };

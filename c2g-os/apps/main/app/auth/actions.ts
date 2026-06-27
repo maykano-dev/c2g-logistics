@@ -15,6 +15,7 @@ async function getClientContext() {
   return { ip, ua };
 }
 
+  console.log("LOGIN ACTION STARTED");
 export async function login(prevState: any, formData: FormData) {
   const supabase = await createClient();
   const { ip, ua } = await getClientContext();

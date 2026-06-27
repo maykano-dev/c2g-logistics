@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import DashboardClientLayout from "./dashboard-client-layout";
 import { PushPrompt } from "../../components/push-prompt";
 import { getDashboardStats } from "./actions";
+import { getSecureWalletBalance } from "./wallet/shared-actions";
 
 export const metadata: Metadata = {
   title: "Dashboard | C2G Logistics",
@@ -24,12 +25,15 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const stats = await getDashboardStats();
+  const [stats, walletRes] = await Promise.all([
+    getDashboardStats(),
+    getSecureWalletBalance()
+  ]);
 
   // Pass children to the client layout for navigation and framer-motion animations
   return (
     <>
-      <DashboardClientLayout stats={stats}>
+      <DashboardClientLayout stats={stats} walletBalance={walletRes.available_balance}>
         {children}
       </DashboardClientLayout>
       <PushPrompt />

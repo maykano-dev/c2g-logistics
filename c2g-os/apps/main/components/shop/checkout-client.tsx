@@ -7,6 +7,7 @@ import { createEcomOrder } from "../../app/checkout/actions";
 import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck, Calculator, Info, Plane, Zap, Loader2 } from "lucide-react";
 import { useModal } from "@/components/providers/modal-provider";
 import Link from "next/link";
+import WalletPaymentModal from "@/components/wallet/wallet-payment-modal";
 
 export default function CheckoutClient({ 
   initialProfile, 
@@ -14,14 +15,16 @@ export default function CheckoutClient({
   serviceFeePercentage,
   minServiceFee,
   localDeliveryPercentage,
-  minLocalDeliveryFee
+  minLocalDeliveryFee,
+  walletBalance
 }: { 
   initialProfile: any, 
   exchangeRate: number,
   serviceFeePercentage: number,
   minServiceFee: number,
   localDeliveryPercentage: number,
-  minLocalDeliveryFee: number
+  minLocalDeliveryFee: number,
+  walletBalance: number
 }) {
   const { items, cartTotalGhs, clearCart } = useCart();
   const router = useRouter();
@@ -51,9 +54,15 @@ export default function CheckoutClient({
   
   const totalAmount = cartTotalGhs + serviceFee + localDelivery; // Exclude shipping cost until it arrives
 
-  const handleCheckout = async (e: React.FormEvent) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) return;
+    setIsModalOpen(true);
+  };
+
+  const processPayment = async () => {
     setLoading(true);
 
     const reference = `C2G_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
@@ -71,45 +80,39 @@ export default function CheckoutClient({
       totalAmount,
       exchangeRate,
       reference,
-      paymentGateway: "paystack"
+      paymentGateway: "wallet" // Uses the wallet!
     };
 
     const res = await createEcomOrder(payload);
 
     if (res.success) {
       clearCart();
-      // Call Hubtel to initialize payment
-      try {
-        const hubtelRes = await fetch('/api/hubtel/initialize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: res.id, type: 'mall_order' })
-        });
-        const hubtelData = await hubtelRes.json();
-
-        if (hubtelData.checkoutUrl) {
-          window.location.href = hubtelData.checkoutUrl;
-        } else {
-          showAlert({ title: 'Payment Error', message: 'Failed to initialize payment gateway. Please try again from your orders page.', type: 'danger' });
-          router.push(`/dashboard/mall-orders`);
-        }
-      } catch (err) {
-        showAlert({ title: 'Network Error', message: 'Network error initializing payment.', type: 'danger' });
-        router.push(`/dashboard/mall-orders`);
-      }
+      router.push(`/dashboard/mall-orders`);
     } else {
       showAlert({ title: 'Error', message: res.error || "An unknown error occurred", type: 'danger' });
       setLoading(false);
+      throw new Error(res.error || "An unknown error occurred");
     }
   };
+
+  const isInsufficient = walletBalance < totalAmount;
 
   if (items.length === 0) return null;
 
   return (
     <div className="flex flex-col lg:flex-row gap-8">
+      <WalletPaymentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={processPayment}
+        amount={totalAmount}
+        walletBalance={walletBalance}
+        itemName="C2G Mall Order"
+        isProcessing={loading}
+      />
       {/* Checkout Form */}
       <div className="flex-1 space-y-6">
-        <form id="checkout-form" onSubmit={handleCheckout} className="space-y-6">
+        <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-6">
           
           {/* 1. Contact & Shipping */}
           <div className="glass-panel p-6">
@@ -242,30 +245,35 @@ export default function CheckoutClient({
               <p className="text-[10px] text-muted-foreground text-right mt-1">(Excl. Int. Shipping)</p>
             </div>
 
-            <div className="mt-4 text-xs text-center text-muted-foreground flex items-start gap-2 bg-background p-3 rounded-lg">
-              <Info className="w-4 h-4 shrink-0 text-blue-500" />
-              <p className="text-left leading-tight font-bold">The international shipping fee will be invoiced once the items get to Ghana.</p>
+            <div className="border-t border-border/50 pt-4 mt-4">
+              <div className="flex justify-between items-center text-sm mb-2">
+                <span className="text-muted-foreground">Available Wallet Balance</span>
+                <span className="font-bold text-lg">₵{walletBalance.toFixed(2)}</span>
+              </div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3">
-              <button 
-                type="submit"
-                form="checkout-form"
-                disabled={loading || items.length === 0}
-                className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Processing Payment...
-                  </>
-                ) : (
-                  <>Pay ₵{totalAmount.toFixed(2)} <ChevronRight className="w-5 h-5" /></>
-                )}
-              </button>
+            <div className="mt-4 flex flex-col gap-3">
+              {isInsufficient ? (
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all bg-zinc-800 text-white hover:bg-zinc-700 h-12 shadow-lg gap-2"
+                >
+                  Pay ₵{totalAmount.toFixed(2)}
+                </button>
+              ) : (
+                <button 
+                  type="submit"
+                  form="checkout-form"
+                  disabled={loading || items.length === 0}
+                  className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none gap-2"
+                >
+                  Pay ₵{totalAmount.toFixed(2)} <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
               
               <div className="mt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
-                <ShieldCheck className="w-4 h-4 text-green-500" /> Secure SSL Encrypted Checkout
+                <ShieldCheck className="w-4 h-4 text-green-500" /> Secure Automatic Deduction
               </div>
             </div>
           </div>

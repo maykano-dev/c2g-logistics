@@ -8,7 +8,7 @@ import { useState, useCallback } from "react";
 import { useCart } from "./cart-context";
 import { useWishlist } from "./wishlist-context";
 
-export default function ShopHeader() {
+export default function ShopHeader({ walletBalance }: { walletBalance?: number }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentQuery = searchParams.get("query") || "";
@@ -82,6 +82,11 @@ export default function ShopHeader() {
 
           {/* Cart + Wishlist + Account */}
           <div className="flex items-center gap-1">
+            {typeof walletBalance === 'number' && (
+              <Link href="/dashboard/wallet" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-tr from-primary/10 to-accent/10 border border-border hover:bg-white/10 transition-colors shadow-sm mr-2 min-w-0 max-w-[160px]">
+                <span className="text-sm font-bold tracking-tight text-primary truncate">₵{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(walletBalance)}</span>
+              </Link>
+            )}
             <Link
               href="/wishlist"
               className="relative p-2.5 rounded-full hover:bg-secondary transition-colors hidden sm:flex"

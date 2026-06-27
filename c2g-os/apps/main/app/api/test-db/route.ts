@@ -4,14 +4,19 @@ import { createClient } from "@/utils/supabase/server";
 export async function GET() {
   const supabase = await createClient();
   
-  // Test with string array
-  const { data: p1, error: e1 } = await supabase.from('products').select('id').in('id', ["28"]);
+  const { data: constraint } = await supabase.rpc('query_pg', {
+    query: "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'employees_status_check'"
+  });
   
-  // Test with number array
-  const { data: p2, error: e2 } = await supabase.from('products').select('id').in('id', [28]);
-
+  // If no RPC, let's just create one manually using raw sql. 
+  // Wait, no RPC available. Let me just use standard fetch from pg_constraint directly if possible.
+  // Actually, Supabase blocks pg_constraint from anon.
+  // Let me just test inserting with status 'Active' to see if it succeeds!
+  const { error: err1 } = await supabase.from('employees').insert({ user_id: '00000000-0000-0000-0000-000000000000', email: 'test1@test.com', full_name: 't', staff_role: 'admin', status: 'Active' });
+  const { error: err2 } = await supabase.from('employees').insert({ user_id: '00000000-0000-0000-0000-000000000000', email: 'test2@test.com', full_name: 't', staff_role: 'admin', status: 'ACTIVE' });
+  
   return NextResponse.json({
-    stringArrayResult: { data: p1, error: e1 },
-    numberArrayResult: { data: p2, error: e2 },
+    err1: err1?.message,
+    err2: err2?.message,
   });
 }

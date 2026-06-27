@@ -10,9 +10,10 @@ import { useRouter } from "next/navigation";
 
 interface PackagesClientProps {
   packages: any[];
+  walletBalance: number;
 }
 
-export default function PackagesClient({ packages }: PackagesClientProps) {
+export default function PackagesClient({ packages, walletBalance }: PackagesClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -230,7 +231,7 @@ export default function PackagesClient({ packages }: PackagesClientProps) {
                   </Link>
                   {needsPayment && (
                     <div className="flex-1">
-                      <PackagePayButton packageId={pkg.id} />
+                      <PackagePayButton packageId={pkg.id} walletBalance={walletBalance} />
                     </div>
                   )}
                 </div>

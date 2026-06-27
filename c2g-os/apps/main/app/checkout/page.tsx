@@ -19,9 +19,21 @@ export default async function CheckoutPage() {
 
   const { data: profile } = await supabase
     .from("customers")
-    .select("name, phone, email")
+    .select("id, name, phone, email")
     .eq("id", userData.user.id)
     .single();
+
+  let walletBalance = 0;
+  if (profile) {
+    const { data: wallet } = await supabase
+        .from('wallets')
+        .select('available_balance')
+        .eq('customer_id', profile.id)
+        .single();
+    if (wallet) {
+        walletBalance = Number(wallet.available_balance);
+    }
+  }
 
   const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
@@ -60,6 +72,7 @@ export default async function CheckoutPage() {
           minServiceFee={minServiceFee}
           localDeliveryPercentage={localDeliveryPercentage}
           minLocalDeliveryFee={minLocalDeliveryFee}
+          walletBalance={walletBalance}
         />
       </div>
     </div>

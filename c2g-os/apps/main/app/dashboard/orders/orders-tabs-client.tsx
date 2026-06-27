@@ -9,13 +9,17 @@ import { MallOrderCard } from "./mall-order-card";
 
 import { motion } from "framer-motion";
 
-export default function OrdersTabsClient({ 
-  linkOrders, 
-  mallOrders 
-}: { 
+interface OrdersTabsClientProps {
   linkOrders: any[];
   mallOrders: any[];
-}) {
+  walletBalance: number;
+}
+
+export default function OrdersTabsClient({ 
+  linkOrders, 
+  mallOrders,
+  walletBalance
+}: OrdersTabsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get("tab") === "mall" ? "mall" : "link";
@@ -82,7 +86,7 @@ export default function OrdersTabsClient({
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {linkOrders.length > 0 ? (
               linkOrders.map((order: any) => (
-                <LinkOrderCard key={order.id} order={order} />
+                <LinkOrderCard key={order.id} order={order} walletBalance={walletBalance} />
               ))
             ) : (
               <div className="glass-panel p-12 text-center flex flex-col items-center justify-center border-dashed">

@@ -9,9 +9,11 @@ export function LoginForm() {
   const [state, action, isPending] = useActionState(login, null);
   const [showPassword, setShowPassword] = useState(false);
 
+  console.log("Login form state:", state);
+  
   return (
     <form action={action} className="space-y-4">
-      {state?.error && (
+      {!!state?.error && typeof state.error === 'string' && (
         <div className="p-3 text-sm font-medium bg-destructive/10 text-destructive rounded-md border border-destructive/20">
           {state.error}
         </div>

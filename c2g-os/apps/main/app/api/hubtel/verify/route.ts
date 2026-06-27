@@ -4,6 +4,7 @@ import {
     fetchHubtelTransactionStatusLocal, 
     mergeNotesWithHubtelCheckout 
 } from '../../../../utils/hubtel'
+import { createNotification } from '@/utils/notifications'
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
@@ -130,6 +131,101 @@ export async function GET(req: Request) {
                             .eq('id', regShipment.id)
                         console.log(`[Verify API] Shipment ${regShipment.id} registration fee verified as paid`)
                     }
+                }
+
+                // 6. WALLET TOP UP
+                if (ref.startsWith('WLT-') || ref.startsWith('WALLET-')) {
+                    const urlParams = new URL(req.url);
+                    const queryCustomerId = urlParams.searchParams.get('customerId');
+                    
+                    let customerId = queryCustomerId;
+                    if (!customerId && ref.startsWith('WALLET-')) {
+                        const parts = ref.split('-');
+                        if (parts.length >= 2) customerId = parts[1] || null;
+                    }
+
+                    if (customerId) {
+                        // Check if transaction exists to update its status, or prevent double crediting if already completed
+                        const { data: existingTx } = await supabase
+                            .from('wallet_transactions')
+                            .select('id, status')
+                            .eq('reference_id', checkoutId || ref)
+                            .maybeSingle();
+
+                        if (!existingTx || existingTx.status === 'pending') {
+                            // Get wallet
+                            const { data: wallet } = await supabase
+                                .from('wallets')
+                                .select('id, available_balance')
+                                .eq('customer_id', customerId)
+                                .single();
+
+                            if (wallet && statusData.amount) {
+                                const amount = Number(statusData.amount);
+                                const newBalance = Number(wallet.available_balance) + amount;
+
+                                // Update wallet
+                                await supabase
+                                    .from('wallets')
+                                    .update({ available_balance: newBalance })
+                                    .eq('id', wallet.id);
+
+                                // Log or Update transaction
+                                if (existingTx) {
+                                    await supabase
+                                        .from('wallet_transactions')
+                                        .update({
+                                            status: 'completed',
+                                            reference_id: checkoutId || ref
+                                        })
+                                        .eq('id', existingTx.id);
+                                } else {
+                                    await supabase
+                                        .from('wallet_transactions')
+                                        .insert({
+                                            wallet_id: wallet.id,
+                                            amount: amount,
+                                            transaction_type: 'top_up',
+                                            status: 'completed',
+                                            description: 'Wallet Top Up via Hubtel',
+                                            reference_id: checkoutId || ref
+                                        });
+                                }
+
+                                await createNotification({
+                                    userId: customerId,
+                                    title: 'Wallet Top-Up Successful',
+                                    message: `Your wallet has been credited with ₵${amount.toFixed(2)}.`,
+                                    type: 'wallet_top_up',
+                                    priority: 'info',
+                                    link: '/dashboard/wallet'
+                                });
+
+                                console.log(`[Verify API] Wallet ${wallet.id} credited with ${amount}`);
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // Handle Failed/Cancelled Hubtel Top-Ups
+            const ref = clientReference || statusData.clientReference
+            if (ref && (ref.startsWith('WLT-') || ref.startsWith('WALLET-'))) {
+                const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+                const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+                const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
+                
+                const { data: existingTx } = await supabase
+                    .from('wallet_transactions')
+                    .select('id, status')
+                    .eq('reference_id', checkoutId || ref)
+                    .maybeSingle();
+                
+                if (existingTx && existingTx.status === 'pending') {
+                    await supabase
+                        .from('wallet_transactions')
+                        .update({ status: 'failed', description: 'Wallet Top Up Failed/Cancelled' })
+                        .eq('id', existingTx.id);
                 }
             }
         }

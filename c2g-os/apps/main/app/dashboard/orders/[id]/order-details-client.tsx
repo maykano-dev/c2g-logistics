@@ -95,6 +95,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
         pkg={adapterPkg} 
         onBack={() => setShowTracker(false)} 
         backLabel="Back to Order Details" 
+        walletBalance={0}
       />
     );
   }
@@ -291,7 +292,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
             {order.notes && (
               <div className="py-2 border-b border-border/50">
                 <span className="text-muted-foreground block mb-1">Notes</span>
-                <p className="text-sm bg-secondary/30 p-3 rounded-lg border border-border/30 whitespace-pre-wrap">{order.notes}</p>
+                <p className="text-sm bg-secondary/30 p-3 rounded-lg border border-border/30 break-all">{order.notes}</p>
               </div>
             )}
             

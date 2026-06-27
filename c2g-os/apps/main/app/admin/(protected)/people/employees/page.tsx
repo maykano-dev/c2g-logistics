@@ -11,6 +11,10 @@ export default function EmployeesDirectoryView() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addEmail, setAddEmail] = useState('');
+  const [addRole, setAddRole] = useState('customer_service');
+  const [isAdding, setIsAdding] = useState(false);
   const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
@@ -50,6 +54,25 @@ export default function EmployeesDirectoryView() {
     }
   };
 
+  const handleAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addEmail) return;
+    
+    setIsAdding(true);
+    const { adminAddEmployeeByEmail } = await import('@/app/admin/employee-actions');
+    const res = await adminAddEmployeeByEmail(addEmail, addRole);
+    
+    if (res.success) {
+      showAlert({ title: 'Success', message: 'Employee added successfully', type: 'success' });
+      setShowAddModal(false);
+      setAddEmail('');
+      fetchEmployees(); // Refresh the list
+    } else {
+      showAlert({ title: 'Error', message: res.error || 'Failed to add employee', type: 'danger' });
+    }
+    setIsAdding(false);
+  };
+
   const filtered = employees.filter(emp => {
     const matchesSearch = emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -66,7 +89,10 @@ export default function EmployeesDirectoryView() {
           </h1>
           <p className="text-zinc-400 mt-1">Manage staff, HR records, roles, and branch assignments.</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-900/20 transition-all flex items-center gap-2">
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-900/20 transition-all flex items-center gap-2"
+        >
           <UserPlus className="w-4 h-4" /> Onboard Staff
         </button>
       </div>
@@ -165,6 +191,59 @@ export default function EmployeesDirectoryView() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !isAdding && setShowAddModal(false)}></div>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">Onboard New Staff</h3>
+              <button onClick={() => !isAdding && setShowAddModal(false)} className="text-zinc-500 hover:text-white">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleAddEmployee} className="p-6 space-y-4">
+              <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-6">
+                <p className="text-xs text-indigo-400">The user must have already registered an account on C2G Logistics using this email before you can assign them a staff role.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Staff Email Address</label>
+                <input 
+                  type="email" 
+                  value={addEmail}
+                  onChange={(e) => setAddEmail(e.target.value)}
+                  className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                  placeholder="employee@c2glogistics.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Assign Role</label>
+                <select 
+                  value={addRole}
+                  onChange={(e) => setAddRole(e.target.value)}
+                  className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="customer_service">Customer Service (Agent)</option>
+                  <option value="warehouse">China Warehouse Staff</option>
+                  <option value="admin">Administrator</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isAdding}
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold mt-4 transition-colors"
+              >
+                {isAdding ? 'Adding Staff...' : 'Onboard Employee'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>
