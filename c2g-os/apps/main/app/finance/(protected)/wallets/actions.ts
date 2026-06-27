@@ -14,7 +14,7 @@ export async function getWallets(query: string = '') {
     .select(`
       id,
       available_balance,
-      hold_balance,
+      held_balance,
       status,
       created_at,
       customer_id,
@@ -42,7 +42,7 @@ export async function getWallets(query: string = '') {
   // Calculate some derived stats
   const formattedData = data.map((wallet: any) => ({
     ...wallet,
-    totalBalance: parseFloat(wallet.available_balance || 0) + parseFloat(wallet.hold_balance || 0),
+    totalBalance: parseFloat(wallet.available_balance || 0) + parseFloat(wallet.held_balance || 0),
     isFrozen: wallet.status === 'frozen'
   }));
 

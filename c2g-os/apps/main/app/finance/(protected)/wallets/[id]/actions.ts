@@ -15,7 +15,7 @@ export async function getWalletLedger(walletId: string) {
     .select(`
       id,
       available_balance,
-      hold_balance,
+      held_balance,
       status,
       created_at,
       customer_id,

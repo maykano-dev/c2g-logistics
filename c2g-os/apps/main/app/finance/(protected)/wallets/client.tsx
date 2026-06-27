@@ -66,7 +66,7 @@ export default function WalletSearchClient({ initialWallets, initialQuery }: { i
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-zinc-500">
-                      ₵{parseFloat(wallet.hold_balance).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                      ₵{parseFloat(wallet.held_balance).toLocaleString(undefined, {minimumFractionDigits: 2})}
                     </span>
                   </td>
                   <td className="px-6 py-4">

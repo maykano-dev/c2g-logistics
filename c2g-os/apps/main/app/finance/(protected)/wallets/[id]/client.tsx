@@ -13,7 +13,7 @@ export default function WalletLedgerClient({ wallet, transactions }: { wallet: a
   const [isFrozen, setIsFrozen] = useState(wallet.status === 'frozen');
   const [error, setError] = useState("");
 
-  const totalBalance = parseFloat(wallet.available_balance || 0) + parseFloat(wallet.hold_balance || 0);
+  const totalBalance = parseFloat(wallet.available_balance || 0) + parseFloat(wallet.held_balance || 0);
 
   const handleToggleFreeze = async () => {
     const reason = prompt(isFrozen ? "Reason for unfreezing?" : "Reason for freezing?");
@@ -92,7 +92,7 @@ export default function WalletLedgerClient({ wallet, transactions }: { wallet: a
         
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
           <p className="text-sm text-zinc-400 font-medium mb-1">Held Balance</p>
-          <h2 className="text-3xl font-bold text-zinc-300">₵{parseFloat(wallet.hold_balance).toLocaleString(undefined, {minimumFractionDigits: 2})}</h2>
+          <h2 className="text-3xl font-bold text-zinc-300">₵{parseFloat(wallet.held_balance).toLocaleString(undefined, {minimumFractionDigits: 2})}</h2>
           <p className="text-xs text-zinc-500 mt-2">Reserved for pending transactions</p>
         </div>
         

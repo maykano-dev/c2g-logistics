@@ -59,8 +59,13 @@ ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.refunds ENABLE ROW LEVEL SECURITY;
 
 -- Service role bypasses RLS, but we'll add basic read policies for admins
+DROP POLICY IF EXISTS "Enable read for authenticated users" ON public.finance_roles;
 CREATE POLICY "Enable read for authenticated users" ON public.finance_roles FOR SELECT USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Enable read for authenticated users" ON public.expenses;
 CREATE POLICY "Enable read for authenticated users" ON public.expenses FOR SELECT USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Enable read for authenticated users" ON public.refunds;
 CREATE POLICY "Enable read for authenticated users" ON public.refunds FOR SELECT USING (auth.role() = 'authenticated');
 
 -- We leave INSERT/UPDATE restricted to the backend (service_role) to prevent unauthorized frontend manipulation.
@@ -78,7 +83,7 @@ DECLARE
   v_cash_available NUMERIC;
 BEGIN
   -- 1. Total Wallet Liabilities (Sum of all customer balances)
-  SELECT COALESCE(SUM(available_balance + hold_balance), 0) INTO v_wallet_liabilities FROM public.wallets;
+  SELECT COALESCE(SUM(available_balance + held_balance), 0) INTO v_wallet_liabilities FROM public.wallets;
 
   -- 2. Total Pending Withdrawals
   SELECT COALESCE(SUM(amount), 0) INTO v_pending_withdrawals FROM public.withdrawals WHERE status = 'pending';
