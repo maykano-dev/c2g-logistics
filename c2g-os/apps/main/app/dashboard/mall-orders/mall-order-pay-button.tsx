@@ -3,28 +3,35 @@
 import { useState } from 'react';
 import { useModal } from '@/components/providers/modal-provider';
 
-export function MallOrderPayButton({ orderId }: { orderId: string | number }) {
+import { useRouter } from 'next/navigation';
+import { payMallOrder } from './actions';
+
+export function MallOrderPayButton({ orderId }: { orderId: string }) {
   const [isPaying, setIsPaying] = useState(false);
   const { showAlert } = useModal();
+  const router = useRouter();
 
   const handlePay = async () => {
     if (isPaying) return;
     setIsPaying(true);
     try {
-      const res = await fetch('/api/hubtel/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, type: 'mall_order' })
-      });
-      const data = await res.json();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      const res = await payMallOrder(orderId);
+      
+      if (res.success) {
+        showAlert({ title: 'Payment Successful', message: 'Order paid successfully from wallet.', type: 'success' });
+        // Clear cart if needed
+        try {
+          localStorage.removeItem('ecomCart');
+          window.dispatchEvent(new Event('cartUpdated'));
+        } catch (e) {}
+        
+        router.refresh();
       } else {
-        showAlert({ title: 'Payment Error', message: data.error || 'Failed to initialize payment.', type: 'danger' });
-        setIsPaying(false);
+        showAlert({ title: 'Payment Error', message: res.error || 'Failed to process payment.', type: 'danger' });
       }
     } catch (err) {
-      showAlert({ title: 'Network Error', message: 'Network error. Please try again.', type: 'danger' });
+      showAlert({ title: 'System Error', message: 'An unexpected error occurred.', type: 'danger' });
+    } finally {
       setIsPaying(false);
     }
   };

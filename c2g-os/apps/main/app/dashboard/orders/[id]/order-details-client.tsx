@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Link as LinkIcon, ArrowLeft, CheckCircle2, Clock, Map, Plane, Ship, ExternalLink, CreditCard, Settings, ShoppingCart, Building, Navigation, Circle, ShieldCheck, MapPin } from "lucide-react";
 import TrackerClient from "../../packages/[id]/tracker-client";
 import { useModal } from "@/components/providers/modal-provider";
+import { payLinkOrder } from "../actions";
 
 export function OrderDetailsClient({ order, initialTrack }: { order: any, initialTrack: boolean }) {
   const router = useRouter();
@@ -160,26 +161,23 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
                 <button 
                   onClick={async (e) => {
                     const btn = e.currentTarget;
+                    const originalHtml = btn.innerHTML;
                     btn.disabled = true;
-                    btn.innerHTML = '<span class="animate-pulse">Initializing...</span>';
+                    btn.innerHTML = '<span class="animate-pulse">Processing...</span>';
                     try {
-                      const res = await fetch('/api/hubtel/initialize', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderId: order.id })
-                      });
-                      const data = await res.json();
-                      if (data.checkoutUrl) {
-                        window.location.href = data.checkoutUrl;
+                      const res = await payLinkOrder(order.id);
+                      if (res.success) {
+                        showAlert({ title: 'Payment Successful', message: 'Order paid successfully from wallet.', type: 'success' });
+                        router.refresh();
                       } else {
-                        showAlert({ title: 'Payment Error', message: data.error || 'Failed to initialize payment', type: 'danger' });
+                        showAlert({ title: 'Payment Error', message: res.error || 'Failed to process payment.', type: 'danger' });
                         btn.disabled = false;
-                        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-credit-card w-4 h-4"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg> Pay Order Now';
+                        btn.innerHTML = originalHtml;
                       }
                     } catch (err) {
-                      showAlert({ title: 'Network Error', message: 'Network error. Please try again.', type: 'danger' });
+                      showAlert({ title: 'System Error', message: 'An unexpected error occurred.', type: 'danger' });
                       btn.disabled = false;
-                      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-credit-card w-4 h-4"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg> Pay Order Now';
+                      btn.innerHTML = originalHtml;
                     }
                   }}
                   className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-destructive text-destructive-foreground hover:bg-destructive/90 h-11 px-4 gap-2 shadow-lg shadow-destructive/20 disabled:opacity-50 disabled:pointer-events-none"

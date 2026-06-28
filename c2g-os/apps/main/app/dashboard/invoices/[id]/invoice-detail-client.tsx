@@ -4,6 +4,9 @@ import { Printer, ArrowLeft, CreditCard, Download, ShieldCheck } from "lucide-re
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useModal } from "@/components/providers/modal-provider";
+import { payMallOrder } from "../../mall-orders/actions";
+import { payLinkOrder } from "../../orders/actions";
+import { payPackageRegistrationFee } from "../../packages/actions";
 
 export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice: any, companyInfo: any }) {
   const router = useRouter();
@@ -20,25 +23,27 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
   const handlePay = async () => {
     setIsPaying(true);
     try {
-      const hubtelRes = await fetch('/api/hubtel/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          orderId: invoice.payType === 'mall_order' || invoice.payType === 'link_order' ? invoice.payId : undefined,
-          packageId: invoice.payType === 'package_registration' ? invoice.payId : undefined,
-          type: invoice.payType
-        })
-      });
-      const hubtelData = await hubtelRes.json();
+      let res: { success?: boolean; error?: string } = {};
 
-      if (hubtelData.checkoutUrl) {
-        window.location.href = hubtelData.checkoutUrl;
+      if (invoice.payType === 'mall_order') {
+        res = await payMallOrder(invoice.payId);
+      } else if (invoice.payType === 'link_order') {
+        res = await payLinkOrder(invoice.payId);
+      } else if (invoice.payType === 'package_registration') {
+        res = await payPackageRegistrationFee(invoice.payId);
       } else {
-        showAlert({ title: 'Payment Error', message: hubtelData.error || 'Failed to initialize payment gateway.', type: 'danger' });
-        setIsPaying(false);
+        res = { success: false, error: 'Unsupported payment type.' };
+      }
+
+      if (res.success) {
+        showAlert({ title: 'Payment Successful', message: 'Invoice paid successfully from wallet.', type: 'success' });
+        router.refresh();
+      } else {
+        showAlert({ title: 'Payment Error', message: res.error || 'Failed to process payment.', type: 'danger' });
       }
     } catch (err) {
-      showAlert({ title: 'Network Error', message: 'Network error initializing payment.', type: 'danger' });
+      showAlert({ title: 'System Error', message: 'An unexpected error occurred.', type: 'danger' });
+    } finally {
       setIsPaying(false);
     }
   };
@@ -146,7 +151,7 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
         {/* Totals */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
           <div className="w-full md:w-1/2 text-gray-500 text-sm">
-            <p className="font-bold text-gray-900 mb-1 flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-[#FF6A00]" /> Secure Payment Processed via Hubtel</p>
+            <p className="font-bold text-gray-900 mb-1 flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-green-600" /> Secure Internal Wallet Payment</p>
             <p>If you have any questions concerning this invoice, contact our support team at support@c2g-logistics.com.</p>
           </div>
           <div className="w-full md:w-80 space-y-3">

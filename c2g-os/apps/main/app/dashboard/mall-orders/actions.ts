@@ -79,3 +79,61 @@ export async function deleteMallOrder(id: string) {
 
   return { success: true };
 }
+
+import { deductFromWallet } from '../wallet/actions';
+import { createNotification } from '@/utils/notifications';
+
+export async function payMallOrder(orderId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  // 1. Fetch order
+  const { data: order } = await supabase
+    .from('ecom_orders')
+    .select('id, total_amount, payment_status, order_id')
+    .eq('id', orderId)
+    .eq('customer_id', user.id)
+    .single();
+
+  if (!order) return { success: false, error: 'Order not found' };
+  if (order.payment_status === 'paid' || order.payment_status === 'Paid') {
+    return { success: false, error: 'Order is already paid' };
+  }
+  if (!order.total_amount || parseFloat(order.total_amount) <= 0) {
+    return { success: false, error: 'Invalid order total' };
+  }
+
+  // 2. Deduct from wallet
+  const amount = parseFloat(order.total_amount);
+  const deductRes = await deductFromWallet(amount, 'mall_order', `Payment for Mall Order #${order.order_id}`, order.id);
+
+  if (!deductRes.success) {
+    return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
+  }
+
+  // 3. Update order status
+  const { error: updateError } = await supabase
+    .from('ecom_orders')
+    .update({
+      payment_status: 'paid',
+      order_status: 'processing'
+    })
+    .eq('id', order.id);
+
+  if (updateError) {
+    console.error('Error updating mall order after wallet payment:', updateError);
+    return { success: false, error: 'Failed to update order status, but wallet was deducted. Please contact support.' };
+  }
+
+  createNotification({
+    userId: user.id,
+    title: 'Mall Order Paid',
+    message: `Your payment of ₵${amount.toFixed(2)} for Mall Order #${order.order_id} was successful. We will begin processing it shortly.`,
+    type: 'mall_order_paid',
+    priority: 'important',
+    link: `/dashboard/mall-orders/${order.id}`
+  }).catch(e => console.warn('Failed to dispatch notification:', e));
+
+  return { success: true };
+}
