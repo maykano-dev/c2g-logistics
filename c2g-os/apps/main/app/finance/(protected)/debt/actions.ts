@@ -7,51 +7,63 @@ export async function getCustomerDebts() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
 
-  // Fetch customers with outstanding shipping fees or negative wallet balance (though wallets shouldn't be negative)
-  // For now, let's fetch from packages where registration_fee_paid is false
-  // And shipments where shipping_fee_paid is false
-  
-  // This is a simplified aggregated view. In a massive DB, this should be a DB view or cron aggregated table.
-  const { data: customers, error } = await supabase
-    .from('customers')
+  // Fetch orders with unpaid shipping fees — this is the real source of customer debt
+  const { data: unpaidOrders, error } = await supabase
+    .from('ecom_orders')
     .select(`
       id,
-      name,
-      email,
-      phone,
-      shipments!left (
-        id,
-        tracking_number,
-        shipping_fee_paid,
-        registration_fee_paid
-      )
-    `);
+      customer_id,
+      customer_name,
+      customer_phone,
+      customer_email,
+      shipping_cost,
+      shipping_fee_paid,
+      total_amount,
+      payment_status,
+      order_status
+    `)
+    .eq('shipping_fee_paid', false)
+    .gt('shipping_cost', 0);
 
   if (error) {
     console.error("Debt fetch error", error);
     return { success: false, error: 'Failed to fetch debts' };
   }
 
-  const debtors = customers
-    ?.map(customer => {
-      const unpaidShipments = customer.shipments?.filter((s: any) => s.shipping_fee_paid === false) || [];
-      const unpaidRegistrations = customer.shipments?.filter((s: any) => s.registration_fee_paid === false) || [];
-      
-      const totalDebt = (unpaidShipments.length * 150) + (unpaidRegistrations.length * 5); // Mock calculations
+  // Group by customer
+  const customerMap = new Map();
+  
+  (unpaidOrders || []).forEach((order: any) => {
+    const cid = order.customer_id;
+    if (!customerMap.has(cid)) {
+      customerMap.set(cid, {
+        id: cid,
+        name: order.customer_name || 'Unknown',
+        email: order.customer_email || '',
+        phone: order.customer_phone || '',
+        unpaidShippingOrders: 0,
+        totalShippingDebt: 0,
+        unpaidOrderAmount: 0,
+      });
+    }
+    
+    const customer = customerMap.get(cid);
+    customer.unpaidShippingOrders += 1;
+    customer.totalShippingDebt += Number(order.shipping_cost || 0);
+    
+    if (order.payment_status !== 'paid') {
+      customer.unpaidOrderAmount += Number(order.total_amount || 0);
+    }
+  });
 
-      return {
-        id: customer.id,
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        unpaidShipments: unpaidShipments.length,
-        unpaidRegistrations: unpaidRegistrations.length,
-        totalDebt,
-        riskLevel: totalDebt > 1000 ? 'High' : totalDebt > 200 ? 'Medium' : 'Low'
-      };
-    })
-    .filter(c => c.totalDebt > 0)
-    .sort((a, b) => b.totalDebt - a.totalDebt) || [];
+  const debtors = Array.from(customerMap.values())
+    .map(c => ({
+      ...c,
+      totalDebt: c.totalShippingDebt + c.unpaidOrderAmount,
+      riskLevel: (c.totalShippingDebt + c.unpaidOrderAmount) > 1000 ? 'High' 
+        : (c.totalShippingDebt + c.unpaidOrderAmount) > 200 ? 'Medium' : 'Low'
+    }))
+    .sort((a, b) => b.totalDebt - a.totalDebt);
 
   return { success: true, debtors };
 }

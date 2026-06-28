@@ -1,4 +1,5 @@
-import { getFinancialHealthKPIs } from './actions';
+export const dynamic = "force-dynamic";
+import { getDetailedAnalytics } from './actions';
 import { 
   Banknote, 
   Wallet, 
@@ -18,43 +19,26 @@ export const metadata = {
   title: 'Financial Health | C2G Finance ERP',
 };
 
-// Mock data for the ones not strictly calculated by the RPC yet
-const mockData = {
-  todaysRevenue: 12540,
-  revenueGrowth: "+14%",
-  todaysExpenses: 7220,
-  todaysProfit: 5320,
-  outstandingCustomerBalances: 4180,
-  pendingProcurement: 18600, // CNY
-  outstandingShippingFees: 9480,
-  overdueShippingCustomers: 37,
-  revenueByDay: [
-    { name: 'Mon', revenue: 4000 },
-    { name: 'Tue', revenue: 3000 },
-    { name: 'Wed', revenue: 2000 },
-    { name: 'Thu', revenue: 2780 },
-    { name: 'Fri', revenue: 1890 },
-    { name: 'Sat', revenue: 2390 },
-    { name: 'Sun', revenue: 3490 },
-  ],
-  profitByMonth: [
-    { name: 'Jan', profit: 4000 },
-    { name: 'Feb', profit: 3000 },
-    { name: 'Mar', profit: 2000 },
-    { name: 'Apr', profit: 2780 },
-    { name: 'May', profit: 1890 },
-    { name: 'Jun', profit: 2390 },
-    { name: 'Jul', profit: 3490 },
-  ]
-};
-
 export default async function FinanceDashboard() {
-  const res = await getFinancialHealthKPIs();
+  const res = await getDetailedAnalytics();
   const kpis = res.success && res.kpis ? res.kpis : {
     wallet_liabilities: 0,
     pending_withdrawals: 0,
     pending_refunds: 0,
     cash_available: 0
+  };
+
+  const metrics = res.success && res.metrics ? res.metrics : {
+    monthlyRevenue: 0,
+    revenueGrowth: "0%",
+    monthlyExpenses: 0,
+    monthlyProfit: 0,
+    outstandingCustomerBalances: 0,
+    pendingProcurement: 0,
+    outstandingShippingFees: 0,
+    overdueShippingCustomers: 0,
+    revenueByDay: [],
+    profitByMonth: []
   };
 
   return (
@@ -92,18 +76,18 @@ export default async function FinanceDashboard() {
           bg="bg-orange-500/10"
         />
         <KpiCard 
-          title="Today's Revenue" 
-          amount={`₵${mockData.todaysRevenue.toLocaleString()}`} 
+          title="Monthly Revenue" 
+          amount={`₵${metrics.monthlyRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`} 
           icon={TrendingUp} 
-          trend={mockData.revenueGrowth} 
+          trend={metrics.revenueGrowth} 
           color="text-blue-500"
           bg="bg-blue-500/10"
         />
         <KpiCard 
-          title="Today's Profit" 
-          amount={`₵${mockData.todaysProfit.toLocaleString()}`} 
+          title="Monthly Profit" 
+          amount={`₵${metrics.monthlyProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}`} 
           icon={TrendingUp} 
-          subtitle={`Expenses: ₵${mockData.todaysExpenses.toLocaleString()}`}
+          subtitle={`Expenses: ₵${metrics.monthlyExpenses.toLocaleString(undefined, {minimumFractionDigits: 2})}`}
           color="text-emerald-400"
           bg="bg-emerald-400/10"
         />
@@ -125,7 +109,7 @@ export default async function FinanceDashboard() {
         />
         <WarningCard 
           title="Pending Procurement"
-          amount={`¥${mockData.pendingProcurement.toLocaleString()}`}
+          amount={`¥${metrics.pendingProcurement.toLocaleString(undefined, {minimumFractionDigits: 2})}`}
           icon={TrendingDown}
           color="text-zinc-400"
         />
@@ -140,7 +124,7 @@ export default async function FinanceDashboard() {
             </h2>
           </div>
           <div className="h-[300px]">
-            <RevenueBarChart data={mockData.revenueByDay} />
+            <RevenueBarChart data={metrics.revenueByDay} />
           </div>
         </div>
 
@@ -151,7 +135,7 @@ export default async function FinanceDashboard() {
             </h2>
           </div>
           <div className="h-[300px]">
-            <ProfitAreaChart data={mockData.profitByMonth} />
+            <ProfitAreaChart data={metrics.profitByMonth} />
           </div>
         </div>
       </div>
@@ -166,20 +150,20 @@ export default async function FinanceDashboard() {
           <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center justify-between">
             <div>
               <p className="text-sm text-zinc-400 font-medium">Customer Balances</p>
-              <h3 className="text-2xl font-bold text-white mt-1">₵{mockData.outstandingCustomerBalances.toLocaleString()}</h3>
+              <h3 className="text-2xl font-bold text-white mt-1">₵{metrics.outstandingCustomerBalances.toLocaleString(undefined, {minimumFractionDigits: 2})}</h3>
             </div>
           </div>
           <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center justify-between">
             <div>
               <p className="text-sm text-zinc-400 font-medium">Outstanding Shipping</p>
-              <h3 className="text-2xl font-bold text-white mt-1">₵{mockData.outstandingShippingFees.toLocaleString()}</h3>
+              <h3 className="text-2xl font-bold text-white mt-1">₵{metrics.outstandingShippingFees.toLocaleString(undefined, {minimumFractionDigits: 2})}</h3>
             </div>
             <Truck className="w-8 h-8 text-zinc-700" />
           </div>
           <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center justify-between border-l-4 border-l-rose-500">
             <div>
               <p className="text-sm text-zinc-400 font-medium">Overdue Shipping</p>
-              <h3 className="text-2xl font-bold text-rose-500 mt-1">{mockData.overdueShippingCustomers} Customers</h3>
+              <h3 className="text-2xl font-bold text-rose-500 mt-1">{metrics.overdueShippingCustomers} Customers</h3>
             </div>
           </div>
         </div>

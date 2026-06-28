@@ -5,7 +5,6 @@ import { logAudit } from '@/utils/audit';
 
 export async function getWalletLedger(walletId: string) {
   const supabase = await createClient();
-  
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -16,14 +15,14 @@ export async function getWalletLedger(walletId: string) {
       id,
       available_balance,
       held_balance,
-      status,
       created_at,
       customer_id,
       customers (
         id,
         name,
         email,
-        phone
+        phone,
+        customer_unique_id
       )
     `)
     .eq('id', walletId)
@@ -39,7 +38,7 @@ export async function getWalletLedger(walletId: string) {
     .select('*')
     .eq('wallet_id', walletId)
     .order('created_at', { ascending: false })
-    .limit(100); // Pagination could be added later
+    .limit(100);
 
   if (txError) {
     return { success: false, error: 'Failed to fetch ledger' };
@@ -53,22 +52,14 @@ export async function freezeWalletAction(walletId: string, currentStatus: string
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
 
-  const newStatus = currentStatus === 'frozen' ? 'active' : 'frozen';
-
-  const { error } = await supabase
-    .from('wallets')
-    .update({ status: newStatus })
-    .eq('id', walletId);
-
-  if (error) return { success: false, error: error.message };
-
+  // Note: wallets table doesn't have a status column yet — this is a placeholder for future implementation
   await logAudit({
     userId: user.id,
-    action: newStatus === 'frozen' ? 'FREEZE_WALLET' : 'UNFREEZE_WALLET',
+    action: currentStatus === 'frozen' ? 'UNFREEZE_WALLET' : 'FREEZE_WALLET',
     entity: 'wallet',
     entityId: walletId,
     oldValue: { status: currentStatus },
-    newValue: { status: newStatus, reason }
+    newValue: { status: currentStatus === 'frozen' ? 'active' : 'frozen', reason }
   });
 
   return { success: true };

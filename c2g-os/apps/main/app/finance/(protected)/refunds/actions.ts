@@ -19,12 +19,7 @@ export async function getRefunds() {
       reference_id,
       status,
       created_at,
-      customers (
-        id,
-        name,
-        email,
-        phone
-      )
+      customer_id
     `)
     .order('created_at', { ascending: false });
 
@@ -33,7 +28,25 @@ export async function getRefunds() {
     return { success: false, error: error.message };
   }
 
-  return { success: true, refunds: data };
+  // Fetch customer names separately to avoid FK issues
+  const customerIds = [...new Set((data || []).map((r: any) => r.customer_id).filter(Boolean))];
+  let customersMap = new Map();
+  
+  if (customerIds.length > 0) {
+    const { data: customers } = await supabase
+      .from('customers')
+      .select('id, name, email, phone')
+      .in('id', customerIds);
+    
+    customers?.forEach((c: any) => customersMap.set(c.id, c));
+  }
+
+  const enriched = (data || []).map((r: any) => ({
+    ...r,
+    customers: customersMap.get(r.customer_id) || null
+  }));
+
+  return { success: true, refunds: enriched };
 }
 
 export async function processRefund(refundId: string, customerId: string, amount: number, newStatus: string, notes: string) {

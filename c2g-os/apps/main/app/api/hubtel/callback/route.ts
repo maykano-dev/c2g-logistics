@@ -548,6 +548,62 @@ export async function POST(req: Request) {
             }
         }
 
+        // 6. WALLET TOP UP
+        if (clientReference.startsWith('WLT-') || clientReference.startsWith('WALLET-')) {
+            const { data: existingTx } = await supabase
+                .from('wallet_transactions')
+                .select('id, status, wallet_id')
+                .eq('reference_id', checkoutId || clientReference)
+                .maybeSingle()
+
+            if (existingTx) {
+                if (paymentStatus === 'paid' && existingTx.status === 'pending') {
+                    // Get wallet
+                    const { data: wallet } = await supabase
+                        .from('wallets')
+                        .select('id, available_balance, customer_id')
+                        .eq('id', existingTx.wallet_id)
+                        .single()
+
+                    if (wallet) {
+                        const newBalance = Number(wallet.available_balance) + amount;
+
+                        await supabase
+                            .from('wallets')
+                            .update({ available_balance: newBalance })
+                            .eq('id', wallet.id)
+
+                        await supabase
+                            .from('wallet_transactions')
+                            .update({ status: 'completed' })
+                            .eq('id', existingTx.id)
+
+                        createNotification({
+                            userId: wallet.customer_id,
+                            title: 'Wallet Top-Up Successful',
+                            message: `Your wallet has been credited with ₵${amount.toFixed(2)} via Hubtel.`,
+                            type: 'wallet_top_up',
+                            priority: 'info',
+                            link: '/dashboard/wallet'
+                        }).catch(e => console.warn('Failed to dispatch notification:', e));
+
+                        console.log(`Wallet ${wallet.id} credited with ${amount} via webhook`);
+                    }
+                } else if (paymentStatus === 'failed' && existingTx.status === 'pending') {
+                    await supabase
+                        .from('wallet_transactions')
+                        .update({ status: 'failed', description: 'Wallet Top Up Failed/Cancelled' })
+                        .eq('id', existingTx.id)
+                }
+                
+                return NextResponse.json({
+                    message: 'Wallet top-up callback processed',
+                    reference: clientReference,
+                    type: 'wallet_top_up'
+                })
+            }
+        }
+
         console.error('Order not found for reference:', clientReference)
         return NextResponse.json({
             message: 'Order not found',

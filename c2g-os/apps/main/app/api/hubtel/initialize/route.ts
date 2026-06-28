@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       const shortRandom = Math.random().toString(36).substring(2, 10).toUpperCase();
       clientReference = `REG-${shortRandom}`;
       
-      returnUrl = `${origin}/dashboard/packages`;
+      returnUrl = `${origin}/payment-status?reference=${clientReference}`;
       cancelUrl = `${origin}/dashboard/packages`;
       
       dbTable = 'shipments';
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       description = `Mall Order #${ecomOrder.order_id} - ${storeName}`;
       clientReference = `MALL-${ecomOrder.order_id}-${timestamp}`;
       
-      returnUrl = `${origin}/dashboard/mall-orders?success=true&orderId=${ecomOrder.order_id}`;
+      returnUrl = `${origin}/payment-status?reference=${clientReference}`;
       cancelUrl = `${origin}/dashboard/mall-orders`;
       
       dbTable = 'ecom_orders';
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
       const shortRandom = Math.random().toString(36).substring(2, 10).toUpperCase();
       clientReference = `SHIPMENT-${shortRandom}`;
       
-      returnUrl = `${origin}/dashboard/packages`;
+      returnUrl = `${origin}/payment-status?reference=${clientReference}`;
       cancelUrl = `${origin}/dashboard/packages`;
       
       dbTable = 'shipments';
@@ -182,7 +182,7 @@ export async function POST(request: Request) {
       const shortRandom = Math.random().toString(36).substring(2, 10).toUpperCase();
       clientReference = `SHIPPING_${shortRandom}`;
       
-      returnUrl = `${origin}/dashboard/mall-orders?success=true&orderId=${ecomOrder.order_id}`;
+      returnUrl = `${origin}/payment-status?reference=${clientReference}`;
       cancelUrl = `${origin}/dashboard/mall-orders`;
       
       dbTable = 'ecom_orders';
@@ -218,7 +218,7 @@ export async function POST(request: Request) {
       description = `Order #${String(order.id).substring(0, 8)} - ${storeName}`;
       clientReference = `C2G-ORDER-${String(orderId).substring(0, 8)}-${timestamp}`;
       
-      returnUrl = `${origin}/dashboard/orders/${orderId}?track=true`;
+      returnUrl = `${origin}/payment-status?reference=${clientReference}`;
       cancelUrl = `${origin}/dashboard/orders/${orderId}`;
       
       dbTable = 'orders';

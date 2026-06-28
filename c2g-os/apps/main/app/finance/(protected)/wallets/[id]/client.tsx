@@ -49,7 +49,9 @@ export default function WalletLedgerClient({ wallet, transactions }: { wallet: a
                 </span>
               )}
             </h1>
-            <p className="text-sm text-zinc-400 font-mono mt-1">{wallet.id}</p>
+            <p className="text-sm text-zinc-400 font-mono mt-1">
+              {wallet.customers?.customer_unique_id || wallet.id}
+            </p>
           </div>
         </div>
 

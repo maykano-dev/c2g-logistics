@@ -24,7 +24,7 @@ export default function WalletSearchClient({ initialWallets, initialQuery }: { i
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, email, phone, or wallet ID..."
+            placeholder="Search by name, email, phone, or customer ID..."
             className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         </div>
@@ -40,7 +40,7 @@ export default function WalletSearchClient({ initialWallets, initialQuery }: { i
             <thead className="bg-zinc-950/50 text-zinc-500 font-medium">
               <tr>
                 <th className="px-6 py-4">Customer</th>
-                <th className="px-6 py-4">Wallet ID</th>
+                <th className="px-6 py-4">Customer ID</th>
                 <th className="px-6 py-4">Available Balance</th>
                 <th className="px-6 py-4">Held Balance</th>
                 <th className="px-6 py-4">Status</th>
@@ -55,8 +55,8 @@ export default function WalletSearchClient({ initialWallets, initialQuery }: { i
                     <div className="text-xs text-zinc-500">{wallet.customers?.email} &middot; {wallet.customers?.phone}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="font-mono text-xs bg-zinc-950 px-2 py-1 rounded border border-zinc-800">
-                      {wallet.id.split('-')[0]}...
+                    <span className="font-mono text-xs bg-zinc-950 px-2 py-1 rounded border border-zinc-800" title={wallet.customer_id}>
+                      {wallet.customers?.customer_unique_id || wallet.customer_id?.slice(0, 8) + '...'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -70,15 +70,9 @@ export default function WalletSearchClient({ initialWallets, initialQuery }: { i
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    {wallet.isFrozen ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-bold bg-rose-500/10 text-rose-500">
-                        <AlertCircle className="w-3.5 h-3.5" /> Frozen
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-500">
-                        <Wallet className="w-3.5 h-3.5" /> Active
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-500">
+                      <Wallet className="w-3.5 h-3.5" /> Active
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Link

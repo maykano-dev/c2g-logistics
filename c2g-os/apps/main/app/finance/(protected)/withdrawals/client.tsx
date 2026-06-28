@@ -17,7 +17,7 @@ export default function WithdrawalsClient({ initialWithdrawals }: { initialWithd
 
   const filtered = initialWithdrawals.filter(w => {
     if (filter !== "all" && w.status !== filter) return false;
-    if (search && !w.customers?.name?.toLowerCase().includes(search.toLowerCase()) && !w.id.includes(search)) return false;
+    if (search && !w.importers?.name?.toLowerCase().includes(search.toLowerCase()) && !w.id.includes(search)) return false;
     return true;
   });
 
@@ -69,7 +69,7 @@ export default function WithdrawalsClient({ initialWithdrawals }: { initialWithd
           onClick={() => downloadCSV(filtered.map(w => ({
             ID: w.id,
             Date: new Date(w.created_at).toLocaleString(),
-            Customer: w.customers?.name,
+            Customer: w.importers?.name,
             Amount: w.amount,
             Status: w.status,
             Tier: w.required_tier
@@ -100,8 +100,8 @@ export default function WithdrawalsClient({ initialWithdrawals }: { initialWithd
                     {new Date(w.created_at).toLocaleString()}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="font-bold text-zinc-200">{w.customers?.name}</div>
-                    <div className="text-xs text-zinc-500">{w.customers?.phone}</div>
+                    <div className="font-bold text-zinc-200">{w.importers?.name}</div>
+                    <div className="text-xs text-zinc-500">{w.importers?.phone}</div>
                   </td>
                   <td className="px-6 py-4 capitalize">
                     <span className="bg-zinc-800 px-2 py-1 rounded text-xs font-mono border border-zinc-700 text-zinc-300">
@@ -124,7 +124,7 @@ export default function WithdrawalsClient({ initialWithdrawals }: { initialWithd
                     {w.status === 'pending' ? (
                       <div className="flex justify-end gap-2">
                         <button 
-                          onClick={() => handleAction(w.id, w.customers?.id, w.amount, 'rejected')}
+                          onClick={() => handleAction(w.id, w.importers?.id, w.amount, 'rejected')}
                           disabled={processing === w.id}
                           className="p-2 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg text-rose-500 transition-colors disabled:opacity-50" 
                           title="Reject"
@@ -132,7 +132,7 @@ export default function WithdrawalsClient({ initialWithdrawals }: { initialWithd
                           <X className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => handleAction(w.id, w.customers?.id, w.amount, 'approved')}
+                          onClick={() => handleAction(w.id, w.importers?.id, w.amount, 'approved')}
                           disabled={processing === w.id}
                           className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg text-emerald-500 transition-colors disabled:opacity-50" 
                           title="Approve"

@@ -47,6 +47,14 @@ function PaymentStatusContent() {
           setStatus('success')
           setMessage('Payment successful! Your transaction has been securely verified.')
           if (data.amount) setAmount(data.amount)
+            
+          // Ported logic: Clear cart on mall order success
+          if (reference && (reference.includes('C2G-MALL') || reference.startsWith('MALL-'))) {
+              try {
+                  localStorage.removeItem('ecomCart');
+                  window.dispatchEvent(new Event('cartUpdated')); // Trigger global cart update if listeners exist
+              } catch (e) {}
+          }
         } else if (res.ok && data.status === 'failed') {
           setStatus('failed')
           setMessage('Payment failed or was declined.')
@@ -175,7 +183,12 @@ function PaymentStatusContent() {
               <div className="w-full h-12 rounded-xl bg-neutral-800 animate-pulse" />
             ) : (
               <Link 
-                href="/dashboard/orders"
+                href={(() => {
+                  if (reference?.startsWith('WLT-') || reference?.startsWith('WALLET-')) return '/dashboard/wallet';
+                  if (reference?.startsWith('SHIPMENT-')) return '/dashboard/packages';
+                  if (reference?.startsWith('REG-')) return '/dashboard/packages';
+                  return '/dashboard/orders';
+                })()}
                 className={`w-full flex items-center justify-center space-x-2 h-12 rounded-xl font-medium transition-all ${
                   status === 'success' 
                     ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'

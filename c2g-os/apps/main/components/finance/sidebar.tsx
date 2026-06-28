@@ -45,7 +45,9 @@ export default function FinanceSidebar() {
 
       <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = item.href === '/finance' 
+            ? pathname === '/finance' 
+            : (pathname === item.href || pathname.startsWith(`${item.href}/`));
           return (
             <Link
               key={item.name}

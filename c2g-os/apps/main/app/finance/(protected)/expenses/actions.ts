@@ -19,8 +19,8 @@ export async function getExpenses() {
       receipt_url,
       status,
       created_at,
-      submitter:submitted_by(id, email),
-      approver:approved_by(id, email)
+      submitted_by,
+      approved_by
     `)
     .order('created_at', { ascending: false });
 
@@ -29,7 +29,7 @@ export async function getExpenses() {
     return { success: false, error: error.message };
   }
 
-  return { success: true, expenses: data };
+  return { success: true, expenses: data || [] };
 }
 
 export async function updateExpenseStatus(expenseId: string, newStatus: string) {

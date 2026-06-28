@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 // Reusable helper to get the authenticated customer's wallet
 export async function getMyWallet() {
@@ -145,6 +146,11 @@ export async function topUpWallet(amount: number, phone?: string) {
 
   const ref = `WLT-${Math.random().toString(36).substring(2, 12)}`.toUpperCase();
   
+  const headersList = headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+
   try {
     const hubtelData = await initializeHubtelPayment({
         amount: amount,
@@ -153,9 +159,9 @@ export async function topUpWallet(amount: number, phone?: string) {
         customerPhone: phone || undefined,
         customerEmail: customer.email,
         description: `Wallet Top Up for C2G Logistics`,
-        returnUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment-status?reference=${ref}`,
-        cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/wallet?status=cancelled`,
-        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/hubtel/verify?clientReference=${ref}&customerId=${customer.id}`,
+        returnUrl: `${appUrl}/payment-status?reference=${ref}`,
+        cancelUrl: `${appUrl}/dashboard/wallet?status=cancelled`,
+        callbackUrl: `${appUrl}/api/hubtel/verify?clientReference=${ref}&customerId=${customer.id}`,
         hubtelApiId: process.env.HUBTEL_API_ID || process.env.HUBTEL_CLIENT_ID,
         hubtelApiKey: process.env.HUBTEL_API_KEY || process.env.HUBTEL_CLIENT_SECRET,
         hubtelMerchantAccount: process.env.HUBTEL_MERCHANT_ACCOUNT

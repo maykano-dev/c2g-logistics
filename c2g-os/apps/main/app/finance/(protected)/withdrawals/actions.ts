@@ -17,11 +17,11 @@ export async function getWithdrawals() {
       created_at,
       required_tier,
       notes,
-      customers (
+      importers (
         id,
-        name,
+        business_name,
         email,
-        phone
+        whatsapp
       )
     `)
     .order('created_at', { ascending: false });
@@ -31,7 +31,17 @@ export async function getWithdrawals() {
     return { success: false, error: error.message };
   }
 
-  return { success: true, withdrawals: data };
+  // Normalize importer data to match what the client expects
+  const normalized = (data || []).map((w: any) => ({
+    ...w,
+    importers: w.importers ? {
+      ...w.importers,
+      name: w.importers.business_name,
+      phone: w.importers.whatsapp
+    } : null
+  }));
+
+  return { success: true, withdrawals: normalized };
 }
 
 export async function updateWithdrawalStatus(withdrawalId: string, customerId: string, amount: number, newStatus: string, notes: string) {
@@ -64,8 +74,7 @@ export async function updateWithdrawalStatus(withdrawalId: string, customerId: s
 
   if (error) return { success: false, error: error.message };
 
-  // If Approved, deduct from customer wallet. 
-  // (Assuming withdrawal means money was taken OUT of the platform and given to user's bank/mobile money)
+  // If Approved, deduct from customer wallet
   if (newStatus === 'approved') {
      const { error: deductErr } = await supabase.rpc('deduct_wallet_balance', {
         p_customer_id: customerId,
@@ -75,8 +84,6 @@ export async function updateWithdrawalStatus(withdrawalId: string, customerId: s
      });
      if (deductErr) {
         console.error("Failed to deduct from wallet for withdrawal", deductErr);
-        // Ideally we would wrap this in a postgres transaction, 
-        // but for now we log it and continue or we could revert the withdrawal status.
      }
   }
 
