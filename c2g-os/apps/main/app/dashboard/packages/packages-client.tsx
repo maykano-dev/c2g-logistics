@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Package, PlusCircle, Search, Filter, Lock, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import PackagePayButton from "./package-pay-button";
+import PackageBulkPayButton from "./package-bulk-pay-button";
 import { useModal } from "@/components/providers/modal-provider";
 import { deletePackage } from "./actions";
 import { useRouter } from "next/navigation";
@@ -11,9 +12,10 @@ import { useRouter } from "next/navigation";
 interface PackagesClientProps {
   packages: any[];
   walletBalance: number;
+  registrationFee: number;
 }
 
-export default function PackagesClient({ packages, walletBalance }: PackagesClientProps) {
+export default function PackagesClient({ packages, walletBalance, registrationFee }: PackagesClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -87,13 +89,21 @@ export default function PackagesClient({ packages, walletBalance }: PackagesClie
           <h1 className="text-3xl font-bold tracking-tight">My Packages</h1>
           <p className="text-muted-foreground mt-1">Track and manage your registered warehouse packages.</p>
         </div>
-        <Link 
-          href="/dashboard/packages/register" 
+        <div className="flex flex-wrap items-center gap-3">
+          <PackageBulkPayButton 
+            unpaidCount={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).length}
+            unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).map(p => p.id)}
+            registrationFee={registrationFee}
+            walletBalance={walletBalance}
+          />
+          <Link 
+            href="/dashboard/packages/register" 
           className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 gap-2 shadow-lg shadow-primary/25 hover:scale-[1.02]"
         >
           <PlusCircle className="w-4 h-4" />
           Register Package
         </Link>
+        </div>
       </div>
 
       {/* Filters and Search */}
@@ -231,7 +241,7 @@ export default function PackagesClient({ packages, walletBalance }: PackagesClie
                   </Link>
                   {needsPayment && (
                     <div className="flex-1">
-                      <PackagePayButton packageId={pkg.id} walletBalance={walletBalance} />
+                      <PackagePayButton packageId={pkg.id} walletBalance={walletBalance} registrationFee={registrationFee} />
                     </div>
                   )}
                 </div>

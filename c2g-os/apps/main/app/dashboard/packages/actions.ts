@@ -6,6 +6,21 @@ import { RegisterPackagesSchema } from '@/utils/security-schemas';
 import { deductFromWallet } from '../wallet/actions';
 import { createNotification } from '@/utils/notifications';
 
+export async function getRegistrationFee() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('platform_settings')
+    .select('setting_value')
+    .eq('setting_key', 'package_registration_fee')
+    .single();
+
+  if (error || !data) {
+    // Fallback to default if table/row not found
+    return 5;
+  }
+  return Number(data.setting_value);
+}
+
 export async function getPackages() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -176,8 +191,8 @@ export async function payPackageRegistrationFee(packageId: string) {
   if (!pkg) return { success: false, error: 'Package not found' };
   if (pkg.registration_fee_paid) return { success: false, error: 'Fee already paid' };
 
-  // 2. Deduct from wallet
-  const feeAmount = 5; // Flat fee of 5 GHS
+  // 2. Fetch dynamic fee
+  const feeAmount = await getRegistrationFee();
   const ref = `REG-${packageId}`;
   
   const deductRes = await deductFromWallet(feeAmount, 'package_fee', `Package Registration Fee for ${pkg.tracking_number}`, packageId);
@@ -204,7 +219,7 @@ export async function payPackageRegistrationFee(packageId: string) {
   createNotification({
     userId: user.id,
     title: 'Registration Fee Paid',
-    message: `Your payment of ₵5 for package ${pkg.tracking_number} was successful. It will now be processed.`,
+    message: `Your payment of ₵${feeAmount} for package ${pkg.tracking_number} was successful. It will now be processed.`,
     type: 'package_fee_paid',
     priority: 'info',
     link: `/dashboard/packages/${packageId}`
@@ -212,4 +227,73 @@ export async function payPackageRegistrationFee(packageId: string) {
 
   revalidatePath('/dashboard/packages');
   return { success: true };
+}
+
+export async function payBulkPackageRegistrationFees(packageIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  if (!packageIds || packageIds.length === 0) {
+    return { success: false, error: 'No packages selected' };
+  }
+
+  // 1. Fetch the packages to ensure they belong to the user and are unpaid
+  const { data: packages, error: fetchError } = await supabase
+    .from('shipments')
+    .select('id, registration_fee_paid, tracking_number')
+    .in('id', packageIds)
+    .eq('customer_id', user.id);
+
+  if (fetchError || !packages) return { success: false, error: 'Failed to fetch packages' };
+
+  const unpaidPackages = packages.filter(p => !p.registration_fee_paid);
+  
+  if (unpaidPackages.length === 0) {
+    return { success: false, error: 'All selected packages are already paid.' };
+  }
+
+  const unpaidIds = unpaidPackages.map(p => p.id);
+  const count = unpaidIds.length;
+
+  // 2. Fetch dynamic fee
+  const feePerPackage = await getRegistrationFee();
+  const totalAmount = feePerPackage * count;
+
+  // 3. Deduct from wallet atomically
+  const ref = `BULK-REG-${Date.now()}`;
+  const description = `Bulk Registration Fee for ${count} package(s)`;
+  
+  const deductRes = await deductFromWallet(totalAmount, 'package_fee', description, ref);
+  
+  if (!deductRes.success) {
+    return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
+  }
+
+  // 4. Update shipment statuses
+  const { error } = await supabase
+    .from('shipments')
+    .update({
+        registration_fee_paid: true,
+        status: 'awaiting_arrival',
+        registration_fee_payment_reference: ref
+    })
+    .in('id', unpaidIds);
+
+  if (error) {
+    console.error('Error updating bulk shipments after fee payment:', error);
+    return { success: false, error: 'Failed to update package statuses, but wallet was deducted. Please contact support.' };
+  }
+
+  createNotification({
+    userId: user.id,
+    title: 'Bulk Registration Fee Paid',
+    message: `Your bulk payment of ₵${totalAmount} for ${count} package(s) was successful.`,
+    type: 'package_fee_paid',
+    priority: 'info',
+    link: `/dashboard/packages`
+  }).catch(e => console.warn('Failed to dispatch notification:', e));
+
+  revalidatePath('/dashboard/packages');
+  return { success: true, count, totalAmount };
 }
