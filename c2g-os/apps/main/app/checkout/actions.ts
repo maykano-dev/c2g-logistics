@@ -188,10 +188,11 @@ export async function createEcomOrder(orderData: any) {
   const primaryIdStr = String(primaryId).replace(/-/g, '');
   const primaryOrderIdFormatted = `MALL-${primaryIdStr.slice(-4).toUpperCase()}`;
 
-  // Create notification asynchronously without blocking
-  import('@/utils/notifications').then(({ createNotification }) => {
+  // Create notification reliably
+  try {
+    const { createNotification } = await import('@/utils/notifications');
     const isWallet = validatedData.paymentGateway === 'wallet';
-    createNotification({
+    await createNotification({
       userId: userId,
       title: 'Order Placed successfully',
       message: isWallet 
@@ -201,7 +202,9 @@ export async function createEcomOrder(orderData: any) {
       priority: isWallet ? 'important' : 'info',
       link: `/dashboard/orders/mall/${primaryId}`
     });
-  }).catch(e => console.warn('Failed to dispatch notification:', e));
+  } catch(e) {
+    console.warn('Failed to dispatch notification:', e);
+  }
 
   return { success: true, orderId: primaryOrderIdFormatted, id: primaryId };
 }

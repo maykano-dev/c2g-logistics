@@ -85,10 +85,7 @@ export default function CheckoutClient({
 
     const res = await createEcomOrder(payload);
 
-    if (res.success) {
-      clearCart();
-      router.push(`/dashboard/mall-orders`);
-    } else {
+    if (!res.success) {
       showAlert({ title: 'Error', message: res.error || "An unknown error occurred", type: 'danger' });
       setLoading(false);
       throw new Error(res.error || "An unknown error occurred");
@@ -109,6 +106,10 @@ export default function CheckoutClient({
         walletBalance={walletBalance}
         itemName="C2G Mall Order"
         isProcessing={loading}
+        onSuccessRedirect={() => {
+          clearCart();
+          router.push(`/dashboard/mall-orders`);
+        }}
       />
       {/* Checkout Form */}
       <div className="flex-1 space-y-6">

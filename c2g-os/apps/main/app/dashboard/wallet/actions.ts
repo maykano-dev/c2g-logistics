@@ -98,6 +98,20 @@ export async function deductFromWallet(amount: number, type: string, description
     return { success: false, error: data.error };
   }
 
+  try {
+    const { createNotification } = await import('@/utils/notifications');
+    await createNotification({
+      userId: customer.id,
+      title: 'Wallet Deduction Successful',
+      message: `₵${Math.abs(amount).toFixed(2)} was deducted from your wallet for: ${description}`,
+      type: 'wallet_deduction',
+      priority: 'info',
+      link: '/dashboard/wallet'
+    });
+  } catch (err) {
+    console.error("Failed to dispatch wallet deduction notification:", err);
+  }
+
   revalidatePath('/dashboard/wallet');
   return { success: true };
 }
@@ -160,7 +174,7 @@ export async function topUpWallet(amount: number, phone?: string) {
         customerEmail: customer.email,
         description: `Wallet Top Up for C2G Logistics`,
         returnUrl: `${appUrl}/payment-status?reference=${ref}`,
-        cancelUrl: `${appUrl}/dashboard/wallet?status=cancelled`,
+        cancelUrl: `${appUrl}/dashboard/wallet?status=cancelled&ref=${ref}`,
         callbackUrl: `${appUrl}/api/hubtel/verify?clientReference=${ref}&customerId=${customer.id}`,
         hubtelApiId: process.env.HUBTEL_API_ID || process.env.HUBTEL_CLIENT_ID,
         hubtelApiKey: process.env.HUBTEL_API_KEY || process.env.HUBTEL_CLIENT_SECRET,

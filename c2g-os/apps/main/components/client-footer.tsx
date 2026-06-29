@@ -22,7 +22,11 @@ export function ClientFooter() {
   const hideFooterRoutes = ["/dashboard", "/admin", "/finance", "/staff", "/agent", "/login", "/signup", "/forgot-password", "/importers/login", "/importers/register"];
   const shouldHide = hideFooterRoutes.some(route => pathname?.startsWith(route));
 
-  if (shouldHide) {
+  // Hide footer on specific routes when user is logged in
+  const hideFooterWhenLoggedInRoutes = ["/checkout", "/cart", "/shop/product"];
+  const shouldHideWhenLoggedIn = isLoggedIn && hideFooterWhenLoggedInRoutes.some(route => pathname?.startsWith(route));
+
+  if (shouldHide || shouldHideWhenLoggedIn) {
     return null;
   }
 

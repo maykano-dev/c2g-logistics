@@ -55,6 +55,17 @@ function PaymentStatusContent() {
                   window.dispatchEvent(new Event('cartUpdated')); // Trigger global cart update if listeners exist
               } catch (e) {}
           }
+
+          // Trigger local browser push notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+              navigator.serviceWorker.ready.then(registration => {
+                  registration.showNotification('Payment Confirmed! 🎉', {
+                      body: `Your payment was successfully verified.`,
+                      icon: '/icon.png',
+                      badge: '/icon.png'
+                  }).catch(e => console.log('Failed to show local notification', e));
+              });
+          }
         } else if (res.ok && data.status === 'failed') {
           setStatus('failed')
           setMessage('Payment failed or was declined.')

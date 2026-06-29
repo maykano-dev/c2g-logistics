@@ -2,15 +2,26 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { Wallet, ArrowDownToLine, ArrowUpRight, History, AlertCircle, Clock, XCircle } from "lucide-react";
 import TopUpModal from "./top-up-modal";
+import Link from "next/link";
 
 export const metadata = { title: "My Wallet | C2G Logistics" };
 
-export default async function WalletPage({ searchParams }: { searchParams: { status?: string } }) {
+export default async function WalletPage({ searchParams }: { searchParams: Promise<{ status?: string, ref?: string }> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/login");
+  }
+
+  // Handle cancelled top-ups
+  const searchParamsAwaited = await searchParams;
+  if (searchParamsAwaited?.status === 'cancelled' && searchParamsAwaited?.ref) {
+    await supabase
+      .from("wallet_transactions")
+      .update({ status: 'failed' })
+      .eq("reference_id", searchParamsAwaited.ref)
+      .eq("status", "pending");
   }
 
   const { data: customer } = await supabase
@@ -38,7 +49,7 @@ export default async function WalletPage({ searchParams }: { searchParams: { sta
     .select("*")
     .eq("wallet_id", wallet.id)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(5);
 
   const totalBalance = Number(wallet.available_balance) + Number(wallet.held_balance);
   const isLowBalance = Number(wallet.available_balance) < Number(wallet.minimum_balance_threshold);
@@ -53,7 +64,7 @@ export default async function WalletPage({ searchParams }: { searchParams: { sta
         <TopUpModal currentPhone={customer.phone} />
       </div>
 
-      {searchParams.status === 'cancelled' && (
+      {searchParamsAwaited?.status === 'cancelled' && (
         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
           Your top-up attempt was cancelled.
         </div>
@@ -150,6 +161,14 @@ export default async function WalletPage({ searchParams }: { searchParams: { sta
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {transactions && transactions.length >= 5 && (
+          <div className="mt-6 text-center">
+            <Link href="/dashboard/wallet/history" className="text-sm font-bold text-primary hover:underline">
+              View All Transactions →
+            </Link>
           </div>
         )}
       </div>

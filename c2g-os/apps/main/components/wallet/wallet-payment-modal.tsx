@@ -14,6 +14,7 @@ interface WalletPaymentModalProps {
   walletBalance: number;
   itemName: string;
   isProcessing: boolean;
+  onSuccessRedirect?: () => void;
 }
 
 export default function WalletPaymentModal({
@@ -24,6 +25,7 @@ export default function WalletPaymentModal({
   walletBalance,
   itemName,
   isProcessing,
+  onSuccessRedirect
 }: WalletPaymentModalProps) {
   const router = useRouter();
   const [status, setStatus] = useState<"confirm" | "insufficient" | "success">("confirm");
@@ -57,8 +59,12 @@ export default function WalletPaymentModal({
       
       // Auto close after 3 seconds on success
       setTimeout(() => {
-        onClose();
-        setStatus("confirm");
+        if (onSuccessRedirect) {
+          onSuccessRedirect();
+        } else {
+          onClose();
+          setStatus("confirm");
+        }
       }, 3000);
     } catch (err: any) {
       setError(err.message || "Payment failed");
