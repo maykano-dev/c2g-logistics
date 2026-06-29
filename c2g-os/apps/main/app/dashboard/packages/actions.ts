@@ -225,6 +225,33 @@ export async function payPackageRegistrationFee(packageId: string) {
     link: `/dashboard/packages/${packageId}`
   }).catch(e => console.warn('Failed to dispatch notification:', e));
 
+  supabase.functions.invoke('telegram-notify', {
+    body: {
+        customer_id: user.id,
+        type: 'package_registered',
+        title: '📦 Registration Fee Paid!',
+        message: `Your registration fee of ₵${feeAmount} for package ${pkg.tracking_number} was successfully paid.\n\nIt is now visible to admins and awaiting arrival.`,
+        data: {
+            'Tracking #': pkg.tracking_number || 'N/A',
+            'Amount': `₵${feeAmount}`
+        },
+        priority: 'medium'
+    }
+  }).catch(e => console.warn('Failed to send telegram:', e));
+
+  supabase.functions.invoke('telegram-admin-notify', {
+    body: {
+        type: 'package_registered',
+        title: '🆕 Package Fee Paid',
+        message: `A package registration fee was paid.`,
+        data: {
+            'Tracking #': pkg.tracking_number || 'N/A',
+            'Customer': user.id
+        },
+        priority: 'low'
+    }
+  }).catch(e => console.warn('Failed to send admin telegram:', e));
+
   revalidatePath('/dashboard/packages');
   return { success: true };
 }
@@ -293,6 +320,34 @@ export async function payBulkPackageRegistrationFees(packageIds: string[]) {
     priority: 'info',
     link: `/dashboard/packages`
   }).catch(e => console.warn('Failed to dispatch notification:', e));
+
+  supabase.functions.invoke('telegram-notify', {
+    body: {
+        customer_id: user.id,
+        type: 'package_registered',
+        title: '📦 Bulk Registration Paid!',
+        message: `Your bulk payment of ₵${totalAmount} for ${count} packages was successful.\n\nThey are now visible to admins and awaiting arrival.`,
+        data: {
+            'Packages Count': count,
+            'Total Amount': `₵${totalAmount}`
+        },
+        priority: 'medium'
+    }
+  }).catch(e => console.warn('Failed to send telegram:', e));
+
+  supabase.functions.invoke('telegram-admin-notify', {
+    body: {
+        type: 'package_registered',
+        title: '🆕 Bulk Package Fees Paid',
+        message: `A bulk package registration fee was paid.`,
+        data: {
+            'Packages Count': count,
+            'Total Amount': `₵${totalAmount}`,
+            'Customer': user.id
+        },
+        priority: 'low'
+    }
+  }).catch(e => console.warn('Failed to send admin telegram:', e));
 
   revalidatePath('/dashboard/packages');
   return { success: true, count, totalAmount };
