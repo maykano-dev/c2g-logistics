@@ -35,7 +35,7 @@ export function Footer({ hideCta = false }: { hideCta?: boolean }) {
           <div className="lg:col-span-2 space-y-6">
             <Link href="/" className="inline-flex items-center gap-2">
               <div className="w-10 h-10 relative flex items-center justify-center">
-                <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
+                <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="40px" className="object-contain" />
               </div>
               <span className="font-bold text-xl tracking-tight">C2G Logistics</span>
             </Link>
