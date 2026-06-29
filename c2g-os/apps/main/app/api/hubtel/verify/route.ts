@@ -57,11 +57,25 @@ export async function GET(req: Request) {
                 }
 
                 // 2. ECOM ORDERS
-                const { data: ecomOrder } = await supabase
+                let { data: ecomOrder } = await supabase
                     .from('ecom_orders')
-                    .select('id, payment_status')
+                    .select('id, payment_status, total_amount, customer_id')
                     .eq('payment_reference', ref)
                     .maybeSingle()
+
+                // Fallback parsing for ecom orders (e.g. C2G-MALL-ID)
+                if (!ecomOrder && (ref.startsWith('C2G-MALL-') || ref.startsWith('MALL-'))) {
+                    const parts = ref.split('-');
+                    const idPart = parts.length >= 3 && ref.startsWith('C2G-') ? parts[2] : (parts.length >= 2 ? parts[1] : null);
+                    if (idPart) {
+                        const isNumeric = !isNaN(parseInt(idPart as string));
+                        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idPart as string);
+                        if (isNumeric || isUUID) {
+                            const { data: oById } = await supabase.from('ecom_orders').select('id, payment_status, total_amount, customer_id').eq('id', idPart).maybeSingle();
+                            if (oById) ecomOrder = oById;
+                        }
+                    }
+                }
 
                 if (ecomOrder && ecomOrder.payment_status !== 'paid') {
                     await supabase
@@ -74,15 +88,41 @@ export async function GET(req: Request) {
                         })
                         .eq('id', ecomOrder.id)
                     console.log(`[Verify API] Ecom order ${ecomOrder.id} verified as paid`)
+
+                    if (ecomOrder.customer_id) {
+                        await createNotification({
+                            userId: ecomOrder.customer_id,
+                            title: 'Order Payment Successful',
+                            message: `Your payment of ₵${(ecomOrder.total_amount || 0).toFixed(2)} for Mall Order #${ecomOrder.id.toString().slice(-4)} was successful.`,
+                            type: 'order_payment_successful',
+                            priority: 'info',
+                            link: '/dashboard/orders'
+                        });
+                    }
                 }
 
                 // 3. SHIPMENT SHIPPING FEES
                 if (ref.startsWith('SHIPMENT-')) {
-                    const { data: shipment } = await supabase
+                    // Lookup by reference first
+                    let { data: shipment } = await supabase
                         .from('shipments')
-                        .select('id, shipping_fee_paid')
+                        .select('id, shipping_fee_paid, shipping_cost, customer_id')
                         .eq('shipping_fee_payment_reference', ref)
                         .maybeSingle()
+
+                    // Fallback to parsing ID from reference if needed
+                    if (!shipment) {
+                        const parts = ref.split('-');
+                        if (parts.length >= 2) {
+                            const shipmentId = parts[1];
+                            const isNumeric = !isNaN(parseInt(shipmentId as string));
+                            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shipmentId as string);
+                            if (isNumeric || isUUID) {
+                                const { data: sById } = await supabase.from('shipments').select('id, shipping_fee_paid, shipping_cost, customer_id').eq('id', shipmentId).maybeSingle();
+                                if (sById) shipment = sById;
+                            }
+                        }
+                    }
 
                     if (shipment && !shipment.shipping_fee_paid) {
                         await supabase
@@ -90,16 +130,42 @@ export async function GET(req: Request) {
                             .update({ shipping_fee_paid: true })
                             .eq('id', shipment.id)
                         console.log(`[Verify API] Shipment ${shipment.id} shipping fee verified as paid`)
+                        
+                        if (shipment.customer_id) {
+                            await createNotification({
+                                userId: shipment.customer_id,
+                                title: 'Shipping Fee Paid',
+                                message: `Your shipping fee of ₵${(shipment.shipping_cost || 0).toFixed(2)} for shipment #${shipment.id} has been paid successfully.`,
+                                type: 'shipment_shipping_fee_paid',
+                                priority: 'info',
+                                link: '/dashboard/packages'
+                            });
+                        }
                     }
                 }
 
                 // 4. ECOM SHIPPING FEES
                 if (ref.startsWith('SHIPPING_') || ref.startsWith('C2G-SHIPPING-') || ref.startsWith('SHIP-')) {
-                    const { data: shipFeeOrder } = await supabase
+                    let { data: shipFeeOrder } = await supabase
                         .from('ecom_orders')
-                        .select('id, shipping_fee_paid')
+                        .select('id, shipping_fee_paid, shipping_cost, customer_id')
                         .eq('shipping_fee_payment_reference', ref)
                         .maybeSingle()
+
+                    // Fallback to parsing ID
+                    if (!shipFeeOrder) {
+                        const separator = ref.includes('_') ? '_' : '-';
+                        const parts = ref.split(separator);
+                        if (parts.length >= 2) {
+                            const orderId = parts[1];
+                            const isNumeric = !isNaN(parseInt(orderId as string));
+                            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId as string);
+                            if (isNumeric || isUUID) {
+                                const { data: oById } = await supabase.from('ecom_orders').select('id, shipping_fee_paid, shipping_cost, customer_id').eq('id', orderId).maybeSingle();
+                                if (oById) shipFeeOrder = oById;
+                            }
+                        }
+                    }
 
                     if (shipFeeOrder && !shipFeeOrder.shipping_fee_paid) {
                         await supabase
@@ -110,16 +176,40 @@ export async function GET(req: Request) {
                             })
                             .eq('id', shipFeeOrder.id)
                         console.log(`[Verify API] Ecom order ${shipFeeOrder.id} shipping fee verified as paid`)
+
+                        if (shipFeeOrder.customer_id) {
+                            await createNotification({
+                                userId: shipFeeOrder.customer_id,
+                                title: 'Order Shipping Fee Paid',
+                                message: `Your shipping fee of ₵${(shipFeeOrder.shipping_cost || 0).toFixed(2)} for Mall Order #${shipFeeOrder.id.toString().slice(-4)} has been paid successfully.`,
+                                type: 'order_shipping_fee_paid',
+                                priority: 'info',
+                                link: '/dashboard/orders'
+                            });
+                        }
                     }
                 }
 
                 // 5. PACKAGE REGISTRATION FEES
                 if (ref.startsWith('REG-')) {
-                    const { data: regShipment } = await supabase
+                    let { data: regShipment } = await supabase
                         .from('shipments')
-                        .select('id, registration_fee_paid')
+                        .select('id, registration_fee_paid, customer_id')
                         .eq('registration_fee_payment_reference', ref)
                         .maybeSingle()
+
+                    if (!regShipment) {
+                        const parts = ref.split('-');
+                        if (parts.length >= 2) {
+                            const shipmentId = parts[1];
+                            const isNumeric = !isNaN(parseInt(shipmentId as string));
+                            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shipmentId as string);
+                            if (isNumeric || isUUID) {
+                                const { data: sById } = await supabase.from('shipments').select('id, registration_fee_paid, customer_id').eq('id', shipmentId).maybeSingle();
+                                if (sById) regShipment = sById;
+                            }
+                        }
+                    }
 
                     if (regShipment && !regShipment.registration_fee_paid) {
                         await supabase
@@ -130,6 +220,17 @@ export async function GET(req: Request) {
                             })
                             .eq('id', regShipment.id)
                         console.log(`[Verify API] Shipment ${regShipment.id} registration fee verified as paid`)
+
+                        if (regShipment.customer_id) {
+                            await createNotification({
+                                userId: regShipment.customer_id,
+                                title: 'Package Registration Paid',
+                                message: `Your registration fee for package #${regShipment.id} has been paid successfully.`,
+                                type: 'package_registration_paid',
+                                priority: 'info',
+                                link: '/dashboard/packages'
+                            });
+                        }
                     }
                 }
 
