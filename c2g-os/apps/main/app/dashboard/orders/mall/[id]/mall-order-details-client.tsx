@@ -102,6 +102,7 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
         onBack={() => setShowTracker(false)} 
         backLabel="Back to Order Details" 
         walletBalance={0}
+        registrationFee={0}
       />
     );
   }
