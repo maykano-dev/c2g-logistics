@@ -30,6 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_product_view_logs_viewed_at
 -- Step 3: RLS — allow authenticated users to INSERT views (read denied for security)
 ALTER TABLE public.product_view_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can log a product view" ON public.product_view_logs;
 CREATE POLICY "Anyone can log a product view"
   ON public.product_view_logs
   FOR INSERT

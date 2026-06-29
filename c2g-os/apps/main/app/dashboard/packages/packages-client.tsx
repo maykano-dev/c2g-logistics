@@ -90,12 +90,14 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
           <p className="text-muted-foreground mt-1">Track and manage your registered warehouse packages.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <PackageBulkPayButton 
-            unpaidCount={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).length}
-            unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).map(p => p.id)}
-            registrationFee={registrationFee}
-            walletBalance={walletBalance}
-          />
+          <div className="hidden md:block">
+            <PackageBulkPayButton 
+              unpaidCount={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).length}
+              unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).map(p => p.id)}
+              registrationFee={registrationFee}
+              walletBalance={walletBalance}
+            />
+          </div>
           <Link 
             href="/dashboard/packages/register" 
           className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 gap-2 shadow-lg shadow-primary/25 hover:scale-[1.02]"
@@ -158,6 +160,17 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
             </div>
           )}
         </div>
+      </div>
+
+      {/* Mobile Bulk Pay Button */}
+      <div className="block md:hidden w-full px-2">
+        <PackageBulkPayButton 
+          unpaidCount={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).length}
+          unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).map(p => p.id)}
+          registrationFee={registrationFee}
+          walletBalance={walletBalance}
+          className="w-full"
+        />
       </div>
 
       {/* Packages Grid */}

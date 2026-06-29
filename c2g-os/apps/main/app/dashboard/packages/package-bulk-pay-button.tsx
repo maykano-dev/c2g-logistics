@@ -12,9 +12,10 @@ interface PackageBulkPayButtonProps {
   unpaidPackageIds: string[];
   registrationFee: number;
   walletBalance: number;
+  className?: string;
 }
 
-export default function PackageBulkPayButton({ unpaidCount, unpaidPackageIds, registrationFee, walletBalance }: PackageBulkPayButtonProps) {
+export default function PackageBulkPayButton({ unpaidCount, unpaidPackageIds, registrationFee, walletBalance, className = '' }: PackageBulkPayButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showAlert } = useModal();
@@ -52,7 +53,7 @@ export default function PackageBulkPayButton({ unpaidCount, unpaidPackageIds, re
       <button 
         onClick={() => setIsModalOpen(true)}
         disabled={isLoading}
-        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-orange-500 text-white hover:bg-orange-600 h-10 px-4 py-2 gap-2 shadow-lg shadow-orange-500/25 hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none"
+        className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-orange-500 text-white hover:bg-orange-600 h-10 px-4 py-2 gap-2 shadow-lg shadow-orange-500/25 hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none ${className}`}
       >
         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />}
         Pay All Unpaid ({unpaidCount}) - ₵{totalCost.toFixed(2)}

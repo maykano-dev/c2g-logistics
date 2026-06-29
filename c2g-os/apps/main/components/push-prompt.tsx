@@ -82,8 +82,12 @@ export function PushPrompt() {
       }, { onConflict: 'endpoint' });
 
       console.log('Push subscription saved successfully');
-    } catch (error) {
-      console.error('Failed to subscribe user:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.warn('Push subscription aborted: This is expected in local development or if the push service is unavailable.');
+      } else {
+        console.error('Failed to subscribe user:', error);
+      }
     }
   };
 
