@@ -249,7 +249,7 @@ export async function GET(req: Request) {
                     const { data: existingTx } = await supabase
                         .from('wallet_transactions')
                         .select('id, status, wallet_id')
-                        .eq('reference_id', checkoutId || ref)
+                        .eq('reference_id', ref)
                         .maybeSingle();
 
                     // If we have an existing transaction, we don't need the customerId, we use the wallet_id
@@ -283,7 +283,8 @@ export async function GET(req: Request) {
                                         .from('wallet_transactions')
                                         .update({
                                             status: 'completed',
-                                            reference_id: checkoutId || ref
+                                            reference_id: ref,
+                                            description: `Wallet Top Up via Hubtel (Checkout ID: ${checkoutId || 'N/A'})`
                                         })
                                         .eq('id', existingTx.id);
                                 } else {
@@ -294,8 +295,8 @@ export async function GET(req: Request) {
                                             amount: amount,
                                             transaction_type: 'top_up',
                                             status: 'completed',
-                                            description: 'Wallet Top Up via Hubtel',
-                                            reference_id: checkoutId || ref
+                                            description: `Wallet Top Up via Hubtel (Checkout ID: ${checkoutId || 'N/A'})`,
+                                            reference_id: ref
                                         });
                                 }
 
@@ -325,7 +326,7 @@ export async function GET(req: Request) {
                 const { data: existingTx } = await supabase
                     .from('wallet_transactions')
                     .select('id, status')
-                    .eq('reference_id', checkoutId || ref)
+                    .eq('reference_id', ref)
                     .maybeSingle();
                 
                 if (existingTx && existingTx.status === 'pending') {
