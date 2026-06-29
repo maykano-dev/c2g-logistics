@@ -342,11 +342,13 @@ export async function getProductDetails(id: string) {
   productData.reviews = reviews;
 
 
-  // Increment view count (fire and forget)
+  // Track product view — inserts into product_view_logs (a lightweight table with NO
+  // Database Webhook attached). A pg_cron job aggregates these counts back to
+  // products.view_count every hour. This avoids the cascade of 55k+ net.http_post
+  // calls that the direct UPDATE on products was causing (which drained all Disk I/O).
   supabase
-    .from("products")
-    .update({ view_count: (productData?.view_count || 0) + 1 })
-    .eq("id", id)
+    .from('product_view_logs')
+    .insert({ product_id: parseInt(id) })
     .then(() => {});
 
   return { success: true, product: productData, exchangeRate };
