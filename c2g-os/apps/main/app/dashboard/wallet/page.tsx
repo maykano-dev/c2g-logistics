@@ -132,10 +132,15 @@ export default async function WalletPage({ searchParams }: { searchParams: { sta
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-sm capitalize">{tx.transaction_type.replace(/_/g, ' ')}</p>
-                        {isPending && <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold">Pending</span>}
-                        {isFailed && <span className="text-[10px] bg-zinc-500/20 text-zinc-500 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold">Failed</span>}
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold ${
+                          tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-500' :
+                          tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
+                          'bg-red-500/20 text-red-500'
+                        }`}>
+                          {tx.status}
+                        </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">{tx.description}</p>
+                      <p className="text-xs text-muted-foreground font-mono mt-1">Ref: {tx.reference_id || 'N/A'}</p>
                       <p className="text-[10px] text-zinc-500 mt-1">{new Date(tx.created_at).toLocaleString()}</p>
                     </div>
                   </div>

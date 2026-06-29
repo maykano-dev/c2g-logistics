@@ -248,7 +248,7 @@ export async function GET(req: Request) {
                     // Always try to find the transaction first using the reference
                     const { data: existingTx } = await supabase
                         .from('wallet_transactions')
-                        .select('id, status, wallet_id')
+                        .select('id, status, wallet_id, amount')
                         .eq('reference_id', ref)
                         .maybeSingle();
 
@@ -267,8 +267,8 @@ export async function GET(req: Request) {
                             
                             const { data: wallet } = await walletQuery.single();
 
-                            if (wallet && statusData.amount) {
-                                const amount = Number(statusData.amount);
+                            if (wallet && (existingTx?.amount || statusData.amount)) {
+                                const amount = existingTx && existingTx.amount ? Number(existingTx.amount) : Number(statusData.amount);
                                 const newBalance = Number(wallet.available_balance) + amount;
 
                                 // Update wallet
