@@ -174,14 +174,18 @@ export async function topUpWallet(amount: number, phone?: string) {
       .single();
 
     if (wallet) {
-      await supabase.from('wallet_transactions').insert({
-        wallet_id: wallet.id,
-        amount: amount,
-        transaction_type: 'top_up',
-        description: 'Wallet Top Up Initialization',
-        reference_id: ref,
-        status: 'pending'
+      // Use SECURITY DEFINER RPC to bypass RLS safely.
+      // The function validates that the wallet belongs to the calling user.
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('initialize_wallet_top_up', {
+        p_wallet_id: wallet.id,
+        p_amount: amount,
+        p_reference_id: ref
       });
+
+      if (rpcError || (rpcResult && rpcResult.success === false)) {
+        console.error("Wallet Tx Init Error:", rpcError || rpcResult?.error);
+        // Don't block the checkout — log and continue. Webhook will create the tx on success.
+      }
     }
 
     return { success: true, checkoutUrl: hubtelData.checkoutUrl };
