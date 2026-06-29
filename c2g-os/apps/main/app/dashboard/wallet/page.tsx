@@ -104,7 +104,7 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
       </div>
 
       {/* Transactions */}
-      <div className="glass-panel p-6">
+      <div className="w-full">
         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
           <History className="w-5 h-5 text-primary" /> Wallet History
         </h3>

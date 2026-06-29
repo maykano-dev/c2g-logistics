@@ -53,8 +53,8 @@ export default async function WalletHistoryPage({ searchParams }: { searchParams
   const totalPages = count ? Math.ceil(count / itemsPerPage) : 0;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="max-w-4xl mx-auto space-y-4 pb-4">
+      <div className="flex items-center gap-3 mb-6">
         <Link href="/dashboard/wallet" className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors">
             <ChevronLeft className="w-5 h-5" />
         </Link>
@@ -65,15 +65,15 @@ export default async function WalletHistoryPage({ searchParams }: { searchParams
 
       <HistorySearchClient initialQuery={q} />
 
-      <div className="glass-panel p-6">
+      <div className="w-full -mx-4 md:mx-0 w-[calc(100%+2rem)] md:w-full">
         {(!transactions || transactions.length === 0) ? (
           <div className="text-center py-12 text-muted-foreground">
             <History className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>No transactions found.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {transactions.map((tx: any) => {
+          <div className="flex flex-col">
+            {transactions.map((tx: any, index: number) => {
               const isPositive = Number(tx.amount) > 0;
               const isPending = tx.status === 'pending';
               const isFailed = tx.status === 'failed' || tx.status === 'cancelled';
@@ -90,7 +90,7 @@ export default async function WalletHistoryPage({ searchParams }: { searchParams
               }
 
               return (
-                <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-background/50 hover:bg-background transition-colors">
+                <div key={tx.id} className={`flex items-center justify-between p-4 md:rounded-xl md:border bg-background/50 hover:bg-background transition-colors ${index !== transactions.length - 1 ? 'border-b border-border/50' : 'border-b-0 md:border-border/50'}`}>
                   <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconBgColor}`}>
                       {isPending ? <Clock className="w-5 h-5" /> : 

@@ -15,8 +15,7 @@ export default function SignupPage() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full animate-pulse pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/20 blur-[120px] rounded-full animate-pulse delay-700 pointer-events-none" />
       
-      <div className="w-full h-[100dvh] sm:h-auto sm:max-w-[440px] z-10 animate-fade-in">
-        <div className="glass-panel p-6 sm:p-10 border-0 sm:border shadow-none sm:shadow-2xl rounded-none sm:rounded-2xl min-h-[100dvh] sm:min-h-0 flex flex-col justify-center">
+      <div className="w-full h-[100dvh] sm:h-auto sm:max-w-[440px] z-10 animate-fade-in flex flex-col justify-center px-6 py-12">
           {/* Logo & Header */}
           <div className="flex flex-col items-center mb-6 sm:mb-8">
             <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center mb-2">
@@ -52,7 +51,6 @@ export default function SignupPage() {
               Reliable
             </span>
           </div>
-        </div>
       </div>
     </div>
   );
