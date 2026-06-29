@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import TrackerClient from './tracker-client';
 import Link from 'next/link';
+import { getRegistrationFee } from '../actions';
 
 export default async function PackageTrackingPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -40,5 +41,7 @@ export default async function PackageTrackingPage({ params }: { params: Promise<
     );
   }
 
-  return <TrackerClient pkg={pkg} walletBalance={walletBalance} />;
+  const registrationFee = await getRegistrationFee();
+
+  return <TrackerClient pkg={pkg} walletBalance={walletBalance} registrationFee={registrationFee} />;
 }

@@ -26,9 +26,10 @@ interface TrackerClientProps {
   backLabel?: string;
   onBack?: () => void;
   walletBalance: number;
+  registrationFee: number;
 }
 
-export default function TrackerClient({ pkg, backLink = "/dashboard/packages", backLabel = "Back to Packages", onBack, walletBalance }: TrackerClientProps) {
+export default function TrackerClient({ pkg, backLink = "/dashboard/packages", backLabel = "Back to Packages", onBack, walletBalance, registrationFee }: TrackerClientProps) {
   const [progress, setProgress] = useState(0);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
   const [statusLabel, setStatusLabel] = useState('Calculating...');
@@ -139,7 +140,7 @@ export default function TrackerClient({ pkg, backLink = "/dashboard/packages", b
                 Please pay the ₵5 package registration fee to unlock live satellite tracking, journey history, and status updates.
               </p>
               <div className="w-full transform transition hover:scale-[1.02]">
-                <PackagePayButton packageId={pkg.id} walletBalance={walletBalance} />
+                <PackagePayButton packageId={pkg.id} walletBalance={walletBalance} registrationFee={registrationFee} />
               </div>
             </div>
           </div>
