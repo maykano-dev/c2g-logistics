@@ -75,6 +75,18 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
   
   const formatCurrency = (amount: number) => `₵${parseFloat((amount || 0).toString()).toFixed(2)}`;
 
+  let parsedNotesItems = null;
+  let cleanNotes = order.notes;
+  if (cleanNotes?.startsWith('JSON_ITEMS:')) {
+    try {
+      const jsonStr = cleanNotes.replace('JSON_ITEMS:', '');
+      parsedNotesItems = JSON.parse(jsonStr);
+      cleanNotes = null; // Hide the raw JSON
+    } catch (e) {
+      console.error("Failed to parse JSON_ITEMS from notes", e);
+    }
+  }
+
   if (showTracker) {
     const adapterPkg = {
       id: order.id,
@@ -97,6 +109,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
         onBack={() => setShowTracker(false)} 
         backLabel="Back to Order Details" 
         walletBalance={0}
+        registrationFee={0}
       />
     );
   }
@@ -222,26 +235,50 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
             </div>
 
             {/* Items display */}
-            {order.items && Array.isArray(order.items) && order.items.length > 0 ? (
+            {(order.items && Array.isArray(order.items) && order.items.length > 0) || (parsedNotesItems && Array.isArray(parsedNotesItems)) ? (
               <div className="py-4 border-b border-border/50 space-y-3">
                 <span className="text-muted-foreground block mb-2">Order Items</span>
-                {order.items.map((item: any, idx: number) => (
-                  <div key={item.id || idx} className="bg-secondary/20 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-border/50">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm">Item {idx + 1}</span>
-                      <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
-                        View Product <ExternalLink className="w-3 h-3" />
-                      </a>
+                {parsedNotesItems ? (
+                  parsedNotesItems.map((item: any, idx: number) => (
+                    <div key={idx} className="bg-secondary/20 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-border/50">
+                      <div className="flex items-center gap-3">
+                        {item.screenshotUrl && (
+                          <div className="w-12 h-12 shrink-0 rounded-md overflow-hidden border border-border bg-background">
+                            <img src={item.screenshotUrl} alt={`Item ${idx+1}`} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">Item {idx + 1}</span>
+                          <a href={item.link || item.product_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1 break-all line-clamp-1 max-w-[200px]">
+                            View Product <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm mt-2 sm:mt-0">
+                        <span className="text-muted-foreground">Qty: <span className="text-foreground font-medium">{item.qty || item.quantity || 1}</span></span>
+                        <span className="text-muted-foreground">Price: <span className="text-foreground font-medium">¥{item.price || item.cny_price || 0}</span></span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="text-muted-foreground">Qty: <span className="text-foreground font-medium">{item.quantity}</span></span>
-                      <span className="text-muted-foreground">Price: <span className="text-foreground font-medium">¥{item.cny_price}</span></span>
+                  ))
+                ) : (
+                  order.items.map((item: any, idx: number) => (
+                    <div key={item.id || idx} className="bg-secondary/20 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-border/50">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Item {idx + 1}</span>
+                        <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1 break-all line-clamp-1 max-w-[200px]">
+                          View Product <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm mt-2 sm:mt-0">
+                        <span className="text-muted-foreground">Qty: <span className="text-foreground font-medium">{item.quantity}</span></span>
+                        <span className="text-muted-foreground">Price: <span className="text-foreground font-medium">¥{item.cny_price}</span></span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-sm font-bold">Total Items Price (CNY)</span>
-                  <span className="font-bold">¥{order.cny_price}</span>
+                  <span className="font-bold">¥{order.cny_price || 0}</span>
                 </div>
               </div>
             ) : (
@@ -287,10 +324,10 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
               <span className="font-medium capitalize">{order.payment_status?.replace(/_/g, ' ') || 'Pending'}</span>
             </div>
 
-            {order.notes && (
+            {cleanNotes && (
               <div className="py-2 border-b border-border/50">
                 <span className="text-muted-foreground block mb-1">Notes</span>
-                <p className="text-sm bg-secondary/30 p-3 rounded-lg border border-border/30 break-all">{order.notes}</p>
+                <p className="text-sm bg-secondary/30 p-3 rounded-lg border border-border/30 break-all">{cleanNotes}</p>
               </div>
             )}
             
