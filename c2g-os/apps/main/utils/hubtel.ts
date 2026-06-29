@@ -56,16 +56,34 @@ export async function fetchHubtelTransactionStatusLocal(
         params.append('clientReference', hubtelTransactionId)
     }
 
-    // Fetch credentials dynamically
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Use env vars directly first (fastest path, works on Netlify without service role key).
+    // Only attempt Supabase settings lookup as a fallback when env vars are missing.
+    let hubtelApiId = (process.env.HUBTEL_API_ID || process.env.HUBTEL_CLIENT_ID)?.trim();
+    let hubtelApiKey = (process.env.HUBTEL_API_KEY || process.env.HUBTEL_CLIENT_SECRET)?.trim();
+    let hubtelMerchantAccount = process.env.HUBTEL_MERCHANT_ACCOUNT?.trim();
 
-    const { data: settings } = await supabase.from('settings').select('hubtel_api_id, hubtel_api_key, hubtel_merchant_account').eq('id', 1).single();
-
-    const hubtelApiId = (process.env.HUBTEL_API_ID || process.env.HUBTEL_CLIENT_ID || settings?.hubtel_api_id)?.trim();
-    const hubtelApiKey = (process.env.HUBTEL_API_KEY || process.env.HUBTEL_CLIENT_SECRET || settings?.hubtel_api_key)?.trim();
-    const hubtelMerchantAccount = (process.env.HUBTEL_MERCHANT_ACCOUNT || settings?.hubtel_merchant_account)?.trim();
+    if (!hubtelApiId || !hubtelApiKey || !hubtelMerchantAccount) {
+        // Fallback: try to read from settings table (requires SUPABASE_SERVICE_ROLE_KEY)
+        try {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+            const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+            if (supabaseUrl && supabaseKey) {
+                const supabase = createClient(supabaseUrl, supabaseKey);
+                const { data: settings } = await supabase
+                    .from('settings')
+                    .select('hubtel_api_id, hubtel_api_key, hubtel_merchant_account')
+                    .eq('id', 1)
+                    .single();
+                if (settings) {
+                    hubtelApiId = hubtelApiId || settings.hubtel_api_id?.trim();
+                    hubtelApiKey = hubtelApiKey || settings.hubtel_api_key?.trim();
+                    hubtelMerchantAccount = hubtelMerchantAccount || settings.hubtel_merchant_account?.trim();
+                }
+            }
+        } catch (e) {
+            console.warn('[Hubtel] Could not load settings from DB, relying on env vars only.', e);
+        }
+    }
 
     if (!hubtelApiId || !hubtelApiKey || !hubtelMerchantAccount) {
         throw new Error('Hubtel gateway credentials not configured');
