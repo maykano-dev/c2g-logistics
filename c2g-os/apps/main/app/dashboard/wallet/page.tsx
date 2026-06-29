@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Wallet, ArrowDownToLine, ArrowUpRight, History, AlertCircle, Clock, XCircle } from "lucide-react";
 import TopUpModal from "./top-up-modal";
 import Link from "next/link";
+import { cleanupStalePendingTransactions, markTransactionAsFailed } from "./shared-actions";
 
 export const metadata = { title: "My Wallet | C2G Logistics" };
 
@@ -14,14 +15,10 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
     redirect("/login");
   }
 
-  // Handle cancelled top-ups
+  // Handle cancelled top-ups securely
   const searchParamsAwaited = await searchParams;
   if (searchParamsAwaited?.status === 'cancelled' && searchParamsAwaited?.ref) {
-    await supabase
-      .from("wallet_transactions")
-      .update({ status: 'failed' })
-      .eq("reference_id", searchParamsAwaited.ref)
-      .eq("status", "pending");
+    await markTransactionAsFailed(searchParamsAwaited.ref);
   }
 
   const { data: customer } = await supabase
@@ -43,6 +40,9 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
   if (!wallet) {
     return <div className="p-8">Wallet not found. Please contact support.</div>;
   }
+
+  // Cleanup any abandoned/stale pending top_ups silently
+  await cleanupStalePendingTransactions(wallet.id);
 
   const { data: transactions } = await supabase
     .from("wallet_transactions")

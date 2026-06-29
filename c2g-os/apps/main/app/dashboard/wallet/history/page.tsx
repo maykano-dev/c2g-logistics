@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowDownToLine, ArrowUpRight, History, Clock, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import HistorySearchClient from "./search-client";
+import { cleanupStalePendingTransactions } from "../shared-actions";
 
 export const metadata = { title: "Wallet History | C2G Logistics" };
 
@@ -27,6 +28,9 @@ export default async function WalletHistoryPage({ searchParams }: { searchParams
     .single();
 
   if (!wallet) return <div>Wallet not found.</div>;
+
+  // Cleanup abandoned top_ups
+  await cleanupStalePendingTransactions(wallet.id);
 
   const awaitedParams = await searchParams;
   const page = parseInt(awaitedParams?.page || "1", 10);
