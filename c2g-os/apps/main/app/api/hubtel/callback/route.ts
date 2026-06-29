@@ -147,6 +147,11 @@ export async function POST(req: Request) {
             .maybeSingle()
 
         if (!linkFetchError && linkOrder) {
+            if (linkOrder.payment_status === paymentStatus) {
+                console.log(`Link order ${linkOrder.id} already has status ${paymentStatus}. Skipping duplicate webhook.`);
+                return NextResponse.json({ message: 'Already processed', reference: clientReference, status: paymentStatus })
+            }
+
             const linkOrderStatus = paymentStatus === 'paid'
                 ? 'processing'
                 : (paymentStatus === 'failed' ? 'cancelled' : (linkOrder.order_status || 'new'))
@@ -251,6 +256,11 @@ export async function POST(req: Request) {
             .maybeSingle()
 
         if (!fetchError && ecomOrder) {
+            if (ecomOrder.payment_status === paymentStatus) {
+                console.log(`Ecom Order ${ecomOrder.id} already has status ${paymentStatus}. Skipping duplicate webhook.`);
+                return NextResponse.json({ message: 'Already processed', reference: clientReference, status: paymentStatus })
+            }
+
             const { error: updateError } = await supabase
                 .from('ecom_orders')
                 .update({
@@ -371,6 +381,10 @@ export async function POST(req: Request) {
                 .maybeSingle()
 
             if (!shipErr && shipment) {
+                if (paymentStatus === 'paid' && shipment.shipping_fee_paid) {
+                     return NextResponse.json({ message: 'Already paid', reference: clientReference })
+                }
+
                 if (paymentStatus === 'paid' && !shipment.shipping_fee_paid) {
                     await supabase
                         .from('shipments')
@@ -437,6 +451,10 @@ export async function POST(req: Request) {
                 .maybeSingle()
 
             if (!sfoErr && shipFeeOrder) {
+                if (paymentStatus === 'paid' && shipFeeOrder.shipping_fee_paid) {
+                     return NextResponse.json({ message: 'Already paid', reference: clientReference })
+                }
+
                 if (paymentStatus === 'paid' && !shipFeeOrder.shipping_fee_paid) {
                     await supabase
                         .from('ecom_orders')
@@ -488,6 +506,10 @@ export async function POST(req: Request) {
                 .maybeSingle()
 
             if (!regErr && regShipment) {
+                if (paymentStatus === 'paid' && regShipment.registration_fee_paid) {
+                     return NextResponse.json({ message: 'Already paid', reference: clientReference })
+                }
+
                 if (paymentStatus === 'paid' && !regShipment.registration_fee_paid) {
                     await supabase
                         .from('shipments')
@@ -558,36 +580,35 @@ export async function POST(req: Request) {
 
             if (existingTx) {
                 if (paymentStatus === 'paid' && existingTx.status === 'pending') {
-                    // Get wallet
-                    const { data: wallet } = await supabase
-                        .from('wallets')
-                        .select('id, available_balance, customer_id')
-                        .eq('id', existingTx.wallet_id)
-                        .single()
+                    // Use Atomic RPC to prevent double crediting race conditions
+                    const { data: rpcData, error: rpcError } = await supabase.rpc('process_wallet_topup_atomic', {
+                        p_transaction_id: existingTx.id,
+                        p_wallet_id: existingTx.wallet_id,
+                        p_amount: amount
+                    });
 
-                    if (wallet) {
-                        const newBalance = Number(wallet.available_balance) + amount;
-
-                        await supabase
+                    if (rpcError || !rpcData?.success) {
+                        console.error('Failed to process atomic wallet top-up:', rpcError || rpcData?.error);
+                    } else if (rpcData.message !== 'Already completed') {
+                        // Get customer_id to send notification
+                        const { data: wallet } = await supabase
                             .from('wallets')
-                            .update({ available_balance: newBalance })
-                            .eq('id', wallet.id)
+                            .select('customer_id')
+                            .eq('id', existingTx.wallet_id)
+                            .single();
 
-                        await supabase
-                            .from('wallet_transactions')
-                            .update({ status: 'completed' })
-                            .eq('id', existingTx.id)
+                        if (wallet) {
+                            createNotification({
+                                userId: wallet.customer_id,
+                                title: 'Wallet Top-Up Successful',
+                                message: `Your wallet has been credited with ₵${amount.toFixed(2)} via Hubtel.`,
+                                type: 'wallet_top_up',
+                                priority: 'info',
+                                link: '/dashboard/wallet'
+                            }).catch(e => console.warn('Failed to dispatch notification:', e));
 
-                        createNotification({
-                            userId: wallet.customer_id,
-                            title: 'Wallet Top-Up Successful',
-                            message: `Your wallet has been credited with ₵${amount.toFixed(2)} via Hubtel.`,
-                            type: 'wallet_top_up',
-                            priority: 'info',
-                            link: '/dashboard/wallet'
-                        }).catch(e => console.warn('Failed to dispatch notification:', e));
-
-                        console.log(`Wallet ${wallet.id} credited with ${amount} via webhook`);
+                            console.log(`Wallet ${existingTx.wallet_id} credited with ${amount} via webhook (Atomic)`);
+                        }
                     }
                 } else if (paymentStatus === 'failed' && existingTx.status === 'pending') {
                     await supabase
