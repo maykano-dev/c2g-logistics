@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getSettings } from "../actions";
 import { NewLinkOrderForm } from "./new-link-order-form";
 
+export const dynamic = 'force-dynamic';
+
 export default async function NewLinkOrderPage() {
   const settings = await getSettings();
   const exchangeRate = settings?.rate_link_orders || settings?.rate_shop_products || 0.5200;

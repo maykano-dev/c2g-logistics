@@ -146,7 +146,7 @@ export async function topUpWallet(amount: number, phone?: string) {
 
   const ref = `WLT-${Math.random().toString(36).substring(2, 12)}`.toUpperCase();
   
-  const headersList = headers();
+  const headersList = await headers();
   const host = headersList.get('host') || 'localhost:3000';
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;

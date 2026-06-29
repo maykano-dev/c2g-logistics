@@ -144,21 +144,27 @@ export async function GET(req: Request) {
                         if (parts.length >= 2) customerId = parts[1] || null;
                     }
 
-                    if (customerId) {
-                        // Check if transaction exists to update its status, or prevent double crediting if already completed
-                        const { data: existingTx } = await supabase
-                            .from('wallet_transactions')
-                            .select('id, status')
-                            .eq('reference_id', checkoutId || ref)
-                            .maybeSingle();
+                    // Always try to find the transaction first using the reference
+                    const { data: existingTx } = await supabase
+                        .from('wallet_transactions')
+                        .select('id, status, wallet_id')
+                        .eq('reference_id', checkoutId || ref)
+                        .maybeSingle();
 
+                    // If we have an existing transaction, we don't need the customerId, we use the wallet_id
+                    // If we don't have an existing transaction, we strictly need the customerId to create one
+                    if (existingTx || customerId) {
                         if (!existingTx || existingTx.status === 'pending') {
-                            // Get wallet
-                            const { data: wallet } = await supabase
-                                .from('wallets')
-                                .select('id, available_balance')
-                                .eq('customer_id', customerId)
-                                .single();
+                            
+                            // Get wallet by existing transaction's wallet_id, OR fallback to customerId
+                            let walletQuery = supabase.from('wallets').select('id, available_balance, customer_id');
+                            if (existingTx && existingTx.wallet_id) {
+                                walletQuery = walletQuery.eq('id', existingTx.wallet_id);
+                            } else {
+                                walletQuery = walletQuery.eq('customer_id', customerId);
+                            }
+                            
+                            const { data: wallet } = await walletQuery.single();
 
                             if (wallet && statusData.amount) {
                                 const amount = Number(statusData.amount);
@@ -193,7 +199,7 @@ export async function GET(req: Request) {
                                 }
 
                                 await createNotification({
-                                    userId: customerId,
+                                    userId: wallet.customer_id || customerId,
                                     title: 'Wallet Top-Up Successful',
                                     message: `Your wallet has been credited with ₵${amount.toFixed(2)}.`,
                                     type: 'wallet_top_up',

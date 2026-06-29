@@ -71,7 +71,7 @@ export async function getPayments() {
   if (linkOrders) {
     allPayments = [...allPayments, ...linkOrders.map(p => ({
       id: p.id,
-      order_id: 'LINK-' + String(p.id).split('-')[0].toUpperCase(),
+      order_id: 'LINK-' + (String(p.id).split('-')[0] || '').toUpperCase(),
       customer_name: p.customer_name,
       customer_phone: p.customer_phone,
       total_amount: p.total,
