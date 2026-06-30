@@ -269,47 +269,50 @@ export async function GET(req: Request) {
 
                             if (wallet && (existingTx?.amount || statusData.amount)) {
                                 const amount = existingTx && existingTx.amount ? Number(existingTx.amount) : Number(statusData.amount);
-                                const newBalance = Number(wallet.available_balance) + amount;
 
-                                // Update wallet
-                                await supabase
-                                    .from('wallets')
-                                    .update({ available_balance: newBalance })
-                                    .eq('id', wallet.id);
-
-                                // Log or Update transaction
                                 if (existingTx) {
-                                    await supabase
-                                        .from('wallet_transactions')
-                                        .update({
-                                            status: 'completed',
-                                            reference_id: ref,
-                                            description: `Wallet Top Up via Hubtel (Checkout ID: ${checkoutId || 'N/A'})`
-                                        })
-                                        .eq('id', existingTx.id);
-                                } else {
-                                    await supabase
-                                        .from('wallet_transactions')
-                                        .insert({
-                                            wallet_id: wallet.id,
-                                            amount: amount,
-                                            transaction_type: 'top_up',
-                                            status: 'completed',
-                                            description: `Wallet Top Up via Hubtel (Checkout ID: ${checkoutId || 'N/A'})`,
-                                            reference_id: ref
+                                    const { data: rpcData, error: rpcError } = await supabase.rpc('process_wallet_topup_atomic', {
+                                        p_transaction_id: existingTx.id,
+                                        p_wallet_id: existingTx.wallet_id,
+                                        p_amount: amount
+                                    });
+
+                                    if (rpcError || (rpcData && !rpcData.success)) {
+                                        console.error('[Verify API] Failed to process atomic wallet top-up:', rpcError || rpcData?.error);
+                                    } else if (rpcData && rpcData.message !== 'Already completed') {
+                                        await createNotification({
+                                            userId: wallet.customer_id || customerId,
+                                            title: 'Wallet Top-Up Successful',
+                                            message: `Your wallet has been credited with ₵${amount.toFixed(2)}.`,
+                                            type: 'wallet_top_up',
+                                            priority: 'info',
+                                            link: '/dashboard/wallet'
                                         });
+                                        console.log(`[Verify API] Wallet ${wallet.id} credited with ${amount} via atomic RPC`);
+                                    }
+                                } else {
+                                    const newBalance = Number(wallet.available_balance) + amount;
+                                    await supabase.from('wallets').update({ available_balance: newBalance }).eq('id', wallet.id);
+                                    
+                                    await supabase.from('wallet_transactions').insert({
+                                        wallet_id: wallet.id,
+                                        amount: amount,
+                                        transaction_type: 'top_up',
+                                        status: 'completed',
+                                        description: `Wallet Top Up via Hubtel (Checkout ID: ${checkoutId || 'N/A'})`,
+                                        reference_id: ref
+                                    });
+
+                                    await createNotification({
+                                        userId: wallet.customer_id || customerId,
+                                        title: 'Wallet Top-Up Successful',
+                                        message: `Your wallet has been credited with ₵${amount.toFixed(2)}.`,
+                                        type: 'wallet_top_up',
+                                        priority: 'info',
+                                        link: '/dashboard/wallet'
+                                    });
+                                    console.log(`[Verify API] Wallet ${wallet.id} credited with ${amount}`);
                                 }
-
-                                await createNotification({
-                                    userId: wallet.customer_id || customerId,
-                                    title: 'Wallet Top-Up Successful',
-                                    message: `Your wallet has been credited with ₵${amount.toFixed(2)}.`,
-                                    type: 'wallet_top_up',
-                                    priority: 'info',
-                                    link: '/dashboard/wallet'
-                                });
-
-                                console.log(`[Verify API] Wallet ${wallet.id} credited with ${amount}`);
                             }
                         }
                     }

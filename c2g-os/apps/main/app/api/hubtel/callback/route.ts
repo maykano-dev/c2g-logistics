@@ -142,7 +142,7 @@ export async function POST(req: Request) {
             const { data: existingTx } = await supabase
                 .from('wallet_transactions')
                 .select('id, status, wallet_id')
-                .eq('reference_id', checkoutId || clientReference)
+                .eq('reference_id', clientReference)
                 .maybeSingle()
 
             if (existingTx) {

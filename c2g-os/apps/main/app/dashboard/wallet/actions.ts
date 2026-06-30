@@ -175,7 +175,7 @@ export async function topUpWallet(amount: number, phone?: string) {
         description: `Wallet Top Up for C2G Logistics`,
         returnUrl: `${appUrl}/payment-status?reference=${ref}`,
         cancelUrl: `${appUrl}/dashboard/wallet?status=cancelled&ref=${ref}`,
-        callbackUrl: `${appUrl}/api/hubtel/verify?clientReference=${ref}&customerId=${customer.id}`,
+        callbackUrl: `${appUrl}/api/hubtel/callback`,
         hubtelApiId: process.env.HUBTEL_API_ID || process.env.HUBTEL_CLIENT_ID,
         hubtelApiKey: process.env.HUBTEL_API_KEY || process.env.HUBTEL_CLIENT_SECRET,
         hubtelMerchantAccount: process.env.HUBTEL_MERCHANT_ACCOUNT
