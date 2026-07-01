@@ -55,22 +55,21 @@ export async function registerPackages(formData: FormData) {
 
   // Extract from FormData
   const trackingNumbersRaw = formData.getAll('tracking_numbers') as string[];
+  const imageUrlsRaw = formData.getAll('image_urls') as string[];
   const storeNameRaw = formData.get('store_name') as string;
   const descriptionRaw = formData.get('description') as string;
-  const shippingModeRaw = formData.get('shipping_mode') as string;
 
   const validation = RegisterPackagesSchema.safeParse({
     tracking_numbers: trackingNumbersRaw,
     store_name: storeNameRaw,
     description: descriptionRaw,
-    shipping_mode: shippingModeRaw,
   });
 
   if (!validation.success) {
     throw new Error(validation.error.issues[0]?.message || 'Validation failed');
   }
 
-  const { tracking_numbers: trackingNumbers, store_name: storeName, description, shipping_mode: shippingMode } = validation.data;
+  const { tracking_numbers: trackingNumbers, store_name: storeName, description } = validation.data;
 
   // Get customer info for insertion
   const { data: customer } = await supabase
@@ -79,7 +78,7 @@ export async function registerPackages(formData: FormData) {
     .eq('id', user.id)
     .single();
 
-  const payloads = trackingNumbers.map(tracking => ({
+  const payloads = trackingNumbers.map((tracking, index) => ({
     customer_id: user.id,
     customer_name: customer?.name || 'Customer',
     customer_unique_id: customer?.customer_unique_id || '',
@@ -87,8 +86,9 @@ export async function registerPackages(formData: FormData) {
     items_description: `${storeName}: ${description}`,
     status: 'pending_payment',
     registration_fee_paid: false,
-    method: shippingMode || 'pending',
-    customer_contact: customer?.phone || ''
+    method: 'pending',
+    customer_contact: customer?.phone || '',
+    image_url: imageUrlsRaw[index] || null
   }));
 
   const { data, error } = await supabase

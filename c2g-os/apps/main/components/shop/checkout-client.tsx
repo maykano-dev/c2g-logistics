@@ -31,7 +31,6 @@ export default function CheckoutClient({
   const { showAlert } = useModal();
 
   const [loading, setLoading] = useState(false);
-  const [shippingMethod, setShippingMethod] = useState("sea");
   const [formData, setFormData] = useState({
     name: initialProfile?.name || "",
     phone: initialProfile?.phone || "",
@@ -72,7 +71,7 @@ export default function CheckoutClient({
       shippingPhone: formData.phone,
       shippingAddress: formData.address,
       shippingNotes: formData.notes,
-      shippingMethod,
+      shippingMethod: "pending",
       items,
       subtotal: cartTotalGhs,
       serviceFee,
@@ -141,46 +140,17 @@ export default function CheckoutClient({
             </div>
           </div>
 
-          {/* 2. Shipping Method */}
+          {/* 2. Shipping Method Info */}
           <div className="glass-panel p-6">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 border-b border-border/50 pb-4">
-              <Ship className="w-5 h-5 text-primary" /> International Shipping Method
+              <Ship className="w-5 h-5 text-primary" /> Shipping Selection
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <label className={`relative flex flex-col items-start p-4 cursor-pointer rounded-xl border-2 transition-all ${shippingMethod === "sea" ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:bg-secondary/50"}`}>
-                <input type="radio" name="shipping" value="sea" className="sr-only" checked={shippingMethod === "sea"} onChange={() => setShippingMethod("sea")} />
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="font-bold flex items-center gap-2"><Ship className="w-4 h-4 text-green-500" /> Sea Freight</span>
-                  {shippingMethod === "sea" && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                </div>
-                <span className="text-sm text-muted-foreground mt-1">50 - 60 Days</span>
-                <span className="text-xs font-medium text-green-500 mt-2">$250/CBM</span>
-              </label>
-
-              <label className={`relative flex flex-col items-start p-4 cursor-pointer rounded-xl border-2 transition-all ${shippingMethod === "normal" ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:bg-secondary/50"}`}>
-                <input type="radio" name="shipping" value="normal" className="sr-only" checked={shippingMethod === "normal"} onChange={() => setShippingMethod("normal")} />
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="font-bold flex items-center gap-2"><Plane className="w-4 h-4 text-blue-500" /> Air Normal</span>
-                  {shippingMethod === "normal" && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                </div>
-                <span className="text-sm text-muted-foreground mt-1">10 - 14 Days</span>
-                <span className="text-xs font-medium text-blue-500 mt-2">$25/kg</span>
-              </label>
-
-              <label className={`relative flex flex-col items-start p-4 cursor-pointer rounded-xl border-2 transition-all md:col-span-2 ${shippingMethod === "express" ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:bg-secondary/50"}`}>
-                <input type="radio" name="shipping" value="express" className="sr-only" checked={shippingMethod === "express"} onChange={() => setShippingMethod("express")} />
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="font-bold flex items-center gap-2"><Zap className="w-4 h-4 text-orange-500" /> Air Express</span>
-                  {shippingMethod === "express" && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                </div>
-                <span className="text-sm text-muted-foreground mt-1">3 - 5 Days</span>
-                <span className="text-xs font-medium text-orange-500 mt-2">$44/kg</span>
-              </label>
-            </div>
             
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              The international shipping fee will be invoiced to your dashboard once the items arrive in Ghana. The rates above are estimates and subject to change.
-            </p>
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400">
+              <p className="leading-relaxed">
+                Your shipping method will be selected after your items arrive at our China warehouse. Once they're ready, simply visit the <strong>Reservations</strong> page to choose your preferred shipping option and prepare your shipment.
+              </p>
+            </div>
           </div>
 
         </form>

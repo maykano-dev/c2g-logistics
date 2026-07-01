@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Map, Plane, Ship, CreditCard, Settings, ShoppingCart, Building, ShieldCheck, MapPin, ExternalLink } from "lucide-react";
-import TrackerClient from "../../../packages/[id]/tracker-client";
+
 import { useModal } from "@/components/providers/modal-provider";
 import { payMallOrder } from "../../../mall-orders/actions";
 
 export function MallOrderDetailsClient({ order, initialTrack }: { order: any, initialTrack: boolean }) {
   const router = useRouter();
-  const [showTracker, setShowTracker] = useState(initialTrack);
+
   const { showAlert } = useModal();
 
   const timelineSteps = [
@@ -80,32 +80,7 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
   const primaryItem = items[0] || {};
   const totalQuantity = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
 
-  if (showTracker) {
-    const adapterPkg = {
-      id: order.id,
-      tracking_number: order.order_id || String(order.id).substring(0,8),
-      items_description: primaryItem.name || 'Mall Order Items',
-      method: order.shipping_method === 'sea' ? 'sea_normal' : 'air_normal',
-      status: order.order_status,
-      created_at: order.created_at,
-      weight: order.weight,
-      cbm: order.cbm,
-      shipment_start_date: ['in_transit', 'clearance', 'available_for_pickup', 'delivered'].includes(order.order_status) 
-        ? (order.history?.find((h: any) => h.status === 'in_transit')?.changed_at || order.created_at) 
-        : null,
-      registration_fee_paid: null,
-    };
 
-    return (
-      <TrackerClient 
-        pkg={adapterPkg} 
-        onBack={() => setShowTracker(false)} 
-        backLabel="Back to Order Details" 
-        walletBalance={0}
-        registrationFee={0}
-      />
-    );
-  }
 
   return (
     <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
@@ -163,7 +138,7 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
 
             {/* Quick Actions */}
             <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row gap-3">
-              {!isPaid ? (
+              {!isPaid && (
                 <button 
                   onClick={async (e) => {
                     const btn = e.currentTarget;
@@ -189,13 +164,6 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
                   className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-destructive text-destructive-foreground hover:bg-destructive/90 h-11 px-4 gap-2 shadow-lg shadow-destructive/20 disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <CreditCard className="w-4 h-4" /> Pay Order Now
-                </button>
-              ) : (
-                <button 
-                  onClick={() => setShowTracker(true)}
-                  className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-4 gap-2 shadow-lg shadow-primary/20"
-                >
-                  <Map className="w-4 h-4" /> Live Tracking Map
                 </button>
               )}
             </div>

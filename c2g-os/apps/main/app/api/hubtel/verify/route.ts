@@ -278,7 +278,31 @@ export async function GET(req: Request) {
                                     });
 
                                     if (rpcError || (rpcData && !rpcData.success)) {
-                                        console.error('[Verify API] Failed to process atomic wallet top-up:', rpcError || rpcData?.error);
+                                        console.error('[Verify API] Failed to process atomic wallet top-up, falling back to manual update:', rpcError || rpcData?.error);
+                                        
+                                        // Fallback logic if RPC is missing
+                                        const { data: checkTx } = await supabase.from('wallet_transactions').select('status').eq('id', existingTx.id).single();
+                                        if (checkTx && checkTx.status === 'pending') {
+                                            const { data: currentWallet } = await supabase.from('wallets').select('available_balance').eq('id', existingTx.wallet_id).single();
+                                            if (currentWallet) {
+                                                const newBalance = Number(currentWallet.available_balance) + amount;
+                                                const { error: walletUpdateError } = await supabase.from('wallets').update({ available_balance: newBalance }).eq('id', existingTx.wallet_id);
+                                                
+                                                if (!walletUpdateError) {
+                                                    await supabase.from('wallet_transactions').update({ status: 'completed' }).eq('id', existingTx.id);
+                                                    
+                                                    await createNotification({
+                                                        userId: wallet.customer_id || customerId,
+                                                        title: 'Wallet Top-Up Successful',
+                                                        message: `Your wallet has been credited with ₵${amount.toFixed(2)}.`,
+                                                        type: 'wallet_top_up',
+                                                        priority: 'info',
+                                                        link: '/dashboard/wallet'
+                                                    });
+                                                    console.log(`[Verify API] Wallet ${wallet.id} credited with ${amount} via fallback logic`);
+                                                }
+                                            }
+                                        }
                                     } else if (rpcData && rpcData.message !== 'Already completed') {
                                         await createNotification({
                                             userId: wallet.customer_id || customerId,

@@ -30,8 +30,6 @@ export function NewLinkOrderForm({
   
   const [itemFileNames, setItemFileNames] = useState<Record<string, string>>({});
   const [itemPreviews, setItemPreviews] = useState<Record<string, string>>({});
-  const [shippingMode, setShippingMode] = useState<string>('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const [state, action, isPending] = useActionState(createLinkOrder, null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -69,8 +67,6 @@ export function NewLinkOrderForm({
       if (!item.quantity || item.quantity <= 0) { newErrors[`qty_${item.id}`] = "Quantity must be at least 1"; hasError = true; }
       if (!itemFileNames[item.id]) { newErrors[`screenshot_${item.id}`] = "Screenshot is mandatory for this item"; hasError = true; }
     });
-
-    if (!shippingMode) { newErrors['shipping'] = "Please select a shipping mode"; hasError = true; }
 
     if (totalGhs <= 0) {
       newErrors['total'] = "Total cost must be greater than 0 to initialize payment";
@@ -202,6 +198,7 @@ export function NewLinkOrderForm({
                         type="number" 
                         step="0.01" 
                         min="0"
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
                         value={item.cny_price || ''}
                         placeholder="0.00" 
                         onChange={(e) => {
@@ -224,6 +221,7 @@ export function NewLinkOrderForm({
                     <input 
                       type="number" 
                       min="1" 
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
                       value={item.quantity}
                       onChange={(e) => {
                         updateItem(item.id, 'quantity', parseInt(e.target.value) || 1);
@@ -312,119 +310,20 @@ export function NewLinkOrderForm({
           </button>
 
           <div className="glass-panel p-6 md:p-8 space-y-6">
-            {/* Shipping Mode */}
-            <div className="space-y-3 relative">
-              <label className="text-sm font-medium">Shipping Mode <span className="text-red-600">*</span></label>
-              <input type="hidden" name="shipping" value={shippingMode} />
-              
-              <button 
-                  type="button"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className={`flex items-center justify-between h-12 w-full rounded-md border bg-background/50 px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer shadow-sm hover:bg-secondary/20 ${
-                    errors['shipping'] ? 'border-red-500 bg-red-500/5 error-highlight' : 'border-input'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {shippingMode === 'express' ? <><Zap className="w-4 h-4 text-orange-500" /> Air Express</> : 
-                     shippingMode === 'normal' ? <><Plane className="w-4 h-4 text-blue-500" /> Air Normal</> : 
-                     shippingMode === 'sea' ? <><Ship className="w-4 h-4 text-green-500" /> Sea Freight</> : 
-                     <span className="text-muted-foreground">Select a shipping mode</span>}
-                  </div>
-                  <ChevronDown className="w-4 h-4 opacity-50" />
-                </button>
-                {errors['shipping'] && (
-                  <p className="text-red-600 text-sm font-bold mt-1 bg-red-100 border border-red-200 shadow-sm px-2 py-1 rounded w-max">{errors['shipping']}</p>
-                )}
-
-                {isDropdownOpen && (
-                  <div className="absolute top-[72px] left-0 right-0 bg-background border border-border rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-100">
-                    <button 
-                      type="button"
-                      onClick={() => { 
-                        setShippingMode('express'); 
-                        setIsDropdownOpen(false); 
-                        if (errors['shipping']) setErrors(prev => ({...prev, shipping: ''}));
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-secondary/50 flex items-center gap-3 border-b border-border/50"
-                    >
-                      <Zap className="w-5 h-5 text-orange-500" />
-                      <div>
-                        <div className="font-semibold text-orange-500">Air Express</div>
-                        <div className="text-xs text-muted-foreground">3 Days • $44/kg</div>
-                      </div>
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => { 
-                        setShippingMode('normal'); 
-                        setIsDropdownOpen(false); 
-                        if (errors['shipping']) setErrors(prev => ({...prev, shipping: ''}));
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-secondary/50 flex items-center gap-3 border-b border-border/50"
-                    >
-                      <Plane className="w-5 h-5 text-blue-500" />
-                      <div>
-                        <div className="font-semibold text-blue-500">Air Normal</div>
-                        <div className="text-xs text-muted-foreground">12 Days • $25/kg</div>
-                      </div>
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => { setShippingMode('sea'); setIsDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-secondary/50 flex items-center gap-3"
-                    >
-                      <Ship className="w-5 h-5 text-green-500" />
-                      <div>
-                        <div className="font-semibold text-green-500">Sea Freight</div>
-                        <div className="text-xs text-muted-foreground">50-60 Days • $250/CBM</div>
-                      </div>
-                    </button>
-                  </div>
-                )}
-            </div>
-
-            {/* Shipping Mode Information */}
-            <div className="mt-6 pt-6 border-t border-border/50">
+            {/* Shipping Method Information */}
+            <div>
               <h3 className="font-bold mb-4 flex items-center gap-2">
                 <Info className="w-4 h-4 text-primary" />
-                Shipping Mode Details
+                Shipping Method
               </h3>
               
               <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                  <div className="flex items-center gap-2 font-semibold text-orange-500">
-                    <Zap className="w-4 h-4" /> Air Express
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold">3 days</div>
-                    <div className="text-xs opacity-80">$44/kg</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <div className="flex items-center gap-2 font-semibold text-blue-500">
-                    <Plane className="w-4 h-4" /> Air Normal
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold">12 days</div>
-                    <div className="text-xs opacity-80">$25/kg</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <div className="flex items-center gap-2 font-semibold text-green-500">
-                    <Ship className="w-4 h-4" /> Sea Freight
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold">50-60 days</div>
-                    <div className="text-xs opacity-80">$250/CBM</div>
-                  </div>
+                <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400">
+                  <p className="leading-relaxed">
+                    You don't need to choose a shipping method now. Once your items arrive at our China warehouse, you'll be able to choose Air Normal, Air Express, or Sea Shipping from the <strong>Reservations</strong> page before your goods are shipped to Ghana.
+                  </p>
                 </div>
               </div>
-
-              <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-                The shipping fee will be invoiced to your dashboard once the item gets to Ghana. Rates above are estimates.
-              </p>
             </div>
           </div>
         </div>

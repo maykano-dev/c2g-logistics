@@ -29,8 +29,7 @@ export const CreateLinkOrderSchema = z.object({
     } catch {
       return false;
     }
-  }, 'Invalid items format'),
-  shipping_mode: SHIPPING_MODES,
+  }, 'Invalid items format')
 });
 
 export const UpdateLinkOrderSchema = z.object({
@@ -43,7 +42,6 @@ export const RegisterPackagesSchema = z.object({
   tracking_numbers: z.array(z.string().min(3)).min(1, 'At least one tracking number is required'),
   store_name: z.string().min(1, 'Store name is required').max(200),
   description: z.string().min(1, 'Description is required').max(500),
-  shipping_mode: SHIPPING_MODES,
 });
 
 export const UpdateProfileSchema = z.object({

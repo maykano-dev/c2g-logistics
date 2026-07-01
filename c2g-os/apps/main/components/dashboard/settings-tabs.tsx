@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { User, Lock, ShieldAlert, ChevronRight, ArrowLeft } from "lucide-react";
+import { User, Lock, ShieldAlert, ChevronRight, ArrowLeft, MapPin } from "lucide-react";
+import Link from "next/link";
 
 export default function SettingsTabs({ 
   profileForm, 
@@ -50,6 +51,17 @@ export default function SettingsTabs({
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground md:hidden" />
         </button>
+
+        {/* Mobile only: Warehouse Address Link */}
+        <Link 
+          href="/dashboard/warehouse"
+          className="md:hidden flex items-center justify-between gap-3 px-4 py-4 rounded-lg border border-transparent transition-all text-left font-medium text-muted-foreground hover:bg-secondary hover:text-foreground mt-4"
+        >
+          <div className="flex items-center gap-3">
+            <MapPin className="w-5 h-5" /> Warehouse Address
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </Link>
       </div>
 
       {/* Content Area */}

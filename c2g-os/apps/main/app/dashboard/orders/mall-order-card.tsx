@@ -196,10 +196,10 @@ export function MallOrderCard({ order }: { order: any }) {
             </>
           ) : (
             <button 
-              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/orders/mall/${order.id}?track=true`); }}
+              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/reservations`); }}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1"
             >
-              <Map className="w-4 h-4" /> Track Shipment
+              <Map className="w-4 h-4" /> Track Reservation
             </button>
           )}
         </div>

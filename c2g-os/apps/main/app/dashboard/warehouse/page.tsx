@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Copy, MapPin, Building2, Phone, User, CheckCircle2 } from "lucide-react";
 import { createClient } from '@/utils/supabase/server';
 import { CopyAddressButton } from './copy-button';
@@ -8,10 +10,12 @@ export default async function WarehouseAddressPage() {
   
   let customerId = 'C2G-CUST-XXXX';
   let customerName = 'Customer';
+  let warehouseCode = '';
+
   if (user) {
     const { data: customer } = await supabase
       .from('customers')
-      .select('customer_unique_id, name')
+      .select('customer_unique_id, name, warehouse_code')
       .eq('id', user.id)
       .single();
     if (customer?.customer_unique_id) {
@@ -19,6 +23,9 @@ export default async function WarehouseAddressPage() {
     }
     if (customer?.name) {
       customerName = customer.name.split(' ')[0];
+    }
+    if (customer?.warehouse_code) {
+      warehouseCode = customer.warehouse_code;
     }
   }
 
@@ -32,11 +39,13 @@ export default async function WarehouseAddressPage() {
     console.error("Error fetching warehouse addresses:", error);
   }
 
-  const defaultWarehouse = addresses?.find(a => a.is_default) || addresses?.[0];
-
-  const warehouseName = defaultWarehouse?.name || "Guangzhou Warehouse";
-  const warehousePhone = defaultWarehouse?.phone || "+86 17835112914";
-  const warehouseAddress = defaultWarehouse?.address || "Address Line 1: 迎泽大街79号理工大学迎西校区内太原理工大学(清泽田径场)\nCity: 太原市\nProvince: 山西省\nDistrict: 万柏林区\nPostal Code: 030024\nCountry: China";
+  const activeAddresses = addresses && addresses.length > 0 ? addresses : [{
+    id: 'default',
+    is_default: true,
+    name: "Guangzhou Warehouse",
+    phone: "+86 17835112914",
+    address: "Address Line 1: 迎泽大街79号理工大学迎西校区内太原理工大学(清泽田径场)\nCity: 太原市\nProvince: 山西省\nDistrict: 万柏林区\nPostal Code: 030024\nCountry: China"
+  }];
 
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
@@ -53,33 +62,60 @@ export default async function WarehouseAddressPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* China Warehouse Card */}
-        <div className="glass-panel p-8 relative overflow-hidden group border-primary/20 hover:border-primary/50 transition-colors">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] -mr-10 -mt-10 pointer-events-none" />
-          
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 shrink-0 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
-              <span className="text-2xl">🇨🇳</span>
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold whitespace-nowrap tracking-tight">{warehouseName}</h2>
-              <p className="text-sm text-green-500 flex items-center gap-1 font-medium">
-                <CheckCircle2 className="w-4 h-4 shrink-0" /> Receiving Packages
-              </p>
-            </div>
-          </div>
+        
+        {/* Warehouse Cards List */}
+        <div className="space-y-6">
+          {activeAddresses.map((warehouse, idx) => {
+            const isChineseFormat = warehouse.address?.includes('{CODE}');
+            let processedAddress = warehouse.address || '';
+            let copyText = '';
+            let displayText = '';
 
-          <div className="bg-secondary/10 p-6 rounded-xl border border-primary/20 text-[14px] leading-[1.8] text-foreground/90 font-medium whitespace-pre-wrap">
-{`Name: ${customerName} [${customerId}]
-${warehouseAddress?.trim()}
-Phone: ${warehousePhone}`}
-          </div>
-          
-          <CopyAddressButton addressText={`Name: ${customerName} [${customerId}]\n${warehouseAddress}\nPhone: ${warehousePhone}`} />
-          
-          <div className="mt-6 text-sm text-muted-foreground bg-primary/5 p-4 rounded-lg border border-primary/10">
-            <strong>Important:</strong> Always ensure your unique ID ({customerId}) is included in the receiver name or detailed address so we can identify your packages.
-          </div>
+            if (isChineseFormat) {
+                // If it's the new template format, just replace CODE
+                const actualCode = warehouseCode || customerId; // fallback
+                processedAddress = processedAddress.replace(/{CODE}/g, actualCode);
+                displayText = processedAddress;
+                copyText = processedAddress;
+            } else {
+                // Legacy english format
+                displayText = `Name: ${customerName} [${customerId}]\n${processedAddress?.trim()}\nPhone: ${warehouse.phone}`;
+                copyText = displayText;
+            }
+
+            return (
+              <div key={warehouse.id || idx} className={`glass-panel p-8 relative overflow-hidden group border-primary/20 hover:border-primary/50 transition-colors ${!warehouse.is_default ? 'opacity-80 scale-[0.98]' : ''}`}>
+                {warehouse.is_default && <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] -mr-10 -mt-10 pointer-events-none" />}
+                
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+                    <span className="text-2xl">🇨🇳</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg sm:text-xl font-bold whitespace-nowrap tracking-tight">{warehouse.name}</h2>
+                      {!warehouse.is_default && (
+                        <span className="text-xs bg-secondary px-2 py-1 rounded border border-border">Alternative</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-green-500 flex items-center gap-1 font-medium">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" /> Receiving Packages
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-secondary/10 p-6 rounded-xl border border-primary/20 text-[14px] leading-[1.8] text-foreground/90 font-medium whitespace-pre-wrap">
+                  {displayText}
+                </div>
+                
+                <CopyAddressButton addressText={copyText} />
+                
+                <div className="mt-6 text-sm text-muted-foreground bg-primary/5 p-4 rounded-lg border border-primary/10">
+                  <strong>Important:</strong> Always ensure your unique ID ({warehouseCode || customerId}) is included in the receiver name or detailed address so we can identify your packages.
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Instructions / Helpers */}

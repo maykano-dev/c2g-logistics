@@ -17,7 +17,8 @@ import {
   ShoppingCart,
   ClipboardList,
   Heart,
-  Wallet
+  Wallet,
+  PlaneTakeoff
 } from "lucide-react";
 import { logout } from "../auth/actions";
 import { useWishlist } from "@/components/shop/wishlist-context";
@@ -34,7 +35,7 @@ export default function DashboardClientLayout({
   const pathname = usePathname();
   const { items: wishlistItems } = useWishlist();
 
-  const navLinks = [
+  const desktopNavLinks = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { 
       name: "Packages", 
@@ -43,12 +44,39 @@ export default function DashboardClientLayout({
       count: stats?.pendingPackagesCount || 0
     },
     { 
+      name: "Reservations", 
+      href: "/dashboard/reservations", 
+      icon: PlaneTakeoff,
+    },
+    { 
       name: "Orders", 
       href: "/dashboard/orders", 
       icon: ClipboardList,
       count: stats?.pendingPaymentsCount || 0
     },
-    { name: "Warehouse", href: "/dashboard/warehouse", icon: MapPin },
+    { name: "Warehouse Address", href: "/dashboard/warehouse", icon: MapPin },
+    { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
+  ];
+
+  const mobileNavLinks = [
+    { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+    { 
+      name: "Packages", 
+      href: "/dashboard/packages", 
+      icon: Package,
+      count: stats?.pendingPackagesCount || 0
+    },
+    { 
+      name: "Reservations", 
+      href: "/dashboard/reservations", 
+      icon: PlaneTakeoff,
+    },
+    { 
+      name: "Orders", 
+      href: "/dashboard/orders", 
+      icon: ClipboardList,
+      count: stats?.pendingPaymentsCount || 0
+    },
     { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
   ];
 
@@ -66,7 +94,7 @@ export default function DashboardClientLayout({
         </div>
         
         <nav className="flex-1 px-4 space-y-2 mt-4">
-          {navLinks.map((link) => {
+          {desktopNavLinks.map((link) => {
             const isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href));
             const Icon = link.icon;
             return (
@@ -171,7 +199,7 @@ export default function DashboardClientLayout({
       <AnnouncementsOverlay />
 
       {/* Mobile Bottom Navigation — Liquid Glass Animated Pill */}
-      <MobileNav navLinks={navLinks as any} pathname={pathname} />
+      <MobileNav navLinks={mobileNavLinks as any} pathname={pathname} />
     </div>
   );
 }

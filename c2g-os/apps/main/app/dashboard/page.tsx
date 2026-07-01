@@ -9,7 +9,8 @@ import {
   Clock,
   Activity,
   Bell,
-  ShoppingCart
+  ShoppingCart,
+  ArrowRight
 } from "lucide-react";
 import Link from "next/link";
 import { getDashboardStats, getRecentActivity } from "./actions";
@@ -45,6 +46,35 @@ export default async function DashboardOverview() {
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
+      {/* Warehouse Banner */}
+      <Link href="/dashboard/warehouse" className="block w-full">
+        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-3 sm:p-8 group shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 border border-white/10">
+          {/* Decorative blur elements */}
+          <div className="absolute top-0 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-white/10 rounded-full blur-[40px] sm:blur-[60px] -mr-16 sm:-mr-20 -mt-16 sm:-mt-20 pointer-events-none transition-transform group-hover:scale-125 duration-700 ease-out" />
+          <div className="absolute bottom-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-white/10 rounded-full blur-[30px] sm:blur-[40px] -ml-8 sm:-ml-10 -mb-8 sm:-mb-10 pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-row items-center justify-between gap-2 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                <div className="p-1 sm:p-2 bg-white/20 rounded-md sm:rounded-lg backdrop-blur-sm shrink-0">
+                  <MapPin className="w-3.5 h-3.5 sm:w-6 sm:h-6 text-white" />
+                </div>
+                <h2 className="text-sm sm:text-3xl font-bold sm:font-extrabold text-white tracking-tight leading-tight truncate sm:whitespace-normal">
+                  Get your warehouse address here
+                </h2>
+              </div>
+              <p className="text-indigo-100 font-medium text-[10px] sm:text-base sm:ml-1 mt-0.5 sm:mt-0 line-clamp-1 sm:line-clamp-none">
+                Use your unique Chinese address to start shipping from Taobao, 1688, and more.
+              </p>
+            </div>
+            
+            <div className="shrink-0 flex items-center justify-center bg-white text-indigo-600 hover:bg-indigo-50 p-1.5 sm:p-4 rounded-full shadow-md transition-all duration-300 group-hover:translate-x-1 sm:group-hover:translate-x-2 group-hover:shadow-lg">
+              <ArrowRight className="w-3.5 h-3.5 sm:w-6 sm:h-6 stroke-[3]" />
+            </div>
+          </div>
+        </div>
+      </Link>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>

@@ -244,20 +244,13 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
                   </div>
                 </div>
 
-                <div className="mt-4 flex gap-2">
-                  <Link 
-                    href={`/dashboard/packages/${pkg.id}`}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-xs font-medium transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80 h-8 px-3"
-                  >
-                    {!pkg.shipment_start_date && <Lock className="w-3 h-3 opacity-50" />}
-                    View Tracker
-                  </Link>
-                  {needsPayment && (
+                {needsPayment && (
+                  <div className="mt-4 flex gap-2">
                     <div className="flex-1">
                       <PackagePayButton packageId={pkg.id} walletBalance={walletBalance} registrationFee={registrationFee} />
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}

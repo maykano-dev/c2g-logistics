@@ -49,7 +49,7 @@ export default function TopUpModal({ currentPhone }: { currentPhone?: string }) 
   return (
     <>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]" onClick={() => !isLoading && setIsOpen(false)} />
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 z-[100]">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 z-[100]">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Wallet className="w-5 h-5 text-primary" /> Top Up Wallet
         </h2>

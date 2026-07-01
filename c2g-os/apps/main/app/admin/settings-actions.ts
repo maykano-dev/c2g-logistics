@@ -90,3 +90,45 @@ export async function adminUpdateRegistrationFee(newFee: number) {
     return { success: false, error: err.message || 'Failed to update fee' };
   }
 }
+
+export async function adminUpdateWarehouseAddress(id: string, updates: any) {
+  const supabase = await createClient();
+  
+  // Enforce admin check
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+  
+  const { data: admin } = await supabase
+    .from('admins')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const { error } = await supabase
+      .from('warehouse_addresses')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) throw error;
+    
+    // Log the action
+    await supabase.from('audit_logs').insert({
+      user_id: user.id,
+      action: 'UPDATE_WAREHOUSE_ADDRESS',
+      entity_type: 'warehouse_addresses',
+      entity_id: id,
+      details: updates,
+      ip_address: 'server'
+    });
+
+    revalidatePath('/admin/(protected)/system/settings');
+    revalidatePath('/dashboard/warehouse');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to update warehouse address' };
+  }
+}
+

@@ -88,11 +88,9 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
   if (!user) return { error: 'Unauthorized' }
 
   const itemsJsonStr = formData.get('items_json') as string;
-  const shipping_mode = formData.get('shipping') as string;
 
   const validation = CreateLinkOrderSchema.safeParse({
     items_json: itemsJsonStr,
-    shipping_mode,
   });
 
   if (!validation.success) {
@@ -154,10 +152,7 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
     .eq('id', user.id)
     .single();
 
-  // Map UI shipping mode to Database constraint
-  const db_shipping_mode = shipping_mode === 'normal' ? 'air_normal' : 
-                           shipping_mode === 'express' ? 'air_express' : 
-                           shipping_mode;
+  // Map UI shipping mode to Database constraint (removed)
 
   // Insert Order FIRST so it is saved even if payment fails
   const { data: newOrder, error: insertError } = await supabase
@@ -172,7 +167,7 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
       quantity: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
       notes: primaryItem.notes || '',
       items: items,
-      shipping_mode: db_shipping_mode,
+      shipping_mode: 'pending',
       screenshot_url: primaryItem.screenshot_url,
       total: totalGhs,
       order_status: 'pending_payment',
@@ -279,9 +274,8 @@ export async function updateLinkOrder(id: string, prevState: any, formData: Form
   }
 
   const itemsJsonStr = formData.get('items_json') as string;
-  const shipping_mode = formData.get('shipping') as string;
 
-  if (!itemsJsonStr || !shipping_mode) {
+  if (!itemsJsonStr) {
     return { error: 'Missing required fields' };
   }
 
@@ -327,9 +321,7 @@ export async function updateLinkOrder(id: string, prevState: any, formData: Form
 
   const primaryItem = items[0];
 
-  const db_shipping_mode = shipping_mode === 'normal' ? 'air_normal' : 
-                           shipping_mode === 'express' ? 'air_express' : 
-                           shipping_mode;
+
 
   const { error: updateError } = await supabase
     .from('orders')
@@ -340,7 +332,7 @@ export async function updateLinkOrder(id: string, prevState: any, formData: Form
       quantity: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
       notes: order.notes, // keep existing notes containing hubtel checkout ids
       items: items,
-      shipping_mode: db_shipping_mode,
+      shipping_mode: 'pending',
       screenshot_url: primaryItem.screenshot_url || order.screenshot_url,
       total: totalGhs,
     })
