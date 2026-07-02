@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogoutButton } from "../../../components/dashboard/logout-button";
 import { logout } from "../../auth/actions";
 import { getCustomerProfile } from "./actions";
 import ProfileForm from "../../../components/dashboard/profile-form";
@@ -32,10 +32,7 @@ export default async function SettingsPage() {
       {/* Mobile Logout Button */}
       <div className="md:hidden pt-8 mt-8 border-t border-border/50">
         <form action={logout}>
-          <button type="submit" className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold transition-all border-2 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground h-12 px-4 gap-2 shadow-sm relative z-50">
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </button>
+          <LogoutButton />
         </form>
       </div>
     </div>

@@ -46,12 +46,12 @@ export async function fetchHubtelTransactionStatusLocal(
     }
 
     const params = new URLSearchParams()
-    if (hubtelTransactionId && /^\d+$/.test(hubtelTransactionId)) {
+    if (clientReference) {
+        params.append('clientReference', clientReference)
+    } else if (hubtelTransactionId && /^\d+$/.test(hubtelTransactionId)) {
         params.append('hubtelTransactionId', hubtelTransactionId)
     } else if (networkTransactionId) {
         params.append('networkTransactionId', networkTransactionId)
-    } else if (clientReference) {
-        params.append('clientReference', clientReference)
     } else if (hubtelTransactionId) {
         params.append('clientReference', hubtelTransactionId)
     }
