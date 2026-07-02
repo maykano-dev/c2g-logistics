@@ -144,7 +144,7 @@ export function SignupForm() {
 
   // Initial Signup Form
   return (
-    <form action={action} className="space-y-4 w-full max-w-sm mx-auto">
+    <form action={action} className="space-y-2 sm:space-y-4 w-full max-w-sm mx-auto">
       {state?.error && (
         <div className="p-3 text-sm font-medium bg-destructive/10 text-destructive rounded-md border border-destructive/20 animate-fade-in flex items-start gap-2">
           <ShieldCheck className="w-5 h-5 shrink-0" />
@@ -167,7 +167,7 @@ export function SignupForm() {
             type="text"
             placeholder="Kwame Mensah"
             required
-            className="flex h-11 w-full rounded-md border border-input bg-background/50 pl-10 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all backdrop-blur-sm"
+            className="flex h-10 sm:h-11 w-full rounded-md border border-input bg-background/50 pl-10 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all backdrop-blur-sm"
           />
         </div>
       </div>
@@ -193,7 +193,7 @@ export function SignupForm() {
             type="email"
             placeholder="kwame@example.com"
             required
-            className="flex h-11 w-full rounded-md border border-input bg-background/50 pl-10 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all backdrop-blur-sm"
+            className="flex h-10 sm:h-11 w-full rounded-md border border-input bg-background/50 pl-10 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all backdrop-blur-sm"
           />
         </div>
       </div>
@@ -214,7 +214,7 @@ export function SignupForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Create a strong password"
-            className="flex h-11 w-full rounded-md border border-input bg-background/50 pl-10 pr-10 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all backdrop-blur-sm"
+            className="flex h-10 sm:h-11 w-full rounded-md border border-input bg-background/50 pl-10 pr-10 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-all backdrop-blur-sm"
           />
           <button
             type="button"
@@ -251,11 +251,11 @@ export function SignupForm() {
         )}
       </div>
 
-      <div className="pt-4 animate-slide-up-5 relative z-0">
+      <div className="pt-2 sm:pt-4 animate-slide-up-5 relative z-0">
         <button
           type="submit"
           disabled={isPending}
-          className="group inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 px-8 w-full shadow-lg shadow-primary/25"
+          className="group inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-10 sm:h-12 px-8 w-full shadow-lg shadow-primary/25"
         >
           {isPending ? (
             <>

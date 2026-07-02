@@ -47,7 +47,7 @@ export function PhoneInput({ name = "phone", required = true, value = "", onChan
       {/* Hidden input to submit the full combined phone number */}
       <input type="hidden" name={name} value={phone ? `${selected?.dial || '+233'} ${phone}` : ''} />
       
-      <div className="flex h-11 w-full rounded-md border border-input bg-background/50 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors backdrop-blur-sm group">
+      <div className="flex h-10 sm:h-11 w-full rounded-md border border-input bg-background/50 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors backdrop-blur-sm group">
         
         {/* Country Selector Button */}
         <button

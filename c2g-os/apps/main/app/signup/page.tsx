@@ -21,17 +21,17 @@ export default function SignupPage() {
       <div className="w-full flex z-10 max-w-6xl mx-auto h-[100dvh] sm:h-auto sm:min-h-[600px] sm:rounded-2xl sm:shadow-2xl overflow-y-auto sm:overflow-hidden border-border/50 sm:border bg-background/80 backdrop-blur-xl">
         
         {/* Left Column: Form (Visible on all sizes) */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-12 sm:px-12 relative overflow-y-auto sm:overflow-visible">
-          <div className="max-w-[400px] mx-auto w-full space-y-8">
+        <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-6 sm:px-12 sm:py-12 relative overflow-y-auto sm:overflow-visible">
+          <div className="max-w-[400px] mx-auto w-full space-y-4 sm:space-y-8">
             {/* Logo & Header */}
             <div className="flex flex-col animate-fade-in text-center sm:text-left">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center sm:justify-start mb-4 mx-auto sm:mx-0">
+              <div className="w-12 h-12 sm:w-20 sm:h-20 relative flex items-center justify-center sm:justify-start mb-2 sm:mb-4 mx-auto sm:mx-0">
                 <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground mb-2">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground mb-1 sm:mb-2">
                 Start Importing
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              <p className="hidden sm:block text-muted-foreground text-sm sm:text-base">
                 Join 450+ importers using C2G to source, ship, and grow.
               </p>
             </div>
@@ -46,7 +46,7 @@ export default function SignupPage() {
             </div>
             
             {/* Mobile Trust Badges (Only visible on small screens) */}
-            <div className="flex lg:hidden pt-4 border-t border-border/50 flex-wrap justify-center gap-3 animate-slide-up-6">
+            <div className="flex lg:hidden pt-2 border-t border-border/50 flex-wrap justify-center gap-3 animate-slide-up-6">
               <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold uppercase tracking-wider leading-none h-7">
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" /> Fast
               </span>
