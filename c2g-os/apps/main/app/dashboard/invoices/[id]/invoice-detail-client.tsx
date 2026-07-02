@@ -11,7 +11,7 @@ import { payPackageRegistrationFee } from "../../packages/actions";
 export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice: any, companyInfo: any }) {
   const router = useRouter();
   const [isPaying, setIsPaying] = useState(false);
-  const { showAlert } = useModal();
+  const { showAlert, showConfirm } = useModal();
 
   const formatCurrency = (amount: number) => `₵${parseFloat(amount.toString()).toFixed(2)}`;
   const formatDate = (date: string) => new Date(date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -21,6 +21,16 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
   };
 
   const handlePay = async () => {
+    // Confirm before payment
+    const confirmed = await showConfirm({
+      title: "Confirm Payment",
+      message: `You are about to pay ₵${parseFloat(invoice.total.toString()).toFixed(2)} from your wallet for invoice ${invoice.reference}.\n\nThis action cannot be undone.`,
+      type: "warning",
+      confirmText: `Pay ₵${parseFloat(invoice.total.toString()).toFixed(2)}`,
+      cancelText: "Cancel",
+    });
+    if (!confirmed) return;
+
     setIsPaying(true);
     try {
       let res: { success?: boolean; error?: string } = {};

@@ -134,17 +134,17 @@ export async function payReservationDeposit(reservationId: string) {
     const { error: txErr } = await adminSupabase.from('wallet_transactions').insert({
       wallet_id: wallet.id,
       amount: -Number(reservation.deposit_amount),
-      transaction_type: 'reservation_deposit',
+      transaction_type: 'shipping_deposit_hold',
       status: 'completed',
       description: `Shipping Deposit for Reservation ${reservationId}`,
-      reference_id: `DEP-${reservationId}`
+      metadata: { reservation_id: reservationId }
     });
     
     if (txErr) console.error('Failed to insert wallet transaction:', txErr);
 
     const { error: resUpdErr } = await adminSupabase.from('shipment_reservations').update({
       deposit_paid: true,
-      status: 'processing'
+      status: 'reserved_for_shipment'
     }).eq('id', reservationId);
     
     if (resUpdErr) throw new Error('Failed to update reservation status');

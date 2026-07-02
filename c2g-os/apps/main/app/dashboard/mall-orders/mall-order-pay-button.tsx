@@ -6,13 +6,25 @@ import { useModal } from '@/components/providers/modal-provider';
 import { useRouter } from 'next/navigation';
 import { payMallOrder } from './actions';
 
-export function MallOrderPayButton({ orderId }: { orderId: string }) {
+export function MallOrderPayButton({ orderId, amount }: { orderId: string, amount?: number }) {
   const [isPaying, setIsPaying] = useState(false);
-  const { showAlert } = useModal();
+  const { showAlert, showConfirm } = useModal();
   const router = useRouter();
 
   const handlePay = async () => {
     if (isPaying) return;
+
+    // Confirm before payment
+    const amountStr = amount ? `₵${amount.toFixed(2)}` : 'the order total';
+    const confirmed = await showConfirm({
+      title: "Confirm Payment",
+      message: `You are about to pay ${amountStr} from your wallet for this order.\n\nThis action cannot be undone.`,
+      type: "warning",
+      confirmText: `Pay ${amountStr}`,
+      cancelText: "Cancel",
+    });
+    if (!confirmed) return;
+
     setIsPaying(true);
     try {
       const res = await payMallOrder(orderId);
@@ -42,7 +54,7 @@ export function MallOrderPayButton({ orderId }: { orderId: string }) {
       disabled={isPaying}
       className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none"
     >
-      {isPaying ? 'Redirecting...' : 'Pay Now'}
+      {isPaying ? 'Processing...' : 'Pay Now'}
     </button>
   );
 }
