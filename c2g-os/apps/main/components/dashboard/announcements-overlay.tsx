@@ -100,77 +100,84 @@ export default function AnnouncementsOverlay() {
             </div>
 
             {/* Content List */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              <AnimatePresence>
-                {announcements.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col items-center justify-center py-10 text-center"
-                  >
-                    <Mailbox className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                    <h4 className="text-lg font-bold">You're all caught up!</h4>
-                    <p className="text-muted-foreground mt-1">No new announcements at this time.</p>
-                  </motion.div>
-                ) : (
-                  announcements.map((ann) => (
+            <div className="relative flex-1 overflow-hidden min-h-[200px]">
+              <div className="absolute inset-0 overflow-y-auto p-5 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <AnimatePresence>
+                  {announcements.length === 0 ? (
                     <motion.div
-                      key={ann.id}
-                      layout
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 50 }}
-                      className={`relative p-5 rounded-xl border ${
-                        ann.priority > 5 
-                          ? "bg-primary/5 border-primary/30" 
-                          : "bg-secondary/20 border-border/50"
-                      }`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex flex-col items-center justify-center py-10 text-center"
                     >
-                      <button
-                        onClick={() => handleDismiss(ann.id)}
-                        className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-colors text-muted-foreground"
-                        title="Dismiss"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-
-                      <div className="pr-8">
-                        <div className="flex items-center gap-2 mb-2">
-                          {ann.priority > 5 && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                              <Star className="w-3 h-3" /> Priority
-                            </span>
-                          )}
-                          <span className="text-xs text-muted-foreground font-medium">
-                            {new Date(ann.created_at).toLocaleDateString("en-GB", {
-                              day: "numeric",
-                              month: "short",
-                            })}
-                          </span>
-                        </div>
-                        <h4 className="text-lg font-bold mb-2 leading-tight flex items-center gap-2">
-                          <IconSelector type={ann.icon} />
-                          {ann.title}
-                        </h4>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {ann.message}
-                        </p>
-                        
-                        {ann.action_url && ann.action_label && (
-                          <a
-                            href={ann.action_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center mt-4 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                          >
-                            {ann.action_label} <span className="ml-1">→</span>
-                          </a>
-                        )}
-                      </div>
+                      <Mailbox className="w-16 h-16 text-muted-foreground/30 mb-4" />
+                      <h4 className="text-lg font-bold">You're all caught up!</h4>
+                      <p className="text-muted-foreground mt-1">No new announcements at this time.</p>
                     </motion.div>
-                  ))
-                )}
-              </AnimatePresence>
+                  ) : (
+                    announcements.map((ann) => (
+                      <motion.div
+                        key={ann.id}
+                        layout
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 50 }}
+                        className={`relative p-5 rounded-xl border ${
+                          ann.priority > 5 
+                            ? "bg-primary/5 border-primary/30" 
+                            : "bg-secondary/20 border-border/50"
+                        }`}
+                      >
+                        <button
+                          onClick={() => handleDismiss(ann.id)}
+                          className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-colors text-muted-foreground"
+                          title="Dismiss"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+  
+                        <div className="pr-8">
+                          <div className="flex items-center gap-2 mb-2">
+                            {ann.priority > 5 && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                <Star className="w-3 h-3" /> Priority
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground font-medium">
+                              {new Date(ann.created_at).toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "short",
+                              })}
+                            </span>
+                          </div>
+                          <h4 className="text-lg font-bold mb-2 leading-tight flex items-center gap-2">
+                            <IconSelector type={ann.icon} />
+                            {ann.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {ann.message}
+                          </p>
+                          
+                          {ann.action_url && ann.action_label && (
+                            <a
+                              href={ann.action_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center mt-4 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                            >
+                              {ann.action_label} <span className="ml-1">→</span>
+                            </a>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </AnimatePresence>
+              </div>
+              
+              {/* Scroll Indicator Gradient */}
+              {announcements.length > 2 && (
+                <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
+              )}
             </div>
 
             {/* Footer */}

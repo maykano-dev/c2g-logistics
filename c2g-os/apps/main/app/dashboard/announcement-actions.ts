@@ -35,10 +35,16 @@ export async function getActiveAnnouncements() {
 
   const dismissedIds = dismissed ? dismissed.map((d) => d.announcement_id) : [];
 
-  // Filter out dismissed
-  const activeAnnouncements = allAnnouncements.filter(
-    (ann) => !dismissedIds.includes(ann.id)
-  );
+  // Filter out dismissed and map DB fields to UI fields
+  const activeAnnouncements = allAnnouncements
+    .filter((ann) => !dismissedIds.includes(ann.id))
+    .map((ann) => ({
+      ...ann,
+      message: ann.message || ann.content || "", // Handle schema differences
+      icon: ann.icon || "megaphone",
+      type: ann.type || "info",
+      priority: ann.priority || 1,
+    }));
 
   return { announcements: activeAnnouncements };
 }
@@ -50,7 +56,7 @@ export async function dismissAnnouncement(announcementId: string) {
 
   const { error } = await supabase.from("user_dismissed_announcements").upsert({
     user_id: userData.user.id,
-    announcement_id: parseInt(announcementId),
+    announcement_id: announcementId, // Removed parseInt to support UUIDs
   }, { onConflict: "user_id, announcement_id" });
 
   return { success: !error };
@@ -63,7 +69,7 @@ export async function dismissAllAnnouncements(announcementIds: string[]) {
 
   const dismissals = announcementIds.map((id) => ({
     user_id: userData.user.id,
-    announcement_id: parseInt(id),
+    announcement_id: id, // Removed parseInt to support UUIDs
   }));
 
   const { error } = await supabase

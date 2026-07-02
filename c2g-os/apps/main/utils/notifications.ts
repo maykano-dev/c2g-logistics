@@ -111,14 +111,13 @@ export async function broadcastNotification({
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
   try {
-    // 1. Fetch all users from 'customers' (or whatever main user table exists, we'll just fetch from auth or a known table)
-    // Actually, 'customers' contains the user_id for all clients.
-    const { data: users } = await supabaseAdmin.from("customers").select("user_id");
+    // 1. Fetch all users using Supabase admin auth
+    const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     
     if (users && users.length > 0) {
       // 2. Insert In-App Notifications in batches of 500
       const notifications = users.map(u => ({
-        user_id: u.user_id,
+        user_id: u.id,
         title,
         message,
         type,
