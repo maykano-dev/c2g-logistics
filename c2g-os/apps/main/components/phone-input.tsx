@@ -77,7 +77,7 @@ export function PhoneInput({ name = "phone", required = true, value = "", onChan
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-full sm:w-[320px] rounded-lg border border-input bg-background/95 backdrop-blur-md shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute top-full left-0 mt-2 w-full sm:w-[320px] rounded-lg border border-border bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-50 overflow-hidden animate-scale-in">
           <div className="p-2 border-b border-input flex items-center gap-2">
             <Search className="w-4 h-4 text-muted-foreground ml-1 shrink-0" />
             <input

@@ -152,7 +152,7 @@ export function SignupForm() {
         </div>
       )}
 
-      <div className="space-y-2 animate-slide-up-1">
+      <div className="space-y-2 animate-slide-up-1 relative z-40">
         <label htmlFor="name" className="text-sm font-medium leading-none">
           Full Name
         </label>
@@ -172,14 +172,14 @@ export function SignupForm() {
         </div>
       </div>
 
-      <div className="space-y-2 animate-slide-up-2">
+      <div className="space-y-2 animate-slide-up-2 relative z-30">
         <label className="text-sm font-medium leading-none">
           Phone Number
         </label>
         <PhoneInput />
       </div>
 
-      <div className="space-y-2 animate-slide-up-3">
+      <div className="space-y-2 animate-slide-up-3 relative z-20">
         <label htmlFor="email" className="text-sm font-medium leading-none">
           Email Address
         </label>
@@ -198,7 +198,7 @@ export function SignupForm() {
         </div>
       </div>
       
-      <div className="space-y-2 animate-slide-up-4">
+      <div className="space-y-2 animate-slide-up-4 relative z-10">
         <label htmlFor="password" className="text-sm font-medium leading-none">
           Password
         </label>
@@ -251,11 +251,11 @@ export function SignupForm() {
         )}
       </div>
 
-      <div className="pt-4 animate-slide-up-5">
+      <div className="pt-4 animate-slide-up-5 relative z-0">
         <button
           type="submit"
-          disabled={isPending || strengthScore < 3}
-          className="group inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 px-8 w-full shadow-lg shadow-primary/25"
+          disabled={isPending}
+          className="group inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 px-8 w-full shadow-lg shadow-primary/25"
         >
           {isPending ? (
             <>

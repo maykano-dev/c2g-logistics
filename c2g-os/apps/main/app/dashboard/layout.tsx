@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { Metadata } from "next";
 import DashboardClientLayout from "./dashboard-client-layout";
 import { PushPrompt } from "../../components/push-prompt";
+import { WelcomeModal } from "../../components/welcome-modal";
 import { getDashboardStats } from "./actions";
 import { getSecureWalletBalance } from "./wallet/shared-actions";
 
@@ -37,6 +38,7 @@ export default async function DashboardLayout({
         {children}
       </DashboardClientLayout>
       <PushPrompt />
+      <WelcomeModal createdAt={user.created_at} />
     </>
   );
 }
