@@ -25,7 +25,7 @@ export default function SignupPage() {
           <div className="max-w-[400px] mx-auto w-full space-y-4 sm:space-y-8">
             {/* Logo & Header */}
             <div className="flex flex-col animate-fade-in text-center sm:text-left">
-              <div className="w-12 h-12 sm:w-20 sm:h-20 relative flex items-center justify-center sm:justify-start mb-2 sm:mb-4 mx-auto sm:mx-0">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 relative flex items-center justify-center sm:justify-start mb-2 sm:mb-4 mx-auto sm:mx-0">
                 <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
               </div>
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground mb-1 sm:mb-2">

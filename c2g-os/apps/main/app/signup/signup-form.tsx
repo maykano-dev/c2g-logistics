@@ -157,7 +157,7 @@ export function SignupForm() {
           Full Name
         </label>
         <div className="relative group">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/60 group-focus-within:text-primary transition-colors">
             <User className="w-4 h-4" />
           </div>
           <input
@@ -184,7 +184,7 @@ export function SignupForm() {
           Email Address
         </label>
         <div className="relative group">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/60 group-focus-within:text-primary transition-colors">
             <Mail className="w-4 h-4" />
           </div>
           <input
@@ -203,7 +203,7 @@ export function SignupForm() {
           Password
         </label>
         <div className="relative group">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/60 group-focus-within:text-primary transition-colors">
             <Lock className="w-4 h-4" />
           </div>
           <input
@@ -219,7 +219,7 @@ export function SignupForm() {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground transition-colors"
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
