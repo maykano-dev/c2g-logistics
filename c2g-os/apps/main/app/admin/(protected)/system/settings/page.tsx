@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Megaphone, Save, Building2, CheckCircle2 } from 'lucide-react';
-import { adminUpdateSettings, adminUpdateWarehouseAddress } from '@/app/admin/settings-actions';
+import { Megaphone, Save, Building2, CheckCircle2, DollarSign } from 'lucide-react';
+import { adminUpdateSettings, adminUpdateWarehouseAddress, adminUpdatePlatformSettings } from '@/app/admin/settings-actions';
 import { useModal } from "@/components/providers/modal-provider";
 
 export default function AdminSettingsView() {
@@ -22,10 +22,17 @@ export default function AdminSettingsView() {
     setLoading(true);
     const supabase = createClient();
     
-    const [settingsRes, whRes] = await Promise.all([
+    const [settingsRes, whRes, platformRes] = await Promise.all([
       supabase.from('settings').select('*').limit(1).single(),
-      supabase.from('warehouse_addresses').select('*').order('is_default', { ascending: false })
+      supabase.from('warehouse_addresses').select('*').order('is_default', { ascending: false }),
+      supabase.from('platform_settings').select('*')
     ]);
+
+    const plat = platformRes.data || [];
+    const getPlatValue = (key: string, def: number) => {
+      const found = plat.find(p => p.setting_key === key);
+      return found ? Number(found.setting_value) : def;
+    };
 
     if (settingsRes.data && !settingsRes.error) {
       setSettings({
@@ -33,14 +40,24 @@ export default function AdminSettingsView() {
         exchange_rate_cny_to_ghs: settingsRes.data.exchange_rate_cny_to_ghs || 14.5,
         service_fee_percentage: settingsRes.data.rates?.service_fee_percentage || 5,
         maintenance_mode: settingsRes.data.maintenance_mode || false,
-        rates: settingsRes.data.rates || {}
+        rates: settingsRes.data.rates || {},
+        air_normal_deposit_usd: getPlatValue('air_normal_deposit_usd', 25.00),
+        air_express_deposit_usd: getPlatValue('air_express_deposit_usd', 44.00),
+        sea_deposit_ghs: getPlatValue('sea_deposit_ghs', 500.00),
+        usd_to_ghs_rate: getPlatValue('usd_to_ghs_rate', 12.60),
+        package_registration_fee: getPlatValue('package_registration_fee', 5.00)
       });
     } else {
       setSettings({
         exchange_rate_cny_to_ghs: 14.5,
         service_fee_percentage: 5,
         maintenance_mode: false,
-        rates: {}
+        rates: {},
+        air_normal_deposit_usd: getPlatValue('air_normal_deposit_usd', 25.00),
+        air_express_deposit_usd: getPlatValue('air_express_deposit_usd', 44.00),
+        sea_deposit_ghs: getPlatValue('sea_deposit_ghs', 500.00),
+        usd_to_ghs_rate: getPlatValue('usd_to_ghs_rate', 12.60),
+        package_registration_fee: getPlatValue('package_registration_fee', 5.00)
       });
     }
 
@@ -53,13 +70,22 @@ export default function AdminSettingsView() {
 
   const handleSave = async () => {
     setSaving(true);
-    const res = await adminUpdateSettings(settings);
+    const [res, platRes] = await Promise.all([
+      adminUpdateSettings(settings),
+      adminUpdatePlatformSettings([
+        { setting_key: 'air_normal_deposit_usd', setting_value: settings.air_normal_deposit_usd },
+        { setting_key: 'air_express_deposit_usd', setting_value: settings.air_express_deposit_usd },
+        { setting_key: 'sea_deposit_ghs', setting_value: settings.sea_deposit_ghs },
+        { setting_key: 'usd_to_ghs_rate', setting_value: settings.usd_to_ghs_rate },
+        { setting_key: 'package_registration_fee', setting_value: settings.package_registration_fee }
+      ])
+    ]);
       
-    if (res.success) {
+    if (res.success && platRes.success) {
       showAlert({ title: 'Success', message: 'Settings saved successfully!', type: 'success' });
     } else {
-      console.error(res.error);
-      showAlert({ title: 'Error', message: 'Failed to save settings: ' + res.error, type: 'danger' });
+      console.error(res.error, platRes.error);
+      showAlert({ title: 'Error', message: 'Failed to save settings: ' + (res.error || platRes.error), type: 'danger' });
     }
     setSaving(false);
   };
@@ -143,6 +169,72 @@ export default function AdminSettingsView() {
               className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-indigo-600 focus:ring-indigo-600"
             />
             <label htmlFor="maintenance" className="text-sm font-medium text-zinc-400">Enable Maintenance Mode (Blocks users)</label>
+          </div>
+        </div>
+
+        <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2"><DollarSign className="w-5 h-5 text-indigo-500" /> Logistics Rates</h2>
+            <button 
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Air Normal Deposit (USD)</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={settings?.air_normal_deposit_usd || 0}
+                onChange={e => setSettings({...settings, air_normal_deposit_usd: parseFloat(e.target.value)})}
+                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Air Express Deposit (USD)</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={settings?.air_express_deposit_usd || 0}
+                onChange={e => setSettings({...settings, air_express_deposit_usd: parseFloat(e.target.value)})}
+                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Sea Freight Deposit (GHS)</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={settings?.sea_deposit_ghs || 0}
+                onChange={e => setSettings({...settings, sea_deposit_ghs: parseFloat(e.target.value)})}
+                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Shipping USD to GHS Rate</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={settings?.usd_to_ghs_rate || 0}
+                onChange={e => setSettings({...settings, usd_to_ghs_rate: parseFloat(e.target.value)})}
+                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Package Registration Fee (GHS)</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={settings?.package_registration_fee || 0}
+                onChange={e => setSettings({...settings, package_registration_fee: parseFloat(e.target.value)})}
+                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
           </div>
         </div>
 

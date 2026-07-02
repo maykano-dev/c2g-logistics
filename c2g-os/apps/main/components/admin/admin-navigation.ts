@@ -34,7 +34,6 @@ export const ADMIN_NAV_GROUPS = [
   {
     group: 'Operations',
     items: [
-      { name: 'Link Orders', href: '/admin/operations/link-orders', icon: LinkIcon },
       { name: 'Procurement (B4M)', href: '/admin/operations/procurement', icon: ShoppingCart },
       { name: 'China Warehouse', href: '/admin/operations/warehouse', icon: PackageCheck },
       { name: 'Reservations', href: '/admin/operations/reservations', icon: Plane },
@@ -42,9 +41,15 @@ export const ADMIN_NAV_GROUPS = [
     ]
   },
   {
+    group: 'Global Orders',
+    items: [
+      { name: 'Link Orders', href: '/admin/global-orders/link-orders', icon: LinkIcon },
+      { name: 'Mall Orders', href: '/admin/global-orders/mall-orders', icon: Store },
+    ]
+  },
+  {
     group: 'Commerce',
     items: [
-      { name: 'Mall Orders', href: '/admin/commerce/mall-orders', icon: Store },
       { name: 'Products', href: '/admin/commerce/products', icon: PackageSearch },
       { name: 'Importers', href: '/admin/commerce/importers', icon: Users },
       { name: 'Marketing', href: '/admin/commerce/marketing', icon: Megaphone },

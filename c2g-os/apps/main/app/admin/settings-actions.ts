@@ -91,6 +91,50 @@ export async function adminUpdateRegistrationFee(newFee: number) {
   }
 }
 
+export async function adminUpdatePlatformSettings(settingsArray: { setting_key: string, setting_value: number }[]) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+  
+  const { data: admin } = await supabase
+    .from('admins')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!admin) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const upserts = settingsArray.map(s => ({
+      setting_key: s.setting_key,
+      setting_value: s.setting_value,
+      updated_at: new Date().toISOString()
+    }));
+    
+    const { error } = await supabase
+      .from('platform_settings')
+      .upsert(upserts, { onConflict: 'setting_key' });
+
+    if (error) throw error;
+    
+    await supabase.from('audit_logs').insert({
+      user_id: user.id,
+      action: 'UPDATE_PLATFORM_SETTINGS',
+      entity_type: 'platform_settings',
+      entity_id: 'multiple',
+      details: { settings: settingsArray },
+      ip_address: 'server'
+    });
+
+    revalidatePath('/admin/(protected)/system/settings');
+    revalidatePath('/dashboard/reservations');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to update platform settings' };
+  }
+}
+
 export async function adminUpdateWarehouseAddress(id: string, updates: any) {
   const supabase = await createClient();
   
