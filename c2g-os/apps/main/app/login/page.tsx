@@ -54,10 +54,10 @@ export default function LoginPage() {
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" /> Fast
               </span>
               <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold uppercase tracking-wider leading-none h-7">
-                <PackageCheck className="w-3.5 h-3.5 text-blue-500" /> Reliable
+                <PackageCheck className="w-3.5 h-3.5 text-primary" /> Reliable
               </span>
               <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold uppercase tracking-wider leading-none h-7">
-                <Zap className="w-3.5 h-3.5 text-cyan-500" /> Seamless
+                <Zap className="w-3.5 h-3.5 text-primary" /> Seamless
               </span>
             </div>
           </div>
