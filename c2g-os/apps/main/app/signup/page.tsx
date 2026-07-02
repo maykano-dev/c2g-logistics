@@ -57,7 +57,7 @@ export default function SignupPage() {
                 <PackageCheck className="w-3.5 h-3.5 text-blue-500" /> Reliable
               </span>
               <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold uppercase tracking-wider leading-none h-7">
-                <Zap className="w-3.5 h-3.5 text-amber-500" /> Seamless
+                <Zap className="w-3.5 h-3.5 text-cyan-500" /> Seamless
               </span>
             </div>
           </div>

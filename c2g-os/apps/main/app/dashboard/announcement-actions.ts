@@ -54,12 +54,20 @@ export async function dismissAnnouncement(announcementId: string) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData?.user) return { success: false };
 
-  const { error } = await supabase.from("user_dismissed_announcements").upsert({
+  const { error } = await supabase.from("user_dismissed_announcements").insert({
     user_id: userData.user.id,
-    announcement_id: announcementId, // Removed parseInt to support UUIDs
-  }, { onConflict: "user_id, announcement_id" });
+    announcement_id: announcementId,
+  });
 
-  return { success: !error };
+  if (error) {
+    console.error("Failed to dismiss announcement:", error);
+    // If it's a duplicate key error (already dismissed), that's fine.
+    if (error.code !== '23505') {
+      return { success: false, error };
+    }
+  }
+
+  return { success: true };
 }
 
 export async function dismissAllAnnouncements(announcementIds: string[]) {
@@ -69,12 +77,19 @@ export async function dismissAllAnnouncements(announcementIds: string[]) {
 
   const dismissals = announcementIds.map((id) => ({
     user_id: userData.user.id,
-    announcement_id: id, // Removed parseInt to support UUIDs
+    announcement_id: id,
   }));
 
   const { error } = await supabase
     .from("user_dismissed_announcements")
-    .upsert(dismissals, { onConflict: "user_id, announcement_id" });
+    .insert(dismissals);
 
-  return { success: !error };
+  if (error) {
+    console.error("Failed to dismiss all announcements:", error);
+    if (error.code !== '23505') {
+      return { success: false, error };
+    }
+  }
+
+  return { success: true };
 }

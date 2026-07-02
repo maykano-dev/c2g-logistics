@@ -79,7 +79,7 @@ export async function POST(req: Request) {
         const status = callbackData.Status ?? callbackData.status ?? data.Status ?? data.status
 
         const clientReference = String(data.ClientReference ?? data.clientReference ?? '').trim()
-        const checkoutId = data.CheckoutId ?? data.checkoutId
+        const checkoutId = data.CheckoutId ?? data.checkoutId ?? data.TransactionId ?? data.transactionId ?? data.TransactionID
         const salesInvoiceId = data.SalesInvoiceId ?? data.salesInvoiceId
         const amount = Number(data.Amount ?? data.amount) || 0
         const customerPhone = data.CustomerPhoneNumber ?? data.customerPhoneNumber

@@ -147,15 +147,30 @@ export async function topUpWallet(amount: number, phone?: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Not authenticated' };
 
-  const { data: customer, error: customerError } = await supabase
+  let { data: customer, error: customerError } = await supabase
     .from('customers')
     .select('id, name, email')
     .eq('id', user.id)
     .single();
 
   if (customerError || !customer) {
-    console.error("TopUp Customer Error:", customerError);
-    return { success: false, error: customerError?.message || 'Customer not found' };
+    // Auto-create customer profile for standard email signups
+    const { data: newCustomer, error: newCustomerError } = await supabase
+      .from('customers')
+      .insert({
+          id: user.id,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          email: user.email,
+          phone: user.user_metadata?.phone || ''
+      })
+      .select('id, name, email')
+      .single();
+      
+    if (newCustomerError || !newCustomer) {
+      console.error("TopUp Auto-Create Customer Error:", newCustomerError);
+      return { success: false, error: 'Customer profile not found and could not be created' };
+    }
+    customer = newCustomer;
   }
 
   const ref = `WLT-${Math.random().toString(36).substring(2, 12)}`.toUpperCase();
@@ -181,25 +196,39 @@ export async function topUpWallet(amount: number, phone?: string) {
         hubtelMerchantAccount: process.env.HUBTEL_MERCHANT_ACCOUNT
     });
 
-    const { data: wallet } = await supabase
+    let { data: wallet } = await supabase
       .from('wallets')
       .select('id')
       .eq('customer_id', customer.id)
-      .single();
+      .maybeSingle();
 
-    if (wallet) {
-      // Use SECURITY DEFINER RPC to bypass RLS safely.
-      // The function validates that the wallet belongs to the calling user.
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('initialize_wallet_top_up', {
-        p_wallet_id: wallet.id,
-        p_amount: amount,
-        p_reference_id: ref
-      });
+    if (!wallet) {
+      // Auto-create wallet for users missing one
+      const { data: newWallet, error: walletCreateError } = await supabase
+        .from('wallets')
+        .insert({ customer_id: customer.id })
+        .select('id')
+        .single();
 
-      if (rpcError || (rpcResult && rpcResult.success === false)) {
-        console.error("Wallet Tx Init Error:", rpcError || rpcResult?.error);
-        // Don't block the checkout — log and continue. Webhook will create the tx on success.
+      if (walletCreateError || !newWallet) {
+        console.error("Wallet Creation Error:", walletCreateError);
+        return { success: false, error: 'Failed to initialize wallet profile' };
       }
+      wallet = newWallet;
+    }
+
+    // Use SECURITY DEFINER RPC to bypass RLS safely.
+    // The function validates that the wallet belongs to the calling user.
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('initialize_wallet_top_up', {
+      p_wallet_id: wallet.id,
+      p_amount: amount,
+      p_reference_id: ref
+    });
+
+    if (rpcError || (rpcResult && rpcResult.success === false)) {
+      console.error("Wallet Tx Init Error:", rpcError || rpcResult?.error);
+      // Strictly block checkout if local transaction could not be recorded
+      return { success: false, error: 'Failed to record transaction locally. Please try again.' };
     }
 
     return { success: true, checkoutUrl: hubtelData.checkoutUrl };

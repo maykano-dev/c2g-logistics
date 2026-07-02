@@ -15,7 +15,7 @@ export async function getDashboardStats() {
     .from('customers')
     .select('name')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
     
   const userName = customerData?.name ? customerData.name.split(' ')[0] : 'there'
 

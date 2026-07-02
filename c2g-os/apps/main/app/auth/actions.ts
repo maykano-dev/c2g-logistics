@@ -163,7 +163,7 @@ export async function verifySignupOtp(prevState: any, formData: FormData) {
     return { error: 'Too many verification attempts. Please try again later.', email };
   }
 
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     email,
     token,
     type: 'signup'
@@ -171,6 +171,16 @@ export async function verifySignupOtp(prevState: any, formData: FormData) {
 
   if (error) {
     return { error: error.message || 'Invalid or expired code', email };
+  }
+
+  // Auto-initialize customer profile on successful verification
+  if (data?.user) {
+      await supabase.from('customers').upsert({
+          id: data.user.id,
+          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
+          email: data.user.email,
+          phone: data.user.user_metadata?.phone || ''
+      }, { onConflict: 'id' });
   }
 
   return { success: true, message: 'Account verified successfully' };

@@ -21,24 +21,49 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
     await markTransactionAsFailed(searchParamsAwaited.ref);
   }
 
-  const { data: customer } = await supabase
+  let { data: customer } = await supabase
     .from("customers")
     .select("id, phone")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!customer) {
-    return <div className="p-8">Customer profile not found.</div>;
+    const { data: newCustomer } = await supabase
+      .from('customers')
+      .insert({
+          id: user.id,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          email: user.email,
+          phone: user.user_metadata?.phone || ''
+      })
+      .select('id, phone')
+      .single();
+    
+    if (newCustomer) customer = newCustomer;
   }
 
-  const { data: wallet } = await supabase
+  if (!customer) {
+    return <div className="p-8">Customer profile could not be initialized. Please contact support.</div>;
+  }
+
+  let { data: wallet } = await supabase
     .from("wallets")
     .select("*")
     .eq("customer_id", customer.id)
-    .single();
+    .maybeSingle();
 
   if (!wallet) {
-    return <div className="p-8">Wallet not found. Please contact support.</div>;
+    const { data: newWallet } = await supabase
+        .from('wallets')
+        .insert({ customer_id: customer.id })
+        .select('*')
+        .single();
+        
+    if (newWallet) wallet = newWallet;
+  }
+
+  if (!wallet) {
+    return <div className="p-8">Wallet could not be initialized. Please contact support.</div>;
   }
 
   // Cleanup any abandoned/stale pending top_ups silently

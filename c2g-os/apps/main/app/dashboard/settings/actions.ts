@@ -11,15 +11,30 @@ export async function getCustomerProfile() {
     return { success: false, error: "Not authenticated" };
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("customers")
     .select("name, email, phone, customer_unique_id, telegram_chat_id, telegram_notifications_enabled")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    console.error("Error fetching customer profile:", error);
-    return { success: false, error: error.message };
+  if (!data) {
+    // Auto-create missing profile
+    const { data: newCustomer, error: insertError } = await supabase
+      .from('customers')
+      .insert({
+          id: authData.user.id,
+          name: authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'User',
+          email: authData.user.email,
+          phone: authData.user.user_metadata?.phone || ''
+      })
+      .select("name, email, phone, customer_unique_id, telegram_chat_id, telegram_notifications_enabled")
+      .single();
+      
+    if (insertError || !newCustomer) {
+        console.error("Error auto-creating customer profile:", insertError);
+        return { success: false, error: 'Failed to initialize customer profile' };
+    }
+    data = newCustomer;
   }
 
   return { success: true, profile: data };
