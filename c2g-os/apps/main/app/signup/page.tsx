@@ -29,10 +29,13 @@ export default function SignupPage() {
                 <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
               </div>
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground mb-1 sm:mb-2">
-                Start Importing
+                Join the C2G Family Today
               </h1>
               <p className="hidden sm:block text-muted-foreground text-sm sm:text-base">
                 Join 450+ importers using C2G to source, ship, and grow.
+              </p>
+              <p className="block sm:hidden text-muted-foreground text-sm font-medium mt-1">
+                Your China, our responsibility
               </p>
             </div>
 
