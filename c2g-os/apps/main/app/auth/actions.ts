@@ -15,7 +15,7 @@ async function getClientContext() {
   return { ip, ua };
 }
 
-  console.log("LOGIN ACTION STARTED");
+
 export async function login(prevState: any, formData: FormData) {
   const supabase = await createClient();
   const { ip, ua } = await getClientContext();
@@ -145,7 +145,54 @@ export async function signup(prevState: any, formData: FormData) {
     return { error: error.message || 'Could not create account' }
   }
 
-  return { success: true, message: 'Check your email to continue the sign in process' }
+  return { success: true, message: 'OTP sent to your email. Please enter it to verify your account.', email }
+}
+
+export async function verifySignupOtp(prevState: any, formData: FormData) {
+  const supabase = await createClient();
+  const { ip } = await getClientContext();
+  const email = formData.get('email') as string;
+  const token = formData.get('token') as string;
+
+  if (!email || !token) {
+    return { error: 'Email and OTP are required', email };
+  }
+
+  const isAllowed = await checkRateLimit(ip, `verify_${email}`);
+  if (!isAllowed) {
+    return { error: 'Too many verification attempts. Please try again later.', email };
+  }
+
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'signup'
+  });
+
+  if (error) {
+    return { error: error.message || 'Invalid or expired code', email };
+  }
+
+  return { success: true, message: 'Account verified successfully' };
+}
+
+export async function resendSignupOtp(email: string) {
+  const supabase = await createClient();
+  
+  if (!email) {
+    return { error: 'Email is required' };
+  }
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+  });
+
+  if (error) {
+    return { error: error.message || 'Could not resend code' };
+  }
+
+  return { success: true };
 }
 
 export async function resetPassword(prevState: any, formData: FormData) {

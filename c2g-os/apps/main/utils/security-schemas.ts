@@ -12,7 +12,7 @@ export const SignupSchema = z.object({
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
   name: z.string().min(2, 'Name is required').max(100),
-  phone: z.string().regex(/^(\+233|0)[0-9]{9}$/, 'Invalid Ghana phone number').optional().or(z.literal('')),
+  phone: z.string().regex(/^\+[0-9]{1,4}\s?[0-9\s]{6,14}$/, 'Invalid phone number format').optional().or(z.literal('')),
 });
 
 export const ResetPasswordSchema = z.object({

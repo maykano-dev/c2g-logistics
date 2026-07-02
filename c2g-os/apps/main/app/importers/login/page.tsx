@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Metadata } from "next";
 import { ArrowRight, CheckCircle2, Package, TrendingUp, Truck, Store } from "lucide-react";
 import { LoginForm } from "../../login/login-form";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Importer Login | C2G Logistics",
@@ -108,7 +109,9 @@ export default function ImporterLoginPage() {
               <p className="text-muted-foreground text-sm">Access your business dashboard</p>
             </div>
 
-            <LoginForm />
+            <Suspense fallback={<div className="flex justify-center p-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+              <LoginForm />
+            </Suspense>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               Don't have a store yet?{" "}
