@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, PlaneTakeoff, Ship, CheckCircle2, Wallet, RefreshCcw, Box, Link as LinkIcon, ShoppingBag, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Package, PlaneTakeoff, Ship, CheckCircle2, Wallet, RefreshCcw, Box, Link as LinkIcon, ShoppingBag, Clock, ShieldCheck, AlertTriangle, MapPin } from 'lucide-react';
 import { createReservation, payReservationDeposit } from './actions';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useModal } from '@/components/providers/modal-provider';
 
 type Item = { id: string, type: 'warehouse_package' | 'link_order' | 'mall_order', label: string, desc?: string, imageUrl?: string };
@@ -353,6 +354,16 @@ export default function ReservationsClient({
                       >
                         {isProcessing ? 'Processing...' : 'Pay Advance'}
                       </button>
+                    )}
+                    
+                    {res.deposit_paid && ['in_transit', 'arrived_ghana', 'clearing_customs', 'ready_for_pickup', 'completed'].includes(res.status) && (
+                      <Link 
+                        href={`/dashboard/reservations/track/${res.id}`} 
+                        className="px-4 py-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 font-bold rounded-lg transition-all shadow-sm text-xs sm:text-sm whitespace-nowrap active:scale-95 flex items-center gap-1.5"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        Track Shipment
+                      </Link>
                     )}
                   </div>
                 </div>
