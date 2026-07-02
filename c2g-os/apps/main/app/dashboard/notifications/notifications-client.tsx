@@ -75,20 +75,20 @@ export default function NotificationsClient({ initialNotifications }: { initialN
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between bg-secondary/30 p-4 rounded-2xl border border-border/50 backdrop-blur-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center shrink-0">
             <Bell className="w-5 h-5" />
           </div>
-          <div>
-            <p className="font-bold">You have {unreadCount} unread notifications</p>
+          <div className="min-w-0">
+            <p className="font-bold truncate">You have {unreadCount} unread</p>
           </div>
         </div>
         {unreadCount > 0 && (
           <button 
             onClick={handleMarkAllAsRead}
-            className="text-sm font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+            className="text-sm font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors whitespace-nowrap shrink-0 ml-2"
           >
-            <CheckCircle2 className="w-4 h-4" /> Mark all read
+            <CheckCircle2 className="w-4 h-4 shrink-0" /> Mark all read
           </button>
         )}
       </div>
