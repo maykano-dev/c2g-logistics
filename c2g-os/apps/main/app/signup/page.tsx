@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { SignupForm } from "./signup-form";
-import { ShieldCheck, Users, Globe, PackageCheck, ShoppingCart } from "lucide-react";
+import { ShieldCheck, Users, Globe, PackageCheck, ShoppingCart, Zap } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Signup | C2G",
@@ -55,6 +55,9 @@ export default function SignupPage() {
               </span>
               <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold uppercase tracking-wider leading-none h-7">
                 <PackageCheck className="w-3.5 h-3.5 text-blue-500" /> Reliable
+              </span>
+              <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold uppercase tracking-wider leading-none h-7">
+                <Zap className="w-3.5 h-3.5 text-amber-500" /> Seamless
               </span>
             </div>
           </div>
