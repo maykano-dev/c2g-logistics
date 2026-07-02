@@ -81,15 +81,15 @@ export default function AnnouncementsOverlay() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg glass-panel pointer-events-auto overflow-hidden flex flex-col max-h-[85vh] shadow-2xl border-primary/20"
+            className="relative w-full max-w-2xl glass-panel pointer-events-auto overflow-hidden flex flex-col max-h-[85vh] shadow-2xl border-primary/20"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-border/50 bg-secondary/30">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between p-6 sm:p-8 border-b border-border/50 bg-secondary/30">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Bell className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold tracking-tight">Updates & Announcements</h3>
+                <h3 className="text-2xl font-bold tracking-tight">Updates & Announcements</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -100,8 +100,8 @@ export default function AnnouncementsOverlay() {
             </div>
 
             {/* Content List */}
-            <div className="relative flex-1 overflow-hidden min-h-[200px]">
-              <div className="absolute inset-0 overflow-y-auto p-5 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="relative flex-1 overflow-hidden min-h-[300px]">
+              <div className="absolute inset-0 overflow-y-auto p-6 sm:p-8 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <AnimatePresence>
                   {announcements.length === 0 ? (
                     <motion.div
@@ -121,7 +121,7 @@ export default function AnnouncementsOverlay() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 50 }}
-                        className={`relative p-5 rounded-xl border ${
+                        className={`relative p-6 sm:p-8 rounded-2xl border ${
                           ann.priority > 5 
                             ? "bg-primary/5 border-primary/30" 
                             : "bg-secondary/20 border-border/50"
@@ -129,7 +129,7 @@ export default function AnnouncementsOverlay() {
                       >
                         <button
                           onClick={() => handleDismiss(ann.id)}
-                          className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-colors text-muted-foreground"
+                          className="absolute top-4 right-4 sm:top-6 sm:right-6 w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-colors text-muted-foreground"
                           title="Dismiss"
                         >
                           <X className="w-4 h-4" />
@@ -149,11 +149,11 @@ export default function AnnouncementsOverlay() {
                               })}
                             </span>
                           </div>
-                          <h4 className="text-lg font-bold mb-2 leading-tight flex items-center gap-2">
+                          <h4 className="text-xl font-bold mb-3 leading-tight flex items-center gap-3">
                             <IconSelector type={ann.icon} />
                             {ann.title}
                           </h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
+                          <p className="text-base text-muted-foreground leading-relaxed">
                             {ann.message}
                           </p>
                           
@@ -162,7 +162,7 @@ export default function AnnouncementsOverlay() {
                               href={ann.action_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center mt-4 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                              className="inline-flex items-center mt-6 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
                             >
                               {ann.action_label} <span className="ml-1">→</span>
                             </a>
@@ -182,10 +182,10 @@ export default function AnnouncementsOverlay() {
 
             {/* Footer */}
             {announcements.length > 0 && (
-              <div className="p-4 border-t border-border/50 bg-secondary/30 flex justify-end">
+              <div className="p-5 sm:p-6 border-t border-border/50 bg-secondary/30 flex justify-end">
                 <button
                   onClick={handleDismissAll}
-                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg transition-colors"
+                  className="px-6 py-2.5 text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg transition-colors"
                 >
                   Dismiss All
                 </button>
