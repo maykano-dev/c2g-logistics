@@ -13,7 +13,7 @@ export default function EmployeesDirectoryView() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [addEmail, setAddEmail] = useState('');
-  const [addRole, setAddRole] = useState('customer_service');
+  const [addRole, setAddRole] = useState('support');
   const [isAdding, setIsAdding] = useState(false);
   const { showConfirm, showAlert } = useModal();
 
@@ -39,7 +39,7 @@ export default function EmployeesDirectoryView() {
     const confirmed = await showConfirm({
       title: 'Confirm Status Change',
       message: `Are you sure you want to change this employee's status to ${status}?`,
-      type: status === 'active' ? 'success' : 'danger',
+      type: status === 'approved' ? 'success' : 'danger',
       confirmText: `Yes, make ${status}`
     });
 
@@ -115,7 +115,7 @@ export default function EmployeesDirectoryView() {
             className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-sm rounded-lg px-4 focus:outline-none focus:border-indigo-500"
           >
             <option value="all">All Statuses</option>
-            <option value="active">Active</option>
+            <option value="approved">Approved</option>
             <option value="pending">Pending</option>
             <option value="rejected">Rejected</option>
           </select>
@@ -134,7 +134,7 @@ export default function EmployeesDirectoryView() {
           {filtered.map((emp) => (
             <div key={emp.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-indigo-500/50 transition-colors group relative overflow-hidden">
               <div className={`absolute top-0 left-0 w-1 h-full ${
-                emp.status === 'active' ? 'bg-emerald-500' : 
+                emp.status === 'approved' ? 'bg-emerald-500' : 
                 emp.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
               }`}></div>
               
@@ -149,7 +149,7 @@ export default function EmployeesDirectoryView() {
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded ${
-                  emp.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 
+                  emp.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' : 
                   emp.status === 'pending' ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
                 }`}>
                   {emp.status}
@@ -176,7 +176,7 @@ export default function EmployeesDirectoryView() {
                  
                  {emp.status === 'pending' ? (
                    <div className="flex gap-2">
-                     <button onClick={() => handleStatusChange(emp.id, 'active')} className="text-emerald-500 hover:bg-emerald-500/20 p-1.5 rounded-lg transition-colors">
+                     <button onClick={() => handleStatusChange(emp.id, 'approved')} className="text-emerald-500 hover:bg-emerald-500/20 p-1.5 rounded-lg transition-colors">
                        <CheckCircle2 className="w-4 h-4" />
                      </button>
                      <button onClick={() => handleStatusChange(emp.id, 'rejected')} className="text-red-500 hover:bg-red-500/20 p-1.5 rounded-lg transition-colors">
@@ -228,7 +228,7 @@ export default function EmployeesDirectoryView() {
                   onChange={(e) => setAddRole(e.target.value)}
                   className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-white focus:outline-none focus:border-indigo-500 transition-colors"
                 >
-                  <option value="customer_service">Customer Service (Agent)</option>
+                  <option value="support">Customer Service (Agent)</option>
                   <option value="warehouse">China Warehouse Staff</option>
                   <option value="admin">Administrator</option>
                   <option value="manager">Manager</option>

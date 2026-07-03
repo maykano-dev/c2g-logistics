@@ -24,7 +24,7 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled', color: 'bg-red-500/10 text-red-400 border-red-500/30' }
 ];
 
-export default function AdminLinkOrdersView() {
+export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -224,7 +224,7 @@ export default function AdminLinkOrdersView() {
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Customer</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Link</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status</th>
-                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total (¥)</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total (₵)</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
@@ -265,9 +265,19 @@ export default function AdminLinkOrdersView() {
                       )}
                     </td>
                     <td className="p-4">
-                      {getStatusBadge(order.order_status)}
+                      <div className="relative inline-block w-fit">
+                        <select
+                          value={order.order_status || 'pending_payment'}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                          disabled={isPending}
+                          className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider uppercase border outline-none cursor-pointer transition-all disabled:opacity-50 ${STATUS_OPTIONS.find(s => s.value === (order.order_status || 'pending_payment'))?.color || 'bg-zinc-900 text-zinc-400'}`}
+                          style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
+                        >
+                          {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value} className="bg-zinc-900 text-white">{s.label}</option>)}
+                        </select>
+                      </div>
                     </td>
-                    <td className="p-4 text-sm text-zinc-300 font-medium">¥{order.total ? Number(order.total).toFixed(2) : '0.00'}</td>
+                    <td className="p-4 text-sm text-zinc-300 font-medium">₵{order.total ? Number(order.total).toFixed(2) : '0.00'}</td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={() => handleOpenModal(order)} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" title="View Details">
@@ -299,7 +309,17 @@ export default function AdminLinkOrdersView() {
                     <p className="text-sm text-white font-mono font-medium">#{order.id}</p>
                     <p className="text-xs text-zinc-500">{order.customer_name || 'Unknown'}</p>
                   </div>
-                  <div>{getStatusBadge(order.order_status)}</div>
+                  <div className="relative">
+                    <select
+                      value={order.order_status || 'pending_payment'}
+                      onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                      disabled={isPending}
+                      className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider uppercase border outline-none cursor-pointer transition-all disabled:opacity-50 ${STATUS_OPTIONS.find(s => s.value === (order.order_status || 'pending_payment'))?.color || 'bg-zinc-900 text-zinc-400'}`}
+                      style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
+                    >
+                      {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value} className="bg-zinc-900 text-white">{s.label}</option>)}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
@@ -326,7 +346,7 @@ export default function AdminLinkOrdersView() {
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500 mb-1">Total Due</p>
-                    <p className="text-sm text-zinc-300 font-medium">¥{order.total ? Number(order.total).toFixed(2) : '0.00'}</p>
+                    <p className="text-sm text-zinc-300 font-medium">₵{order.total ? Number(order.total).toFixed(2) : '0.00'}</p>
                   </div>
                 </div>
 
@@ -417,7 +437,7 @@ export default function AdminLinkOrdersView() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-zinc-400 text-sm">Total Due</span>
-                        <span className="text-white font-medium">¥{selectedOrder.total ? Number(selectedOrder.total).toFixed(2) : '0.00'}</span>
+                        <span className="text-white font-medium">₵{selectedOrder.total ? Number(selectedOrder.total).toFixed(2) : '0.00'}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-zinc-400 text-sm">Status</span>
@@ -554,7 +574,7 @@ export default function AdminLinkOrdersView() {
                                  <div className="grid grid-cols-3 gap-2 py-2 border-y border-zinc-800/50 mb-3">
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Price</span>
-                                     <span className="text-sm text-white font-medium">¥{item.price ? Number(item.price).toFixed(2) : '0.00'}</span>
+                                     <span className="text-sm text-white font-medium">₵{item.price ? Number(item.price).toFixed(2) : '0.00'}</span>
                                    </div>
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Quantity</span>
@@ -562,7 +582,7 @@ export default function AdminLinkOrdersView() {
                                    </div>
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Total</span>
-                                     <span className="text-sm text-indigo-400 font-medium">¥{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                                     <span className="text-sm text-indigo-400 font-medium">₵{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
                                    </div>
                                  </div>
 
@@ -590,4 +610,8 @@ export default function AdminLinkOrdersView() {
       )}
     </div>
   );
+}
+
+export default function AdminLinkOrdersPage() {
+  return <LinkOrdersView readOnly={false} />;
 }

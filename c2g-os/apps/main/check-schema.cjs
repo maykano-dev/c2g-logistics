@@ -1,20 +1,19 @@
+const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env.local' });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function checkSchema() {
-  const { data, error } = await supabase.from('product_variants').select('*').limit(1);
-  if (error) {
-    console.error('Error:', error);
-  } else if (data && data.length > 0) {
-    console.log('Columns:', Object.keys(data[0]));
-  } else {
-    console.log('No data found, but query succeeded.');
+async function check() {
+  const tables = ['customers', 'wallets', 'orders', 'shipment_reservations', 'shipments', 'announcements'];
+  for (const t of tables) {
+    const { data, error } = await supabase.from(t).select('*').limit(1);
+    console.log(`\n--- ${t} ---`);
+    if (error) console.error(error);
+    else if (data.length > 0) console.log(Object.keys(data[0]));
+    else console.log("Empty table");
   }
 }
-
-checkSchema();
+check();

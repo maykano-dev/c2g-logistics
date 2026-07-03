@@ -28,14 +28,14 @@ export default async function AgentProtectedLayout({
     const { data: employee } = await supabase
       .from('employees')
       .select('staff_role, status')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
-    if (!employee || employee.status !== 'active') {
+    if (!employee || employee.status !== 'approved') {
       redirect('/dashboard'); 
     }
 
-    const allowedRoles = ['customer_service', 'admin', 'founder', 'manager'];
+    const allowedRoles = ['support', 'admin', 'founder', 'manager'];
     if (!allowedRoles.includes(employee.staff_role)) {
       redirect('/dashboard');
     }

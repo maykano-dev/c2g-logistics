@@ -9,6 +9,8 @@ import ServiceWorkerRegister from "../components/sw-register";
 import { ClientWhatsAppButton } from "../components/client-whatsapp-button";
 import NextTopLoader from 'nextjs-toploader';
 import { ModalProvider } from "../components/providers/modal-provider";
+import { getCachedSettings } from "@/utils/cache";
+import { MaintenanceBlocker } from "../components/maintenance-blocker";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -82,11 +84,13 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getCachedSettings();
+
   return (
     <html lang="en" className="dark">
       <head>
@@ -128,13 +132,15 @@ export default function RootLayout({
               <div className="min-h-[100dvh] bg-background text-foreground flex flex-col w-full">
                 <ServiceWorkerRegister />
               <OfflineIndicator />
-              {children}
-              <ClientFooter />
+              <MaintenanceBlocker settings={settings}>
+                {children}
+              </MaintenanceBlocker>
+              <ClientFooter settings={settings} />
             </div>
           </WishlistProvider>
         </CartProvider>
         </ModalProvider>
-        <ClientWhatsAppButton />
+        <ClientWhatsAppButton settings={settings} />
       </body>
     </html>
   );

@@ -24,7 +24,7 @@ const METHOD_OPTIONS = [
   'Sea Shipping'
 ];
 
-export default function AdminShipmentsView() {
+export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -606,4 +606,8 @@ export default function AdminShipmentsView() {
       )}
     </div>
   );
+}
+
+export default function AdminShipmentsPage() {
+  return <ShipmentsView readOnly={false} />;
 }

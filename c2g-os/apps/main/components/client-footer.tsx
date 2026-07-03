@@ -5,7 +5,7 @@ import { Footer } from "./footer";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
-export function ClientFooter() {
+export function ClientFooter({ settings }: { settings?: any }) {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -30,5 +30,5 @@ export function ClientFooter() {
     return null;
   }
 
-  return <Footer hideCta={isLoggedIn} />;
+  return <Footer hideCta={isLoggedIn} settings={settings} />;
 }

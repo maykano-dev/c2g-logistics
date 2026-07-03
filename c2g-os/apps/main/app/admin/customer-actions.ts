@@ -33,7 +33,7 @@ export async function toggleCustomerStatus(customerId: string, currentIsBanned: 
     // 1. Update our database
     const { data: customer, error } = await supabase
       .from('customers')
-      .update({ is_banned: newIsBanned })
+      .update({ status: newIsBanned ? 'banned' : 'active' })
       .eq('id', customerId)
       .select('user_id')
       .single();
@@ -101,7 +101,7 @@ export async function adminCreateUser(formData: FormData) {
       name,
       email,
       phone,
-      is_banned: false
+      status: 'active'
     });
 
     if (dbError) {

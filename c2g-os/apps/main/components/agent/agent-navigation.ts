@@ -7,9 +7,11 @@ import {
   MessageSquare,
   AlertTriangle,
   Radio,
-  BarChart4,
   Settings,
-  BookOpen
+  BookOpen,
+  Box,
+  Truck,
+  Link as LinkIcon
 } from 'lucide-react';
 
 export const AGENT_NAV_GROUPS = [
@@ -17,31 +19,33 @@ export const AGENT_NAV_GROUPS = [
     group: 'Workspace',
     items: [
       { name: 'Dashboard Overview', href: '/agent/dashboard', icon: LayoutDashboard },
-      { name: 'Support Tickets', href: '/agent/tickets', icon: Ticket },
-      { name: 'Conversations', href: '/agent/conversations', icon: MessageSquare },
     ]
   },
   {
-    group: 'Customer Data',
+    group: 'Logistics',
     items: [
-      { name: 'Customers', href: '/agent/customers', icon: Users },
-      { name: 'Customer Orders', href: '/agent/orders', icon: Store },
       { name: 'Shipments', href: '/agent/shipments', icon: Ship },
+      { name: 'Reservations', href: '/agent/reservations', icon: Truck },
+    ]
+  },
+  {
+    group: 'Commerce',
+    items: [
+      { name: 'Link Orders', href: '/agent/global-orders/link-orders', icon: LinkIcon },
+      { name: 'Mall Orders', href: '/agent/global-orders/mall-orders', icon: Store },
+    ]
+  },
+  {
+    group: 'People',
+    items: [
+      { name: 'User Management', href: '/agent/customers/users', icon: Users },
+      { name: 'Announcements', href: '/agent/announcements', icon: Radio },
     ]
   },
   {
     group: 'Action Center',
     items: [
-      { name: 'Escalations', href: '/agent/escalations', icon: AlertTriangle },
-      { name: 'Broadcasts', href: '/agent/broadcasts', icon: Radio },
       { name: 'Reference Center', href: '/agent/reference', icon: BookOpen },
-    ]
-  },
-  {
-    group: 'System',
-    items: [
-      { name: 'Analytics', href: '/agent/analytics', icon: BarChart4 },
-      { name: 'Settings', href: '/agent/settings', icon: Settings },
     ]
   }
 ];

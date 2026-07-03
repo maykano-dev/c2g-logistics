@@ -24,7 +24,23 @@ export async function adminUpdateSettings(settingsData: any) {
       .update({
         exchange_rate_cny_to_ghs: settingsData.exchange_rate_cny_to_ghs,
         maintenance_mode: settingsData.maintenance_mode,
-        rates: { ...settingsData.rates, service_fee_percentage: settingsData.service_fee_percentage }
+        maintenance_pages: settingsData.maintenance_pages ? JSON.stringify(settingsData.maintenance_pages) : undefined,
+        store_name: settingsData.store_name,
+        public_email: settingsData.public_email,
+        public_phone: settingsData.public_phone,
+        rate_link_orders: settingsData.rate_link_orders,
+        rate_shop_products: settingsData.rate_shop_products,
+        usd_ghs_rate: settingsData.usd_ghs_rate,
+        minimum_local_delivery_fee: settingsData.minimum_local_delivery_fee,
+        minimum_service_fee: settingsData.minimum_service_fee,
+        local_delivery_percentage: settingsData.local_delivery_percentage,
+        service_fee_percentage: settingsData.service_fee_percentage,
+        rates: { 
+          ...settingsData.rates, 
+          service_fee_percentage: settingsData.service_fee_percentage,
+          sea_closing_date: settingsData.sea_closing_date,
+          sea_departure_date: settingsData.sea_departure_date
+        }
       })
       .eq('id', settingsData.id || 1);
 

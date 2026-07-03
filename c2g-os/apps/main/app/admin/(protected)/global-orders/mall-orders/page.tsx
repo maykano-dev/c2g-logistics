@@ -20,7 +20,7 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled', color: 'bg-red-500/10 text-red-400 border-red-500/30' }
 ];
 
-export default function AdminMallOrdersView() {
+export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -687,4 +687,8 @@ export default function AdminMallOrdersView() {
       )}
     </div>
   );
+}
+
+export default function AdminMallOrdersPage() {
+  return <MallOrdersView readOnly={false} />;
 }

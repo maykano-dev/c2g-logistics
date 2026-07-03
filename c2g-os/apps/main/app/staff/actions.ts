@@ -19,10 +19,10 @@ export async function verifyStaffCredentials(email: string, pass: string) {
   const { data: employee, error: employeeError } = await supabase
     .from('employees')
     .select('*')
-    .eq('id', data.user.id)
+    .eq('user_id', data.user.id)
     .single();
 
-  if (employeeError || !employee || employee.status !== 'active') {
+  if (employeeError || !employee || employee.status !== 'approved') {
     // If they aren't an active employee, check if they are an admin as a fallback
     // (In case an admin uses the staff portal to login)
     const { data: admin } = await supabase
@@ -44,7 +44,7 @@ export async function verifyStaffCredentials(email: string, pass: string) {
   let redirectTo = '/dashboard';
   
   switch (employee.staff_role) {
-    case 'customer_service':
+    case 'support':
       redirectTo = '/agent/dashboard';
       break;
     case 'admin':

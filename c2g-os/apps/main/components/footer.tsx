@@ -2,27 +2,32 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, MapPin, Mail, Phone } from "lucide-react";
 
-export function Footer({ hideCta = false }: { hideCta?: boolean }) {
+export function Footer({ hideCta = false, settings }: { hideCta?: boolean, settings?: any }) {
+  const storeName = settings?.store_name || "C2G Logistics";
+  const publicEmail = settings?.public_email || "c2glogisticsgh@gmail.com";
+  const publicPhone = settings?.public_phone || "233241465282";
+  const formattedPhone = publicPhone.replace(/[^0-9]/g, "");
+  
   return (
     <footer className="w-full bg-secondary border-t border-border mt-auto">
       {/* Footer CTA */}
       {!hideCta && (
         <div className="bg-primary relative overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay pointer-events-none" />
-        <div className="absolute -top-[50%] -right-[10%] w-[50%] h-[200%] bg-white/10 blur-[100px] rounded-full pointer-events-none" />
-        
-        <div className="container mx-auto px-4 py-12 relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
-            <h3 className="text-2xl md:text-3xl font-bold text-primary-foreground mb-2">Ready to ship from China to Ghana?</h3>
-            <p className="text-primary-foreground/80 font-medium text-lg">Get a free quote in minutes. No signup required.</p>
-          </div>
-          <Link 
-            href="/get-quote" 
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold transition-colors bg-background text-foreground hover:bg-background/90 h-12 px-8 gap-2 shadow-xl shadow-black/10 hover:scale-[1.02] shrink-0"
-          >
-            Get a Quote <ArrowRight className="w-4 h-4" />
-          </Link>
+          {/* Background elements */}
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay pointer-events-none" />
+          <div className="absolute -top-[50%] -right-[10%] w-[50%] h-[200%] bg-white/10 blur-[100px] rounded-full pointer-events-none" />
+          
+          <div className="container mx-auto px-4 py-12 relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="text-2xl md:text-3xl font-bold text-primary-foreground mb-2">Ready to ship from China to Ghana?</h3>
+              <p className="text-primary-foreground/80 font-medium text-lg">Get a free quote in minutes. No signup required.</p>
+            </div>
+            <Link 
+              href="/get-quote" 
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold transition-colors bg-background text-foreground hover:bg-background/90 h-12 px-8 gap-2 shadow-xl shadow-black/10 hover:scale-[1.02] shrink-0"
+            >
+              Get a Quote <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       )}
@@ -35,18 +40,18 @@ export function Footer({ hideCta = false }: { hideCta?: boolean }) {
           <div className="lg:col-span-2 space-y-6">
             <Link href="/" className="inline-flex items-center gap-2">
               <div className="w-10 h-10 relative flex items-center justify-center">
-                <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="40px" className="object-contain" />
+                <Image src="/logo.png" alt={`${storeName} Logo`} fill sizes="40px" className="object-contain" />
               </div>
-              <span className="font-bold text-xl tracking-tight">C2G Logistics</span>
+              <span className="font-bold text-xl tracking-tight">{storeName}</span>
             </Link>
             <p className="text-muted-foreground leading-relaxed max-w-sm">
               Your trusted bridge between China's marketplaces and your doorstep in Ghana. We handle procurement, shipping, and delivery end to end.
             </p>
             <div className="flex items-center gap-4">
-              <a href="https://wa.me/233241465282" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+              <a href={`https://wa.me/${formattedPhone}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors">
                 <Phone className="w-4 h-4" />
               </a>
-              <a href="mailto:c2glogisticsgh@gmail.com" className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+              <a href={`mailto:${publicEmail}`} className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors">
                 <Mail className="w-4 h-4" />
               </a>
             </div>
@@ -90,7 +95,7 @@ export function Footer({ hideCta = false }: { hideCta?: boolean }) {
       <div className="border-t border-border/50 bg-background/50">
         <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground font-medium">
-            © {new Date().getFullYear()} C2G Logistics. All rights reserved.
+            © {new Date().getFullYear()} {storeName}. All rights reserved.
           </p>
           <ul className="flex flex-wrap items-center justify-center gap-6">
             <li><Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium">Privacy Policy</Link></li>

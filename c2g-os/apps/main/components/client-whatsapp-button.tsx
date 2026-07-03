@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-export function ClientWhatsAppButton() {
+export function ClientWhatsAppButton({ settings }: { settings?: any }) {
   const pathname = usePathname();
   
   // Hide whatsapp button on admin, auth, and dashboard pages
@@ -13,9 +13,12 @@ export function ClientWhatsAppButton() {
     return null;
   }
 
+  const publicPhone = settings?.public_phone || "233241465282";
+  const whatsappNumber = publicPhone.replace(/\D/g, '');
+
   return (
     <a
-      href="https://wa.me/233241465282"
+      href={`https://wa.me/${whatsappNumber}`}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"

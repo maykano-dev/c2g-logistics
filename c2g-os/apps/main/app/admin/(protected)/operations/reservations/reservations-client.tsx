@@ -19,7 +19,7 @@ const STATUS_OPTIONS = [
   'Cancelled'
 ];
 
-export default function ReservationsClient() {
+export default function ReservationsClient({ readOnly = false }: { readOnly?: boolean }) {
   const router = useRouter();
   
   const [initialReservations, setInitialReservations] = useState<any[]>([]);
@@ -220,9 +220,11 @@ export default function ReservationsClient() {
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-950/50">
                 <th className="p-4 w-10">
-                  <button onClick={() => handleSelectAll(selectedIds.size !== paginatedReservations.length && paginatedReservations.length > 0)} className="text-zinc-500 hover:text-white">
-                    {selectedIds.size === paginatedReservations.length && paginatedReservations.length > 0 ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                  </button>
+                  {!readOnly && (
+                    <button onClick={() => handleSelectAll(selectedIds.size !== paginatedReservations.length && paginatedReservations.length > 0)} className="text-zinc-500 hover:text-white">
+                      {selectedIds.size === paginatedReservations.length && paginatedReservations.length > 0 ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                    </button>
+                  )}
                 </th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider w-[200px]">Reservation ID</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider w-full">Customer</th>
@@ -243,9 +245,11 @@ export default function ReservationsClient() {
                   return (
                   <tr key={res.id} className={`hover:bg-zinc-800/50 transition-colors group ${selectedIds.has(res.id) ? 'bg-indigo-500/5' : ''}`}>
                     <td className="p-4">
-                      <button onClick={() => toggleSelection(res.id)} className={`${selectedIds.has(res.id) ? 'text-indigo-500' : 'text-zinc-600'} hover:text-indigo-400 transition-colors`}>
-                        {selectedIds.has(res.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                      </button>
+                      {!readOnly && (
+                        <button onClick={() => toggleSelection(res.id)} className={`${selectedIds.has(res.id) ? 'text-indigo-500' : 'text-zinc-600'} hover:text-indigo-400 transition-colors`}>
+                          {selectedIds.has(res.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                        </button>
+                      )}
                     </td>
                     <td className="p-4">
                       <p className="text-sm text-white font-mono font-medium">{res.id}</p>
@@ -272,7 +276,7 @@ export default function ReservationsClient() {
                         <select
                           value={normalizedStatus}
                           onChange={(e) => handleStatusChange(res.id, e.target.value.toLowerCase().replace(/ /g, '_'))}
-                          disabled={isPending}
+                          disabled={isPending || readOnly}
                           className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-xs font-bold tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-50 ${getStatusColorClass(normalizedStatus)}`}
                           style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                         >
@@ -299,13 +303,15 @@ export default function ReservationsClient() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => setShowEditModal(res)}
-                          className="p-2 text-zinc-400 hover:text-white bg-zinc-950 border border-zinc-800 hover:bg-zinc-800 rounded-lg transition-colors" 
-                          title="Edit Reservation"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                        {!readOnly && (
+                          <button 
+                            onClick={() => setShowEditModal(res)}
+                            className="p-2 text-zinc-400 hover:text-white bg-zinc-950 border border-zinc-800 hover:bg-zinc-800 rounded-lg transition-colors" 
+                            title="Edit Reservation"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -326,9 +332,11 @@ export default function ReservationsClient() {
                 return (
                   <div key={res.id} className={`p-4 flex flex-col gap-4 ${selectedIds.has(res.id) ? 'bg-indigo-500/5' : ''}`}>
                     <div className="flex items-start gap-3">
-                      <button onClick={() => toggleSelection(res.id)} className={`mt-0.5 ${selectedIds.has(res.id) ? 'text-indigo-500' : 'text-zinc-600'}`}>
-                        {selectedIds.has(res.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                      </button>
+                      {!readOnly && (
+                        <button onClick={() => toggleSelection(res.id)} className={`mt-0.5 ${selectedIds.has(res.id) ? 'text-indigo-500' : 'text-zinc-600'}`}>
+                          {selectedIds.has(res.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                        </button>
+                      )}
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-white font-mono font-bold">{res.id}</p>
@@ -336,9 +344,11 @@ export default function ReservationsClient() {
                             <button onClick={() => handleViewItems(res)} className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors shrink-0">
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button onClick={() => setShowEditModal(res)} className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors shrink-0">
-                              <Edit className="w-4 h-4" />
-                            </button>
+                            {!readOnly && (
+                              <button onClick={() => setShowEditModal(res)} className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors shrink-0">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
                         <p className="text-xs text-zinc-400 mt-0.5">{res.customers?.name} <span className="text-zinc-600">({res.customers?.phone})</span></p>
@@ -350,7 +360,7 @@ export default function ReservationsClient() {
                         <select
                           value={normalizedStatus}
                           onChange={(e) => handleStatusChange(res.id, e.target.value.toLowerCase().replace(/ /g, '_'))}
-                          disabled={isPending}
+                          disabled={isPending || readOnly}
                           className={`appearance-none w-full px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-50 ${getStatusColorClass(normalizedStatus)}`}
                           style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                         >

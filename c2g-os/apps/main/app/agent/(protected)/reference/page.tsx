@@ -1,21 +1,46 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import { 
   BookOpen, 
   Plane, 
   Ship, 
   MapPin, 
   Info,
-  DollarSign,
-  Megaphone,
-  HelpCircle,
   Copy,
-  Calendar
+  Calendar,
+  CheckCircle2
 } from 'lucide-react';
 import { useModal } from "@/components/providers/modal-provider";
 
 export default function AgentReferenceCenterView() {
   const { showAlert } = useModal();
+  const [settings, setSettings] = useState<any>(null);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient();
+      const [settingsRes, whRes] = await Promise.all([
+        supabase.from('settings').select('*').limit(1).single(),
+        supabase.from('warehouse_addresses').select('*').order('is_default', { ascending: false }).order('updated_at', { ascending: false })
+      ]);
+
+      if (settingsRes.data) {
+        setSettings(settingsRes.data);
+      }
+      
+      if (whRes.data) {
+        setWarehouses(whRes.data);
+      }
+
+      setLoading(false);
+    }
+    
+    fetchData();
+  }, []);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -25,6 +50,31 @@ export default function AgentReferenceCenterView() {
       type: 'success'
     });
   };
+
+  if (loading) {
+    return <div className="p-8 text-zinc-500">Loading reference data...</div>;
+  }
+
+  const rates = settings?.rates || {};
+  const usdToGhs = settings?.usd_ghs_rate || 15.50;
+
+  const expressAirGhs = (rates.air_express_usd_kg || 0) * usdToGhs;
+  const normalAirGhs = (rates.air_normal_usd_kg || 0) * usdToGhs;
+  const seaFreightGhs = (rates.sea_usd_cbm || 0) * usdToGhs;
+
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return 'Not Scheduled';
+    return new Date(isoString).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
+
+  const getDaysLeft = (isoString?: string) => {
+    if (!isoString) return null;
+    const diff = new Date(isoString).getTime() - new Date().getTime();
+    const days = Math.ceil(diff / (1000 * 3600 * 24));
+    return days > 0 ? `${days} Days Left` : 'Passed';
+  };
+
+  const seaClosingDays = getDaysLeft(rates.sea_closing_date);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-10">
@@ -60,8 +110,9 @@ export default function AgentReferenceCenterView() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-black text-white">₵ 130.00</p>
-                  <p className="text-[10px] uppercase font-bold text-emerald-500">Active</p>
+                  <p className="text-lg font-black text-white">₵ {expressAirGhs.toFixed(2)}</p>
+                  <p className="text-xs text-zinc-400 font-medium">${rates.air_express_usd_kg?.toFixed(2) || '0.00'}</p>
+                  <p className="text-[10px] uppercase font-bold text-emerald-500 mt-1">Active</p>
                 </div>
               </div>
 
@@ -74,8 +125,9 @@ export default function AgentReferenceCenterView() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-black text-white">₵ 95.00</p>
-                  <p className="text-[10px] uppercase font-bold text-emerald-500">Active</p>
+                  <p className="text-lg font-black text-white">₵ {normalAirGhs.toFixed(2)}</p>
+                  <p className="text-xs text-zinc-400 font-medium">${rates.air_normal_usd_kg?.toFixed(2) || '0.00'}</p>
+                  <p className="text-[10px] uppercase font-bold text-emerald-500 mt-1">Active</p>
                 </div>
               </div>
 
@@ -88,84 +140,18 @@ export default function AgentReferenceCenterView() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-black text-white">₵ 650.00</p>
-                  <p className="text-[10px] uppercase font-bold text-emerald-500">Active</p>
+                  <p className="text-lg font-black text-white">₵ {seaFreightGhs.toFixed(2)}</p>
+                  <p className="text-xs text-zinc-400 font-medium">${rates.sea_usd_cbm?.toFixed(2) || '0.00'}</p>
+                  <p className="text-[10px] uppercase font-bold text-emerald-500 mt-1">Active</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-4 flex items-center gap-2 text-[10px] text-zinc-500 bg-zinc-950 px-3 py-2 rounded-lg">
-              <Info className="w-3 h-3 text-indigo-400" /> Rates are managed by administrators and update automatically.
+              <Info className="w-3 h-3 text-indigo-400" /> Rates are calculated dynamically using the current USD to GHS rate ({usdToGhs}).
             </div>
           </div>
-
-          {/* Exchange Rate */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden flex items-center justify-between">
-             <div className="flex items-center gap-4">
-              <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
-                <DollarSign className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-1">Current Platform Rate</h2>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-black text-white">¥1 = ₵2.35</p>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-zinc-500 uppercase font-bold">Last Updated</p>
-              <p className="text-xs text-zinc-400">10:25 AM</p>
-            </div>
-          </div>
-
-          {/* Announcements */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-orange-500/10 text-orange-400 rounded-lg">
-                <Megaphone className="w-5 h-5" />
-              </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Active Announcements</h2>
-            </div>
-            <div className="space-y-3">
-              <div className="p-3 bg-orange-500/5 border border-orange-500/10 rounded-xl">
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="text-sm font-bold text-orange-400">Warehouse Address Update</h3>
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase">Expires in 3 days</span>
-                </div>
-                <p className="text-xs text-zinc-400">Please inform all customers using old address templates to update to the new Guangzhou facility immediately.</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Warehouse Addresses */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-rose-500/10 text-rose-400 rounded-lg">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">China Warehouse Address</h2>
-            </div>
-            
-            <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 font-mono text-sm text-zinc-300 relative group">
-              <p className="mb-1">Receiver: C2G Logistics [Customer ID]</p>
-              <p className="mb-1">Phone: 138-0000-0000</p>
-              <p className="mb-1">Address: 123 Logistics Park, Baiyun District</p>
-              <p>City: Guangzhou, Guangdong Province</p>
-              
-              <button 
-                onClick={() => handleCopy("Receiver: C2G Logistics [Customer ID]\nPhone: 138-0000-0000\nAddress: 123 Logistics Park, Baiyun District\nCity: Guangzhou, Guangdong Province")}
-                className="absolute top-4 right-4 p-2 bg-zinc-800 text-zinc-400 rounded hover:text-white hover:bg-zinc-700 transition-colors opacity-0 group-hover:opacity-100"
-                title="Copy Address"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
+          
           {/* Shipment Schedules */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-6">
@@ -179,16 +165,20 @@ export default function AgentReferenceCenterView() {
               <div className="border border-zinc-800 rounded-xl overflow-hidden">
                 <div className="bg-zinc-950/50 px-4 py-2 border-b border-zinc-800 flex items-center justify-between">
                   <span className="text-sm font-bold text-white flex items-center gap-2"><Ship className="w-4 h-4 text-blue-500"/> Sea Shipment</span>
-                  <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded">11 Days Left</span>
+                  {seaClosingDays && (
+                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded ${seaClosingDays === 'Passed' ? 'bg-red-500/10 text-red-400' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                      {seaClosingDays}
+                    </span>
+                  )}
                 </div>
                 <div className="p-4 bg-zinc-900/30 flex justify-between">
                   <div>
                     <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Closing Date</p>
-                    <p className="text-sm font-medium text-white">July 5, 2026</p>
+                    <p className="text-sm font-medium text-white">{formatDate(rates.sea_closing_date)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Departure</p>
-                    <p className="text-sm font-medium text-white">July 6, 2026</p>
+                    <p className="text-sm font-medium text-white">{formatDate(rates.sea_departure_date)}</p>
                   </div>
                 </div>
               </div>
@@ -205,30 +195,53 @@ export default function AgentReferenceCenterView() {
             </div>
           </div>
 
-          {/* Quick Answers / FAQ */}
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Warehouse Addresses */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg">
-                <HelpCircle className="w-5 h-5" />
+              <div className="p-2 bg-rose-500/10 text-rose-400 rounded-lg">
+                <MapPin className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Quick Answers FAQ</h2>
+              <h2 className="text-lg font-bold text-white tracking-tight">China Warehouse Addresses</h2>
             </div>
             
+            {warehouses.length === 0 && (
+              <p className="text-sm text-zinc-500">No warehouse addresses configured.</p>
+            )}
+
             <div className="space-y-4">
-              <div className="group">
-                <p className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors mb-1">How much is Normal Air?</p>
-                <p className="text-sm text-zinc-400">₵95/kg</p>
-              </div>
-              <div className="h-px bg-zinc-800"></div>
-              <div className="group">
-                <p className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors mb-1">Does air freight wait for shipment dates?</p>
-                <p className="text-sm text-zinc-400">No. Air ships immediately once items arrive at our warehouse.</p>
-              </div>
-              <div className="h-px bg-zinc-800"></div>
-              <div className="group">
-                <p className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors mb-1">What happens if a package is damaged?</p>
-                <p className="text-sm text-zinc-400">Request photos from the warehouse team by escalating the ticket to the China Warehouse department.</p>
-              </div>
+              {warehouses.map(wh => (
+                <div key={wh.id} className={`p-4 rounded-xl border font-mono text-sm relative group ${wh.is_default ? 'bg-zinc-950 border-emerald-500/50 text-white' : 'bg-zinc-950/30 border-zinc-800 text-zinc-400'}`}>
+                  {wh.is_default && (
+                    <div className="absolute top-4 right-4 flex items-center gap-1 text-emerald-500 text-xs font-bold uppercase">
+                      <CheckCircle2 className="w-4 h-4" /> Active
+                    </div>
+                  )}
+                  
+                  <div className="mb-3">
+                    <p className="text-xs font-bold text-zinc-500 mb-1">
+                      {wh.name} {wh.is_default ? '(New)' : '(Old)'}
+                    </p>
+                    <p className="text-[10px] text-zinc-600">
+                      Last Updated: {new Date(wh.updated_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  
+                  <div className="whitespace-pre-wrap leading-relaxed">
+                    {wh.address}
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleCopy(wh.address || '')}
+                    className="mt-4 flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+                  >
+                    <Copy className="w-4 h-4" /> Copy Full Address
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>

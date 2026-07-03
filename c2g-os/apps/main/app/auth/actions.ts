@@ -89,10 +89,6 @@ export async function login(prevState: any, formData: FormData) {
   revalidatePath('/', 'layout');
   
   const role = data.user?.user_metadata?.role;
-  if (role === 'admin') {
-    redirect('/admin');
-  }
-
   // Check if they are an importer by querying the database (handles upgraded users)
   const { data: importerData } = await supabase
     .from('importers')

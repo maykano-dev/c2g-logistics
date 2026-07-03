@@ -1,7 +1,15 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+
+function getAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function adminSetEmployeeStatus(employeeId: string, status: string, notes?: string, staffRole?: string) {
   const supabase = await createClient();
@@ -19,12 +27,16 @@ export async function adminSetEmployeeStatus(employeeId: string, status: string,
   if (!admin) return { success: false, error: 'Unauthorized' };
 
   try {
-    const { data, error } = await supabase.rpc('admin_set_employee_status', {
-      p_employee_id: employeeId,
-      p_status: status,
-      p_notes: notes || '',
-      p_staff_role: staffRole || ''
-    });
+    const adminClient = getAdminClient();
+    
+    const updateData: any = { status };
+    if (notes) updateData.notes = notes;
+    if (staffRole) updateData.staff_role = staffRole;
+
+    const { error } = await adminClient
+      .from('employees')
+      .update(updateData)
+      .eq('id', employeeId);
 
     if (error) throw error;
     

@@ -38,9 +38,21 @@ export default function AdminSettingsView() {
       setSettings({
         id: settingsRes.data.id,
         exchange_rate_cny_to_ghs: settingsRes.data.exchange_rate_cny_to_ghs || 14.5,
-        service_fee_percentage: settingsRes.data.rates?.service_fee_percentage || 5,
+        service_fee_percentage: settingsRes.data.service_fee_percentage || 5,
         maintenance_mode: settingsRes.data.maintenance_mode || false,
+        maintenance_pages: typeof settingsRes.data.maintenance_pages === 'string' ? JSON.parse(settingsRes.data.maintenance_pages) : (settingsRes.data.maintenance_pages || {}),
+        store_name: settingsRes.data.store_name || '',
+        public_email: settingsRes.data.public_email || '',
+        public_phone: settingsRes.data.public_phone || '',
+        rate_link_orders: settingsRes.data.rate_link_orders || 0.52,
+        rate_shop_products: settingsRes.data.rate_shop_products || 0.53,
+        usd_ghs_rate: settingsRes.data.usd_ghs_rate || 15.50,
+        minimum_local_delivery_fee: settingsRes.data.minimum_local_delivery_fee || 7,
+        minimum_service_fee: settingsRes.data.minimum_service_fee || 5,
+        local_delivery_percentage: settingsRes.data.local_delivery_percentage || 3,
         rates: settingsRes.data.rates || {},
+        sea_closing_date: settingsRes.data.rates?.sea_closing_date || '',
+        sea_departure_date: settingsRes.data.rates?.sea_departure_date || '',
         air_normal_deposit_usd: getPlatValue('air_normal_deposit_usd', 25.00),
         air_express_deposit_usd: getPlatValue('air_express_deposit_usd', 44.00),
         sea_deposit_ghs: getPlatValue('sea_deposit_ghs', 500.00),
@@ -52,7 +64,19 @@ export default function AdminSettingsView() {
         exchange_rate_cny_to_ghs: 14.5,
         service_fee_percentage: 5,
         maintenance_mode: false,
+        maintenance_pages: {},
+        store_name: '',
+        public_email: '',
+        public_phone: '',
+        rate_link_orders: 0.52,
+        rate_shop_products: 0.53,
+        usd_ghs_rate: 15.50,
+        minimum_local_delivery_fee: 7,
+        minimum_service_fee: 5,
+        local_delivery_percentage: 3,
         rates: {},
+        sea_closing_date: '',
+        sea_departure_date: '',
         air_normal_deposit_usd: getPlatValue('air_normal_deposit_usd', 25.00),
         air_express_deposit_usd: getPlatValue('air_express_deposit_usd', 44.00),
         sea_deposit_ghs: getPlatValue('sea_deposit_ghs', 500.00),
@@ -126,117 +150,115 @@ export default function AdminSettingsView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2"><Megaphone className="w-5 h-5 text-indigo-500" /> Platform Configuration</h2>
-            <button 
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}
-            </button>
+        <div className="space-y-6">
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2"><Megaphone className="w-5 h-5 text-indigo-500" /> Brand Identity</h2>
+              <button onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50">
+                <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Store Name</label>
+              <input type="text" value={settings?.store_name || ''} onChange={e => setSettings({...settings, store_name: e.target.value})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Public Email</label>
+              <input type="email" value={settings?.public_email || ''} onChange={e => setSettings({...settings, public_email: e.target.value})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Public Phone</label>
+              <input type="text" value={settings?.public_phone || ''} onChange={e => setSettings({...settings, public_phone: e.target.value})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+            </div>
+          </div>
+
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><DollarSign className="w-5 h-5 text-indigo-500" /> Financial Settings</h2>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Exchange Rate (CNY to GHS)</label>
+                <input type="number" step="0.01" value={settings?.exchange_rate_cny_to_ghs || 0} onChange={e => setSettings({...settings, exchange_rate_cny_to_ghs: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Exchange Rate (USD to GHS)</label>
+                <input type="number" step="0.01" value={settings?.usd_ghs_rate || 0} onChange={e => setSettings({...settings, usd_ghs_rate: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Link Order Rate (CNY to GHS)</label>
+                <input type="number" step="0.01" value={settings?.rate_link_orders || 0} onChange={e => setSettings({...settings, rate_link_orders: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Mall Order Rate (CNY to GHS)</label>
+                <input type="number" step="0.01" value={settings?.rate_shop_products || 0} onChange={e => setSettings({...settings, rate_shop_products: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Service Fee (%)</label>
+                <input type="number" step="0.1" value={settings?.service_fee_percentage || 0} onChange={e => setSettings({...settings, service_fee_percentage: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Min Service Fee (GHS)</label>
+                <input type="number" step="0.1" value={settings?.minimum_service_fee || 0} onChange={e => setSettings({...settings, minimum_service_fee: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Local Delivery (%)</label>
+                <input type="number" step="0.1" value={settings?.local_delivery_percentage || 0} onChange={e => setSettings({...settings, local_delivery_percentage: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Min Local Delivery (GHS)</label>
+                <input type="number" step="0.1" value={settings?.minimum_local_delivery_fee || 0} onChange={e => setSettings({...settings, minimum_local_delivery_fee: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">Shipment Schedules</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Next Sea Closing Date</label>
+                <input type="date" value={settings?.sea_closing_date ? new Date(settings.sea_closing_date).toISOString().split('T')[0] : ''} onChange={e => setSettings({...settings, sea_closing_date: e.target.value ? new Date(e.target.value).toISOString() : ''})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Next Sea Departure Date</label>
+                <input type="date" value={settings?.sea_departure_date ? new Date(settings.sea_departure_date).toISOString().split('T')[0] : ''} onChange={e => setSettings({...settings, sea_departure_date: e.target.value ? new Date(e.target.value).toISOString() : ''})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Exchange Rate (CNY to GHS)</label>
-            <input 
-              type="number" 
-              step="0.01"
-              value={settings?.exchange_rate_cny_to_ghs || 0}
-              onChange={e => setSettings({...settings, exchange_rate_cny_to_ghs: parseFloat(e.target.value)})}
-              className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Service Fee Percentage (%)</label>
-            <input 
-              type="number" 
-              step="0.1"
-              value={settings?.service_fee_percentage || 0}
-              onChange={e => setSettings({...settings, service_fee_percentage: parseFloat(e.target.value)})}
-              className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            />
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
-            <input 
-              type="checkbox" 
-              id="maintenance"
-              checked={settings?.maintenance_mode || false}
-              onChange={e => setSettings({...settings, maintenance_mode: e.target.checked})}
-              className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-indigo-600 focus:ring-indigo-600"
-            />
-            <label htmlFor="maintenance" className="text-sm font-medium text-zinc-400">Enable Maintenance Mode (Blocks users)</label>
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">Maintenance Toggles</h2>
+            <div className="flex items-center gap-3 pt-2">
+              <input type="checkbox" id="maintenance" checked={settings?.maintenance_mode || false} onChange={e => setSettings({...settings, maintenance_mode: e.target.checked})} className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-indigo-600 focus:ring-indigo-600" />
+              <label htmlFor="maintenance" className="text-sm font-medium text-red-400">Global Maintenance Mode (Blocks all users)</label>
+            </div>
+            
+            <div className="mt-4 border-t border-zinc-800 pt-4">
+              <label className="block text-sm font-bold text-zinc-400 mb-2">Block Specific Sections:</label>
+              <div className="grid grid-cols-2 gap-3">
+                {['cart', 'checkout', 'shop', 'dashboard'].map(page => (
+                  <div key={page} className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id={`maint-${page}`} 
+                      checked={settings?.maintenance_pages?.[page] || false}
+                      onChange={e => setSettings({...settings, maintenance_pages: {...settings.maintenance_pages, [page]: e.target.checked}})}
+                      className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-indigo-600 focus:ring-indigo-600"
+                    />
+                    <label htmlFor={`maint-${page}`} className="text-sm text-zinc-300 capitalize">{page}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2"><DollarSign className="w-5 h-5 text-indigo-500" /> Logistics Rates</h2>
-            <button 
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Air Normal Deposit (USD)</label>
-              <input 
-                type="number" 
-                step="0.01"
-                value={settings?.air_normal_deposit_usd || 0}
-                onChange={e => setSettings({...settings, air_normal_deposit_usd: parseFloat(e.target.value)})}
-                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Air Express Deposit (USD)</label>
-              <input 
-                type="number" 
-                step="0.01"
-                value={settings?.air_express_deposit_usd || 0}
-                onChange={e => setSettings({...settings, air_express_deposit_usd: parseFloat(e.target.value)})}
-                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Sea Freight Deposit (GHS)</label>
-              <input 
-                type="number" 
-                step="0.01"
-                value={settings?.sea_deposit_ghs || 0}
-                onChange={e => setSettings({...settings, sea_deposit_ghs: parseFloat(e.target.value)})}
-                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Shipping USD to GHS Rate</label>
-              <input 
-                type="number" 
-                step="0.01"
-                value={settings?.usd_to_ghs_rate || 0}
-                onChange={e => setSettings({...settings, usd_to_ghs_rate: parseFloat(e.target.value)})}
-                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Package Registration Fee (GHS)</label>
-              <input 
-                type="number" 
-                step="0.01"
-                value={settings?.package_registration_fee || 0}
-                onChange={e => setSettings({...settings, package_registration_fee: parseFloat(e.target.value)})}
-                className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              />
+        <div className="space-y-6">
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">Logistics Fees</h2>
             </div>
           </div>
-        </div>
 
         <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
           <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Building2 className="w-5 h-5 text-indigo-500" /> Warehouse Addresses</h2>
@@ -304,5 +326,6 @@ export default function AdminSettingsView() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
