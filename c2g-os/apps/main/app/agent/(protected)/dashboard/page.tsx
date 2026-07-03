@@ -2,27 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  Ticket, 
   Users, 
-  Clock, 
-  AlertOctagon, 
-  CheckCircle2, 
-  Timer,
-  AlertTriangle,
-  Radio
+  Store, 
+  Ship, 
+  Truck, 
+  Link as LinkIcon, 
+  Radio, 
+  Package,
+  Activity
 } from 'lucide-react';
 import CommandBar from '@/components/agent/CommandBar';
-import { createClient } from '@/utils/supabase/client';
 
 export default function AgentDashboardView() {
   const [stats, setStats] = useState({
-    openTickets: 0,
-    unassignedTickets: 0,
-    urgentTickets: 0,
-    avgResponseTime: '0 mins',
-    customersWaiting: 0,
-    closedToday: 0,
-    escalationsPending: 0
+    pendingLinkOrders: 0,
+    activeShipments: 0,
+    activeReservations: 0,
+    totalCustomers: 0,
+    liveAnnouncements: 0,
+    recentOrders: 0,
+    packagesInWarehouse: 0
   });
 
   const [loading, setLoading] = useState(true);
@@ -32,13 +31,13 @@ export default function AgentDashboardView() {
     // Simulating the fetch for the UI
     setTimeout(() => {
       setStats({
-        openTickets: 12,
-        unassignedTickets: 5,
-        urgentTickets: 3,
-        avgResponseTime: '14 mins',
-        customersWaiting: 8,
-        closedToday: 45,
-        escalationsPending: 2
+        pendingLinkOrders: 14,
+        activeShipments: 3,
+        activeReservations: 8,
+        totalCustomers: 1204,
+        liveAnnouncements: 2,
+        recentOrders: 45,
+        packagesInWarehouse: 156
       });
       setLoading(false);
     }, 1000);
@@ -77,58 +76,44 @@ export default function AgentDashboardView() {
 
       {/* Primary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Open Tickets" value={loading ? '-' : stats.openTickets} icon={Ticket} color="bg-indigo-500" />
-        <KpiCard title="Urgent Tickets" value={loading ? '-' : stats.urgentTickets} icon={AlertOctagon} color="bg-red-500" alert={stats.urgentTickets > 0} />
-        <KpiCard title="Customers Waiting" value={loading ? '-' : stats.customersWaiting} icon={Users} color="bg-amber-500" />
-        <KpiCard title="Avg Response" value={loading ? '-' : stats.avgResponseTime} icon={Timer} color="bg-emerald-500" />
+        <KpiCard title="Pending Link Orders" value={loading ? '-' : stats.pendingLinkOrders} icon={LinkIcon} color="bg-indigo-500" />
+        <KpiCard title="Active Shipments" value={loading ? '-' : stats.activeShipments} icon={Ship} color="bg-emerald-500" />
+        <KpiCard title="Active Reservations" value={loading ? '-' : stats.activeReservations} icon={Truck} color="bg-amber-500" />
+        <KpiCard title="Total Customers" value={loading ? '-' : stats.totalCustomers.toLocaleString()} icon={Users} color="bg-blue-500" />
       </div>
 
       {/* Secondary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-6 flex items-center gap-4">
           <div className="p-4 bg-zinc-900 rounded-full">
-            <CheckCircle2 className="w-6 h-6 text-zinc-500" />
+            <Radio className="w-6 h-6 text-red-500" />
           </div>
           <div>
-            <p className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Closed Today</p>
-            <p className="text-2xl font-bold text-white">{loading ? '-' : stats.closedToday}</p>
+            <p className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Live Announcements</p>
+            <p className="text-2xl font-bold text-white">{loading ? '-' : stats.liveAnnouncements}</p>
           </div>
         </div>
         
         <div className="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-6 flex items-center gap-4">
           <div className="p-4 bg-zinc-900 rounded-full">
-            <AlertTriangle className="w-6 h-6 text-orange-500" />
+            <Store className="w-6 h-6 text-orange-500" />
           </div>
           <div>
-            <p className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Pending Escalations</p>
-            <p className="text-2xl font-bold text-white">{loading ? '-' : stats.escalationsPending}</p>
+            <p className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Orders Today</p>
+            <p className="text-2xl font-bold text-white">{loading ? '-' : stats.recentOrders}</p>
           </div>
         </div>
 
         <div className="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-6 flex items-center gap-4">
           <div className="p-4 bg-zinc-900 rounded-full">
-            <Clock className="w-6 h-6 text-indigo-500" />
+            <Package className="w-6 h-6 text-indigo-500" />
           </div>
           <div>
-            <p className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Unassigned</p>
-            <p className="text-2xl font-bold text-white">{loading ? '-' : stats.unassignedTickets}</p>
+            <p className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Packages in Warehouse</p>
+            <p className="text-2xl font-bold text-white">{loading ? '-' : stats.packagesInWarehouse}</p>
           </div>
         </div>
       </div>
-
-      {/* SLA Warning Banner */}
-      {stats.urgentTickets > 0 && !loading && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 flex items-start gap-4">
-          <AlertOctagon className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
-          <div>
-            <h3 className="text-lg font-bold text-red-400">SLA Breach Warning</h3>
-            <p className="text-red-400/80 mt-1">You have {stats.urgentTickets} urgent tickets approaching the SLA deadline. Please prioritize these immediately to avoid compliance issues.</p>
-            <button className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">
-              View Urgent Tickets
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
