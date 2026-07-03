@@ -1,29 +1,29 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Search, Plus, Filter, Edit, Save, Plane, Ship, Zap, ChevronDown, CheckSquare, Square, Copy, X, Eye, Package, Link as LinkIcon, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
 import { updateReservationStatus, bulkUpdateReservationStatus, updateAdminReservation, getReservationItems } from './actions';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 // Constants for Dropdowns
 const STATUS_OPTIONS = [
   'In Warehouse',
-  'Waiting for deposit',
-  'Reserved for shipment',
-  'Packed',
-  'Assigned to shipment',
   'In Transit',
   'Arrived Ghana',
   'Clearance',
-  'Ready for pickup',
+  'Available for pickup',
   'Delivered',
   'Completed',
   'Cancelled'
 ];
 
-export default function ReservationsClient({ initialReservations }: { initialReservations: any[] }) {
+export default function ReservationsClient() {
   const router = useRouter();
+  
+  const [initialReservations, setInitialReservations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,12 +38,41 @@ export default function ReservationsClient({ initialReservations }: { initialRes
   
   // Modals
   const [showEditModal, setShowEditModal] = useState<any>(null); // holds reservation data
-  const [showItemsModal, setShowItemsModal] = useState<string | null>(null);
+  const [showItemsModal, setShowItemsModal] = useState<any>(null); // holds reservation data
   const [reservationItems, setReservationItems] = useState<any>({ packages: [], linkOrders: [], mallOrders: [] });
   const [loadingItems, setLoadingItems] = useState(false);
   
   // Pending transition for Server Actions
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    fetchReservations();
+  }, []);
+
+  const fetchReservations = async () => {
+    setLoading(true);
+    const supabase = createClient();
+    
+    const { data, error } = await supabase
+      .from('shipment_reservations')
+      .select(`
+        *,
+        customers (
+          name,
+          email,
+          phone
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching admin reservations:', error);
+    } else if (data) {
+      setInitialReservations(data);
+    }
+    
+    setLoading(false);
+  };
 
   // Status Styling Logic
   const getStatusColorClass = (status: string) => {
@@ -55,6 +84,11 @@ export default function ReservationsClient({ initialReservations }: { initialRes
     if (s.includes('pickup') || s.includes('arrived')) return 'bg-teal-500/10 text-teal-400 border-teal-500/30';
     if (s.includes('clearance')) return 'bg-yellow-600/10 text-yellow-500 border-yellow-600/30';
     return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'; // pending/awaiting
+  };
+
+  const formatItemStatus = (status: string) => {
+    if (!status) return '';
+    return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   // Handlers
@@ -102,7 +136,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
     if (!showEditModal) return;
     startTransition(async () => {
       const res = await updateAdminReservation(showEditModal.id, {
-        tracking_number: showEditModal.tracking_number,
+        tracking_number: showEditModal.id, // Automatically set to reservation ID
         shipping_mode: showEditModal.shipping_mode,
         deposit_amount: showEditModal.deposit_amount,
         deposit_paid: showEditModal.deposit_paid,
@@ -118,12 +152,12 @@ export default function ReservationsClient({ initialReservations }: { initialRes
     });
   };
 
-  const handleViewItems = async (id: string) => {
-    setShowItemsModal(id);
+  const handleViewItems = async (res: any) => {
+    setShowItemsModal(res);
     setLoadingItems(true);
-    const res = await getReservationItems(id);
-    if (res.success) {
-      setReservationItems(res.data);
+    const result = await getReservationItems(res.id);
+    if (result.success) {
+      setReservationItems(result.data);
     } else {
       alert("Failed to load items");
     }
@@ -134,7 +168,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
   const filteredReservations = initialReservations.filter(res => {
     const matchesSearch = res.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           res.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          res.customers?.first_name?.toLowerCase().includes(searchTerm.toLowerCase());
+                          res.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Default to 'In Warehouse' if not set, for matching purposes
     const resStatus = res.status || 'In Warehouse';
@@ -146,6 +180,10 @@ export default function ReservationsClient({ initialReservations }: { initialRes
   // Pagination Logic
   const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
   const paginatedReservations = filteredReservations.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  if (loading) {
+    return <div className="p-8 text-zinc-500 flex items-center gap-2"><Zap className="w-4 h-4 animate-pulse" /> Loading reservations...</div>;
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-24">
@@ -214,7 +252,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                       {res.tracking_number && <p className="text-[10px] text-zinc-400 mt-0.5 tracking-wider">TRK: {res.tracking_number}</p>}
                     </td>
                     <td className="p-4">
-                      <p className="text-sm text-zinc-200">{res.customers?.first_name} {res.customers?.last_name}</p>
+                      <p className="text-sm text-zinc-200">{res.customers?.name}</p>
                       <p className="text-[10px] text-zinc-500">{res.customers?.phone || res.customers?.email}</p>
                     </td>
                     <td className="p-4 text-sm text-zinc-300">
@@ -255,7 +293,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
-                          onClick={() => handleViewItems(res.id)}
+                          onClick={() => handleViewItems(res)}
                           className="p-2 text-zinc-400 hover:text-white bg-zinc-950 border border-zinc-800 hover:bg-zinc-800 rounded-lg transition-colors" 
                           title="View Items"
                         >
@@ -295,7 +333,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-white font-mono font-bold">{res.id}</p>
                           <div className="flex gap-2 shrink-0">
-                            <button onClick={() => handleViewItems(res.id)} className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors shrink-0">
+                            <button onClick={() => handleViewItems(res)} className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors shrink-0">
                               <Eye className="w-4 h-4" />
                             </button>
                             <button onClick={() => setShowEditModal(res)} className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors shrink-0">
@@ -303,7 +341,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                             </button>
                           </div>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">{res.customers?.first_name} {res.customers?.last_name} <span className="text-zinc-600">({res.customers?.phone})</span></p>
+                        <p className="text-xs text-zinc-400 mt-0.5">{res.customers?.name} <span className="text-zinc-600">({res.customers?.phone})</span></p>
                       </div>
                     </div>
                     
@@ -359,19 +397,24 @@ export default function ReservationsClient({ initialReservations }: { initialRes
 
       {/* Floating Bulk Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 p-2 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10 z-40">
-          <div className="px-4 border-r border-zinc-700">
-            <span className="text-white font-bold">{selectedIds.size}</span>
-            <span className="text-zinc-400 text-sm ml-2">selected</span>
-          </div>
-          <div className="flex items-center gap-2 pr-2">
-            <button onClick={handleCopyIds} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-700 rounded-xl text-sm font-medium text-white transition-colors">
-              <Copy className="w-4 h-4" /> Copy IDs
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] md:w-auto bg-zinc-800 border border-zinc-700 p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row items-center gap-2 md:gap-4 animate-in slide-in-from-bottom-10 z-40">
+          <div className="flex items-center justify-between w-full md:w-auto px-4 md:border-r border-zinc-700 pb-2 md:pb-0 border-b md:border-b-0">
+            <div>
+              <span className="text-white font-bold">{selectedIds.size}</span>
+              <span className="text-zinc-400 text-sm ml-2">selected</span>
+            </div>
+            <button onClick={() => setSelectedIds(new Set())} className="md:hidden p-1 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors" title="Clear Selection">
+              <X className="w-4 h-4" />
             </button>
-            <div className="relative flex items-center gap-2 bg-zinc-950 border border-zinc-700 rounded-xl px-2">
-              <span className="text-xs text-zinc-400 pl-2">Set Status:</span>
+          </div>
+          <div className="flex items-center justify-between md:justify-start w-full md:w-auto gap-2 px-2 md:pr-2">
+            <button onClick={handleCopyIds} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-700 rounded-xl text-sm font-medium text-white transition-colors shrink-0">
+              <Copy className="w-4 h-4" /> <span className="hidden sm:inline">Copy IDs</span>
+            </button>
+            <div className="relative flex-1 md:flex-initial flex items-center gap-2 bg-zinc-950 border border-zinc-700 rounded-xl px-2 shrink-0 min-w-0">
+              <span className="text-[10px] sm:text-xs text-zinc-400 pl-2 hidden sm:block whitespace-nowrap">Set Status:</span>
               <select 
-                className="bg-transparent text-sm text-white py-2 pl-2 pr-8 outline-none appearance-none cursor-pointer"
+                className="bg-transparent text-xs sm:text-sm text-white py-2 pl-2 pr-8 outline-none appearance-none cursor-pointer w-full"
                 onChange={(e) => {
                   if (e.target.value) {
                     handleBulkStatusUpdate(e.target.value.toLowerCase().replace(/ /g, '_'));
@@ -385,7 +428,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                 {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <button onClick={() => setSelectedIds(new Set())} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-xl transition-colors" title="Clear Selection">
+            <button onClick={() => setSelectedIds(new Set())} className="hidden md:block p-2 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-xl transition-colors" title="Clear Selection">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -409,8 +452,8 @@ export default function ReservationsClient({ initialReservations }: { initialRes
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Master Tracking Number</label>
-                  <input type="text" value={showEditModal.tracking_number || ''} onChange={e => setShowEditModal({...showEditModal, tracking_number: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500" placeholder="e.g. YT123456789" />
-                  <p className="text-[10px] text-zinc-500 mt-1">Updates the tracking number for all items linked to this reservation.</p>
+                  <input type="text" value={showEditModal.id || ''} disabled className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-500 cursor-not-allowed outline-none" />
+                  <p className="text-[10px] text-zinc-500 mt-1">The tracking number is automatically set to the Reservation ID.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -469,14 +512,37 @@ export default function ReservationsClient({ initialReservations }: { initialRes
             <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Package className="w-5 h-5 text-indigo-500" /> Reservation Items
+                  <Package className="w-5 h-5 text-indigo-500" /> Reservation Details
                 </h2>
-                <p className="text-sm text-zinc-400 font-mono mt-1">{showItemsModal}</p>
+                <div className="flex items-center gap-3 mt-2">
+                  <p className="text-sm text-zinc-400 font-mono">{showItemsModal.id}</p>
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase border ${getStatusColorClass(showItemsModal.status || 'in_warehouse')}`}>
+                    {STATUS_OPTIONS.find(s => s.toLowerCase().replace(/ /g, '_') === (showItemsModal.status || 'in_warehouse').toLowerCase()) || 'In Warehouse'}
+                  </span>
+                </div>
               </div>
               <button onClick={() => setShowItemsModal(null)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             
             <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+              {/* Customer Details Block */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Customer Info</p>
+                  <p className="text-sm font-bold text-white">{showItemsModal.customers?.name}</p>
+                  <p className="text-xs text-zinc-400">{showItemsModal.customers?.email}</p>
+                  <p className="text-xs text-zinc-400">{showItemsModal.customers?.phone}</p>
+                </div>
+                <div className="text-left sm:text-right">
+                  <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Shipping Details</p>
+                  <p className="text-sm font-bold text-white capitalize flex items-center gap-1 sm:justify-end">
+                    {showItemsModal.shipping_mode === 'sea' ? <Ship className="w-4 h-4 text-blue-400" /> : <Plane className="w-4 h-4 text-sky-400" />}
+                    {showItemsModal.shipping_mode?.replace('_', ' ')}
+                  </p>
+                  <p className="text-xs text-zinc-400 mt-1">Total Items: {showItemsModal.total_items}</p>
+                </div>
+              </div>
+
               {loadingItems ? (
                 <div className="flex justify-center py-12">
                   <Zap className="w-8 h-8 text-indigo-500 animate-pulse" />
@@ -496,8 +562,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                               <p className="text-xs text-zinc-400">{pkg.items_description}</p>
                             </div>
                             <div className="text-right">
-                              <span className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded-md">{pkg.status}</span>
-                              <p className="text-xs text-zinc-500 mt-1">{pkg.total_weight_kg ? `${pkg.total_weight_kg} kg` : ''}</p>
+                              {pkg.total_weight_kg && <p className="text-xs text-zinc-500 mt-1">{pkg.total_weight_kg} kg</p>}
                             </div>
                           </div>
                         ))}
@@ -518,7 +583,6 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                               <p className="text-xs text-zinc-400 font-mono text-[10px]">LNK-{order.id.substring(0, 8).toUpperCase()}</p>
                             </div>
                             <div className="text-right">
-                              <span className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded-md">{order.order_status}</span>
                             </div>
                           </div>
                         ))}
@@ -539,8 +603,6 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                               <p className="text-xs text-zinc-400">{order.items?.length || 0} items</p>
                             </div>
                             <div className="text-right">
-                              <span className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded-md">{order.order_status}</span>
-                              <p className="text-xs text-indigo-400 font-bold mt-1">₵{order.total_amount}</p>
                             </div>
                           </div>
                         ))}
