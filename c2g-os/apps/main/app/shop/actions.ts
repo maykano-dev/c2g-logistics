@@ -252,26 +252,69 @@ export async function getProductDetails(id: string) {
     const mainImages: string[] = Array.isArray(rawImages) ? rawImages : [];
 
     // SKU variants from product_sku.skus[]
-    const skuDefs = safeProduct.product_sku?.skus || [];
+    // sku_attributes provides the lookup table: attribute_id -> attribute_name, value_id -> display_name
+    const skuAttributeLookup: Record<string, { attrName: string; values: Record<string, string> }> = {};
+    for (const attr of ((safeProduct as any).product_sku?.sku_attributes || [])) {
+      const valMap: Record<string, string> = {};
+      for (const v of (attr.values || [])) {
+        valMap[String(v.value_id)] = v.custom_value_name || v.system_value_name || String(v.value_id);
+      }
+      skuAttributeLookup[String(attr.attribute_id)] = {
+        attrName: attr.attribute_name || String(attr.attribute_id),
+        values: valMap,
+      };
+    }
+
+    const skuDefs = (safeProduct as any).product_sku?.skus || [];
     const variants = skuDefs.map((sku: any) => {
-      // Price from bulk_discount_prices[0].price (USD) or wholesale_trade.price
+      // Price from bulk_discount_prices[0].price (USD) or product-level fallback
       const priceUsd = parseFloat(
         sku.bulk_discount_prices?.[0]?.price ||
         safeProduct.wholesale_trade?.price ||
         safeProduct.sourcing_trade?.fob_min_price ||
         '0'
       );
-      // SKU attribute combination label (e.g. "Red / XL")
-      const attrLabel = sku.attr2_value ? String(sku.attr2_value) : 'Standard';
+
+      // attr2_value is a map like "{11:12,22:21}" per docs (attribute_id:value_id pairs)
+      // Cross-reference sku_attributes to build readable label e.g. "Color: Light Grey / Size: XL"
+      let attrLabel = 'Standard';
+      if (sku.attr2_value) {
+        try {
+          const pairs = String(sku.attr2_value).replace(/[{}]/g, '').split(',');
+          const parts: string[] = [];
+          for (const pair of pairs) {
+            const parts2 = pair.split(':').map((s: string) => s.trim());
+            const attrId = parts2[0];
+            const valueId = parts2[1];
+            if (!attrId || !valueId) continue;
+            const attrDef = skuAttributeLookup[attrId];
+            if (attrDef) {
+              const valueName = attrDef.values[valueId] || valueId;
+              parts.push(`${attrDef.attrName}: ${valueName}`);
+            }
+          }
+          if (parts.length > 0) attrLabel = parts.join(' / ');
+        } catch {
+          attrLabel = String(sku.attr2_value);
+        }
+      }
+
+      // Real inventory from inventory_dto_list (cn_inventory store)
+      const inventoryEntry = (sku.inventory_dto_list || []).find(
+        (inv: any) => inv.store_code === 'cn_inventory'
+      );
+      const stock = inventoryEntry?.inventory ?? 999;
+
       return {
         id: String(sku.sku_id || sku.sku_code || 'default'),
         combination: attrLabel,
         price: priceUsd,
         selling_price_ghs: priceUsd * exchangeRate,
         image_url: mainImages[0] || '',
-        stock: 999 // Dropshipping: assume available until cart check
+        stock,
       };
     });
+
 
     // Fallback: if no SKUs, create one variant from wholesale/sourcing trade info
     if (variants.length === 0) {
