@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useCart } from "./cart-context";
 import { useRouter } from "next/navigation";
-import { createEcomOrder } from "../../app/checkout/actions";
+import { createEcomOrder, verifyCartInventory } from "../../app/checkout/actions";
 import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck, Calculator, Info, Plane, Zap, Loader2 } from "lucide-react";
 import { useModal } from "@/components/providers/modal-provider";
 import Link from "next/link";
@@ -55,9 +55,29 @@ export default function CheckoutClient({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleCheckoutSubmit = (e: React.FormEvent) => {
+  const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) return;
+    
+    setLoading(true);
+    
+    // LIVE ALIBABA INVENTORY CHECK
+    const verifyRes = await verifyCartInventory(items);
+    if (!verifyRes.success) {
+      setLoading(false);
+      if (verifyRes.outOfStock) {
+        showAlert({ 
+          title: 'Inventory Alert', 
+          message: `The following items are no longer available from the supplier: ${verifyRes.outOfStock.join(', ')}. Please remove them from your cart to proceed.`, 
+          type: 'danger' 
+        });
+      } else {
+        showAlert({ title: 'Error', message: verifyRes.error || "Failed to verify inventory.", type: 'danger' });
+      }
+      return;
+    }
+    
+    setLoading(false);
     setIsModalOpen(true);
   };
 

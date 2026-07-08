@@ -6,6 +6,11 @@ import { AlertTriangle } from "lucide-react";
 export function MaintenanceBlocker({ settings, children }: { settings: any, children: React.ReactNode }) {
   const pathname = usePathname();
 
+  // Check if we are in development mode, bypass maintenance
+  if (process.env.NODE_ENV === 'development') {
+    return <>{children}</>;
+  }
+
   // Parse maintenance pages if it's a string, or use directly if object
   const maintPages = typeof settings?.maintenance_pages === 'string' 
     ? JSON.parse(settings.maintenance_pages) 

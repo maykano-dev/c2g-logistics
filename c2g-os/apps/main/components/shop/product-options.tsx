@@ -90,8 +90,8 @@ export default function ProductOptions({ product, variants, exchangeRate, option
     if (!canAddToCart) return;
 
     const imageUrl = currentVariant?.image_url 
-      || product.product_images?.find((img: any) => img.is_primary)?.image_url 
-      || product.product_images?.[0]?.image_url 
+      || product.images?.[0]
+      || product.image_url 
       || "https://placehold.co/300x300/e9ecef/6c757d?text=N/A";
 
     addToCart({
@@ -230,7 +230,7 @@ export default function ProductOptions({ product, variants, exchangeRate, option
                 addToWishlist({
                   id: product.id,
                   name: product.name,
-                  imageUrl: product.product_images?.[0]?.image_url || "https://placehold.co/300",
+                  imageUrl: product.images?.[0] || product.image_url || "https://placehold.co/300",
                   priceGhs: displayPriceGhs,
                   priceCny: displayPriceCny
                 });

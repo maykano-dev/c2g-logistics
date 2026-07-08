@@ -1,16 +1,10 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-
-// ═══════════════════════════════════════════════════════════════════
-// Algorithm Constants
-// ═══════════════════════════════════════════════════════════════════
-const TREND_WEIGHT_ORDERS = 5;
-const TREND_WEIGHT_CART = 3;
-const TREND_WEIGHT_VIEWS = 1;
-
-const DEMAND_HIGH_THRESHOLD = 50;
-const DEMAND_MEDIUM_THRESHOLD = 15;
+import { alibabaRequest } from "@/lib/alibaba/client";
+import { filterTrustedProducts, stripSupplierData, calculateTrustScore } from "@/lib/alibaba/trust-filter";
+import { normalizeProductTitle } from "@/lib/alibaba/text-cleaner";
+import crypto from 'crypto';
 
 // ═══════════════════════════════════════════════════════════════════
 // Helpers
@@ -32,59 +26,33 @@ async function getExchangeRate(supabase: any): Promise<number> {
   if (sysData?.value) {
     return parseFloat(sysData.value);
   }
-  return 0.52;
+  return 0.52; // Fallback
 }
 
-function computeTrendScore(p: any): number {
-  return (
-    (p.sales_count || 0) * TREND_WEIGHT_ORDERS +
-    (p.cart_adds || 0) * TREND_WEIGHT_CART +
-    (p.view_count || 0) * TREND_WEIGHT_VIEWS
-  );
+// Helper to hash query strings for caching
+function hashQuery(query: string): string {
+  return crypto.createHash('sha256').update(query.trim().toLowerCase()).digest('hex');
 }
 
-function computeDemandLabel(p: any): string {
-  const score = (p.sales_count || 0) + (p.view_count || 0) * 0.1;
-  if (score >= DEMAND_HIGH_THRESHOLD) return "high";
-  if (score >= DEMAND_MEDIUM_THRESHOLD) return "medium";
-  return "low";
+// Map Alibaba search results to our C2G Product UI shape
+function mapAlibabaToC2g(alibabaProduct: any, exchangeRate: number) {
+  // ICBU product list API sometimes omits price in the brief search result, 
+  // we will show "View for Price" (price=0) until they click into it.
+  const usdPrice = parseFloat(alibabaProduct.price || alibabaProduct.fob_price || "0");
+  const imageUrl = alibabaProduct.main_image?.images?.[0] || alibabaProduct.main_image?.url || alibabaProduct.thumbnail_url || "https://placehold.co/300";
+  
+  return {
+    id: alibabaProduct.product_id || alibabaProduct.id,
+    name: normalizeProductTitle(alibabaProduct.title || alibabaProduct.subject || "Unknown Product"),
+    price: usdPrice,
+    selling_price_ghs: usdPrice * exchangeRate,
+    image_url: imageUrl,
+    is_alibaba: true // Flag so frontend knows it's an API product
+  };
 }
-
-// Safe product select — avoids columns that may not exist yet
-const PRODUCT_SELECT = `
-  *,
-  product_images (
-    id,
-    image_url,
-    is_primary,
-    media_type
-  )
-`;
-
-const PRODUCT_WITH_VARIANTS_SELECT = `
-  *,
-  product_images (
-    id,
-    image_url,
-    is_primary,
-    media_type
-  ),
-  product_variants (
-    id,
-    sku,
-    combination,
-    variant_options,
-    price,
-    price_cny,
-    cost_price_cny,
-    selling_price_ghs,
-    image_url,
-    stock
-  )
-`;
 
 // ═══════════════════════════════════════════════════════════════════
-// Top Purchased Products (For Hero Carousel)
+// Level 1 & 3: Top Purchased / Featured Products (Local DB)
 // ═══════════════════════════════════════════════════════════════════
 export async function getTopPurchasedProducts(limit: number = 5) {
   const supabase = await createClient();
@@ -92,20 +60,23 @@ export async function getTopPurchasedProducts(limit: number = 5) {
   try {
     const { data, error } = await supabase
       .from("products")
-      .select(PRODUCT_WITH_VARIANTS_SELECT)
-      .in("status", ["published", "active"])
-      .order("sales_count", { ascending: false })
+      .select("*")
+      .in("catalog_type", ["promoted", "featured"])
+      .order("purchase_count", { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-
     const exchangeRate = await getExchangeRate(supabase);
     
     return {
       success: true,
       products: data?.map((p) => ({
-        ...p,
-        demandLabel: computeDemandLabel(p),
+        id: p.id,
+        name: p.title,
+        price: p.price_snapshot_usd,
+        selling_price_ghs: p.price_snapshot_usd * exchangeRate,
+        image_url: p.thumbnail_url,
+        demandLabel: p.purchase_count > 50 ? "high" : "medium"
       })) || [],
       exchangeRate
     };
@@ -116,353 +87,256 @@ export async function getTopPurchasedProducts(limit: number = 5) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Main Products Query (with category + search + semantic search)
+// Level 2: Main Search (Hybrid Smart Gateway)
 // ═══════════════════════════════════════════════════════════════════
 export async function getShopProducts(params?: {
   category?: string;
   query?: string;
-  sort?: string;
-  minPrice?: string;
-  maxPrice?: string;
   page?: number;
 }) {
   const supabase = await createClient();
-
-  // Use status='published' instead of is_active=true (matches actual DB schema)
-  let query = supabase.from("products").select(PRODUCT_WITH_VARIANTS_SELECT, { count: 'exact' });
-
-  // Filter only published products
-  query = query.in("status", ["published", "active"]);
-
-  if (params?.category && params.category !== "all") {
-    const cleanCategory = params.category.replace(/[^a-zA-Z0-9\s-&]/g, '');
-    query = query.ilike("category", `%${cleanCategory}%`);
-  }
-
-  if (params?.minPrice) {
-    query = query.gte("price", parseFloat(params.minPrice));
-  }
-
-  if (params?.maxPrice) {
-    query = query.lte("price", parseFloat(params.maxPrice));
-  }
-
-  if (params?.query) {
-    // Multi-field semantic search: search name, category, sku
-    const cleanQuery = params.query.replace(/[^a-zA-Z0-9\s-]/g, '');
-    query = query.or(
-      `name.ilike.%${cleanQuery}%,category.ilike.%${cleanQuery}%,sku.ilike.%${cleanQuery}%`
-    );
-  }
-
-  // Sorting
-  const sort = params?.sort || "newest";
-  switch (sort) {
-    case "price_asc":
-      query = query.order("price", { ascending: true });
-      break;
-    case "price_desc":
-      query = query.order("price", { ascending: false });
-      break;
-    case "popular":
-      query = query.order("sales_count", { ascending: false });
-      break;
-    case "trending":
-      query = query.order("view_count", { ascending: false });
-      break;
-    default:
-      query = query.order("created_at", { ascending: false });
-  }
-
-  // Pagination
+  const exchangeRate = await getExchangeRate(supabase);
   const page = params?.page || 1;
   const limit = 20;
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
   
-  query = query.range(from, to);
+  let localProducts: any[] = [];
+  let alibabaProducts: any[] = [];
+  let totalCount = 0;
 
-  const { data, count, error } = await query;
+  // 1. Always fetch from Local Featured/Promoted DB (Level 1 & 3)
+  let localQuery = supabase.from("products").select("*", { count: 'exact' });
+  
+  if (params?.category && params.category !== "all") {
+    localQuery = localQuery.eq("category_id", params.category);
+  }
+  if (params?.query) {
+    localQuery = localQuery.ilike("title", `%${params.query}%`);
+  }
+  
+  const from = (page - 1) * limit;
+  const { data: localData, count } = await localQuery.range(from, from + limit - 1).order("c2g_trust_score", { ascending: false });
+  totalCount += (count || 0);
 
-  if (error) {
-    console.error("Error fetching products:", error);
-    return { success: false, error: error.message };
+  localProducts = (localData || []).map((p) => ({
+    id: p.id,
+    name: p.title,
+    price: p.price_snapshot_usd,
+    selling_price_ghs: p.price_snapshot_usd * exchangeRate,
+    image_url: p.thumbnail_url,
+  }));
+
+  // 2. If there is a search query, fetch from Alibaba (Level 2)
+  if (params?.query && page === 1) {
+    const qHash = hashQuery(params.query);
+    
+    // Check Search Query Cache first
+    const { data: cacheData } = await supabase
+      .from("search_query_cache")
+      .select("result_data, expires_at")
+      .eq("query_hash", qHash)
+      .single();
+
+    if (cacheData && new Date(cacheData.expires_at) > new Date()) {
+      // CACHE HIT
+      alibabaProducts = cacheData.result_data.map((p: any) => mapAlibabaToC2g(p, exchangeRate));
+    } else {
+      // CACHE MISS -> Call Alibaba API
+      try {
+        // Use the ICBU product list endpoint for Alibaba.com
+        const res = await alibabaRequest({
+          apiPath: '/alibaba/icbu/product/list',
+          params: { subject: params.query, page_size: 20, current_page: 1 }
+        });
+
+        if (res?.result?.products) {
+          const rawProducts = res.result.products;
+          
+          // Trust Filter & Scrubber
+          const trusted = await filterTrustedProducts(rawProducts);
+          const scrubbed = trusted.map(stripSupplierData);
+          
+          alibabaProducts = scrubbed.map((p: any) => mapAlibabaToC2g(p, exchangeRate));
+
+          // Save to Cache (TTL 12 hours)
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + 12);
+
+          await supabase.from("search_query_cache").upsert({
+            query_hash: qHash,
+            query_text: params.query,
+            result_data: scrubbed,
+            expires_at: expiresAt.toISOString()
+          });
+        }
+      } catch (e) {
+        console.error("Alibaba Search Failed, falling back to local only", e);
+      }
+    }
   }
 
-  const exchangeRate = await getExchangeRate(supabase);
-
-  // Enrich products with computed scores
-  const enrichedProducts = (data || []).map((p) => ({
-    ...p,
-    trendScore: computeTrendScore(p),
-    demandLabel: computeDemandLabel(p),
-  }));
+  // Merge (Local first, then Alibaba)
+  // Ensure no duplicates if a product was promoted to local DB but also returned in Alibaba search
+  const localIds = new Set(localProducts.map(p => p.id));
+  const uniqueAlibaba = alibabaProducts.filter(p => !localIds.has(p.id));
 
   return { 
     success: true, 
-    products: enrichedProducts, 
+    products: [...localProducts, ...uniqueAlibaba], 
     exchangeRate,
-    totalCount: count || 0,
-    totalPages: Math.ceil((count || 0) / limit),
+    totalCount: totalCount + uniqueAlibaba.length,
+    totalPages: Math.ceil((totalCount + uniqueAlibaba.length) / limit) || 1,
     currentPage: page
   };
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Trending Products — sorted by trend score
+// Live Product Details (Alibaba API /eco/buyer/product/description)
 // ═══════════════════════════════════════════════════════════════════
-export async function getTrendingProducts() {
+export async function getProductDetails(id: string) {
   const supabase = await createClient();
   const exchangeRate = await getExchangeRate(supabase);
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_WITH_VARIANTS_SELECT)
-    .in("status", ["published", "active"])
-    .order("view_count", { ascending: false })
-    .limit(20);
+  try {
+    // Call Alibaba for the live description and variants
+    // According to docs, param is 'query_req'
+    const descPayload = JSON.stringify({ product_id: id });
+    const descRes = await alibabaRequest({
+      apiPath: '/eco/buyer/product/description',
+      params: { query_req: descPayload }
+    });
 
-  if (error) return { products: [], exchangeRate };
+    const certPayload = JSON.stringify({ product_id: id });
+    let certData: any[] = [];
+    try {
+      const certRes = await alibabaRequest({
+        apiPath: '/eco/buyer/product/cert',
+        params: { req: certPayload }
+      });
+      certData = certRes?.result?.result_data || [];
+    } catch(e) {
+      // Cert failure shouldn't crash the whole page, just lower trust score
+      console.warn("Could not fetch certs for", id);
+    }
 
-  // Sort by computed trend score
-  const sorted = (data || [])
-    .map((p) => ({ ...p, trendScore: computeTrendScore(p), demandLabel: computeDemandLabel(p) }))
-    .sort((a, b) => b.trendScore - a.trendScore);
+    const rawProduct = descRes?.result?.result_data;
+    if (!rawProduct) throw new Error("Product not found on Alibaba");
 
-  return { products: sorted, exchangeRate };
+    // 1. Calculate Trust Score strictly using what's available
+    const trustEval = calculateTrustScore(rawProduct, certData);
+    if (!trustEval.passed) {
+      throw new Error(`This product failed C2G's security and quality checks. (${trustEval.reasons.join(", ")})`);
+    }
+
+    // 2. Strip Supplier Info (White-labeling)
+    const safeProduct = stripSupplierData(rawProduct);
+
+    // 3. Map to C2G Frontend Structure
+    // Convert Alibaba's skus array to our variant format
+    const variants = (safeProduct.skus || []).map((sku: any) => {
+      const priceUsd = parseFloat(sku.cost_discount_price || sku.total_origin_cost_price || "0");
+      const attrs = (sku.sku_attr_list || []).map((a: any) => a.attr_value_desc).join(" / ");
+      return {
+        id: sku.sku_id,
+        combination: attrs,
+        price: priceUsd,
+        selling_price_ghs: priceUsd * exchangeRate,
+        image_url: sku.image,
+        stock: 999 // Dropshipping assume stock until live cart check
+      };
+    });
+
+    const mappedProduct = {
+      id: safeProduct.product_id || id,
+      name: safeProduct.title,
+      description: safeProduct.description,
+      images: [safeProduct.main_image, ...(safeProduct.images || [])].filter(Boolean),
+      variants,
+      wholesale_volume: safeProduct.wholesale_trade?.volume,
+      trustScore: trustEval.score,
+      trustBadges: certData.map(c => c.cert_name)
+    };
+
+    // Track View Count (For Auto-Promotion Engine)
+    await supabase.rpc('increment_view_count', { p_id: id }).catch(() => {});
+
+    return { success: true, product: mappedProduct, exchangeRate };
+
+  } catch (error: any) {
+    console.error("Error fetching live product details:", error);
+    return { success: false, error: error.message };
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// New Arrivals
+// Trending & New Arrivals (Local DB Only)
 // ═══════════════════════════════════════════════════════════════════
+export async function getTrendingProducts() {
+  return getTopPurchasedProducts(10);
+}
+
 export async function getNewArrivals() {
   const supabase = await createClient();
   const exchangeRate = await getExchangeRate(supabase);
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("products")
-    .select(PRODUCT_WITH_VARIANTS_SELECT)
-    .in("status", ["published", "active"])
+    .select("*")
     .order("created_at", { ascending: false })
     .limit(12);
 
-  if (error) return { products: [], exchangeRate };
-
-  const enriched = (data || []).map((p) => ({
-    ...p,
-    trendScore: computeTrendScore(p),
-    demandLabel: computeDemandLabel(p),
+  const products = (data || []).map(p => ({
+    id: p.id,
+    name: p.title,
+    price: p.price_snapshot_usd,
+    selling_price_ghs: p.price_snapshot_usd * exchangeRate,
+    image_url: p.thumbnail_url
   }));
 
-  return { products: enriched, exchangeRate };
+  return { products, exchangeRate };
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Best Sellers
-// ═══════════════════════════════════════════════════════════════════
 export async function getBestSellers() {
-  const supabase = await createClient();
-  const exchangeRate = await getExchangeRate(supabase);
-
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_WITH_VARIANTS_SELECT)
-    .in("status", ["published", "active"])
-    .order("sales_count", { ascending: false })
-    .limit(15);
-
-  if (error) return { products: [], exchangeRate };
-
-  const enriched = (data || []).map((p) => ({
-    ...p,
-    trendScore: computeTrendScore(p),
-    demandLabel: computeDemandLabel(p),
-  }));
-
-  return { products: enriched, exchangeRate };
+  return getTopPurchasedProducts(15);
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Product Details (with variants — for PDP)
-// ═══════════════════════════════════════════════════════════════════
-export async function getProductDetails(id: string) {
-  const supabase = await createClient();
-
-  // Try with variants first. If combination column doesn't exist, fallback.
-  let productData = null;
-  let productError = null;
-
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_WITH_VARIANTS_SELECT)
-    .eq("id", id)
-    .single();
-
-  if (error && error.code === "42703") {
-    // Column doesn't exist — try without combination
-    const { data: fallback, error: fallbackError } = await supabase
-      .from("products")
-      .select(
-        `*, product_images (id, image_url, is_primary, media_type),  product_variants (
-    id,
-    sku,
-    price,
-    price_cny,
-    selling_price_ghs,
-    cost_price_cny,
-    stock
-  )`
-      )
-      .eq("id", id)
-      .single();
-    productData = fallback;
-    productError = fallbackError;
-  } else {
-    productData = data;
-    productError = error;
-  }
-
-  if (productError) {
-    console.error("Error fetching product details:", productError);
-    return { success: false, error: productError.message };
-  }
-
-  const exchangeRate = await getExchangeRate(supabase);
-
-  // Safely fetch reviews if the table exists
-  let reviews: any[] = [];
-  try {
-    const { data: revData } = await supabase
-      .from("product_reviews")
-      .select("rating, review_text, created_at, user_id")
-      .eq("product_id", id);
-    if (revData) reviews = revData;
-  } catch (_) {}
-
-  productData.reviews = reviews;
-
-
-  // Track product view — inserts into product_view_logs (a lightweight table with NO
-  // Database Webhook attached). A pg_cron job aggregates these counts back to
-  // products.view_count every hour. This avoids the cascade of 55k+ net.http_post
-  // calls that the direct UPDATE on products was causing (which drained all Disk I/O).
-  supabase
-    .from('product_view_logs')
-    .insert({ product_id: parseInt(id) })
-    .then(() => {});
-
-  return { success: true, product: productData, exchangeRate };
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// Similar Products Engine
-// Same category + same tags + same importer
-// ═══════════════════════════════════════════════════════════════════
-export async function getSimilarProducts(
-  productId: string,
-  category?: string
-) {
-  const supabase = await createClient();
-  const exchangeRate = await getExchangeRate(supabase);
-
-  if (!category) return { products: [], exchangeRate };
-
-  const cleanCategory = category.replace(/[^a-zA-Z0-9\s-&]/g, '');
-
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_SELECT)
-    .in("status", ["published", "active"])
-    .ilike("category", `%${cleanCategory}%`)
-    .neq("id", productId)
-    .limit(8);
-
-  if (error) return { products: [], exchangeRate };
-
-  const enriched = (data || []).map((p) => ({
-    ...p,
-    trendScore: computeTrendScore(p),
-    demandLabel: computeDemandLabel(p),
-  }));
-
-  return { products: enriched, exchangeRate };
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// Categories — pull unique categories from DB
+// Categories
 // ═══════════════════════════════════════════════════════════════════
 export async function getCategories() {
   const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("products")
-    .select("category")
-    .in("status", ["published", "active"])
-    .not("category", "is", null);
-
-  if (error) return [];
-
-  // Extract unique categories
-  const cats = new Set<string>();
-  (data || []).forEach((p: any) => {
-    if (p.category) cats.add(p.category.toLowerCase().trim());
-  });
-
-  return Array.from(cats).sort();
+  const { data } = await supabase.from("alibaba_categories").select("name");
+  return (data || []).map(c => c.name).sort();
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // Smart Shipping Recommendation
 // ═══════════════════════════════════════════════════════════════════
 export async function getShippingRecommendation(weightKg?: number, volumeCbm?: number) {
-  if (weightKg && weightKg < 5) {
-    return { mode: "air", label: "Air Freight Recommended", reason: "Light item under 5kg" };
-  }
-  if (volumeCbm && volumeCbm > 0.5) {
-    return { mode: "sea", label: "Sea Freight Recommended", reason: "Bulky item over 0.5 CBM" };
-  }
-  return { mode: "air", label: "Air Freight Recommended", reason: "Default recommendation" };
+  if (weightKg && weightKg < 5) return { mode: "air", label: "Air Freight Recommended" };
+  if (volumeCbm && volumeCbm > 0.5) return { mode: "sea", label: "Sea Freight Recommended" };
+  return { mode: "air", label: "Air Freight Recommended" };
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Submit Product Review
+// Wishlist & Cart Sync (UNCHANGED)
 // ═══════════════════════════════════════════════════════════════════
-export async function submitProductReview(productId: string, rating: number, reviewText: string) {
+export async function getDbCart() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, items: [] };
+  const cartData = user.user_metadata?.cart || [];
+  return { success: true, items: cartData };
+}
 
-  if (!user) {
-    return { success: false, error: "You must be logged in to review." };
-  }
-
-  // Try to insert the review. Note: Since we might not have an is_approved column yet,
-  // we just insert the standard fields.
-  const { error } = await supabase
-    .from("product_reviews")
-    .insert({
-      product_id: parseInt(productId),
-      user_id: user.id,
-      rating,
-      review_text: reviewText,
-      // If the database has is_approved, we would set it to false here.
-      // But since we can't alter the DB remotely in this session, 
-      // we'll just omit it to prevent crashes, relying on the UI to handle it optimistically.
-    });
-
-  if (error) {
-    if (error.code === '23505') {
-      return { success: false, error: "You have already reviewed this product." };
-    }
-    console.error("Error submitting review:", error);
-    return { success: false, error: "Failed to submit review." };
-  }
-
+export async function syncDbCart(items: any[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false };
+  const { error } = await supabase.auth.updateUser({ data: { cart: items } });
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Wishlist Sync
-// ═══════════════════════════════════════════════════════════════════
 export async function getDbWishlist() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -470,33 +344,21 @@ export async function getDbWishlist() {
 
   const { data, error } = await supabase
     .from("wishlist")
-    .select(`
-      product_id,
-      products (
-        id, name, price, price_cny, selling_price_ghs, cost_price_cny,
-        product_images (image_url, is_primary)
-      )
-    `)
+    .select("product_id, products(id, title, price_snapshot_usd, thumbnail_url)")
     .eq("customer_id", user.id);
 
   if (error || !data) return { success: false, items: [] };
-
   const exchangeRate = await getExchangeRate(supabase);
 
   const items = data.map((row: any) => {
     const p = row.products;
     if (!p) return null;
-    
-    const priceGhs = p.selling_price_ghs !== null ? parseFloat(p.selling_price_ghs) : parseFloat(p.price) || 0;
-    const priceCny = p.cost_price_cny !== null ? parseFloat(p.cost_price_cny) : parseFloat(p.price_cny) || 0;
-    const imageUrl = p.product_images?.find((img: any) => img.is_primary)?.image_url || p.product_images?.[0]?.image_url || "https://placehold.co/300";
-
     return {
       id: String(p.id),
-      name: p.name,
-      imageUrl,
-      priceGhs,
-      priceCny: priceCny || (priceGhs * exchangeRate)
+      name: p.title,
+      imageUrl: p.thumbnail_url,
+      priceGhs: p.price_snapshot_usd * exchangeRate,
+      priceCny: 0 
     };
   }).filter(Boolean);
 
@@ -507,17 +369,8 @@ export async function addDbWishlist(productId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false };
-
-  const { error } = await supabase.from("wishlist").insert({
-    customer_id: user.id,
-    product_id: parseInt(productId)
-  });
-  
-  if (error && error.code !== '23505') {
-    console.error("Failed to add to wishlist", error);
-    return { success: false };
-  }
-  
+  const { error } = await supabase.from("wishlist").insert({ customer_id: user.id, product_id: productId });
+  if (error && error.code !== '23505') return { success: false };
   return { success: true };
 }
 
@@ -525,11 +378,7 @@ export async function removeDbWishlist(productId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false };
-
-  await supabase.from("wishlist")
-    .delete()
-    .match({ customer_id: user.id, product_id: parseInt(productId) });
-    
+  await supabase.from("wishlist").delete().match({ customer_id: user.id, product_id: productId });
   return { success: true };
 }
 
@@ -537,39 +386,6 @@ export async function clearDbWishlist() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false };
-
-  await supabase.from("wishlist")
-    .delete()
-    .eq("customer_id", user.id);
-    
-  return { success: true };
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// Cart Sync via User Metadata
-// ═══════════════════════════════════════════════════════════════════
-export async function getDbCart() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, items: [] };
-
-  const cartData = user.user_metadata?.cart || [];
-  return { success: true, items: cartData };
-}
-
-export async function syncDbCart(items: any[]) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false };
-
-  const { error } = await supabase.auth.updateUser({
-    data: { cart: items }
-  });
-
-  if (error) {
-    console.error("Error syncing cart", error);
-    return { success: false, error: error.message };
-  }
-
+  await supabase.from("wishlist").delete().eq("customer_id", user.id);
   return { success: true };
 }

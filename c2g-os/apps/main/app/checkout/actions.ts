@@ -4,6 +4,45 @@ import { createClient } from "@/utils/supabase/server";
 import { CheckoutSchema } from "@/utils/security-schemas";
 import { secureLog } from "@/utils/logger";
 import { deductFromWallet } from "../dashboard/wallet/actions";
+import { alibabaRequest } from "@/lib/alibaba/client";
+
+export async function verifyCartInventory(items: any[]) {
+  // Check live inventory on Alibaba for each item in parallel
+  try {
+    const checks = items.map(async (item) => {
+      if (!item.productId) return { item, inStock: false };
+      
+      const payload = JSON.stringify({ product_id: item.productId });
+      const res = await alibabaRequest({
+        apiPath: '/eco/buyer/product/description',
+        params: { query_req: payload }
+      });
+      
+      const rawProduct = res?.result?.result_data;
+      if (!rawProduct) return { item, inStock: false };
+
+      // If variant was selected, check variant stock
+      if (item.variantId) {
+        const sku = (rawProduct.skus || []).find((s: any) => String(s.sku_id) === String(item.variantId));
+        return { item, inStock: !!sku }; // Dropshipping usually means unlimited stock if SKU exists
+      }
+      
+      return { item, inStock: true };
+    });
+
+    const results = await Promise.all(checks);
+    const outOfStock = results.filter(r => !r.inStock).map(r => r.item.name);
+    
+    if (outOfStock.length > 0) {
+      return { success: false, outOfStock };
+    }
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Live inventory check failed:", error);
+    return { success: false, error: "Failed to verify live inventory. Please try again." };
+  }
+}
 
 export async function createEcomOrder(orderData: any) {
   const supabase = await createClient();
@@ -22,173 +61,107 @@ export async function createEcomOrder(orderData: any) {
   }
 
   const validatedData = validation.data;
-  
-  // 1. Fetch fresh product data to get cost and importer info
-  const productIds = validatedData.items.map((item: any) => item.productId);
-  const { data: products, error: productsError } = await supabase
-    .from("products")
-    .select("id, importer_id, cost_price_cny, selling_price_ghs")
-    .in("id", productIds);
+  const exchangeRate = validatedData.exchangeRate || 1;
 
-  if (productsError) {
-    secureLog("Error fetching products", { error: productsError, productIds });
-  }
+  // 1. Map items exactly as they came from cart
+  // (We rely on Admin Manual Procurement verification to catch client price tampering)
+  let subtotal = 0;
+  let totalCostUsd = 0;
 
-  const productMap = new Map();
-  products?.forEach(p => productMap.set(String(p.id), p));
+  const items = validatedData.items.map((item: any) => {
+    // Security: Recalculate totals based on item payload
+    subtotal += (item.priceGhs * item.quantity);
+    totalCostUsd += (item.priceCny * item.quantity); // priceCny stores the USD price for Alibaba items
 
-  const variantIds = validatedData.items.filter((i: any) => i.variantId).map((i: any) => i.variantId);
-  const { data: variants, error: variantsError } = variantIds.length > 0 ? await supabase
-    .from("product_variants")
-    .select("id, cost_price_cny, selling_price_ghs")
-    .in("id", variantIds) : { data: [], error: null };
-    
-  if (variantsError) {
-    secureLog("Error fetching variants", { error: variantsError, variantIds });
-  }
-    
-  const variantMap = new Map();
-  variants?.forEach(v => variantMap.set(String(v.id), v));
-
-  // 2. Group items by importer_id
-  const itemsByImporter = new Map<string | null, any[]>();
-  
-  for (const item of validatedData.items) {
-    const productInfo = productMap.get(String(item.productId));
-    if (!productInfo) {
-      return { success: false, error: `One or more items in your cart (ID: ${item.productId}) are no longer available in the store. Please remove them from your cart to proceed.` };
-    }
-    
-    const importerId = productInfo.importer_id || null;
-    
-    // Server-side pricing enforcement
-    let trueSellingPriceGhs = productInfo.selling_price_ghs || item.priceGhs || 0;
-    let trueCostPriceCny = productInfo.cost_price_cny || item.priceCny || 0;
-
-    if (item.variantId) {
-      const variantInfo = variantMap.get(String(item.variantId));
-      if (variantInfo) {
-        if (variantInfo.selling_price_ghs) trueSellingPriceGhs = variantInfo.selling_price_ghs;
-        if (variantInfo.cost_price_cny) trueCostPriceCny = variantInfo.cost_price_cny;
-      }
-    }
-
-    const exchangeRate = validatedData.exchangeRate || 1;
-    const costPriceGhs = trueCostPriceCny / exchangeRate;
-    
-    const enrichedItem = {
+    return {
       ...item,
-      price: trueSellingPriceGhs,
-      price_cny: trueCostPriceCny,
-      cost_price_ghs: costPriceGhs,
+      price: item.priceGhs,
+      price_cny: item.priceCny,
+      cost_price_ghs: item.priceCny * exchangeRate,
       variant_id: item.variantId,
       product_id: item.productId,
       image_url: item.imageUrl,
       selectedOptions: item.combination,
     };
+  });
 
-    if (!itemsByImporter.has(importerId)) itemsByImporter.set(importerId, []);
-    itemsByImporter.get(importerId)?.push(enrichedItem);
+  const totalCostGhs = totalCostUsd * exchangeRate;
+  const totalProfitGhs = subtotal - totalCostGhs;
+
+  const totalAmount = subtotal + (validatedData.shippingCost || 0) + (validatedData.serviceFee || 0);
+
+  const orderPayload = {
+    customer_id: userId,
+    customer_name: validatedData.shippingName,
+    customer_phone: validatedData.shippingPhone,
+    customer_email: userEmail,
+    shipping_address: validatedData.shippingAddress,
+    shipping_notes: validatedData.shippingNotes || "",
+    shipping_method: validatedData.shippingMethod || "sea",
+    items: items,
+    subtotal: subtotal,
+    service_fee: validatedData.serviceFee || 0,
+    shipping_cost: validatedData.shippingCost || 0,
+    total_amount: totalAmount,
+    total_cost_ghs: totalCostGhs,
+    total_profit_ghs: totalProfitGhs,
+    importer_id: null, // C2G is the importer for Alibaba Gateway
+    rate_at_purchase: exchangeRate,
+    snapshot_price_usd: totalCostUsd, // Save the snapshot
+    snapshot_exchange_rate: exchangeRate,
+    payment_status: validatedData.paymentGateway === 'wallet' ? 'paid' : 'pending',
+    order_status: validatedData.paymentGateway === 'wallet' ? 'processing' : 'pending_payment',
+    payment_reference: validatedData.reference,
+    payment_gateway: validatedData.paymentGateway || 'hubtel'
+  };
+
+  const { data: ecomOrder, error } = await supabase
+    .from("ecom_orders")
+    .insert([orderPayload])
+    .select("id")
+    .single();
+
+  if (error) {
+    secureLog("Error creating ecom order", { error: error.message, payload: orderPayload });
+    return { success: false, error: error.message };
   }
+  
+  const createdOrderId = ecomOrder.id;
 
-  const createdOrderIds = [];
+  // 2. Format human readable ID
+  const idStr = String(createdOrderId).replace(/-/g, '');
+  const last4 = idStr.slice(-4);
+  const orderIdFormatted = `MALL-${last4.toUpperCase()}`;
+  
+  await supabase
+    .from("ecom_orders")
+    .update({ order_id: orderIdFormatted })
+    .eq("id", createdOrderId);
 
-  // 3. Create an order per importer
-  for (const [importerId, items] of Array.from(itemsByImporter.entries())) {
-    // Recalculate totals for this specific group securely
-    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const totalCostGhs = items.reduce((sum, item) => sum + (item.cost_price_ghs * item.quantity), 0);
-    const totalProfitGhs = subtotal - totalCostGhs;
-
-    // Prorate shipping/service fee
-    const splitRatio = validatedData.subtotal ? (subtotal / validatedData.subtotal) : 1;
-    const proratedShipping = (validatedData.shippingCost || 0) * splitRatio;
-    const proratedService = (validatedData.serviceFee || 0) * splitRatio;
-    const totalAmount = subtotal + proratedShipping + proratedService;
-
-    const orderPayload = {
-      customer_id: userId,
-      customer_name: validatedData.shippingName,
-      customer_phone: validatedData.shippingPhone,
-      customer_email: userEmail,
-      shipping_address: validatedData.shippingAddress,
-      shipping_notes: validatedData.shippingNotes || "",
-      shipping_method: validatedData.shippingMethod || "sea",
-      items: items,
-      subtotal: subtotal,
-      service_fee: proratedService,
-      shipping_cost: proratedShipping,
-      total_amount: totalAmount,
-      total_cost_ghs: totalCostGhs,
-      total_profit_ghs: totalProfitGhs,
-      importer_id: importerId,
-      rate_at_purchase: validatedData.exchangeRate,
-      payment_status: validatedData.paymentGateway === 'wallet' ? 'paid' : 'pending',
-      order_status: validatedData.paymentGateway === 'wallet' ? 'processing' : 'pending_payment',
-      payment_reference: validatedData.reference,
-      payment_gateway: validatedData.paymentGateway || 'hubtel'
-    };
-
-    const { data, error } = await supabase
-      .from("ecom_orders")
-      .insert([orderPayload])
-      .select("id")
-      .single();
-
-    if (error) {
-      secureLog("Error creating ecom order split", { error: error.message, payload: orderPayload });
-      return { success: false, error: error.message };
+  // 3. Queue the Procurement Job! (The Safety Net)
+  if (validatedData.paymentGateway === 'wallet') {
+    // If paid by wallet, it's instantly ready for admin approval
+    const { error: jobError } = await supabase.from('procurement_jobs').insert({
+      ecom_order_id: createdOrderId,
+      status: 'pending_approval'
+    });
+    if (jobError) {
+      console.error("Failed to insert procurement job:", jobError);
     }
-    
-    createdOrderIds.push(data.id);
   }
+  // (If paid by Hubtel, the webhook will insert the procurement_job when payment succeeds)
 
   // 4. Deduct from wallet if using wallet
   if (validatedData.paymentGateway === 'wallet') {
-    const sumTotalAmount = (validatedData.subtotal || 0) + (validatedData.shippingCost || 0) + (validatedData.serviceFee || 0);
-    const deductRes = await deductFromWallet(sumTotalAmount, 'mall_order', `Payment for Mall Order ${validatedData.reference}`, createdOrderIds[0]);
+    const deductRes = await deductFromWallet(totalAmount, 'mall_order', `Payment for Mall Order ${orderIdFormatted}`, createdOrderId);
     
     if (!deductRes.success) {
-      // Revert orders if deduction failed
-      for (const pid of createdOrderIds) {
-        await supabase.from("ecom_orders").delete().eq("id", pid);
-      }
+      await supabase.from("ecom_orders").delete().eq("id", createdOrderId);
       return { success: false, error: deductRes.error || "Wallet deduction failed" };
     }
   }
 
-  // We return the primary created ID (or a combined string if we want)
-  // For the payment reference, the webhook will update ALL orders with this reference.
-  for (const pid of createdOrderIds) {
-    const idStr = String(pid).replace(/-/g, '');
-    const last4 = idStr.slice(-4);
-    const orderIdFormatted = `MALL-${last4.toUpperCase()}`;
-    await supabase
-      .from("ecom_orders")
-      .update({ order_id: orderIdFormatted })
-      .eq("id", pid);
-  }
-
-  // Attempt to decrement stock (ignore errors if it fails to not block checkout)
-  for (const item of validatedData.items) {
-    if (item.variantId) {
-      await supabase.rpc('decrement_variant_stock', {
-        variant_id_to_update: item.variantId,
-        decrement_qty: item.quantity
-      });
-    } else {
-      await supabase.rpc('decrement_product_stock', {
-        product_id_to_update: item.productId,
-        decrement_qty: item.quantity
-      });
-    }
-  }
-
-  const primaryId = createdOrderIds[0];
-  const primaryIdStr = String(primaryId).replace(/-/g, '');
-  const primaryOrderIdFormatted = `MALL-${primaryIdStr.slice(-4).toUpperCase()}`;
-
-  // Create notification reliably
+  // Create notification
   try {
     const { createNotification } = await import('@/utils/notifications');
     const isWallet = validatedData.paymentGateway === 'wallet';
@@ -196,15 +169,15 @@ export async function createEcomOrder(orderData: any) {
       userId: userId,
       title: 'Order Placed successfully',
       message: isWallet 
-        ? `Your mall order #${primaryOrderIdFormatted} has been placed and paid successfully from your wallet.` 
-        : `Your mall order #${primaryOrderIdFormatted} has been placed and is pending payment.`,
+        ? `Your mall order #${orderIdFormatted} has been placed and paid successfully.` 
+        : `Your mall order #${orderIdFormatted} has been placed and is pending payment.`,
       type: 'ecom_order_created',
       priority: isWallet ? 'important' : 'info',
-      link: `/dashboard/orders/mall/${primaryId}`
+      link: `/dashboard/orders/mall/${createdOrderId}`
     });
   } catch(e) {
     console.warn('Failed to dispatch notification:', e);
   }
 
-  return { success: true, orderId: primaryOrderIdFormatted, id: primaryId };
+  return { success: true, orderId: orderIdFormatted, id: createdOrderId };
 }

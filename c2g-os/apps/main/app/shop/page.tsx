@@ -286,15 +286,15 @@ function EmptyProducts() {
       <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-5">
         <ShoppingBag className="w-10 h-10 text-muted-foreground" />
       </div>
-      <h3 className="text-xl font-bold mb-2">No Products Yet</h3>
+      <h3 className="text-xl font-bold mb-2">Search the Global Market</h3>
       <p className="text-muted-foreground text-sm max-w-sm mb-6">
-        Products are being added by importers. Check back soon for amazing deals!
+        Search above to instantly browse millions of products from verified global suppliers. 
       </p>
       <Link
         href="/dashboard/link-orders/new"
         className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
       >
-        Request an Item <ArrowRight className="w-4 h-4" />
+        Paste a Link Instead <ArrowRight className="w-4 h-4" />
       </Link>
     </div>
   );

@@ -43,6 +43,7 @@ export const ADMIN_NAV_GROUPS = [
   {
     group: 'Global Orders',
     items: [
+      { name: 'Alibaba Procurement', href: '/admin/alibaba-orders', icon: PackageSearch },
       { name: 'Link Orders', href: '/admin/global-orders/link-orders', icon: LinkIcon },
       { name: 'Mall Orders', href: '/admin/global-orders/mall-orders', icon: Store },
     ]
@@ -76,6 +77,7 @@ export const ADMIN_NAV_GROUPS = [
     items: [
       { name: 'Reports', href: '/admin/analytics/reports', icon: FileText },
       { name: 'Performance', href: '/admin/analytics/performance', icon: BarChart4 },
+      { name: 'API Monitoring', href: '/admin/api-monitoring', icon: Activity },
       { name: 'Global Settings', href: '/admin/system/settings', icon: Settings },
       { name: 'Audit Logs', href: '/admin/system/audit', icon: FileText },
     ]

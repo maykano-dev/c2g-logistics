@@ -1,4 +1,4 @@
-import { getProductDetails, getSimilarProducts } from "../../actions";
+import { getProductDetails } from "../../actions";
 import {
   ChevronLeft,
   ShieldCheck,
@@ -81,26 +81,38 @@ export default async function ProductPage({
   }
 
   // Parse combination options if any
-  const variants = product.product_variants || [];
+  const variants = product.variants || [];
   const hasVariants = variants.length > 0;
 
   const optionTypes = new Set<string>();
   const variantImages: any[] = [];
   
   variants.forEach((v: any) => {
-    let combo = v.combination || v.variant_options; // Fallback to legacy variant_options
+    let combo = v.combination || v.variant_options; 
     
     if (typeof combo === 'string') {
       try {
         combo = JSON.parse(combo);
       } catch (e) {
-        combo = null;
+        // Just use it as string if it's not JSON
       }
     }
     
     v.combination = combo; // Mutate for downstream use (ProductOptions)
     
-    if (combo && typeof combo === 'object') {
+    // For Alibaba Dropshipping, combinations often come as "Color:Red / Size:XL"
+    // Let's parse that into object if it's a slash-separated string
+    if (typeof combo === 'string' && combo.includes(':')) {
+       const parsedCombo: any = {};
+       combo.split(' / ').forEach(part => {
+          const [k, val] = part.split(':');
+          if (k && val) {
+             parsedCombo[k.trim()] = val.trim();
+             optionTypes.add(k.trim());
+          }
+       });
+       v.combination = parsedCombo;
+    } else if (combo && typeof combo === 'object') {
       Object.keys(combo).forEach((k) => optionTypes.add(k));
     }
     
@@ -114,17 +126,25 @@ export default async function ProductPage({
     }
   });
 
+  // Map Alibaba raw images to the shape ProductImages expects
+  const mainGalleryImages = (product.images || []).map((imgUrl: string, idx: number) => ({
+    id: `main-img-${idx}`,
+    image_url: imgUrl,
+    is_primary: idx === 0,
+    media_type: 'image'
+  }));
+
   // Merge variant images into product images for the gallery
-  const rawImages = [...(product.product_images || []), ...variantImages];
+  const rawImages = [...mainGalleryImages, ...variantImages];
   
   // Fully deduplicate all images by URL
   const allImages = rawImages.filter((img, index, self) => 
     index === self.findIndex((t) => t.image_url === img.image_url)
   );
 
-  // Fetch similar products
-  const { products: similarProducts, exchangeRate: simExRate } =
-    await getSimilarProducts(String(product.id), product.category);
+  // Fetch similar products (Temporarily disabled due to missing export)
+  const similarProducts: any[] = [];
+  const simExRate = exchangeRate;
 
   return (
     <div className="bg-background min-h-screen pb-24 md:pb-8">
@@ -159,13 +179,31 @@ export default async function ProductPage({
               {product.name}
             </h1>
 
+            {/* Trust Score & Badges */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className={`px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 border ${
+                product.trustScore >= 80 ? "bg-green-500/10 text-green-600 border-green-500/20" :
+                product.trustScore >= 60 ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
+                "bg-amber-500/10 text-amber-600 border-amber-500/20"
+              }`}>
+                <ShieldCheck className="w-4 h-4" />
+                C2G Quality Score: {product.trustScore}/100
+              </div>
+              
+              {product.trustBadges?.map((badge: string, idx: number) => (
+                <span key={idx} className="px-2 py-1 bg-secondary text-secondary-foreground text-[10px] font-semibold rounded-md border border-border/50">
+                  {badge} Verified
+                </span>
+              ))}
+            </div>
+
             {/* Rating + Stock */}
             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/50 flex-wrap">
               <ProductReviews productId={product.id.toString()} reviews={product.reviews || []} isLoggedIn={isLoggedIn} />
               
               <div className="w-px h-4 bg-border" />
-              <span className="text-xs text-muted-foreground">
-                {product.sales_count || 0} sold
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                {product.wholesale_volume || product.sales_count || 0} wholesale orders
               </span>
               <div className="w-px h-4 bg-border" />
               <span

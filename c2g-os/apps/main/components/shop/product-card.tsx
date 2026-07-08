@@ -38,57 +38,35 @@ export default function ProductCard({
   const isWishlisted = isInWishlist(String(product.id));
   const { addToCart } = useCart();
 
-  const images =
-    product.product_images?.filter(
-      (img: any) => img.media_type !== "video"
-    ) || [];
-  const primaryImage =
-    images.find((img: any) => img.is_primary) ||
-    images[0] ||
-    product.product_images?.[0];
-  const imageUrl =
-    primaryImage?.image_url ||
-    "https://placehold.co/400x400/1a1a2e/6c757d?text=No+Image";
+  // New Smart Gateway Shape directly provides image_url and selling_price_ghs
+  const imageUrl = product.image_url || "https://placehold.co/400x400/1a1a2e/6c757d?text=No+Image";
 
-  const hasVariants =
-    product.product_variants && product.product_variants.length > 0;
+  // Alibaba search API doesn't return variants in the list view, only in details
+  const hasVariants = false; 
 
-  const priceGhs = product.selling_price_ghs !== null && product.selling_price_ghs !== undefined 
-    ? parseFloat(product.selling_price_ghs)
-    : product.price !== null && product.price !== undefined 
-      ? parseFloat(product.price) 
-      : 0;
+  const priceGhs = product.selling_price_ghs || 0;
+  const priceUsd = product.price || 0; 
 
-  const priceCny = product.cost_price_cny !== null && product.cost_price_cny !== undefined
-    ? parseFloat(product.cost_price_cny)
-    : product.price_cny !== null && product.price_cny !== undefined
-      ? parseFloat(product.price_cny)
-      : priceGhs * exchangeRate; // fallback
-
-  const salesCount = product.sales_count || 0;
-  const viewCount = product.view_count || 0;
+  const salesCount = product.purchase_count || product.sales_count || 0;
   const demandLabel = product.demandLabel || "low";
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (hasVariants) return;
     addToCart({
       id: String(product.id),
       productId: String(product.id),
       name: product.name,
       imageUrl,
       priceGhs,
-      priceCny,
+      priceCny: priceUsd, // We use priceCny field in cart to store USD for now until cart is refactored
       quantity: 1,
-      stock: product.stock || 10,
+      stock: 999, // Dropshipping assumption
     });
   };
 
   const pathname = usePathname();
-  const isStore = pathname.startsWith("/store/");
-  const storeSlug = isStore ? pathname.split("/")[2] : null;
-  const productUrl = storeSlug ? `/shop/product/${product.id}?store=${storeSlug}` : `/shop/product/${product.id}`;
+  const productUrl = `/shop/product/${product.id}`;
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -101,8 +79,7 @@ export default function ProductCard({
         name: product.name,
         imageUrl,
         priceGhs,
-        priceCny,
-        storeSlug: storeSlug || undefined,
+        priceCny: priceUsd,
       });
     }
   };
