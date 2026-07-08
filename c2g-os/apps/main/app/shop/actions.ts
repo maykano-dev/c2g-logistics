@@ -57,13 +57,13 @@ function mapAlibabaToC2g(alibabaProduct: any, exchangeRate: number) {
   // Use product_id (obfuscated string) as the ID for detail page navigation
   // so that alibaba.icbu.product.get can look it up correctly
   return {
-    id:               alibabaProduct.product_id || String(alibabaProduct.id),
-    name:             normalizeProductTitle(alibabaProduct.subject || alibabaProduct.title || "Unknown Product"),
-    price:            usdPrice,
+    id:                alibabaProduct.product_id || String(alibabaProduct.id),
+    name:              normalizeProductTitle(alibabaProduct.subject || alibabaProduct.title || "Unknown Product"),
+    price:             usdPrice,
     selling_price_ghs: usdPrice * exchangeRate,
-    image_url:        imageUrl,
-    is_alibaba:       true, // Flag so frontend knows it's an API product
-    pc_detail_url:    alibabaProduct.pc_detail_url || null,
+    image_url:         imageUrl,
+    is_alibaba:        true, // Flag so frontend knows it's an API product
+    // NOTE: pc_detail_url intentionally NOT included — white-labeling requirement
   };
 }
 
