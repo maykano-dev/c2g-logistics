@@ -26,11 +26,8 @@ export default function ProductReviews({ productId, reviews = [], isLoggedIn }: 
     
     setIsSubmitting(true);
     try {
-      // Temporarily mock the submission result until the action is implemented
-      // const { submitProductReview } = await import("../../app/shop/actions");
-      // const result = await submitProductReview(productId, rating, reviewText);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const result: any = { success: true, error: null };
+      const { submitProductReview } = await import("../../app/shop/actions");
+      const result = await submitProductReview(productId, rating, reviewText);
       
       if (result.success) {
         setSubmitSuccess(true);

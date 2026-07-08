@@ -322,6 +322,38 @@ export async function getShippingRecommendation(weightKg?: number, volumeCbm?: n
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Similar Products & Reviews
+// ═══════════════════════════════════════════════════════════════════
+export async function getSimilarProducts(productId: string, category?: string) {
+  if (category) {
+    const res = await getShopProducts({ category, page: 1 });
+    const filtered = res.products.filter(p => String(p.id) !== productId);
+    return { products: filtered.slice(0, 8), exchangeRate: res.exchangeRate };
+  }
+  return { products: [], exchangeRate: 1 };
+}
+
+export async function submitProductReview(productId: string, rating: number, reviewText: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Must be logged in" };
+
+  try {
+    const { error } = await supabase.from('product_reviews').insert({
+      product_id: productId,
+      user_id: user.id,
+      rating,
+      review_text: reviewText,
+      is_approved: false
+    });
+    if (error) throw error;
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to submit review" };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Wishlist & Cart Sync (UNCHANGED)
 // ═══════════════════════════════════════════════════════════════════
 export async function getDbCart() {

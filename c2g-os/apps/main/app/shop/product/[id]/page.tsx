@@ -1,4 +1,4 @@
-import { getProductDetails } from "../../actions";
+import { getProductDetails, getSimilarProducts } from "../../actions";
 import {
   ChevronLeft,
   ShieldCheck,
@@ -144,9 +144,9 @@ export default async function ProductPage({
     index === self.findIndex((t) => t.image_url === img.image_url)
   );
 
-  // Fetch similar products (Temporarily disabled due to missing export)
-  const similarProducts: any[] = [];
-  const simExRate = exchangeRate;
+  // Fetch similar products
+  const { products: similarProducts, exchangeRate: simExRate } =
+    await getSimilarProducts(String(product.id), product.category);
 
   return (
     <div className="bg-background min-h-screen pb-24 md:pb-8">
