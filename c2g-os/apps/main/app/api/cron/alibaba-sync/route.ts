@@ -63,22 +63,24 @@ export async function GET(request: Request) {
         // Fetch and insert new ones
         for (const id of newIds) {
           try {
+            // alibaba.icbu.product.get — required params: language, product_id
             const req = await alibabaRequest({
-              apiPath: '/eco/buyer/product/description',
-              params: { query_req: JSON.stringify({ product_id: id }) }
+              apiMethod: 'alibaba.icbu.product.get',
+              params: { language: 'ENGLISH', product_id: id }
             });
-            const p = req?.result?.result_data;
+            const p = req?.alibaba_icbu_product_get_response?.product;
             if (p) {
-               await supabase.from('products').insert({
-                 id: id,
-                 title: p.title,
-                 slug: `auto-promoted-${id}`,
-                 thumbnail_url: p.main_image,
-                 price_snapshot_usd: parseFloat(p.wholesale_trade?.price || 0),
-                 catalog_type: 'promoted',
-                 purchase_count: 1
-               });
-               promotedProducts++;
+              const mainImage = (p.main_image?.images || [])[0] || '';
+              await supabase.from('products').insert({
+                id: id,
+                title: p.subject || 'Unknown Product',
+                slug: `auto-promoted-${id}`,
+                thumbnail_url: mainImage,
+                price_snapshot_usd: parseFloat(p.wholesale_trade?.price || p.sourcing_trade?.fob_min_price || '0'),
+                catalog_type: 'promoted',
+                purchase_count: 1
+              });
+              promotedProducts++;
             }
           } catch (e) {
             console.error("Auto-promotion failed for:", id, e);
@@ -122,13 +124,13 @@ export async function GET(request: Request) {
       for (const order of pendingOrders) {
         try {
           // Fetch from Alibaba Logistics API
-          const payload = JSON.stringify({ order_id: order.alibaba_trade_id });
+          // alibaba.seller.order.logistics.get — logistics for a seller order
           const logRes = await alibabaRequest({
-            apiPath: '/order/logistics/tracking/get',
-            params: { query_req: payload }
+            apiMethod: 'alibaba.seller.order.logistics.get',
+            params: { order_id: order.alibaba_trade_id }
           });
 
-          const trackingData = logRes?.result?.result_data;
+          const trackingData = logRes?.alibaba_seller_order_logistics_get_response?.logistics_order_list?.[0];
           
           if (trackingData && trackingData.tracking_number) {
             await supabase
@@ -164,12 +166,14 @@ export async function GET(request: Request) {
 
     if (needsSync) {
       try {
+        // alibaba.icbu.category.get — get product post categories
         const catRes = await alibabaRequest({
-          apiPath: '/icbu/product/category/get',
-          params: { cat_id: '0' } // Get root categories
+          apiMethod: 'alibaba.icbu.category.get',
+          params: { language: 'ENGLISH' } // language required by category APIs
         });
 
-        const categories = catRes?.result?.category_info_list;
+        // Response shape: alibaba_icbu_category_get_response.children[]
+        const categories = catRes?.alibaba_icbu_category_get_response?.children;
         
         if (categories && Array.isArray(categories)) {
           const insertData = categories.map((cat: any) => ({

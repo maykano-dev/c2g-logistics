@@ -12,19 +12,20 @@ export async function verifyCartInventory(items: any[]) {
     const checks = items.map(async (item) => {
       if (!item.productId) return { item, inStock: false };
       
-      const payload = JSON.stringify({ product_id: item.productId });
+      // alibaba.icbu.product.get — required: language, product_id
       const res = await alibabaRequest({
-        apiPath: '/eco/buyer/product/description',
-        params: { query_req: payload }
+        apiMethod: 'alibaba.icbu.product.get',
+        params: { language: 'ENGLISH', product_id: item.productId }
       });
       
-      const rawProduct = res?.result?.result_data;
+      const rawProduct = res?.alibaba_icbu_product_get_response?.product;
       if (!rawProduct) return { item, inStock: false };
 
-      // If variant was selected, check variant stock
+      // If variant was selected, check variant stock via SKU list
       if (item.variantId) {
-        const sku = (rawProduct.skus || []).find((s: any) => String(s.sku_id) === String(item.variantId));
-        return { item, inStock: !!sku }; // Dropshipping usually means unlimited stock if SKU exists
+        const skus = rawProduct.product_sku?.skus || [];
+        const sku = skus.find((s: any) => String(s.sku_id) === String(item.variantId));
+        return { item, inStock: !!sku };
       }
       
       return { item, inStock: true };

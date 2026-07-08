@@ -49,15 +49,15 @@ export async function procureOrder(jobId: string) {
   };
 
   try {
-    // 4. Call Alibaba API
+    // alibaba.trade.order.create — official ICBU trade order creation API (from docs)
     const response = await alibabaRequest({
-      apiPath: "/buynow/order/create",
+      apiMethod: 'alibaba.trade.order.create',
       params: { 
-        channel_refer_id: payload.channel_refer_id,
-        product_list: JSON.stringify(payload.product_list),
-        logistics_detail: JSON.stringify(payload.logistics_detail),
-        remark: payload.remark,
-        properties: payload.properties
+        channel_refer_id:  payload.channel_refer_id,
+        product_list:      JSON.stringify(payload.product_list),
+        logistics_detail:  JSON.stringify(payload.logistics_detail),
+        remark:            payload.remark,
+        properties:        payload.properties
       }
     });
 

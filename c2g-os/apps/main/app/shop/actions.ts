@@ -35,19 +35,35 @@ function hashQuery(query: string): string {
 }
 
 // Map Alibaba search results to our C2G Product UI shape
+// Field names are from the official alibaba.icbu.product.list response docs:
+//   - subject       → product name (NOT "title")
+//   - product_id    → obfuscated string ID (used for alibaba.icbu.product.get calls)
+//   - id            → numeric plain ID
+//   - main_image.images[] → array of image URL strings
+//   - wholesale_trade.price / sourcing_trade.fob_min_price → USD price
 function mapAlibabaToC2g(alibabaProduct: any, exchangeRate: number) {
-  // ICBU product list API sometimes omits price in the brief search result, 
-  // we will show "View for Price" (price=0) until they click into it.
-  const usdPrice = parseFloat(alibabaProduct.price || alibabaProduct.fob_price || "0");
-  const imageUrl = alibabaProduct.main_image?.images?.[0] || alibabaProduct.main_image?.url || alibabaProduct.thumbnail_url || "https://placehold.co/300";
-  
+  // Price: brief list response often omits price — show 0 until user views detail page
+  const usdPrice = parseFloat(
+    alibabaProduct.wholesale_trade?.price ||
+    alibabaProduct.sourcing_trade?.fob_min_price ||
+    alibabaProduct.price ||
+    "0"
+  );
+  // Image: main_image.images is an array of strings per docs
+  const imageUrl = (alibabaProduct.main_image?.images || [])[0] ||
+    alibabaProduct.thumbnail_url ||
+    "https://placehold.co/300";
+
+  // Use product_id (obfuscated string) as the ID for detail page navigation
+  // so that alibaba.icbu.product.get can look it up correctly
   return {
-    id: alibabaProduct.product_id || alibabaProduct.id,
-    name: normalizeProductTitle(alibabaProduct.title || alibabaProduct.subject || "Unknown Product"),
-    price: usdPrice,
+    id:               alibabaProduct.product_id || String(alibabaProduct.id),
+    name:             normalizeProductTitle(alibabaProduct.subject || alibabaProduct.title || "Unknown Product"),
+    price:            usdPrice,
     selling_price_ghs: usdPrice * exchangeRate,
-    image_url: imageUrl,
-    is_alibaba: true // Flag so frontend knows it's an API product
+    image_url:        imageUrl,
+    is_alibaba:       true, // Flag so frontend knows it's an API product
+    pc_detail_url:    alibabaProduct.pc_detail_url || null,
   };
 }
 
@@ -142,19 +158,29 @@ export async function getShopProducts(params?: {
     } else {
       // CACHE MISS -> Call Alibaba API
       try {
-        // Use the ICBU product list endpoint for Alibaba.com
+        // alibaba.icbu.product.list — official ICBU product search API
+        // Required params per docs: language (must be 'ENGLISH')
+        // Optional: subject (fuzzy name search), current_page, page_size (max 30)
         const res = await alibabaRequest({
-          apiPath: '/alibaba/icbu/product/list',
-          params: { subject: params.query, page_size: 20, current_page: 1 }
+          apiMethod: 'alibaba.icbu.product.list',
+          params: {
+            subject:      params.query,
+            language:     'ENGLISH',  // Required — only value supported per docs
+            page_size:    20,
+            current_page: 1,
+          }
         });
 
-        if (res?.result?.products) {
-          const rawProducts = res.result.products;
-          
+        // Response shape (simplify=true): alibaba_icbu_product_list_response.products[]
+        // Each product has: id, product_id, subject, main_image.images[], status, pc_detail_url
+        const responseWrapper = res?.alibaba_icbu_product_list_response;
+        const rawProducts: any[] = responseWrapper?.products || [];
+
+        if (rawProducts.length > 0) {
           // Trust Filter & Scrubber
           const trusted = await filterTrustedProducts(rawProducts);
           const scrubbed = trusted.map(stripSupplierData);
-          
+
           alibabaProducts = scrubbed.map((p: any) => mapAlibabaToC2g(p, exchangeRate));
 
           // Save to Cache (TTL 12 hours)
@@ -162,10 +188,10 @@ export async function getShopProducts(params?: {
           expiresAt.setHours(expiresAt.getHours() + 12);
 
           await supabase.from("search_query_cache").upsert({
-            query_hash: qHash,
-            query_text: params.query,
+            query_hash:  qHash,
+            query_text:  params.query,
             result_data: scrubbed,
-            expires_at: expiresAt.toISOString()
+            expires_at:  expiresAt.toISOString()
           });
         }
       } catch (e) {
@@ -197,32 +223,22 @@ export async function getProductDetails(id: string) {
   const exchangeRate = await getExchangeRate(supabase);
 
   try {
-    // Call Alibaba for the live description and variants
-    // According to docs, param is 'query_req'
-    const descPayload = JSON.stringify({ product_id: id });
-    const descRes = await alibabaRequest({
-      apiPath: '/eco/buyer/product/description',
-      params: { query_req: descPayload }
+    // alibaba.icbu.product.get — official ICBU product detail API
+    // Required params per docs: language ('ENGLISH'), product_id (obfuscated string ID)
+    const res = await alibabaRequest({
+      apiMethod: 'alibaba.icbu.product.get',
+      params: {
+        language:   'ENGLISH',  // Required — only value supported per docs
+        product_id: id,         // The obfuscated product_id string from search results
+      }
     });
 
-    const certPayload = JSON.stringify({ product_id: id });
-    let certData: any[] = [];
-    try {
-      const certRes = await alibabaRequest({
-        apiPath: '/eco/buyer/product/cert',
-        params: { req: certPayload }
-      });
-      certData = certRes?.result?.result_data || [];
-    } catch(e) {
-      // Cert failure shouldn't crash the whole page, just lower trust score
-      console.warn("Could not fetch certs for", id);
-    }
-
-    const rawProduct = descRes?.result?.result_data;
+    // Response shape: alibaba_icbu_product_get_response.product
+    const rawProduct = res?.alibaba_icbu_product_get_response?.product;
     if (!rawProduct) throw new Error("Product not found on Alibaba");
 
-    // 1. Calculate Trust Score strictly using what's available
-    const trustEval = calculateTrustScore(rawProduct, certData);
+    // 1. Calculate Trust Score
+    const trustEval = calculateTrustScore(rawProduct, []);
     if (!trustEval.passed) {
       throw new Error(`This product failed C2G's security and quality checks. (${trustEval.reasons.join(", ")})`);
     }
@@ -231,29 +247,59 @@ export async function getProductDetails(id: string) {
     const safeProduct = stripSupplierData(rawProduct);
 
     // 3. Map to C2G Frontend Structure
-    // Convert Alibaba's skus array to our variant format
-    const variants = (safeProduct.skus || []).map((sku: any) => {
-      const priceUsd = parseFloat(sku.cost_discount_price || sku.total_origin_cost_price || "0");
-      const attrs = (sku.sku_attr_list || []).map((a: any) => a.attr_value_desc).join(" / ");
+    // ICBU product.get response: main_image.images[], product_sku.skus[], wholesale_trade, sourcing_trade
+    const rawImages = (safeProduct as any).main_image?.images;
+    const mainImages: string[] = Array.isArray(rawImages) ? rawImages : [];
+
+    // SKU variants from product_sku.skus[]
+    const skuDefs = safeProduct.product_sku?.skus || [];
+    const variants = skuDefs.map((sku: any) => {
+      // Price from bulk_discount_prices[0].price (USD) or wholesale_trade.price
+      const priceUsd = parseFloat(
+        sku.bulk_discount_prices?.[0]?.price ||
+        safeProduct.wholesale_trade?.price ||
+        safeProduct.sourcing_trade?.fob_min_price ||
+        '0'
+      );
+      // SKU attribute combination label (e.g. "Red / XL")
+      const attrLabel = sku.attr2_value ? String(sku.attr2_value) : 'Standard';
       return {
-        id: sku.sku_id,
-        combination: attrs,
+        id: String(sku.sku_id || sku.sku_code || 'default'),
+        combination: attrLabel,
         price: priceUsd,
         selling_price_ghs: priceUsd * exchangeRate,
-        image_url: sku.image,
-        stock: 999 // Dropshipping assume stock until live cart check
+        image_url: mainImages[0] || '',
+        stock: 999 // Dropshipping: assume available until cart check
       };
     });
 
+    // Fallback: if no SKUs, create one variant from wholesale/sourcing trade info
+    if (variants.length === 0) {
+      const priceUsd = parseFloat(
+        safeProduct.wholesale_trade?.price ||
+        safeProduct.sourcing_trade?.fob_min_price ||
+        '0'
+      );
+      variants.push({
+        id: 'default',
+        combination: 'Standard',
+        price: priceUsd,
+        selling_price_ghs: priceUsd * exchangeRate,
+        image_url: mainImages[0] || '',
+        stock: 999
+      });
+    }
+
     const mappedProduct = {
-      id: safeProduct.product_id || id,
-      name: safeProduct.title,
-      description: safeProduct.description,
-      images: [safeProduct.main_image, ...(safeProduct.images || [])].filter(Boolean),
+      id:               safeProduct.product_id || id,
+      name:             normalizeProductTitle(safeProduct.subject || 'Unknown Product'),
+      description:      safeProduct.description || '',
+      images:           mainImages,
       variants,
+      category:         safeProduct.category_id,
       wholesale_volume: safeProduct.wholesale_trade?.volume,
-      trustScore: trustEval.score,
-      trustBadges: certData.map(c => c.cert_name)
+      trustScore:       trustEval.score,
+      trustBadges:      [] as string[],
     };
 
     // Track View Count (For Auto-Promotion Engine)
