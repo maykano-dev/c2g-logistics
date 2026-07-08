@@ -160,7 +160,7 @@ export async function GET(request: Request) {
       .limit(1);
 
     const needsSync = !catCheck || catCheck.length === 0 || 
-      (new Date(catCheck[0].last_synced).getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000);
+      (new Date(catCheck[0]?.last_synced || 0).getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     if (needsSync) {
       try {

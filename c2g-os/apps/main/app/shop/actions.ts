@@ -257,7 +257,11 @@ export async function getProductDetails(id: string) {
     };
 
     // Track View Count (For Auto-Promotion Engine)
-    await supabase.rpc('increment_view_count', { p_id: id }).catch(() => {});
+    try {
+      await supabase.rpc('increment_view_count', { p_id: id });
+    } catch (e) {
+      // Ignore
+    }
 
     return { success: true, product: mappedProduct, exchangeRate };
 

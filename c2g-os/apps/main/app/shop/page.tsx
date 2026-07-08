@@ -46,7 +46,7 @@ export default async function ShopPage({
       getSecureWalletBalance(),
     ]);
 
-  const { products, exchangeRate, error, currentPage, totalPages } = allProductsResult;
+  const { products, exchangeRate, currentPage, totalPages } = allProductsResult;
   const { products: topPurchasedProducts } = topPurchasedResult;
   const { products: trendingProducts } = trendingResult;
   const { products: newProducts } = newArrivalsResult;
@@ -211,11 +211,7 @@ export default async function ShopPage({
             </div>
           </div>
 
-          {error && (
-            <div className="p-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/30 mb-6 text-sm">
-              Failed to load products: {error}
-            </div>
-          )}
+
 
           {hasProducts ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
