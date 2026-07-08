@@ -2,96 +2,88 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * Alibaba ICBU API Client
+ * AliExpress Open Platform API Client
  *
- * Built precisely against the official Alibaba.com developer documentation:
- * https://developer.alibaba.com/en/doc.htm
+ * Built against the official AliExpress Open Platform documentation:
+ * https://openservice.aliexpress.com/doc/api.htm
  *
- * Gateway: https://eco.taobao.com/router/rest  (TOP/ICBU Single-Endpoint Gateway)
+ * Gateway:  https://api-sg.aliexpress.com/sync  (International Singapore gateway)
  *
- * Key facts from docs:
- * - All ICBU APIs use a single POST endpoint — routing is done via the `method` parameter.
- * - Required system params: method, app_key, timestamp, v, sign_method, sign
- * - Timestamp must be "yyyy-MM-dd HH:mm:ss" in GMT+8
- * - Access token is passed as the `session` parameter
- * - Signature: HMAC-SHA256 of sorted key-value pairs (no path prefix)
- * - Always POST with application/x-www-form-urlencoded body
+ * Key protocol facts:
+ * - All requests are POST to the single gateway endpoint
+ * - Required system params: app_key, method, timestamp, sign_method, sign, v, format
+ * - Timestamp: Unix milliseconds (NOT yyyy-MM-dd HH:mm:ss — AliExpress uses ms)
+ * - Signature: HMAC-SHA256 of (apiPath + sortedKeyValuePairs) in UPPERCASE hex
+ * - Access token passed as the `session` parameter
+ * - Response envelope wraps result in the method name key
  */
 
-const ALIBABA_APP_KEY = process.env.ALIBABA_APP_KEY;
-const ALIBABA_APP_SECRET = process.env.ALIBABA_APP_SECRET;
+const ALIEXPRESS_APP_KEY    = process.env.ALIEXPRESS_APP_KEY;
+const ALIEXPRESS_APP_SECRET = process.env.ALIEXPRESS_APP_SECRET;
 
-// Official ICBU/TOP gateway URL per documentation CURL examples
-const ALIBABA_GATEWAY = 'https://eco.taobao.com/router/rest';
+// Official AliExpress Open Platform International Gateway
+const ALIEXPRESS_GATEWAY = 'https://api-sg.aliexpress.com/sync';
 
-interface AlibabaRequestOptions {
-  /** The API method name, e.g. 'alibaba.icbu.product.list' */
+// OAuth endpoints (AliExpress Open Platform)
+export const ALIEXPRESS_AUTH_URL   = 'https://oauth.aliexpress.com/authorize';
+export const ALIEXPRESS_TOKEN_URL  = 'https://oauth.aliexpress.com/token';
+
+export interface AliExpressRequestOptions {
+  /** API method path, e.g. '/aliexpress/ds/product/get' */
   apiMethod: string;
-  /** Business-specific parameters for this API call */
+  /** Business parameters for this API call */
   params?: Record<string, any>;
   /** Optional: provide access token directly (otherwise auto-fetched from Supabase) */
   accessToken?: string;
 }
 
 /**
- * Formats the current time as "yyyy-MM-dd HH:mm:ss" in UTC+8 (GMT+8)
- * Required by Alibaba — server allows max 10 minutes of drift.
- */
-function getTimestampGMT8(): string {
-  const now = new Date();
-  // UTC+8 offset = 8 * 60 * 60 * 1000 ms
-  const gmt8 = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-  const yyyy = gmt8.getUTCFullYear();
-  const MM   = String(gmt8.getUTCMonth() + 1).padStart(2, '0');
-  const dd   = String(gmt8.getUTCDate()).padStart(2, '0');
-  const HH   = String(gmt8.getUTCHours()).padStart(2, '0');
-  const mm   = String(gmt8.getUTCMinutes()).padStart(2, '0');
-  const ss   = String(gmt8.getUTCSeconds()).padStart(2, '0');
-  return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
-}
-
-/**
- * Generates the Alibaba ICBU/TOP API HMAC-SHA256 signature.
+ * Generates the AliExpress Open Platform HMAC-SHA256 signature.
  *
- * Algorithm (per official docs):
- * 1. Sort all parameters alphabetically by key (including 'method', 'app_key', etc.)
- * 2. Concatenate as key1value1key2value2... (no separators)
- * 3. HMAC-SHA256 with ALIBABA_APP_SECRET as the key
- * 4. Return as uppercase hex
+ * Algorithm (per official AliExpress docs):
+ * 1. Sort all parameters alphabetically by key
+ * 2. Concatenate as key1value1key2value2...
+ * 3. Prepend the API path (e.g. "/aliexpress/ds/product/get")
+ * 4. HMAC-SHA256 with ALIEXPRESS_APP_SECRET as key
+ * 5. Return as UPPERCASE hex
  *
- * NOTE: Unlike some IOP gateways, the TOP gateway does NOT prepend the API path.
- * The 'method' parameter is already included in the sorted param list.
+ * IMPORTANT: AliExpress requires the API path prefix. This differs from
+ * the old Alibaba ICBU/TOP gateway which did NOT use a path prefix.
  */
-function generateSignature(params: Record<string, string>): string {
-  if (!ALIBABA_APP_SECRET) throw new Error('ALIBABA_APP_SECRET is missing from environment variables.');
+function generateSignature(apiPath: string, params: Record<string, string>): string {
+  if (!ALIEXPRESS_APP_SECRET) {
+    throw new Error('ALIEXPRESS_APP_SECRET is missing from environment variables.');
+  }
 
   // Sort keys alphabetically
   const sortedKeys = Object.keys(params).sort();
 
-  // Concatenate all key-value pairs
-  const concatenated = sortedKeys.reduce((acc, key) => acc + key + params[key], '');
+  // Build the string: API_PATH + key1value1key2value2...
+  const concatenated = apiPath + sortedKeys.reduce((acc, key) => acc + key + params[key], '');
 
   // HMAC-SHA256 with secret as key, return uppercase hex
-  const hmac = crypto.createHmac('sha256', ALIBABA_APP_SECRET);
+  const hmac = crypto.createHmac('sha256', ALIEXPRESS_APP_SECRET);
   hmac.update(concatenated, 'utf8');
   return hmac.digest('hex').toUpperCase();
 }
 
 /**
- * Executes a request to the Alibaba ICBU Open Platform via the TOP gateway.
+ * Executes a signed request to the AliExpress Open Platform gateway.
  *
- * All requests are POST to https://eco.taobao.com/router/rest with
+ * All requests POST to https://api-sg.aliexpress.com/sync with
  * application/x-www-form-urlencoded body.
  */
-export async function alibabaRequest<T = any>({
+export async function aliExpressRequest<T = any>({
   apiMethod,
   params = {},
   accessToken,
-}: AlibabaRequestOptions): Promise<T> {
-  if (!ALIBABA_APP_KEY) throw new Error('ALIBABA_APP_KEY is missing from environment variables.');
+}: AliExpressRequestOptions): Promise<T> {
+  if (!ALIEXPRESS_APP_KEY) {
+    throw new Error('ALIEXPRESS_APP_KEY is missing from environment variables.');
+  }
 
-  // Auto-fetch access token from Supabase (unless caller provided one)
-  if (!accessToken && apiMethod !== 'alibaba.auth.token.create') {
+  // Auto-fetch access token from Supabase unless provided
+  if (!accessToken) {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -107,21 +99,21 @@ export async function alibabaRequest<T = any>({
         }
       }
     } catch (e) {
-      console.warn('Could not fetch Alibaba access token from database:', e);
+      console.warn('Could not fetch AliExpress access token from Supabase:', e);
     }
   }
 
   // Build system parameters (all required by docs)
   const systemParams: Record<string, string> = {
-    method:      apiMethod,           // e.g. "alibaba.icbu.product.list"
-    app_key:     ALIBABA_APP_KEY,
-    timestamp:   getTimestampGMT8(), // "yyyy-MM-dd HH:mm:ss" in GMT+8
-    v:           '2.0',              // API protocol version
-    sign_method: 'hmac-sha256',      // Signature method
-    format:      'json',             // Response format
+    method:      apiMethod,
+    app_key:     ALIEXPRESS_APP_KEY,
+    timestamp:   String(Date.now()),  // Unix milliseconds — AliExpress uses ms NOT formatted date
+    sign_method: 'sha256',
+    format:      'json',
+    v:           '2.0',
   };
 
-  // Add session token if available (docs call it 'session', not 'access_token')
+  // Add session (access token) if available
   if (accessToken) {
     systemParams.session = accessToken;
   }
@@ -134,18 +126,18 @@ export async function alibabaRequest<T = any>({
     }
   }
 
-  // Generate signature (over ALL params including system params)
-  const signature = generateSignature(allParams);
+  // Generate signature using the API method path as prefix
+  const signature = generateSignature(apiMethod, allParams);
   allParams.sign = signature;
 
-  // Build form-encoded body (all params go in POST body per docs)
+  // Build form-encoded POST body
   const body = new URLSearchParams();
   for (const [key, value] of Object.entries(allParams)) {
     body.append(key, value);
   }
 
   try {
-    const response = await fetch(ALIBABA_GATEWAY, {
+    const response = await fetch(ALIEXPRESS_GATEWAY, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
@@ -155,16 +147,22 @@ export async function alibabaRequest<T = any>({
 
     const data = await response.json();
 
-    // Standard error response shape: { error_response: { code, msg, sub_code, sub_msg } }
+    // AliExpress error response shape: { error_response: { code, msg, sub_code, sub_msg, request_id } }
     if (data.error_response) {
       const err = data.error_response;
-      console.error(`Alibaba API Error [${apiMethod}]:`, err);
-      throw new Error(`Alibaba API Error: ${err.msg} (code: ${err.code}, sub: ${err.sub_msg || err.sub_code})`);
+      console.error(`AliExpress API Error [${apiMethod}]:`, err);
+      throw new Error(
+        `AliExpress API Error: ${err.msg} (code: ${err.code}, sub: ${err.sub_msg || err.sub_code})`
+      );
     }
 
     return data as T;
   } catch (error) {
-    console.error(`Failed Alibaba request [${apiMethod}]:`, error);
+    console.error(`Failed AliExpress request [${apiMethod}]:`, error);
     throw error;
   }
 }
+
+// Keep legacy export name so other files that import alibabaRequest still compile
+// during the transition. Gradually rename callers to aliExpressRequest.
+export const alibabaRequest = aliExpressRequest;

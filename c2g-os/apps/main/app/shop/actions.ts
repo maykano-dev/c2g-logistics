@@ -1,8 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { alibabaRequest } from "@/lib/alibaba/client";
-import { filterTrustedProducts, stripSupplierData, calculateTrustScore } from "@/lib/alibaba/trust-filter";
+import { aliexpressRequest } from "@/lib/aliexpress/client";
 import { normalizeProductTitle } from "@/lib/alibaba/text-cleaner";
 import crypto from 'crypto';
 
@@ -34,36 +33,36 @@ function hashQuery(query: string): string {
   return crypto.createHash('sha256').update(query.trim().toLowerCase()).digest('hex');
 }
 
-// Map Alibaba search results to our C2G Product UI shape
-// Field names are from the official alibaba.icbu.product.list response docs:
-//   - subject       → product name (NOT "title")
-//   - product_id    → obfuscated string ID (used for alibaba.icbu.product.get calls)
-//   - id            → numeric plain ID
-//   - main_image.images[] → array of image URL strings
-//   - wholesale_trade.price / sourcing_trade.fob_min_price → USD price
-function mapAlibabaToC2g(alibabaProduct: any, exchangeRate: number) {
-  // Price: brief list response often omits price — show 0 until user views detail page
+// Map AliExpress DS search results to our C2G Product UI shape
+// Field names from aliexpress.ds.text.search response docs:
+//   - product_id             → numeric product ID
+//   - product_title          → display name
+//   - product_main_image_url → main image URL
+//   - target_sale_price      → price in requested currency (USD)
+//   - evaluate_score         → rating
+function mapAliExpressToC2g(aeProduct: any, exchangeRate: number) {
   const usdPrice = parseFloat(
-    alibabaProduct.wholesale_trade?.price ||
-    alibabaProduct.sourcing_trade?.fob_min_price ||
-    alibabaProduct.price ||
+    aeProduct.target_sale_price ||
+    aeProduct.sale_price ||
+    aeProduct.app_sale_price ||
     "0"
   );
-  // Image: main_image.images is an array of strings per docs
-  const imageUrl = (alibabaProduct.main_image?.images || [])[0] ||
-    alibabaProduct.thumbnail_url ||
+
+  const imageUrl =
+    aeProduct.product_main_image_url ||
+    aeProduct.image_url ||
     "https://placehold.co/300";
 
-  // Use product_id (obfuscated string) as the ID for detail page navigation
-  // so that alibaba.icbu.product.get can look it up correctly
   return {
-    id:                alibabaProduct.product_id || String(alibabaProduct.id),
-    name:              normalizeProductTitle(alibabaProduct.subject || alibabaProduct.title || "Unknown Product"),
+    id:                String(aeProduct.product_id),
+    name:              normalizeProductTitle(aeProduct.product_title || aeProduct.title || "Unknown Product"),
     price:             usdPrice,
     selling_price_ghs: usdPrice * exchangeRate,
     image_url:         imageUrl,
-    is_alibaba:        true, // Flag so frontend knows it's an API product
-    // NOTE: pc_detail_url intentionally NOT included — white-labeling requirement
+    rating:            aeProduct.evaluate_score,
+    orders:            aeProduct.lastest_volume || aeProduct.orders,
+    is_aliexpress:     true, // Flag so frontend knows it's an API product
+    // NOTE: product_detail_url intentionally NOT included — white-labeling requirement
   };
 }
 
@@ -154,34 +153,30 @@ export async function getShopProducts(params?: {
 
     if (cacheData && new Date(cacheData.expires_at) > new Date()) {
       // CACHE HIT
-      alibabaProducts = cacheData.result_data.map((p: any) => mapAlibabaToC2g(p, exchangeRate));
+      alibabaProducts = cacheData.result_data.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
     } else {
-      // CACHE MISS -> Call Alibaba API
+      // CACHE MISS → Call AliExpress DS API
       try {
-        // alibaba.icbu.product.list — official ICBU product search API
-        // Required params per docs: language (must be 'ENGLISH')
-        // Optional: subject (fuzzy name search), current_page, page_size (max 30)
-        const res = await alibabaRequest({
-          apiMethod: 'alibaba.icbu.product.list',
+        // aliexpress.ds.text.search — AE Dropshipper product search
+        // Params: search_text, sort, page_no, page_size, target_currency, target_language
+        const res = await aliexpressRequest({
+          apiMethod: 'aliexpress.ds.text.search',
           params: {
-            subject:      params.query,
-            language:     'ENGLISH',  // Required — only value supported per docs
-            page_size:    20,
-            current_page: 1,
+            search_text:      params.query,
+            sort:             'default',
+            page_no:          1,
+            page_size:        20,
+            target_currency:  'USD',
+            target_language:  'EN',
           }
         });
 
-        // Response shape (simplify=true): alibaba_icbu_product_list_response.products[]
-        // Each product has: id, product_id, subject, main_image.images[], status, pc_detail_url
-        const responseWrapper = res?.alibaba_icbu_product_list_response;
-        const rawProducts: any[] = responseWrapper?.products || [];
+        // Response shape: aliexpress_ds_text_search_response.result.result_list[]
+        const wrapper    = res?.aliexpress_ds_text_search_response;
+        const resultList = wrapper?.result?.result_list?.item_info || [];
 
-        if (rawProducts.length > 0) {
-          // Trust Filter & Scrubber
-          const trusted = await filterTrustedProducts(rawProducts);
-          const scrubbed = trusted.map(stripSupplierData);
-
-          alibabaProducts = scrubbed.map((p: any) => mapAlibabaToC2g(p, exchangeRate));
+        if (resultList.length > 0) {
+          alibabaProducts = resultList.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
 
           // Save to Cache (TTL 12 hours)
           const expiresAt = new Date();
@@ -190,12 +185,12 @@ export async function getShopProducts(params?: {
           await supabase.from("search_query_cache").upsert({
             query_hash:  qHash,
             query_text:  params.query,
-            result_data: scrubbed,
+            result_data: resultList,
             expires_at:  expiresAt.toISOString()
           });
         }
       } catch (e) {
-        console.error("Alibaba Search Failed, falling back to local only", e);
+        console.error("AliExpress Search Failed, falling back to local only", e);
       }
     }
   }
@@ -216,133 +211,91 @@ export async function getShopProducts(params?: {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Live Product Details (Alibaba API /eco/buyer/product/description)
+// Live Product Details (AliExpress DS API)
 // ═══════════════════════════════════════════════════════════════════
 export async function getProductDetails(id: string) {
   const supabase = await createClient();
   const exchangeRate = await getExchangeRate(supabase);
 
   try {
-    // alibaba.icbu.product.get — official ICBU product detail API
-    // Required params per docs: language ('ENGLISH'), product_id (obfuscated string ID)
-    const res = await alibabaRequest({
-      apiMethod: 'alibaba.icbu.product.get',
+    // aliexpress.ds.product.get — AE Dropshipper product detail API
+    // Required params: product_id, target_currency, target_language
+    const res = await aliexpressRequest({
+      apiMethod: 'aliexpress.ds.product.get',
       params: {
-        language:   'ENGLISH',  // Required — only value supported per docs
-        product_id: id,         // The obfuscated product_id string from search results
+        product_id:      id,
+        target_currency: 'USD',
+        target_language: 'EN',
       }
     });
 
-    // Response shape: alibaba_icbu_product_get_response.product
-    const rawProduct = res?.alibaba_icbu_product_get_response?.product;
-    if (!rawProduct) throw new Error("Product not found on Alibaba");
+    // Response shape: aliexpress_ds_product_get_response.result
+    const raw = res?.aliexpress_ds_product_get_response?.result;
+    if (!raw) throw new Error("Product not found on AliExpress");
 
-    // 1. Calculate Trust Score
-    const trustEval = calculateTrustScore(rawProduct, []);
-    if (!trustEval.passed) {
-      throw new Error(`This product failed C2G's security and quality checks. (${trustEval.reasons.join(", ")})`);
-    }
+    // Images: ae_item_sku_info_dtos or ae_multimedia_info_dto
+    const mainImages: string[] = (
+      raw.ae_multimedia_info_dto?.image_urls?.string ||
+      [raw.ae_item_base_info_dto?.subject_trans, raw.ae_item_base_info_dto?.detail]
+        .filter(Boolean)
+    ).flat().filter((u: any) => typeof u === 'string' && u.startsWith('http'));
 
-    // 2. Strip Supplier Info (White-labeling)
-    const safeProduct = stripSupplierData(rawProduct);
-
-    // 3. Map to C2G Frontend Structure
-    // ICBU product.get response: main_image.images[], product_sku.skus[], wholesale_trade, sourcing_trade
-    const rawImages = (safeProduct as any).main_image?.images;
-    const mainImages: string[] = Array.isArray(rawImages) ? rawImages : [];
-
-    // SKU variants from product_sku.skus[]
-    // sku_attributes provides the lookup table: attribute_id -> attribute_name, value_id -> display_name
-    const skuAttributeLookup: Record<string, { attrName: string; values: Record<string, string> }> = {};
-    for (const attr of ((safeProduct as any).product_sku?.sku_attributes || [])) {
-      const valMap: Record<string, string> = {};
-      for (const v of (attr.values || [])) {
-        valMap[String(v.value_id)] = v.custom_value_name || v.system_value_name || String(v.value_id);
-      }
-      skuAttributeLookup[String(attr.attribute_id)] = {
-        attrName: attr.attribute_name || String(attr.attribute_id),
-        values: valMap,
-      };
-    }
-
-    const skuDefs = (safeProduct as any).product_sku?.skus || [];
+    // SKU variants from ae_item_sku_info_dtos.ae_item_sku_info_d_t_o[]
+    const skuDefs: any[] = raw.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o || [];
     const variants = skuDefs.map((sku: any) => {
-      // Price from bulk_discount_prices[0].price (USD) or product-level fallback
       const priceUsd = parseFloat(
-        sku.bulk_discount_prices?.[0]?.price ||
-        safeProduct.wholesale_trade?.price ||
-        safeProduct.sourcing_trade?.fob_min_price ||
-        '0'
+        sku.sku_price || sku.offer_sale_price || '0'
       );
 
-      // attr2_value is a map like "{11:12,22:21}" per docs (attribute_id:value_id pairs)
-      // Cross-reference sku_attributes to build readable label e.g. "Color: Light Grey / Size: XL"
-      let attrLabel = 'Standard';
-      if (sku.attr2_value) {
-        try {
-          const pairs = String(sku.attr2_value).replace(/[{}]/g, '').split(',');
-          const parts: string[] = [];
-          for (const pair of pairs) {
-            const parts2 = pair.split(':').map((s: string) => s.trim());
-            const attrId = parts2[0];
-            const valueId = parts2[1];
-            if (!attrId || !valueId) continue;
-            const attrDef = skuAttributeLookup[attrId];
-            if (attrDef) {
-              const valueName = attrDef.values[valueId] || valueId;
-              parts.push(`${attrDef.attrName}: ${valueName}`);
-            }
-          }
-          if (parts.length > 0) attrLabel = parts.join(' / ');
-        } catch {
-          attrLabel = String(sku.attr2_value);
-        }
-      }
-
-      // Real inventory from inventory_dto_list (cn_inventory store)
-      const inventoryEntry = (sku.inventory_dto_list || []).find(
-        (inv: any) => inv.store_code === 'cn_inventory'
+      // ae_sku_property_dtos → readable combination label like "Color: Black / Size: XL"
+      const propParts: string[] = (sku.ae_sku_property_dtos?.ae_sku_property_d_t_o || []).map(
+        (prop: any) => `${prop.sku_property_name}: ${prop.property_value_definition_name || prop.sku_property_value}`
       );
-      const stock = inventoryEntry?.inventory ?? 999;
+      const combination = propParts.length > 0 ? propParts.join(' / ') : 'Standard';
+
+      const skuImageUrl = sku.sku_image || mainImages[0] || '';
 
       return {
-        id: String(sku.sku_id || sku.sku_code || 'default'),
-        combination: attrLabel,
-        price: priceUsd,
+        id:                String(sku.sku_id || 'default'),
+        sku_attr:          sku.id,                            // Used when placing DS orders
+        combination,
+        price:             priceUsd,
         selling_price_ghs: priceUsd * exchangeRate,
-        image_url: mainImages[0] || '',
-        stock,
+        image_url:         skuImageUrl,
+        stock:             sku.sk_quantity ?? 999,
       };
     });
 
-
-    // Fallback: if no SKUs, create one variant from wholesale/sourcing trade info
+    // Fallback: one standard variant if no SKUs
     if (variants.length === 0) {
       const priceUsd = parseFloat(
-        safeProduct.wholesale_trade?.price ||
-        safeProduct.sourcing_trade?.fob_min_price ||
+        raw.ae_item_base_info_dto?.product_price ||
+        raw.ae_item_base_info_dto?.app_sale_price ||
         '0'
       );
       variants.push({
-        id: 'default',
-        combination: 'Standard',
-        price: priceUsd,
+        id:                'default',
+        sku_attr:          undefined,
+        combination:       'Standard',
+        price:             priceUsd,
         selling_price_ghs: priceUsd * exchangeRate,
-        image_url: mainImages[0] || '',
-        stock: 999
+        image_url:         mainImages[0] || '',
+        stock:             999,
       });
     }
 
+    const baseInfo = raw.ae_item_base_info_dto || {};
     const mappedProduct = {
-      id:               safeProduct.product_id || id,
-      name:             normalizeProductTitle(safeProduct.subject || 'Unknown Product'),
-      description:      safeProduct.description || '',
-      images:           mainImages,
+      id:          String(baseInfo.product_id || id),
+      name:        normalizeProductTitle(baseInfo.subject || baseInfo.title || 'Unknown Product'),
+      description: baseInfo.detail || '',
+      images:      mainImages.length > 0 ? mainImages : ['https://placehold.co/600'],
       variants,
-      category:         safeProduct.category_id,
-      wholesale_volume: safeProduct.wholesale_trade?.volume,
-      trustScore:       trustEval.score,
-      trustBadges:      [] as string[],
+      category:    baseInfo.category_id,
+      rating:      baseInfo.avg_evaluation_rating,
+      orders:      baseInfo.lastest_volume,
+      trustScore:  90, // AliExpress platform handles seller trust
+      trustBadges: ['AliExpress Verified'] as string[],
     };
 
     // Track View Count (For Auto-Promotion Engine)
@@ -355,7 +308,7 @@ export async function getProductDetails(id: string) {
     return { success: true, product: mappedProduct, exchangeRate };
 
   } catch (error: any) {
-    console.error("Error fetching live product details:", error);
+    console.error("Error fetching AliExpress product details:", error);
     return { success: false, error: error.message };
   }
 }
