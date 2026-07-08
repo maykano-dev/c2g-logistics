@@ -162,12 +162,18 @@ export async function getShopProducts(params?: {
         const res = await aliexpressRequest({
           apiMethod: 'aliexpress.ds.text.search',
           params: {
-            search_text:      params.query,
-            sort:             'default',
-            page_no:          1,
-            page_size:        20,
-            target_currency:  'USD',
-            target_language:  'EN',
+            // Confirmed mandatory camelCase params (live tested — see test-ae-sig*.mjs)
+            keyWord:       params.query,       // primary search text (camelCase)
+            search_text:   params.query,       // keep snake_case alias as fallback
+            sort:          'default',
+            pageNo:        String(params.page || 1),
+            page_no:       String(params.page || 1),
+            pageSize:      '20',
+            page_size:     '20',
+            currency:      'USD',              // mandatory (NOT target_currency)
+            local:         'en_US',            // mandatory locale
+            countryCode:   'GH',              // mandatory (camelCase)
+            shipToCountry: 'GH',              // shipping destination
           }
         });
 

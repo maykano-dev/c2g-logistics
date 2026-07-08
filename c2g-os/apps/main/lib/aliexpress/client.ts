@@ -2,31 +2,33 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * AliExpress Open Platform API Client
+ * AliExpress Open Platform (IOP) API Client
  *
- * Built against the official AliExpress Open Platform documentation:
- * https://openservice.aliexpress.com/doc/api.htm
+ * Reference: https://openservice.aliexpress.com/doc/api.htm
  *
- * Gateway: https://api-sg.aliexpress.com/rest  (international/SG endpoint)
+ * Gateways:
+ *   Auth (GET):      https://api-sg.aliexpress.com/rest
+ *   Business (POST): https://api-sg.aliexpress.com/sync
  *
- * Key facts from docs:
- * - All DS APIs use a single POST endpoint; routing via the `method` body param.
- * - Auth APIs (/auth/token/*) use GET with query params.
- * - Required system params: method, app_key, timestamp, v, sign_method, sign
- * - Timestamp must be Unix epoch in MILLISECONDS (not the old "yyyy-MM-dd" format)
- * - Access token passed as `session` parameter
- * - Signature: HMAC-SHA256 of the API path + sorted key-value pairs
- *   e.g. sign = HMAC_SHA256(appSecret, "/auth/token/createapp_key538994code...")
- * - Auth endpoints use https://api-sg.aliexpress.com/rest  (GET)
- * - DS business APIs use https://api-sg.aliexpress.com/sync (POST)
+ * IOP HMAC-SHA256 signing — CONFIRMED correct by live API testing:
+ *   1. Collect ALL request params EXCEPT `sign` itself
+ *   2. Sort keys alphabetically
+ *   3. Concatenate: key1value1 + key2value2 + ...
+ *      NO apiPath prefix — unlike some older Alibaba SDKs
+ *   4. HMAC-SHA256(appSecret, concatenated) → uppercase hex
+ *
+ * Note: `sign_method` IS included in the sign string.
+ *       This was confirmed by testing all 4 variants against the live API.
  */
 
 const ALIEXPRESS_APP_KEY    = process.env.ALIEXPRESS_APP_KEY;
 const ALIEXPRESS_APP_SECRET = process.env.ALIEXPRESS_APP_SECRET;
 
-// Gateway for auth (GET) and business API (POST)
 const ALIEXPRESS_AUTH_GATEWAY = 'https://api-sg.aliexpress.com/rest';
 const ALIEXPRESS_API_GATEWAY  = 'https://api-sg.aliexpress.com/sync';
+
+// Only `sign` itself is excluded from the signature string
+// (sign_method IS included — confirmed by live test)
 
 export interface AliExpressRequestOptions {
   /** The API method name, e.g. 'aliexpress.ds.text.search' */
@@ -35,48 +37,36 @@ export interface AliExpressRequestOptions {
   params?: Record<string, any>;
   /** Optional: provide access token directly (otherwise auto-fetched from Supabase) */
   accessToken?: string;
-  /** If true, use GET to the REST gateway (for auth token ops). Default: false (POST to sync) */
+  /** If true, use GET to the REST gateway (for auth token ops). Default: false */
   isAuthCall?: boolean;
 }
 
 /**
- * Generates the AliExpress OPEN PLATFORM HMAC-SHA256 signature.
+ * Builds the IOP HMAC-SHA256 signature.
  *
- * Algorithm (per official docs):
- * 1. Sort all parameters alphabetically by key
- * 2. Concatenate: apiPath + key1value1key2value2...
- *    (For DS methods the "path" is the method name itself)
- * 3. HMAC-SHA256 with ALIEXPRESS_APP_SECRET as the key
- * 4. Return as uppercase hex
- *
- * NOTE: Unlike ICBU/TOP, AliExpress PREPENDS the API path to the sorted params.
+ * Confirmed correct by live API testing (test-ae-sig.mjs):
+ * String to sign = sortedKey1value1 + sortedKey2value2 + ...
+ * ALL params included EXCEPT `sign` itself. No path prefix.
  */
-function generateSignature(apiPath: string, params: Record<string, string>): string {
+function generateSignature(params: Record<string, string>): string {
   if (!ALIEXPRESS_APP_SECRET) {
     throw new Error('ALIEXPRESS_APP_SECRET is missing from environment variables.');
   }
 
-  // Sort keys alphabetically
-  const sortedKeys = Object.keys(params).sort();
+  const sortedKeys = Object.keys(params)
+    .filter(k => k !== 'sign')
+    .sort();
 
-  // Prepend the apiPath then concatenate all key-value pairs
-  const concatenated = apiPath + sortedKeys.reduce((acc, key) => acc + key + params[key], '');
+  const stringToSign = sortedKeys.reduce((acc, key) => acc + key + params[key], '');
 
-  // HMAC-SHA256 with secret as key, return uppercase hex
   const hmac = crypto.createHmac('sha256', ALIEXPRESS_APP_SECRET);
-  hmac.update(concatenated, 'utf8');
+  hmac.update(stringToSign, 'utf8');
   return hmac.digest('hex').toUpperCase();
 }
 
 /**
- * Returns current timestamp in Unix milliseconds (required by AliExpress Open Platform).
- */
-function getTimestampMs(): string {
-  return String(Date.now());
-}
-
-/**
  * Fetches the stored AliExpress access token from Supabase.
+ * Returns null if no token exists or it's expired/expiring soon.
  */
 async function fetchStoredToken(): Promise<string | null> {
   try {
@@ -93,28 +83,24 @@ async function fetchStoredToken(): Promise<string | null> {
 
     if (!data?.access_token) return null;
 
-    // Check if token is expired (with 5 min buffer)
+    // Reject if expired (5 min buffer)
     if (data.expires_at) {
       const expiresAt = new Date(data.expires_at);
-      const buffer = 5 * 60 * 1000; // 5 minutes
-      if (new Date().getTime() + buffer >= expiresAt.getTime()) {
-        console.warn('[AliExpress] Access token is expired or expiring soon. Needs refresh.');
+      if (new Date().getTime() + 5 * 60 * 1000 >= expiresAt.getTime()) {
+        console.warn('[AliExpress] Token expired — call /api/aliexpress/refresh');
         return null;
       }
     }
 
     return data.access_token;
   } catch (e) {
-    console.warn('[AliExpress] Could not fetch access token from database:', e);
+    console.warn('[AliExpress] Could not fetch token from DB:', e);
     return null;
   }
 }
 
 /**
- * Executes a request to the AliExpress Open Platform.
- *
- * - DS Business APIs: POST to https://api-sg.aliexpress.com/sync
- * - Auth APIs:        GET  to https://api-sg.aliexpress.com/rest
+ * Makes a signed request to the AliExpress Open Platform.
  */
 export async function aliexpressRequest<T = any>({
   apiMethod,
@@ -126,32 +112,39 @@ export async function aliexpressRequest<T = any>({
     throw new Error('ALIEXPRESS_APP_KEY is missing from environment variables.');
   }
 
-  // Auto-fetch access token from Supabase for non-auth calls
+  // Auto-fetch OAuth token for non-auth calls
   if (!accessToken && !isAuthCall) {
     const stored = await fetchStoredToken();
-    if (stored) accessToken = stored;
+    if (stored) {
+      accessToken = stored;
+    } else {
+      console.warn(
+        `[AliExpress] No valid session token for ${apiMethod}. ` +
+        `Complete OAuth first: /api/aliexpress/auth`
+      );
+    }
   }
 
-  // Build system parameters
+  // ── System parameters ─────────────────────────────────────────────
+  // NOTE: `format` is a TOP-era legacy param — NOT used by the IOP /sync gateway
   const systemParams: Record<string, string> = {
     app_key:     ALIEXPRESS_APP_KEY,
-    timestamp:   getTimestampMs(),
-    sign_method: 'sha256',
+    timestamp:   String(Date.now()),  // Unix epoch milliseconds
+    sign_method: 'sha256',            // Declares algo but is excluded from sign string
     v:           '2.0',
-    format:      'json',
   };
 
-  // For DS business API calls, the method goes in the params
+  // `method` goes in params for /sync (business) calls
   if (!isAuthCall) {
     systemParams.method = apiMethod;
   }
 
-  // Add session/access token if available
+  // `session` = OAuth access token
   if (accessToken) {
     systemParams.session = accessToken;
   }
 
-  // Merge system + business params; stringify all values for signing
+  // ── Merge & stringify all values ──────────────────────────────────
   const allParams: Record<string, string> = {};
   for (const [key, value] of Object.entries({ ...systemParams, ...params })) {
     if (value !== undefined && value !== null) {
@@ -159,63 +152,64 @@ export async function aliexpressRequest<T = any>({
     }
   }
 
-  // For auth APIs the path is the URL path (e.g. /auth/token/security/create)
-  // For DS method APIs the "path" in the signature is the method name
-  const signPath = isAuthCall ? apiMethod : apiMethod;
+  // ── Sign ──────────────────────────────────────────────────────────
+  // No path prefix — confirmed correct by live API test.
+  const sign = generateSignature(allParams);
+  allParams.sign = sign;
 
-  // Generate signature
-  const signature = generateSignature(signPath, allParams);
-  allParams.sign = signature;
+  // ── Dev debug logging ─────────────────────────────────────────────
+  if (process.env.NODE_ENV === 'development') {
+    const sortedDebugKeys = Object.keys(allParams).filter(k => k !== 'sign').sort();
+    const debugStr = sortedDebugKeys.reduce((acc, k) => acc + k + allParams[k], '');
+    console.log(`[AliExpress] ${apiMethod} | sign_string[:120]: ${debugStr.substring(0, 120)}`);
+    console.log(`[AliExpress] ${apiMethod} | signature: ${sign}`);
+    console.log(`[AliExpress] ${apiMethod} | session: ${accessToken ? 'present' : 'MISSING'}`);
+  }
 
+  // ── Execute ───────────────────────────────────────────────────────
   if (isAuthCall) {
-    // GET request to REST gateway with query string
+    // GET → REST gateway
     const url = new URL(ALIEXPRESS_AUTH_GATEWAY + apiMethod);
     for (const [key, value] of Object.entries(allParams)) {
       url.searchParams.append(key, value);
     }
-
     const response = await fetch(url.toString(), { method: 'GET' });
     const data = await response.json();
-
     if (data.error_response) {
       const err = data.error_response;
       throw new Error(`AliExpress Auth Error: ${err.msg} (code: ${err.code}, sub: ${err.sub_msg || err.sub_code})`);
     }
     return data as T;
+
   } else {
-    // POST request to SYNC gateway with form-encoded body
+    // POST → SYNC gateway (application/x-www-form-urlencoded)
     const body = new URLSearchParams();
     for (const [key, value] of Object.entries(allParams)) {
       body.append(key, value);
     }
-
     const response = await fetch(ALIEXPRESS_API_GATEWAY, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-      body: body.toString(),
+      body:    body.toString(),
     });
-
     const data = await response.json();
-
     if (data.error_response) {
       const err = data.error_response;
       console.error(`[AliExpress] API Error [${apiMethod}]:`, err);
       throw new Error(`AliExpress API Error: ${err.msg} (code: ${err.code}, sub: ${err.sub_msg || err.sub_code})`);
     }
-
     return data as T;
   }
 }
 
 /**
- * Saves an AliExpress access token (and related data) to Supabase.
- * Creates the row if it doesn't exist, updates otherwise.
+ * Saves an AliExpress access token to the aliexpress_credentials table.
  */
 export async function saveAliExpressToken(tokenData: {
   access_token: string;
   refresh_token?: string;
-  expires_in?: number;        // seconds
-  refresh_token_valid_time?: number; // ms epoch
+  expires_in?: number;               // seconds from now
+  refresh_token_valid_time?: number; // epoch ms
   user_nick?: string;
   buyer_access_token?: string;
 }): Promise<void> {
@@ -234,14 +228,14 @@ export async function saveAliExpressToken(tokenData: {
   const { error } = await supabase
     .from('aliexpress_credentials')
     .upsert({
-      id:                      'default',
-      access_token:            tokenData.access_token,
-      refresh_token:           tokenData.refresh_token  || null,
-      buyer_access_token:      tokenData.buyer_access_token || null,
-      expires_at:              expiresAt,
+      id:                       'default',
+      access_token:             tokenData.access_token,
+      refresh_token:            tokenData.refresh_token      || null,
+      buyer_access_token:       tokenData.buyer_access_token || null,
+      expires_at:               expiresAt,
       refresh_token_expires_at: refreshExpiresAt,
-      user_nick:               tokenData.user_nick      || null,
-      updated_at:              new Date().toISOString(),
+      user_nick:                tokenData.user_nick          || null,
+      updated_at:               new Date().toISOString(),
     }, { onConflict: 'id' });
 
   if (error) {
