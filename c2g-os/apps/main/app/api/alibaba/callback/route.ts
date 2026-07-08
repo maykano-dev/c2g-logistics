@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
   try {
     // Direct OAuth token exchange endpoint (bypasses TOP gateway signing)
-    // POST https://oauth.taobao.com/token with grant_type=authorization_code
+    // POST https://oauth.alibaba.com/token with grant_type=authorization_code
     const baseUrl      = process.env.NEXT_PUBLIC_APP_URL || 'https://c2glogistics.netlify.app';
     const redirectUri  = `${baseUrl}/api/alibaba/callback`;
 
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       view:          'web',
     });
 
-    const tokenRes = await fetch('https://oauth.taobao.com/token', {
+    const tokenRes = await fetch('https://oauth.alibaba.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
       body: body.toString(),

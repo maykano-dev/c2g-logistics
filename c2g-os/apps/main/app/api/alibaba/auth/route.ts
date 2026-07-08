@@ -10,14 +10,15 @@ export async function GET(request: Request) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://c2g-logistics.com';
   const callbackUrl = `${baseUrl}/api/alibaba/callback`;
 
-  // ICBU OAuth uses the Taobao OAuth system (NOT oauth.alibaba.com)
+  // Alibaba.com (ICBU) OAuth uses the specific alibaba.com endpoint
   // Reference: https://developer.alibaba.com/en/doc.htm (Auth flow)
-  const oauthUrl = new URL('https://oauth.taobao.com/authorize');
+  const oauthUrl = new URL('https://oauth.alibaba.com/authorize');
   oauthUrl.searchParams.append('client_id', ALIBABA_APP_KEY);
   oauthUrl.searchParams.append('redirect_uri', callbackUrl);
   oauthUrl.searchParams.append('response_type', 'code');
   oauthUrl.searchParams.append('state', 'c2g_oauth_init');
   oauthUrl.searchParams.append('view', 'web');
+  oauthUrl.searchParams.append('sp', 'icbu'); // Required for ICBU apps
 
   return NextResponse.redirect(oauthUrl.toString());
 }
