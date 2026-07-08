@@ -123,13 +123,21 @@ export async function alibabaRequest<T = any>({
 
   // For GET, put all params in the query string
   if (method === 'GET') {
-    Object.keys(stringParams).forEach(key => url.searchParams.append(key, stringParams[key]));
+    Object.keys(stringParams).forEach(key => {
+      if (stringParams[key] !== undefined) {
+        url.searchParams.append(key, stringParams[key] as string);
+      }
+    });
   } else {
     // For POST/PUT, system params (auth/sign) can go in URL or body. Standard IOP supports body payload.
     // Putting system params in query string, and business params in body is standard, 
     // or passing everything as form url-encoded.
     const urlSearchParams = new URLSearchParams();
-    Object.keys(stringParams).forEach(key => urlSearchParams.append(key, stringParams[key]));
+    Object.keys(stringParams).forEach(key => {
+      if (stringParams[key] !== undefined) {
+        urlSearchParams.append(key, stringParams[key] as string);
+      }
+    });
     fetchOptions.body = urlSearchParams.toString();
   }
 
