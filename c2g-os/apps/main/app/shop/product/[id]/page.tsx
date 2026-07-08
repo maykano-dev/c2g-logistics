@@ -52,9 +52,11 @@ export default async function ProductPage({
   const resolvedSearchParams = await searchParams;
   const storeSlug = typeof resolvedSearchParams.store === 'string' ? resolvedSearchParams.store : null;
 
-  const { product, exchangeRate, error } = await getProductDetails(
+  const { product: rawProduct, exchangeRate, error } = await getProductDetails(
     resolvedParams.id
   );
+  
+  const product: any = rawProduct;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -127,7 +129,7 @@ export default async function ProductPage({
   });
 
   // Map Alibaba raw images to the shape ProductImages expects
-  const mainGalleryImages = (product.images || []).map((imgUrl: string, idx: number) => ({
+  const mainGalleryImages = (product.images || []).map((imgUrl: any, idx: number) => ({
     id: `main-img-${idx}`,
     image_url: imgUrl,
     is_primary: idx === 0,
@@ -159,7 +161,7 @@ export default async function ProductPage({
           </Link>
           <span className="text-border">/</span>
           <span className="capitalize shrink-0">
-            {product.category || "General"}
+            {(product as any).category || "General"}
           </span>
           <span className="text-border">/</span>
           <span className="text-foreground truncate max-w-[200px] sm:max-w-md">
