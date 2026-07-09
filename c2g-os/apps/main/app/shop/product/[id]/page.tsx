@@ -9,6 +9,8 @@ import {
   Star,
   CheckCircle2,
   Zap,
+  FileText,
+  Lightbulb,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "../../../../utils/supabase/server";
@@ -296,7 +298,9 @@ export default async function ProductPage({
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
             
             <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">📝</span>
+              <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <FileText className="w-4 h-4" />
+              </span>
               Product Details & Specifications
             </h2>
             
@@ -324,7 +328,7 @@ export default async function ProductPage({
         {similarProducts.length > 0 && (
           <div className="mt-12 pt-10 border-t border-border">
             <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
-              <span>💡</span> Similar Products
+              <Lightbulb className="w-5 h-5 text-yellow-500" /> Similar Products
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
               {similarProducts.map((p: any) => (

@@ -41,18 +41,27 @@ function hashQuery(query: string): string {
 //   - target_sale_price      → price in requested currency (USD)
 //   - evaluate_score         → rating
 function mapAliExpressToC2g(aeProduct: any, exchangeRate: number) {
-  const usdPrice = parseFloat(
+  let usdPrice = parseFloat(
     aeProduct.targetSalePrice ||
     aeProduct.target_sale_price ||
-    aeProduct.salePrice ||
     "0"
   );
 
-  const imageUrl =
+  // Fallback: If targetSalePrice is completely missing, use salePrice but divide by CNY->USD rate (approx 7.2)
+  if (usdPrice === 0) {
+    const rawSalePrice = parseFloat(aeProduct.salePrice || "0");
+    usdPrice = rawSalePrice / 7.2;
+  }
+
+  let imageUrl =
     aeProduct.itemMainPic ||
     aeProduct.product_main_image_url ||
     aeProduct.image_url ||
     "https://placehold.co/300";
+
+  if (imageUrl.startsWith('//')) {
+    imageUrl = 'https:' + imageUrl;
+  }
 
   return {
     id:                String(aeProduct.itemId || aeProduct.product_id),
@@ -323,10 +332,16 @@ export async function getProductDetails(id: string) {
     // Images: ae_item_sku_info_dtos or ae_multimedia_info_dto
     let imageStr = raw.ae_multimedia_info_dto?.image_urls;
     let mainImages: string[] = [];
+    const parseImage = (u: any) => {
+       if (typeof u !== 'string') return null;
+       if (u.startsWith('//')) return 'https:' + u;
+       if (u.startsWith('http')) return u;
+       return null;
+    };
     if (typeof imageStr === 'string') {
-        mainImages = imageStr.split(';').filter(u => u.startsWith('http'));
+        mainImages = imageStr.split(';').map(parseImage).filter(Boolean) as string[];
     } else if (imageStr && Array.isArray(imageStr.string)) {
-        mainImages = imageStr.string.filter((u: any) => typeof u === 'string' && u.startsWith('http'));
+        mainImages = imageStr.string.map(parseImage).filter(Boolean) as string[];
     }
     
     // Fallback if no images found
@@ -363,7 +378,10 @@ export async function getProductDetails(id: string) {
       );
       const combination = propParts.length > 0 ? propParts.join(' / ') : 'Standard';
 
-      const skuImageUrl = sku.sku_image || mainImages[0] || '';
+      let skuImageUrl = sku.sku_image || mainImages[0] || '';
+      if (skuImageUrl.startsWith('//')) {
+        skuImageUrl = 'https:' + skuImageUrl;
+      }
 
       return {
         id:                String(sku.sku_id || 'default'),
