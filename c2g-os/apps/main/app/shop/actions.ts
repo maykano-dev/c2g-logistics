@@ -64,8 +64,8 @@ function mapAliExpressToC2g(aeProduct: any, exchangeRate: number) {
   }
 
   return {
-    id:                String(aeProduct.itemId || aeProduct.product_id),
-    name:              normalizeProductTitle(aeProduct.title || aeProduct.product_title || "Unknown Product"),
+    id:                String(aeProduct.id || aeProduct.itemId || aeProduct.product_id),
+    name:              normalizeProductTitle(aeProduct.name || aeProduct.title || aeProduct.product_title || "Unknown Product"),
     price:             usdPrice,
     selling_price_ghs: usdPrice * exchangeRate,
     image_url:         imageUrl,
