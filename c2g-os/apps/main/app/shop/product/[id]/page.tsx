@@ -290,25 +290,35 @@ export default async function ProductPage({
         </div>
 
         {/* Product Description */}
-        <details className="group mt-12 pt-6 border-t border-border">
-          <summary className="flex cursor-pointer list-none items-center justify-between outline-none [&::-webkit-details-marker]:hidden">
-            <h2 className="text-xl font-bold">Product Details</h2>
-            <span className="transition duration-300 group-open:-rotate-180 text-muted-foreground p-2 rounded-full hover:bg-secondary">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-            </span>
-          </summary>
-          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-            {product.description ? (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: product.description.replace(/\n/g, "<br/>"),
-                }}
-              />
-            ) : (
-              <p>No detailed description available for this product.</p>
-            )}
+        <div className="mt-16 pt-8 border-t border-border">
+          <div className="bg-secondary/20 rounded-3xl p-6 sm:p-10 border border-border/50 shadow-sm relative overflow-hidden">
+            {/* Decorative background accent */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+            
+            <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">📝</span>
+              Product Details & Specifications
+            </h2>
+            
+            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none text-muted-foreground leading-relaxed relative z-10">
+              {product.description ? (
+                <div
+                  className="[&>p]:mb-4 [&>br]:hidden [&>div]:mb-4"
+                  dangerouslySetInnerHTML={{
+                    __html: product.description
+                      .replace(/<img[^>]*>/gi, '') // Strip images
+                      .replace(/<video[^>]*>[\s\S]*?<\/video>/gi, '') // Strip videos
+                      .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '') // Strip iframes
+                      .replace(/<div class="detailmodule_image">[\s\S]*?<\/div>/gi, '') // Strip AE image wrappers
+                      .replace(/\n/g, "<br/>"),
+                  }}
+                />
+              ) : (
+                <p className="italic text-muted-foreground/70">No detailed description available for this product.</p>
+              )}
+            </div>
           </div>
-        </details>
+        </div>
 
         {/* Similar Products */}
         {similarProducts.length > 0 && (
