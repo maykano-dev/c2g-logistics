@@ -8,24 +8,30 @@ import crypto from 'crypto';
 // ═══════════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════════
-async function getExchangeRate(supabase: any): Promise<number> {
+async function getExchangeRate(supabase: any): Promise<{ cnyToGhs: number, usdToCny: number }> {
+  let cnyToGhs = 0.52; // 1 GHS = 0.52 CNY
+  const usdToCny = 7.25; // Approximate static rate for USD to CNY (AliExpress internal)
+
   const { data: settingsData } = await supabase
     .from("settings")
     .select("rate_shop_products")
     .eq("id", 1)
     .single();
+  
   if (settingsData?.rate_shop_products) {
-    return parseFloat(settingsData.rate_shop_products);
+    cnyToGhs = parseFloat(settingsData.rate_shop_products);
+  } else {
+    const { data: sysData } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "exchange_rate_cny_ghs")
+      .single();
+    if (sysData?.value) {
+      cnyToGhs = parseFloat(sysData.value);
+    }
   }
-  const { data: sysData } = await supabase
-    .from("system_settings")
-    .select("value")
-    .eq("key", "exchange_rate_cny_ghs")
-    .single();
-  if (sysData?.value) {
-    return parseFloat(sysData.value);
-  }
-  return 0.52; // Fallback
+
+  return { cnyToGhs, usdToCny };
 }
 
 // Helper to hash query strings for caching
@@ -40,17 +46,18 @@ function hashQuery(query: string): string {
 //   - product_main_image_url → main image URL
 //   - target_sale_price      → price in requested currency (USD)
 //   - evaluate_score         → rating
-function mapAliExpressToC2g(aeProduct: any, exchangeRate: number) {
+function mapAliExpressToC2g(aeProduct: any, rates: { cnyToGhs: number, usdToCny: number }) {
   let usdPrice = parseFloat(
     aeProduct.targetSalePrice ||
     aeProduct.target_sale_price ||
+    aeProduct.app_sale_price ||
     "0"
   );
 
   // Fallback: If targetSalePrice is completely missing, use salePrice but divide by CNY->USD rate (approx 7.2)
   if (usdPrice === 0) {
     const rawSalePrice = parseFloat(aeProduct.salePrice || "0");
-    usdPrice = rawSalePrice / 7.2;
+    usdPrice = rawSalePrice / rates.usdToCny;
   }
 
   let imageUrl =
@@ -59,20 +66,23 @@ function mapAliExpressToC2g(aeProduct: any, exchangeRate: number) {
     aeProduct.image_url ||
     "https://placehold.co/300";
 
-  if (imageUrl.startsWith('//')) {
+  if (imageUrl && imageUrl.startsWith('//')) {
     imageUrl = 'https:' + imageUrl;
   }
 
+  // Convert USD -> CNY -> GHS
+  const cnyPrice = usdPrice * rates.usdToCny;
+  const ghsPrice = cnyPrice / rates.cnyToGhs;
+
   return {
-    id:                String(aeProduct.id || aeProduct.itemId || aeProduct.product_id),
-    name:              normalizeProductTitle(aeProduct.name || aeProduct.title || aeProduct.product_title || "Unknown Product"),
-    price:             usdPrice,
-    selling_price_ghs: usdPrice * exchangeRate,
-    image_url:         imageUrl,
-    rating:            aeProduct.score || aeProduct.evaluate_score || aeProduct.evaluate_rate || "0",
-    orders:            aeProduct.orders || aeProduct.lastest_volume || 0,
-    is_aliexpress:     true, // Flag so frontend knows it's an API product
-    // NOTE: product_detail_url intentionally NOT included — white-labeling requirement
+    id: String(aeProduct.id || aeProduct.itemId || aeProduct.product_id),
+    name: normalizeProductTitle(aeProduct.name || aeProduct.title || aeProduct.product_title || "Unknown Product"),
+    price: usdPrice,
+    selling_price_ghs: ghsPrice,
+    image_url: imageUrl,
+    rating: aeProduct.score || aeProduct.evaluate_score || aeProduct.evaluate_rate || "0",
+    orders: aeProduct.orders || aeProduct.lastest_volume || 0,
+    is_aliexpress: true, // Flag so frontend knows it's an API product
   };
 }
 
@@ -91,19 +101,23 @@ export async function getTopPurchasedProducts(limit: number = 5) {
       .limit(limit);
 
     if (error) throw error;
-    const exchangeRate = await getExchangeRate(supabase);
+    const rates = await getExchangeRate(supabase);
     
     return {
       success: true,
-      products: data?.map((p) => ({
-        id: p.id,
-        name: p.title,
-        price: p.price_snapshot_usd,
-        selling_price_ghs: p.price_snapshot_usd * exchangeRate,
-        image_url: p.thumbnail_url,
-        demandLabel: p.purchase_count > 50 ? "high" : "medium"
-      })) || [],
-      exchangeRate
+      products: data?.map((p) => {
+        const cnyPrice = p.price_snapshot_usd * rates.usdToCny;
+        const ghsPrice = cnyPrice / rates.cnyToGhs;
+        return {
+          id: p.id,
+          name: p.title,
+          price: p.price_snapshot_usd,
+          selling_price_ghs: ghsPrice,
+          image_url: p.thumbnail_url,
+          demandLabel: p.purchase_count > 50 ? "high" : "medium"
+        };
+      }) || [],
+      exchangeRate: rates.cnyToGhs
     };
   } catch (error: any) {
     console.error("Failed to fetch top purchased products:", error);
@@ -121,7 +135,7 @@ export async function getShopProducts(params?: {
   imageId?: string;
 }) {
   const supabase = await createClient();
-  const exchangeRate = await getExchangeRate(supabase);
+  const rates = await getExchangeRate(supabase);
   const page = params?.page || 1;
   const limit = 20;
 
@@ -136,8 +150,8 @@ export async function getShopProducts(params?: {
     if (cacheData && cacheData.result_data?.items) {
        return {
          success: true,
-         products: cacheData.result_data.items.map((p: any) => mapAliExpressToC2g(p, exchangeRate)),
-         exchangeRate,
+         products: cacheData.result_data.items.map((p: any) => mapAliExpressToC2g(p, rates)),
+         exchangeRate: rates.cnyToGhs,
          totalCount: cacheData.result_data.total || cacheData.result_data.items.length,
          totalPages: 1,
          currentPage: 1
