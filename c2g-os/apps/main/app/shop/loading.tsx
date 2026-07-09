@@ -1,5 +1,4 @@
 import ShopLayoutWrapper from "../../components/shop/shop-layout-wrapper";
-import { Loader2 } from "lucide-react";
 
 export default function ShopLoading() {
   return (
@@ -23,8 +22,7 @@ export default function ShopLoading() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="flex flex-col gap-2 p-3 border border-border/50 rounded-xl bg-card">
-                <div className="w-full aspect-[4/5] bg-secondary/50 animate-pulse rounded-lg flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-muted-foreground/30 animate-spin" />
+                <div className="w-full aspect-[4/5] bg-secondary/50 animate-pulse rounded-lg">
                 </div>
                 <div className="h-4 w-3/4 bg-secondary/50 animate-pulse rounded mt-2" />
                 <div className="h-4 w-1/2 bg-secondary/50 animate-pulse rounded" />

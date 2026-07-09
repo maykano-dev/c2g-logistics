@@ -303,7 +303,7 @@ export default async function ProductPage({
             <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none text-muted-foreground leading-relaxed relative z-10">
               {product.description ? (
                 <div
-                  className="[&>p]:mb-4 [&>br]:hidden [&>div]:mb-4"
+                  className="[&>p]:mb-4 [&>br]:hidden [&>div]:mb-4 [&_.c2g-specs]:grid [&_.c2g-specs]:grid-cols-1 [&_.c2g-specs]:sm:grid-cols-2 [&_.c2g-specs]:gap-4 [&_.c2g-specs]:mb-8 [&_.c2g-specs>li]:bg-background/50 [&_.c2g-specs>li]:p-3 [&_.c2g-specs>li]:rounded-lg [&_.c2g-specs>li]:border [&_.c2g-specs>li]:border-border/40 [&_.c2g-specs>li>strong]:text-foreground [&_.c2g-specs>li]:text-sm"
                   dangerouslySetInnerHTML={{
                     __html: product.description
                       .replace(/<img[^>]*>/gi, '') // Strip images

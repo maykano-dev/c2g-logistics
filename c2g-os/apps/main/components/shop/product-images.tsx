@@ -40,12 +40,12 @@ export default function ProductImages({ images }: { images: any[] }) {
 
       {/* Desktop Thumbnails (Hidden on Mobile) */}
       {displayImages.length > 1 && (
-        <div className="hidden md:grid grid-cols-5 gap-3">
+        <div className="hidden md:flex flex-wrap gap-2">
           {displayImages.map((img, idx) => (
             <button 
               key={idx}
               onClick={() => setActiveIndex(idx)}
-              className={`aspect-square rounded-xl overflow-hidden border-2 transition-all ${
+              className={`w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
                 activeIndex === idx ? "border-primary scale-105 shadow-md" : "border-transparent opacity-70 hover:opacity-100"
               }`}
             >

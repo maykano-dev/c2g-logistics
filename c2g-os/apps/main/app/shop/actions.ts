@@ -207,13 +207,13 @@ export async function getShopProducts(params?: {
         
         if (Array.isArray(wrapper?.data?.products?.selection_search_product)) {
           resultList = wrapper.data.products.selection_search_product;
-          aeTotal = Number(wrapper.data.total_record_count) || 0;
+          aeTotal = Number(wrapper.data.totalCount) || 0;
         } else if (Array.isArray(res?.data?.products?.selection_search_product)) {
            resultList = res.data.products.selection_search_product;
-           aeTotal = Number(res.data.total_record_count) || 0;
+           aeTotal = Number(res.data.totalCount) || 0;
         } else if (Array.isArray(wrapper?.data?.products)) {
           resultList = wrapper.data.products;
-          aeTotal = Number(wrapper.data.total_record_count) || 0;
+          aeTotal = Number(wrapper.data.totalCount) || 0;
         }
 
         if (resultList.length > 0) {
@@ -241,8 +241,8 @@ export async function getShopProducts(params?: {
       const res = await aliexpressRequest({
         apiMethod: 'aliexpress.ds.text.search',
         params: {
-          keyWord:       'popular',
-          search_text:   'popular',
+          keyWord:       'fashion',
+          search_text:   'fashion',
           sort:          'default',
           pageNo:        '1',
           page_no:       '1',
@@ -261,13 +261,13 @@ export async function getShopProducts(params?: {
       
       if (Array.isArray(wrapper?.data?.products?.selection_search_product)) {
         resultList = wrapper.data.products.selection_search_product;
-        aeTotal = Number(wrapper.data.total_record_count) || 0;
+        aeTotal = Number(wrapper.data.totalCount) || 0;
       } else if (Array.isArray(res?.data?.products?.selection_search_product)) {
         resultList = res.data.products.selection_search_product;
-        aeTotal = Number(res.data.total_record_count) || 0;
+        aeTotal = Number(res.data.totalCount) || 0;
       } else if (Array.isArray(wrapper?.data?.products)) {
         resultList = wrapper.data.products;
-        aeTotal = Number(wrapper.data.total_record_count) || 0;
+        aeTotal = Number(wrapper.data.totalCount) || 0;
       }
 
       if (resultList.length > 0) {
@@ -395,10 +395,24 @@ export async function getProductDetails(id: string) {
     }
 
     const baseInfo = raw.ae_item_base_info_dto || {};
+    
+    // Construct text specifications from item properties
+    let specsHtml = "";
+    if (Array.isArray(raw.ae_item_properties?.ae_item_property)) {
+      specsHtml = `<ul class="c2g-specs">`;
+      raw.ae_item_properties.ae_item_property.forEach((prop: any) => {
+         if (prop.attr_name && prop.attr_value) {
+            specsHtml += `<li><strong>${prop.attr_name}:</strong> ${prop.attr_value}</li>`;
+         }
+      });
+      specsHtml += `</ul>`;
+    }
+    const finalDescription = specsHtml + (baseInfo.detail || '');
+
     const mappedProduct = {
       id:          String(baseInfo.product_id || id),
       name:        normalizeProductTitle(baseInfo.subject || baseInfo.title || 'Unknown Product'),
-      description: baseInfo.detail || '',
+      description: finalDescription,
       images:      mainImages.length > 0 ? mainImages : ['https://placehold.co/600'],
       variants,
       category:    baseInfo.category_id,

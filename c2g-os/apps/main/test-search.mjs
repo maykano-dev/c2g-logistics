@@ -6,17 +6,20 @@ const SESSION = "50000700a01Ok1c2f26cavAgAp0RvfZYo2FlTcTpEXBjTgMuzHokum4iRt3SHOd
 const GATEWAY = "https://api-sg.aliexpress.com/sync";
 
 async function run() {
-  const method = "aliexpress.ds.product.get";
+  const method = "aliexpress.ds.text.search";
   const params = {
     app_key: APP_KEY,
     session: SESSION,
     method: method,
     sign_method: "md5",
     timestamp: Date.now().toString(),
-    product_id: "1005008367198409",
-    ship_to_country: "GH",
-    target_currency: "USD",
-    target_language: "en"
+    keyWord: "ladies bag",
+    pageNo: "1",
+    pageSize: "20",
+    currency: "USD",
+    countryCode: "GH",
+    shipToCountry: "GH",
+    local: "en_US"
   };
 
   const sortedKeys = Object.keys(params).sort();
@@ -37,7 +40,12 @@ async function run() {
   });
   
   const data = await res.json();
-  const raw = data?.aliexpress_ds_product_get_response?.result;
-  console.log("ae_item_properties:", JSON.stringify(raw?.ae_item_properties).substring(0, 500));
+  // print keys of data.aliexpress_ds_text_search_response.data
+  const aeData = data?.aliexpress_ds_text_search_response?.data;
+  console.log("aeData keys:", Object.keys(aeData || {}));
+  console.log("totalCount:", aeData?.totalCount || aeData?.total_record_count);
+  console.log("pageSize:", aeData?.pageSize);
+  console.log("products length:", aeData?.products?.selection_search_product?.length || aeData?.products?.length || 0);
+  console.log("first item:", JSON.stringify(aeData?.products?.selection_search_product?.[0] || aeData?.products?.[0] || null).substring(0, 500));
 }
 run();
