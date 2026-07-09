@@ -171,118 +171,65 @@ export async function getShopProducts(params?: {
     image_url: p.thumbnail_url,
   }));
 
-  // 2. If there is a search query or category, fetch from Alibaba (Level 2)
-  const isSearchOrCategory = !!params?.query || (!!params?.category && params.category !== "all");
+  // 2. We ALWAYS fetch from Alibaba to fill out the shop. 
+  // If no search or category, we use a generic keyword "fashion" to populate the generic shop page.
+  const searchQuery = params?.query || (!params?.category || params.category === 'all' ? 'fashion' : '');
+  const searchCategory = params?.category === 'all' ? '' : (params?.category || '');
+  
+  const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}`);
+  
+  // Check Search Query Cache first
+  const { data: cacheData } = await supabase
+    .from("search_query_cache")
+    .select("result_data, expires_at")
+    .eq("query_hash", qHash)
+    .single();
 
-  if (isSearchOrCategory) {
-    const qHash = hashQuery(`${params?.query || ''}_${params?.category || ''}_${page}`);
-    
-    // Check Search Query Cache first
-    const { data: cacheData } = await supabase
-      .from("search_query_cache")
-      .select("result_data, expires_at")
-      .eq("query_hash", qHash)
-      .single();
+  if (cacheData && new Date(cacheData.expires_at) > new Date()) {
+    // CACHE HIT
+    const parsedData = cacheData.result_data;
+    alibabaProducts = parsedData.items.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
+    totalCount += parsedData.total || 0;
+  } else {
+    // CACHE MISS → Call AliExpress DS API
+    try {
+      const aeParams: any = {
+        sort:          'default',
+        pageNo:        String(page),
+        page_no:       String(page),
+        pageSize:      '20',
+        page_size:     '20',
+        currency:      'USD',
+        local:         'en_US',
+        countryCode:   'GH',
+        shipToCountry: 'GH',
+      };
 
-    if (cacheData && new Date(cacheData.expires_at) > new Date()) {
-      // CACHE HIT
-      const parsedData = cacheData.result_data;
-      alibabaProducts = parsedData.items.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
-      totalCount += parsedData.total || 0;
-    } else {
-      // CACHE MISS → Call AliExpress DS API
-      try {
-        const aeParams: any = {
-          sort:          'default',
-          pageNo:        String(page),
-          page_no:       String(page),
-          pageSize:      '20',
-          page_size:     '20',
-          currency:      'USD',
-          local:         'en_US',
-          countryCode:   'GH',
-          shipToCountry: 'GH',
-        };
+      if (searchQuery) {
+        aeParams.keyWord = searchQuery;
+        aeParams.search_text = searchQuery;
+      }
 
-        if (params?.query) {
-          aeParams.keyWord = params.query;
-          aeParams.search_text = params.query;
-        }
-
-        if (params?.category && params.category !== "all") {
-          const isNumeric = /^\d+$/.test(params.category);
-          if (isNumeric) {
-            aeParams.categoryId = params.category;
-            aeParams.category_id = params.category;
+      if (searchCategory) {
+        const isNumeric = /^\d+$/.test(searchCategory);
+        if (isNumeric) {
+          aeParams.categoryId = searchCategory;
+          aeParams.category_id = searchCategory;
+        } else {
+          // If it's a string like "electronics", append it to the keyword search
+          if (!aeParams.keyWord) {
+            aeParams.keyWord = searchCategory;
+            aeParams.search_text = searchCategory;
           } else {
-            // If it's a string like "fashion", append it to the keyword search
-            if (!aeParams.keyWord) {
-              aeParams.keyWord = params.category;
-              aeParams.search_text = params.category;
-            } else {
-              aeParams.keyWord = `${params.category} ${aeParams.keyWord}`;
-              aeParams.search_text = aeParams.keyWord;
-            }
+            aeParams.keyWord = `${searchCategory} ${aeParams.keyWord}`;
+            aeParams.search_text = aeParams.keyWord;
           }
         }
-
-        const res = await aliexpressRequest({
-          apiMethod: 'aliexpress.ds.text.search',
-          params: aeParams
-        });
-
-        const wrapper = res?.aliexpress_ds_text_search_response || res;
-        let resultList: any[] = [];
-        let aeTotal = 0;
-        
-        if (Array.isArray(wrapper?.data?.products?.selection_search_product)) {
-          resultList = wrapper.data.products.selection_search_product;
-          aeTotal = Number(wrapper.data.totalCount) || 0;
-        } else if (Array.isArray(res?.data?.products?.selection_search_product)) {
-           resultList = res.data.products.selection_search_product;
-           aeTotal = Number(res.data.totalCount) || 0;
-        } else if (Array.isArray(wrapper?.data?.products)) {
-          resultList = wrapper.data.products;
-          aeTotal = Number(wrapper.data.totalCount) || 0;
-        }
-
-        if (resultList.length > 0) {
-          alibabaProducts = resultList.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
-          totalCount += aeTotal;
-
-          // Save to Cache (TTL 12 hours)
-          const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 12);
-
-          await supabase.from("search_query_cache").upsert({
-            query_hash:  qHash,
-            query_text:  `${params?.query || ''}_${params?.category || ''}_${page}`,
-            result_data: { items: resultList, total: aeTotal },
-            expires_at:  expiresAt.toISOString()
-          });
-        }
-      } catch (e) {
-        console.error("AliExpress Search Failed, falling back to local only", e);
       }
-    }
-  } else if (!isSearchOrCategory && localProducts.length === 0) {
-    // EMPTY SHOP FALLBACK: If local DB is empty and no query provided, fetch a generic popular category
-    try {
+
       const res = await aliexpressRequest({
         apiMethod: 'aliexpress.ds.text.search',
-        params: {
-          keyWord:       'fashion',
-          search_text:   'fashion',
-          sort:          'default',
-          pageNo:        String(page),
-          page_no:       String(page),
-          pageSize:      '20',
-          page_size:     '20',
-          currency:      'USD',
-          local:         'en_US',
-          countryCode:   'GH',
-          shipToCountry: 'GH',
-        }
+        params: aeParams
       });
 
       const wrapper = res?.aliexpress_ds_text_search_response || res;
@@ -293,8 +240,8 @@ export async function getShopProducts(params?: {
         resultList = wrapper.data.products.selection_search_product;
         aeTotal = Number(wrapper.data.totalCount) || 0;
       } else if (Array.isArray(res?.data?.products?.selection_search_product)) {
-        resultList = res.data.products.selection_search_product;
-        aeTotal = Number(res.data.totalCount) || 0;
+         resultList = res.data.products.selection_search_product;
+         aeTotal = Number(res.data.totalCount) || 0;
       } else if (Array.isArray(wrapper?.data?.products)) {
         resultList = wrapper.data.products;
         aeTotal = Number(wrapper.data.totalCount) || 0;
@@ -303,9 +250,20 @@ export async function getShopProducts(params?: {
       if (resultList.length > 0) {
         alibabaProducts = resultList.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
         totalCount += aeTotal;
+
+        // Save to Cache (TTL 12 hours)
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 12);
+
+        await supabase.from("search_query_cache").upsert({
+          query_hash:  qHash,
+          query_text:  `${searchQuery}_${searchCategory}_${page}`,
+          result_data: { items: resultList, total: aeTotal },
+          expires_at:  expiresAt.toISOString()
+        });
       }
     } catch (e) {
-      console.error("AliExpress Default Fallback Search Failed", e);
+      console.error("AliExpress Search Failed", e);
     }
   }
 
