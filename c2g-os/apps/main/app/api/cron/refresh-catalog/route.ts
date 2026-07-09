@@ -38,7 +38,7 @@ export async function GET(request: Request) {
           apiMethod: 'aliexpress.ds.product.get',
           params: {
             product_id: product.aliexpress_id,
-            ship_to_country: 'GH',
+            ship_to_country: 'US',
             target_currency: 'USD',
             target_language: 'en',
           }

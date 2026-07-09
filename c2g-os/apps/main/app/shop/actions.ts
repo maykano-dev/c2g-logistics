@@ -206,8 +206,8 @@ export async function getShopProducts(params?: {
         page_size:     '20',
         currency:      'USD',
         local:         'en_US',
-        countryCode:   'GH',
-        shipToCountry: 'GH',
+        countryCode:   'US',
+        shipToCountry: 'US',
       };
 
       if (searchQuery) {
@@ -318,7 +318,7 @@ export async function getProductDetails(id: string) {
       apiMethod: 'aliexpress.ds.product.get',
       params: {
         product_id:      id,
-        ship_to_country: 'GH',
+        ship_to_country: 'US',
         target_currency: 'USD',
         target_language: 'en',
       }

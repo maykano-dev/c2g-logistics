@@ -49,8 +49,8 @@ export async function GET(request: Request) {
             sort: 'default', // Popularity by default
             currency: 'USD',
             local: 'en_US',
-            countryCode: 'GH',
-            shipToCountry: 'GH',
+            countryCode: 'US',
+            shipToCountry: 'US',
           }
         });
 
