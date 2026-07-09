@@ -12,7 +12,7 @@ async function run() {
     method: "aliexpress.ds.product.get",
     sign_method: "md5",
     timestamp: Date.now().toString(),
-    product_id: "1005011690759274", // the one from the screenshot
+    product_id: "1005008130183593",
     target_currency: "USD",
     target_language: "en",
     ship_to_country: "GH"
@@ -38,9 +38,7 @@ async function run() {
   const data = await res.json();
   const raw = data?.aliexpress_ds_product_get_response?.result;
   
-  console.log("Base Info App Sale Price:", raw?.ae_item_base_info_dto?.app_sale_price);
-  console.log("Base Info Currency:", raw?.ae_item_base_info_dto?.app_sale_price_currency);
-  console.log("First SKU price:", raw?.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o?.[0]?.sku_price);
-  console.log("First SKU offer_sale_price:", raw?.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o?.[0]?.offer_sale_price);
+  console.log("Base Info:", JSON.stringify(raw?.ae_item_base_info_dto, null, 2));
+  console.log("First SKU:", JSON.stringify(raw?.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o?.[0], null, 2));
 }
 run();

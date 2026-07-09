@@ -172,9 +172,14 @@ export async function getShopProducts(params?: {
   }));
 
   // 2. We ALWAYS fetch from Alibaba to fill out the shop. 
-  // If no search or category, we use a generic keyword "fashion" to populate the generic shop page.
-  const searchQuery = params?.query || (!params?.category || params.category === 'all' ? 'fashion' : '');
+  // If no search or category, we use a rotating keyword based on the page number to populate the generic shop page with a mixture of categories.
+  let searchQuery = params?.query || '';
   const searchCategory = params?.category === 'all' ? '' : (params?.category || '');
+
+  if (!searchQuery && !searchCategory) {
+    const mixKeywords = ['bestseller', 'home', 'fashion', 'electronics', 'trending', 'sports', 'beauty'];
+    searchQuery = mixKeywords[page % mixKeywords.length];
+  }
   
   const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}`);
   
