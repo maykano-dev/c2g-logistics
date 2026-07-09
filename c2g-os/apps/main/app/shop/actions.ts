@@ -180,8 +180,20 @@ export async function getShopProducts(params?: {
         }
 
         if (params?.category && params.category !== "all") {
-          aeParams.categoryId = params.category;
-          aeParams.category_id = params.category;
+          const isNumeric = /^\d+$/.test(params.category);
+          if (isNumeric) {
+            aeParams.categoryId = params.category;
+            aeParams.category_id = params.category;
+          } else {
+            // If it's a string like "fashion", append it to the keyword search
+            if (!aeParams.keyWord) {
+              aeParams.keyWord = params.category;
+              aeParams.search_text = params.category;
+            } else {
+              aeParams.keyWord = `${params.category} ${aeParams.keyWord}`;
+              aeParams.search_text = aeParams.keyWord;
+            }
+          }
         }
 
         const res = await aliexpressRequest({
