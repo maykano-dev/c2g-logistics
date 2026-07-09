@@ -29,21 +29,59 @@ export default async function ShopPage({
   searchParams: Promise<{ category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string; page?: string }>;
 }) {
   const resolvedParams = await searchParams;
+  const suspenseKey = JSON.stringify(resolvedParams);
 
+  // Fast local DB fetch, won't noticeably block navigation
+  const walletRes = await getSecureWalletBalance();
+
+  return (
+    <div className="bg-background min-h-screen pb-20 md:pb-8 pt-14 md:pt-16">
+      {/* Fixed Shop Header (Search + Category Chips) */}
+      <Suspense fallback={<div className="h-28 bg-background" />}>
+        <ShopHeader walletBalance={walletRes.available_balance} />
+      </Suspense>
+
+      <ShopLayoutWrapper>
+        {/* Suspense boundary with a key tied to search parameters.
+            This ensures that when a user clicks a category (changing searchParams),
+            Next.js instantly updates the URL, instantly re-renders this layout shell 
+            (updating the active sidebar tab), and throws away the old content to show 
+            this fallback skeleton while fetching new data in the background. */}
+        <Suspense key={suspenseKey} fallback={<ShopInnerLoading />}>
+          <ShopContent resolvedParams={resolvedParams} />
+        </Suspense>
+      </ShopLayoutWrapper>
+
+      {/* Floating Cart (Desktop) */}
+      <FloatingCart />
+
+      {/* Mobile Bottom Nav */}
+      <MobileBottomNav />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Async Content Component
+// ═══════════════════════════════════════════════════════════════════
+async function ShopContent({
+  resolvedParams,
+}: {
+  resolvedParams: { category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string; page?: string };
+}) {
   const paramsForProducts = {
     ...resolvedParams,
     page: resolvedParams.page ? parseInt(resolvedParams.page, 10) : undefined
   };
 
   // Fetch all data in parallel
-  const [allProductsResult, topPurchasedResult, trendingResult, newArrivalsResult, bestSellersResult, walletRes] =
+  const [allProductsResult, topPurchasedResult, trendingResult, newArrivalsResult, bestSellersResult] =
     await Promise.all([
       getShopProducts(paramsForProducts),
       getTopPurchasedProducts(5),
       getTrendingProducts(),
       getNewArrivals(),
       getBestSellers(),
-      getSecureWalletBalance(),
     ]);
 
   const { products, exchangeRate, currentPage, totalPages } = allProductsResult;
@@ -58,81 +96,75 @@ export default async function ShopPage({
   const hasProducts = products && products.length > 0;
 
   return (
-    <div className="bg-background min-h-screen pb-20 md:pb-8 pt-14 md:pt-16">
-      {/* Fixed Shop Header (Search + Category Chips) */}
-      <Suspense fallback={<div className="h-28 bg-background" />}>
-        <ShopHeader walletBalance={walletRes.available_balance} />
-      </Suspense>
+    <>
+      {/* ═══════════ HOMEPAGE VIEW (no search/category active) ═══════════ */}
+      {!isSearching ? (
+        <div className="space-y-8 md:space-y-12">
+          {showHeroAndSections && (
+            <>
+              {/* Hero Banner Carousel */}
+              {topPurchasedProducts.length > 0 && (
+                <section className="w-full">
+                  <HeroCarousel products={topPurchasedProducts} />
+                </section>
+              )}
 
-      <ShopLayoutWrapper>
-        {/* ═══════════ HOMEPAGE VIEW (no search/category active) ═══════════ */}
-        {!isSearching ? (
-          <div className="space-y-8 md:space-y-12">
-            {showHeroAndSections && (
-              <>
-                {/* Hero Banner Carousel */}
-                {topPurchasedProducts.length > 0 && (
-                  <section className="w-full">
-                    <HeroCarousel products={topPurchasedProducts} />
-                  </section>
-                )}
+              {/* 🔥 Trending Products */}
+              {trendingProducts.length > 0 && (
+                <section className="w-full">
+                  <ProductSection title="Trending Now" icon={<Flame className="w-5 h-5 text-orange-500" />} href="/shop?sort=trending">
+                  {trendingProducts.map((product: any) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      exchangeRate={exchangeRate || 1}
+                      variant="scroll"
+                    />
+                  ))}
+                  </ProductSection>
+                </section>
+              )}
 
-                {/* 🔥 Trending Products */}
-                {trendingProducts.length > 0 && (
-                  <section className="w-full">
-                    <ProductSection title="Trending Now" icon={<Flame className="w-5 h-5 text-orange-500" />} href="/shop?sort=trending">
-                    {trendingProducts.map((product: any) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        exchangeRate={exchangeRate || 1}
-                        variant="scroll"
-                      />
-                    ))}
-                    </ProductSection>
-                  </section>
-                )}
+              {/* 🆕 New Arrivals */}
+              {newProducts.length > 0 && (
+                <section className="w-full">
+                  <ProductSection title="New Arrivals" icon={<Sparkles className="w-5 h-5 text-yellow-500" />} href="/shop?sort=newest">
+                  {newProducts.map((product: any) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      exchangeRate={exchangeRate || 1}
+                      variant="scroll"
+                    />
+                  ))}
+                  </ProductSection>
+                </section>
+              )}
 
-                {/* 🆕 New Arrivals */}
-                {newProducts.length > 0 && (
-                  <section className="w-full">
-                    <ProductSection title="New Arrivals" icon={<Sparkles className="w-5 h-5 text-yellow-500" />} href="/shop?sort=newest">
-                    {newProducts.map((product: any) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        exchangeRate={exchangeRate || 1}
-                        variant="scroll"
-                      />
-                    ))}
-                    </ProductSection>
-                  </section>
-                )}
+              {/* 🏆 Best Sellers */}
+              {bestProducts.length > 0 && (
+                <section className="w-full">
+                  <ProductSection title="Best Sellers" icon={<Trophy className="w-5 h-5 text-yellow-600" />}>
+                  {bestProducts.map((product: any) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      exchangeRate={exchangeRate || 1}
+                      variant="scroll"
+                    />
+                  ))}
+                  </ProductSection>
+                </section>
+              )}
+            </>
+          )}
 
-                {/* 🏆 Best Sellers */}
-                {bestProducts.length > 0 && (
-                  <section className="w-full">
-                    <ProductSection title="Best Sellers" icon={<Trophy className="w-5 h-5 text-yellow-600" />}>
-                    {bestProducts.map((product: any) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        exchangeRate={exchangeRate || 1}
-                        variant="scroll"
-                      />
-                    ))}
-                    </ProductSection>
-                  </section>
-                )}
-              </>
-            )}
-
-            {/* All Products Grid */}
-            <section className="w-full">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-primary" /> All Products
-                </h2>
+          {/* All Products Grid */}
+          <section className="w-full">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-primary" /> All Products
+              </h2>
             </div>
 
             {hasProducts ? (
@@ -184,10 +216,10 @@ export default async function ShopPage({
             )}
           </section>
         </div>
-        ) : (
-          /* ═══════════ SEARCH / CATEGORY VIEW ═══════════ */
-          <div className="w-full py-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+      ) : (
+        /* ═══════════ SEARCH / CATEGORY VIEW ═══════════ */
+        <div className="w-full py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
             <div className="flex items-center gap-4">
               <Link
                 href="/shop"
@@ -211,8 +243,6 @@ export default async function ShopPage({
             </div>
           </div>
 
-
-
           {hasProducts ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {products!.map((product: any) => (
@@ -226,7 +256,7 @@ export default async function ShopPage({
             </div>
           ) : (
             <EmptySearch query={resolvedParams.query} />
-            )}
+          )}
 
           {/* Pagination Controls for Search/Category View */}
           {hasProducts && totalPages && totalPages > 1 && (
@@ -260,22 +290,37 @@ export default async function ShopPage({
               )}
             </div>
           )}
-          </div>
-        )}
-      </ShopLayoutWrapper>
-
-      {/* Floating Cart (Desktop) */}
-      <FloatingCart />
-
-      {/* Mobile Bottom Nav */}
-      <MobileBottomNav />
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Empty States
+// Skeletons & Empty States
 // ═══════════════════════════════════════════════════════════════════
+function ShopInnerLoading() {
+  return (
+    <div className="w-full py-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-full bg-secondary/50 animate-pulse" />
+        <div className="h-8 w-48 bg-secondary/50 animate-pulse rounded" />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-2 p-3 border border-border/50 rounded-xl bg-card">
+            <div className="w-full aspect-[4/5] bg-secondary/50 animate-pulse rounded-lg"></div>
+            <div className="h-4 w-3/4 bg-secondary/50 animate-pulse rounded mt-2" />
+            <div className="h-4 w-1/2 bg-secondary/50 animate-pulse rounded" />
+            <div className="h-8 w-full bg-secondary/50 animate-pulse rounded-lg mt-2" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function EmptyProducts() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
