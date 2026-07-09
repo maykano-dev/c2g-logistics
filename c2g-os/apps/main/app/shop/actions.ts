@@ -69,7 +69,7 @@ function mapAliExpressToC2g(aeProduct: any, exchangeRate: number) {
     price:             usdPrice,
     selling_price_ghs: usdPrice * exchangeRate,
     image_url:         imageUrl,
-    rating:            aeProduct.score || aeProduct.evaluate_score || "0",
+    rating:            aeProduct.score || aeProduct.evaluate_score || aeProduct.evaluate_rate || "0",
     orders:            aeProduct.orders || aeProduct.lastest_volume || 0,
     is_aliexpress:     true, // Flag so frontend knows it's an API product
     // NOTE: product_detail_url intentionally NOT included — white-labeling requirement
@@ -546,24 +546,14 @@ export async function processImageSearch(base64Data: string) {
     const products = data?.aliexpress_ds_image_search_response?.data?.products?.traffic_image_product_d_t_o || [];
     
     if (products.length > 0) {
-      // Map API fields (original_price, sale_price, product_id, product_title, product_small_image_urls)
-      const mappedResults = products.map((p: any) => ({
-        id: String(p.product_id),
-        title: p.product_title,
-        targetSalePrice: p.sale_price || p.original_price,
-        itemMainPic: p.product_small_image_urls?.string?.[0] || p.product_main_image_url || "",
-        evaluate_score: p.evaluate_rate || "0",
-        orders: 0
-      }));
-
-      // Save to Cache (TTL 12 hours)
+      // Save raw products to Cache so getShopProducts can map them via mapAliExpressToC2g
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 12);
 
       await supabase.from("search_query_cache").upsert({
         query_hash:  queryHash,
         query_text:  `image_search_${queryHash}`,
-        result_data: { items: mappedResults, total: mappedResults.length },
+        result_data: { items: products, total: products.length },
         expires_at:  expiresAt.toISOString()
       });
 

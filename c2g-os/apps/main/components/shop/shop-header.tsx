@@ -4,7 +4,7 @@ import { Search, ShoppingCart, User, X, Heart, Loader2, Camera } from "lucide-re
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useCallback, useTransition, useRef } from "react";
+import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import { useCart } from "./cart-context";
 import { useWishlist } from "./wishlist-context";
 import { processImageSearch } from "../../app/shop/actions";
@@ -49,10 +49,8 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleFile = (file: File) => {
+    if (isUploadingImage) return;
     setIsUploadingImage(true);
     
     // Resize image client-side to save bandwidth
@@ -99,6 +97,62 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
     };
     reader.readAsDataURL(file);
   };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          if (file) handleFile(file);
+          break;
+        }
+      }
+    };
+
+    const handleGlobalDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+
+    const handleGlobalDrop = (e: DragEvent) => {
+      const items = e.dataTransfer?.items;
+      if (!items) return;
+      let hasImage = false;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          hasImage = true;
+          break;
+        }
+      }
+      if (hasImage) {
+        e.preventDefault();
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf("image") !== -1) {
+            const file = items[i].getAsFile();
+            if (file) handleFile(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    window.addEventListener('dragover', handleGlobalDragOver);
+    window.addEventListener('drop', handleGlobalDrop);
+
+    return () => {
+      window.removeEventListener('paste', handleGlobalPaste);
+      window.removeEventListener('dragover', handleGlobalDragOver);
+      window.removeEventListener('drop', handleGlobalDrop);
+    };
+  }, [isUploadingImage]);
 
   return (
     <div className="fixed top-0 inset-x-0 z-[100] bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg shadow-black/5 pt-[env(safe-area-inset-top)]">

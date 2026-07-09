@@ -45,6 +45,7 @@ async function run() {
   });
   
   const data = await res.json();
-  console.log("RESPONSE:", JSON.stringify(data).substring(0, 500));
+  const firstProduct = data?.aliexpress_ds_image_search_response?.data?.products?.traffic_image_product_d_t_o?.[0];
+  console.log("FIRST PRODUCT:", JSON.stringify(firstProduct, null, 2));
 }
 run();
