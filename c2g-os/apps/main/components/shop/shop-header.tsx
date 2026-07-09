@@ -1,12 +1,13 @@
 "use client";
 
-import { Search, ShoppingCart, User, X, Heart, Loader2 } from "lucide-react";
+import { Search, ShoppingCart, User, X, Heart, Loader2, Camera } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useRef } from "react";
 import { useCart } from "./cart-context";
 import { useWishlist } from "./wishlist-context";
+import { processImageSearch } from "../../app/shop/actions";
 
 export default function ShopHeader({ walletBalance }: { walletBalance?: number }) {
   const router = useRouter();
@@ -45,6 +46,60 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
     });
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    
+    // Resize image client-side to save bandwidth
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        const MAX_DIM = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > MAX_DIM) {
+          height *= MAX_DIM / width;
+          width = MAX_DIM;
+        } else if (height > MAX_DIM) {
+          width *= MAX_DIM / height;
+          height = MAX_DIM;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const base64Data = canvas.toDataURL("image/jpeg", 0.7);
+
+        try {
+          const res = await processImageSearch(base64Data);
+          if (res.success && res.searchId) {
+            router.push(`/shop?searchId=${res.searchId}`);
+          } else {
+            alert(res.error || "Image search failed");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("An error occurred while uploading the image.");
+        } finally {
+          setIsUploadingImage(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="fixed top-0 inset-x-0 z-[100] bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg shadow-black/5 pt-[env(safe-area-inset-top)]">
       {/* Top bar: Logo + Search + Cart */}
@@ -73,21 +128,44 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
-              className={`w-full h-10 md:h-11 rounded-full border bg-secondary/50 pl-10 pr-10 text-sm focus:outline-none transition-all ${
+              className={`w-full h-10 md:h-11 rounded-full border bg-secondary/50 pl-10 pr-20 text-sm focus:outline-none transition-all ${
                 isSearchFocused
                   ? "border-primary ring-2 ring-primary/20 bg-background"
                   : "border-border/50"
               }`}
             />
-            {query && !isPending && (
+            
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {query && !isPending && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="p-1.5 rounded-full hover:bg-secondary transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={clearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-secondary transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingImage}
+                className="p-1.5 rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                title="Search by Image"
               >
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
+                {isUploadingImage ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                ) : (
+                  <Camera className="w-4 h-4" />
+                )}
               </button>
-            )}
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
           </form>
 
           {/* Cart + Wishlist + Account */}

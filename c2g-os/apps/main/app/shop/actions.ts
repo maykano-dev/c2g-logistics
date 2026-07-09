@@ -118,12 +118,33 @@ export async function getShopProducts(params?: {
   category?: string;
   query?: string;
   page?: number;
+  imageId?: string;
 }) {
   const supabase = await createClient();
   const exchangeRate = await getExchangeRate(supabase);
   const page = params?.page || 1;
   const limit = 20;
-  
+
+  // Intercept for Image Search
+  if (params?.imageId) {
+    const { data: cacheData } = await supabase
+      .from("search_query_cache")
+      .select("result_data")
+      .eq("query_hash", params.imageId)
+      .single();
+      
+    if (cacheData && cacheData.result_data?.items) {
+       return {
+         success: true,
+         products: cacheData.result_data.items.map((p: any) => mapAliExpressToC2g(p, exchangeRate)),
+         exchangeRate,
+         totalCount: cacheData.result_data.total || cacheData.result_data.items.length,
+         totalPages: 1,
+         currentPage: 1
+       };
+    }
+  }
+
   let localProducts: any[] = [];
   let alibabaProducts: any[] = [];
   let totalCount = 0;
@@ -244,7 +265,7 @@ export async function getShopProducts(params?: {
         console.error("AliExpress Search Failed, falling back to local only", e);
       }
     }
-  } else if (!isSearchOrCategory && localProducts.length === 0 && page === 1) {
+  } else if (!isSearchOrCategory && localProducts.length === 0) {
     // EMPTY SHOP FALLBACK: If local DB is empty and no query provided, fetch a generic popular category
     try {
       const res = await aliexpressRequest({
@@ -253,8 +274,8 @@ export async function getShopProducts(params?: {
           keyWord:       'fashion',
           search_text:   'fashion',
           sort:          'default',
-          pageNo:        '1',
-          page_no:       '1',
+          pageNo:        String(page),
+          page_no:       String(page),
           pageSize:      '20',
           page_size:     '20',
           currency:      'USD',
@@ -452,6 +473,107 @@ export async function getProductDetails(id: string) {
   } catch (error: any) {
     console.error("Error fetching AliExpress product details:", error);
     return { success: false, error: error.message };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Visual Image Search (AliExpress Dropshipping API)
+// ═══════════════════════════════════════════════════════════════════
+export async function processImageSearch(base64Data: string) {
+  const supabase = await createClient();
+  // Strip the 'data:image/...;base64,' prefix if it exists
+  const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, "");
+  
+  // Generate a hash ID for caching
+  const crypto = require("crypto");
+  const queryHash = crypto.createHash("md5").update(base64Clean).digest("hex");
+
+  // Check if we already searched this exact image recently
+  const { data: existingCache } = await supabase
+    .from("search_query_cache")
+    .select("query_hash")
+    .eq("query_hash", queryHash)
+    .single();
+
+  if (existingCache) {
+    return { success: true, searchId: queryHash };
+  }
+
+  try {
+    const APP_KEY = process.env.ALIEXPRESS_APP_KEY || "538994";
+    const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET || "F6hz1FFs8FlXmEGuigr9r7HXMLQ5sRuQ";
+    const SESSION = process.env.ALIEXPRESS_SESSION || "50000700a01Ok1c2f26cavAgAp0RvfZYo2FlTcTpEXBjTgMuzHokum4iRt3SHOds7YY2";
+    const GATEWAY = "https://api-sg.aliexpress.com/sync";
+
+    const params: any = {
+      app_key: APP_KEY,
+      session: SESSION,
+      method: "aliexpress.ds.image.search",
+      sign_method: "md5",
+      timestamp: Date.now().toString(),
+      shpt_to: "GH",
+      target_currency: "USD",
+      target_language: "EN",
+      sort: "default"
+    };
+
+    const sortedKeys = Object.keys(params).sort();
+    let signString = "";
+    for (const key of sortedKeys) {
+      if (params[key] !== "") signString += key + params[key];
+    }
+    const fullString = APP_SECRET + signString + APP_SECRET;
+    const signature = crypto.createHash('md5').update(fullString, 'utf8').digest('hex').toUpperCase();
+    params.sign = signature;
+
+    const url = new URL(GATEWAY);
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== "") url.searchParams.append(k, v as string);
+    });
+
+    const formData = new FormData();
+    const buffer = Buffer.from(base64Clean, "base64");
+    // Uploading as a generic jpeg Blob
+    const blob = new Blob([buffer], { type: 'image/jpeg' });
+    formData.append("image_file_bytes", blob, "upload.jpg");
+
+    const res = await fetch(url.toString(), {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+    const products = data?.aliexpress_ds_image_search_response?.data?.products?.traffic_image_product_d_t_o || [];
+    
+    if (products.length > 0) {
+      // Map API fields (original_price, sale_price, product_id, product_title, product_small_image_urls)
+      const mappedResults = products.map((p: any) => ({
+        id: String(p.product_id),
+        title: p.product_title,
+        targetSalePrice: p.sale_price || p.original_price,
+        itemMainPic: p.product_small_image_urls?.string?.[0] || p.product_main_image_url || "",
+        evaluate_score: p.evaluate_rate || "0",
+        orders: 0
+      }));
+
+      // Save to Cache (TTL 12 hours)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 12);
+
+      await supabase.from("search_query_cache").upsert({
+        query_hash:  queryHash,
+        query_text:  `image_search_${queryHash}`,
+        result_data: { items: mappedResults, total: mappedResults.length },
+        expires_at:  expiresAt.toISOString()
+      });
+
+      return { success: true, searchId: queryHash };
+    }
+
+    return { success: false, error: "No products found for this image" };
+  } catch (err: any) {
+    console.error("processImageSearch failed", err);
+    return { success: false, error: err.message };
   }
 }
 

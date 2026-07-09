@@ -26,7 +26,7 @@ export const metadata = {
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string; page?: string; searchId?: string }>;
 }) {
   const resolvedParams = await searchParams;
   const suspenseKey = JSON.stringify(resolvedParams);
@@ -67,10 +67,11 @@ export default async function ShopPage({
 async function ShopContent({
   resolvedParams,
 }: {
-  resolvedParams: { category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string; page?: string };
+  resolvedParams: { category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string; page?: string; searchId?: string };
 }) {
   const paramsForProducts = {
     ...resolvedParams,
+    imageId: resolvedParams.searchId,
     page: resolvedParams.page ? parseInt(resolvedParams.page, 10) : undefined
   };
 
@@ -90,7 +91,7 @@ async function ShopContent({
   const { products: newProducts } = newArrivalsResult;
   const { products: bestProducts } = bestSellersResult;
 
-  const isSearching = !!(resolvedParams.query || (resolvedParams.category && resolvedParams.category !== "all") || resolvedParams.sort);
+  const isSearching = !!(resolvedParams.query || resolvedParams.searchId || (resolvedParams.category && resolvedParams.category !== "all") || resolvedParams.sort);
   const isFirstPage = !currentPage || currentPage === 1;
   const showHeroAndSections = !isSearching && isFirstPage;
   const hasProducts = products && products.length > 0;
@@ -228,7 +229,9 @@ async function ShopContent({
                 <ArrowLeft className="w-5 h-5 text-foreground" />
               </Link>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
-                {resolvedParams.query
+                {resolvedParams.searchId
+                  ? "Visual Search Results"
+                  : resolvedParams.query
                   ? `Results for "${resolvedParams.query}"`
                   : resolvedParams.category && resolvedParams.category !== "all"
                   ? `${resolvedParams.category.charAt(0).toUpperCase() + resolvedParams.category.slice(1)}`
