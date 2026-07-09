@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { SiteNav } from "../components/site-nav";
+import ProductCard from "../components/shop/product-card";
+import { getTopPurchasedProducts } from "./shop/actions";
 import { 
   ShoppingCart, 
   Globe, 
@@ -16,7 +18,9 @@ import {
   Link as LinkIcon
 } from "lucide-react";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { products: featuredProducts, exchangeRate } = await getTopPurchasedProducts(8);
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden font-sans">
       {/* Global Background Effects */}
@@ -377,6 +381,34 @@ export default function LandingPage() {
              </div>
           </div>
         </section>
+
+        {/* FEATURED ON C2G MALL */}
+        {featuredProducts && featuredProducts.length > 0 && (
+          <section className="space-y-8 my-20">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+              <div>
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-secondary text-secondary-foreground border border-border text-sm font-bold mb-2">
+                  Top Picks
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Featured On C2G Mall</h2>
+                <p className="text-muted-foreground mt-2 max-w-2xl">Discover our most popular products sourced directly from trusted suppliers in China.</p>
+              </div>
+              <Link href="/shop" className="inline-flex items-center gap-2 text-primary font-bold hover:underline shrink-0">
+                View All Products <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {featuredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  exchangeRate={exchangeRate || 1}
+                  variant="grid"
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* STATISTICS */}
         <section className="relative rounded-[2rem] p-8 md:p-16 text-center overflow-hidden border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.5)] bg-secondary/40 backdrop-blur-3xl my-12">

@@ -293,18 +293,23 @@ export default async function ProductPage({
 
         {/* Product Description */}
         <div className="mt-16 pt-8 border-t border-border">
-          <div className="bg-secondary/20 rounded-3xl p-6 sm:p-10 border border-border/50 shadow-sm relative overflow-hidden">
+          <details className="group bg-secondary/20 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden transition-all duration-300">
             {/* Decorative background accent */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
             
-            <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <FileText className="w-4 h-4" />
+            <summary className="p-6 sm:p-10 cursor-pointer flex items-center justify-between list-none [&::-webkit-details-marker]:hidden">
+              <h2 className="text-xl sm:text-2xl font-black flex items-center gap-3 m-0">
+                <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <FileText className="w-4 h-4" />
+                </span>
+                Product Details & Specifications
+              </h2>
+              <span className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center group-open:rotate-180 transition-transform duration-300 shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
               </span>
-              Product Details & Specifications
-            </h2>
+            </summary>
             
-            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none text-muted-foreground leading-relaxed relative z-10">
+            <div className="px-6 pb-6 sm:px-10 sm:pb-10 pt-0 prose prose-sm sm:prose-base dark:prose-invert max-w-none text-muted-foreground leading-relaxed relative z-10 border-t border-border/20 mt-[-10px]">
               {product.description ? (
                 <div
                   className="[&>p]:mb-4 [&>br]:hidden [&>div]:mb-4 [&_.c2g-specs]:grid [&_.c2g-specs]:grid-cols-1 [&_.c2g-specs]:sm:grid-cols-2 [&_.c2g-specs]:gap-4 [&_.c2g-specs]:mb-8 [&_.c2g-specs>li]:bg-background/50 [&_.c2g-specs>li]:p-3 [&_.c2g-specs>li]:rounded-lg [&_.c2g-specs>li]:border [&_.c2g-specs>li]:border-border/40 [&_.c2g-specs>li>strong]:text-foreground [&_.c2g-specs>li]:text-sm"
@@ -314,6 +319,8 @@ export default async function ProductPage({
                       .replace(/<video[^>]*>[\s\S]*?<\/video>/gi, '') // Strip videos
                       .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '') // Strip iframes
                       .replace(/<div class="detailmodule_image">[\s\S]*?<\/div>/gi, '') // Strip AE image wrappers
+                      .replace(/\bstyle\s*=\s*(["'])(?:(?!\1).)*\1/gi, '') // Strip massive inline styles
+                      .replace(/<div[^>]*>\s*<\/div>/gi, '') // Strip empty divs
                       .replace(/\n/g, "<br/>"),
                   }}
                 />
@@ -321,7 +328,7 @@ export default async function ProductPage({
                 <p className="italic text-muted-foreground/70">No detailed description available for this product.</p>
               )}
             </div>
-          </div>
+          </details>
         </div>
 
         {/* Similar Products */}

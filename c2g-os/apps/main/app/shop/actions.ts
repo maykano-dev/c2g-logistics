@@ -334,6 +334,21 @@ export async function getProductDetails(id: string) {
   const exchangeRate = await getExchangeRate(supabase);
 
   try {
+    const qHash = `product_detail_${id}`;
+    
+    // Check Cache First
+    const { data: cacheData } = await supabase
+      .from("search_query_cache")
+      .select("result_data, expires_at")
+      .eq("query_hash", qHash)
+      .single();
+
+    if (cacheData && new Date(cacheData.expires_at) > new Date()) {
+      // Track View Count (For Auto-Promotion Engine) in background
+      supabase.rpc('increment_view_count', { p_id: id }).catch(() => {});
+      return { success: true, product: cacheData.result_data, exchangeRate };
+    }
+
     // aliexpress.ds.product.get — AE Dropshipper product detail API
     // Required params: ship_to_country, product_id, target_currency, target_language
     const res = await aliexpressRequest({
@@ -460,6 +475,16 @@ export async function getProductDetails(id: string) {
       trustScore:  90, // AliExpress platform handles seller trust
       trustBadges: ['AliExpress Verified'] as string[],
     };
+
+    // Save to Cache (24 hours TTL)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+    await supabase.from("search_query_cache").upsert({
+      query_hash:  `product_detail_${id}`,
+      query_text:  `product_detail_fetch`,
+      result_data: mappedProduct,
+      expires_at:  expiresAt.toISOString()
+    }).catch(e => console.error("Failed to cache product details", e));
 
     // Track View Count (For Auto-Promotion Engine)
     try {
