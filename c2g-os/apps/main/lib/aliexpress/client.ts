@@ -44,11 +44,10 @@ export interface AliExpressRequestOptions {
 /**
  * Builds the IOP HMAC-SHA256 signature.
  *
- * Confirmed correct by live API testing (test-ae-sig.mjs):
- * String to sign = sortedKey1value1 + sortedKey2value2 + ...
- * ALL params included EXCEPT `sign` itself. No path prefix.
+ * For /rest (Auth) calls: String to sign = API_PATH + sortedKey1value1 + ...
+ * For /sync (Business) calls: String to sign = sortedKey1value1 + ...
  */
-function generateSignature(params: Record<string, string>): string {
+function generateSignature(params: Record<string, string>, apiPath: string, isAuthCall: boolean): string {
   if (!ALIEXPRESS_APP_SECRET) {
     throw new Error('ALIEXPRESS_APP_SECRET is missing from environment variables.');
   }
@@ -57,7 +56,8 @@ function generateSignature(params: Record<string, string>): string {
     .filter(k => k !== 'sign')
     .sort();
 
-  const stringToSign = sortedKeys.reduce((acc, key) => acc + key + params[key], '');
+  const str = sortedKeys.reduce((acc, key) => acc + key + params[key], '');
+  const stringToSign = isAuthCall ? (apiPath + str) : str;
 
   const hmac = crypto.createHmac('sha256', ALIEXPRESS_APP_SECRET);
   hmac.update(stringToSign, 'utf8');
@@ -153,8 +153,8 @@ export async function aliexpressRequest<T = any>({
   }
 
   // ── Sign ──────────────────────────────────────────────────────────
-  // No path prefix — confirmed correct by live API test.
-  const sign = generateSignature(allParams);
+  // For /rest we prefix the API path, for /sync we do not.
+  const sign = generateSignature(allParams, apiMethod, isAuthCall);
   allParams.sign = sign;
 
   // ── Dev debug logging ─────────────────────────────────────────────

@@ -18,14 +18,15 @@ export async function GET(request: Request) {
   const baseUrl     = process.env.NEXT_PUBLIC_APP_URL || 'https://c2glogistics.netlify.app';
   const callbackUrl = `${baseUrl}/api/aliexpress/callback`;
 
-  // AliExpress OAuth authorization URL
-  const oauthUrl = new URL('https://oauth.aliexpress.com/authorize');
+  // AliExpress OAuth authorization URL (IOP Gateway)
+  const oauthUrl = new URL('https://api-sg.aliexpress.com/oauth/authorize');
   oauthUrl.searchParams.append('response_type', 'code');
   oauthUrl.searchParams.append('client_id',     ALIEXPRESS_APP_KEY);
   oauthUrl.searchParams.append('redirect_uri',  callbackUrl);
+  oauthUrl.searchParams.append('force_auth',    'true'); // Added per documentation
   oauthUrl.searchParams.append('state',         'c2g_ae_oauth_init');
-  oauthUrl.searchParams.append('view',          'web');
-  oauthUrl.searchParams.append('sp',            'ae'); // AliExpress scope identifier
+  // Removed view=web & sp=ae as they are not in the new IOP docs, but keeping them doesn't hurt.
+  // Actually, let's strictly follow the provided docs snippet.
 
   return NextResponse.redirect(oauthUrl.toString());
 }

@@ -42,25 +42,26 @@ function hashQuery(query: string): string {
 //   - evaluate_score         → rating
 function mapAliExpressToC2g(aeProduct: any, exchangeRate: number) {
   const usdPrice = parseFloat(
+    aeProduct.targetSalePrice ||
     aeProduct.target_sale_price ||
-    aeProduct.sale_price ||
-    aeProduct.app_sale_price ||
+    aeProduct.salePrice ||
     "0"
   );
 
   const imageUrl =
+    aeProduct.itemMainPic ||
     aeProduct.product_main_image_url ||
     aeProduct.image_url ||
     "https://placehold.co/300";
 
   return {
-    id:                String(aeProduct.product_id),
-    name:              normalizeProductTitle(aeProduct.product_title || aeProduct.title || "Unknown Product"),
+    id:                String(aeProduct.itemId || aeProduct.product_id),
+    name:              normalizeProductTitle(aeProduct.title || aeProduct.product_title || "Unknown Product"),
     price:             usdPrice,
     selling_price_ghs: usdPrice * exchangeRate,
     image_url:         imageUrl,
-    rating:            aeProduct.evaluate_score,
-    orders:            aeProduct.lastest_volume || aeProduct.orders,
+    rating:            aeProduct.score || aeProduct.evaluate_score || "0",
+    orders:            aeProduct.orders || aeProduct.lastest_volume || 0,
     is_aliexpress:     true, // Flag so frontend knows it's an API product
     // NOTE: product_detail_url intentionally NOT included — white-labeling requirement
   };
@@ -177,9 +178,29 @@ export async function getShopProducts(params?: {
           }
         });
 
-        // Response shape: aliexpress_ds_text_search_response.result.result_list[]
-        const wrapper    = res?.aliexpress_ds_text_search_response;
-        const resultList = wrapper?.result?.result_list?.item_info || [];
+        // Response shape can vary: Streamlined (res.data.products) OR Wrapped (res.aliexpress_ds_text_search_response.result...)
+        const wrapper = res?.aliexpress_ds_text_search_response || res;
+        
+        let resultList: any[] = [];
+        
+        if (Array.isArray(wrapper?.data?.products?.selection_search_product)) {
+          // New API format structure
+          resultList = wrapper.data.products.selection_search_product;
+        } else if (Array.isArray(wrapper?.data?.products)) {
+          // Fallback legacy Streamlined
+          resultList = wrapper.data.products;
+        } else if (Array.isArray(wrapper?.result?.item_record_list?.ae_item_search_result_d_t_o)) {
+          // Fallback legacy Wrapped
+          resultList = wrapper.result.item_record_list.ae_item_search_result_d_t_o;
+        } else if (Array.isArray(wrapper?.result?.result_list?.item_info)) {
+          // Fallback alternative Wrapped
+          resultList = wrapper.result.result_list.item_info;
+        } else if (Array.isArray(res?.data?.products?.selection_search_product)) {
+           // Direct from res structure
+           resultList = res.data.products.selection_search_product;
+        } else if (Array.isArray(res?.data?.products)) {
+          resultList = res.data.products;
+        }
 
         if (resultList.length > 0) {
           alibabaProducts = resultList.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
@@ -225,13 +246,14 @@ export async function getProductDetails(id: string) {
 
   try {
     // aliexpress.ds.product.get — AE Dropshipper product detail API
-    // Required params: product_id, target_currency, target_language
+    // Required params: ship_to_country, product_id, target_currency, target_language
     const res = await aliexpressRequest({
       apiMethod: 'aliexpress.ds.product.get',
       params: {
         product_id:      id,
+        ship_to_country: 'GH',
         target_currency: 'USD',
-        target_language: 'EN',
+        target_language: 'en',
       }
     });
 

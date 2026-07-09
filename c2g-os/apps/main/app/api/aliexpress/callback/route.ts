@@ -27,9 +27,9 @@ export async function GET(request: Request) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://c2glogistics.netlify.app';
 
   try {
-    // Call /auth/token/security/create via the client (GET to REST gateway)
+    // Call /auth/token/create via the client (GET to REST gateway)
     const tokenData = await aliexpressRequest({
-      apiMethod: '/auth/token/security/create',
+      apiMethod: '/auth/token/create',
       params:    { code },
       isAuthCall: true,
     });
