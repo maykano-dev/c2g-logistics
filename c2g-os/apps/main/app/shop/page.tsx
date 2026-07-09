@@ -52,8 +52,6 @@ export default async function ShopPage({
         </Suspense>
       </ShopLayoutWrapper>
 
-      {/* Floating Cart (Desktop) */}
-      <FloatingCart />
 
       {/* Mobile Bottom Nav */}
       <MobileBottomNav />
