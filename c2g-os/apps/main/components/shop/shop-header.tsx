@@ -1,10 +1,10 @@
 "use client";
 
-import { Search, ShoppingCart, User, X, Heart } from "lucide-react";
+import { Search, ShoppingCart, User, X, Heart, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { useCart } from "./cart-context";
 import { useWishlist } from "./wishlist-context";
 
@@ -14,6 +14,7 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
   const currentQuery = searchParams.get("query") || "";
   const [query, setQuery] = useState(currentQuery);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
 
@@ -32,12 +33,16 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/shop?" + createQueryString("query", query));
+    startTransition(() => {
+      router.push("/shop?" + createQueryString("query", query));
+    });
   };
 
   const clearSearch = () => {
     setQuery("");
-    router.push("/shop");
+    startTransition(() => {
+      router.push("/shop");
+    });
   };
 
   return (
@@ -55,7 +60,12 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex-1 relative max-w-2xl mx-auto">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground pointer-events-none" />
+            {isPending ? (
+              <Loader2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-primary animate-spin pointer-events-none" />
+            ) : (
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground pointer-events-none" />
+            )}
+            
             <input
               type="text"
               placeholder="Search products, categories..."
@@ -69,7 +79,7 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
                   : "border-border/50"
               }`}
             />
-            {query && (
+            {query && !isPending && (
               <button
                 type="button"
                 onClick={clearSearch}

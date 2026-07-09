@@ -142,85 +142,113 @@ export async function getShopProducts(params?: {
   }));
 
   // 2. If there is a search query, fetch from Alibaba (Level 2)
-  if (params?.query && page === 1) {
-    const qHash = hashQuery(params.query);
-    
-    // Check Search Query Cache first
-    const { data: cacheData } = await supabase
-      .from("search_query_cache")
-      .select("result_data, expires_at")
-      .eq("query_hash", qHash)
-      .single();
-
-    if (cacheData && new Date(cacheData.expires_at) > new Date()) {
-      // CACHE HIT
-      alibabaProducts = cacheData.result_data.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
-    } else {
-      // CACHE MISS → Call AliExpress DS API
+    if (params?.query && page === 1) {
+      const qHash = hashQuery(params.query);
+      
+      // Check Search Query Cache first
+      const { data: cacheData } = await supabase
+        .from("search_query_cache")
+        .select("result_data, expires_at")
+        .eq("query_hash", qHash)
+        .single();
+  
+      if (cacheData && new Date(cacheData.expires_at) > new Date()) {
+        // CACHE HIT
+        alibabaProducts = cacheData.result_data.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
+      } else {
+        // CACHE MISS → Call AliExpress DS API
+        try {
+          // aliexpress.ds.text.search — AE Dropshipper product search
+          const res = await aliexpressRequest({
+            apiMethod: 'aliexpress.ds.text.search',
+            params: {
+              keyWord:       params.query,
+              search_text:   params.query,
+              sort:          'default',
+              pageNo:        String(params.page || 1),
+              page_no:       String(params.page || 1),
+              pageSize:      '20',
+              page_size:     '20',
+              currency:      'USD',
+              local:         'en_US',
+              countryCode:   'GH',
+              shipToCountry: 'GH',
+            }
+          });
+  
+          const wrapper = res?.aliexpress_ds_text_search_response || res;
+          let resultList: any[] = [];
+          
+          if (Array.isArray(wrapper?.data?.products?.selection_search_product)) {
+            resultList = wrapper.data.products.selection_search_product;
+          } else if (Array.isArray(wrapper?.data?.products)) {
+            resultList = wrapper.data.products;
+          } else if (Array.isArray(wrapper?.result?.item_record_list?.ae_item_search_result_d_t_o)) {
+            resultList = wrapper.result.item_record_list.ae_item_search_result_d_t_o;
+          } else if (Array.isArray(wrapper?.result?.result_list?.item_info)) {
+            resultList = wrapper.result.result_list.item_info;
+          } else if (Array.isArray(res?.data?.products?.selection_search_product)) {
+             resultList = res.data.products.selection_search_product;
+          } else if (Array.isArray(res?.data?.products)) {
+            resultList = res.data.products;
+          }
+  
+          if (resultList.length > 0) {
+            alibabaProducts = resultList.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
+  
+            // Save to Cache (TTL 12 hours)
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + 12);
+  
+            await supabase.from("search_query_cache").upsert({
+              query_hash:  qHash,
+              query_text:  params.query,
+              result_data: resultList,
+              expires_at:  expiresAt.toISOString()
+            });
+          }
+        } catch (e) {
+          console.error("AliExpress Search Failed, falling back to local only", e);
+        }
+      }
+    } else if (!params?.query && localProducts.length === 0 && page === 1) {
+      // EMPTY SHOP FALLBACK: If local DB is empty and no query provided, fetch a generic popular category
       try {
-        // aliexpress.ds.text.search — AE Dropshipper product search
-        // Params: search_text, sort, page_no, page_size, target_currency, target_language
         const res = await aliexpressRequest({
           apiMethod: 'aliexpress.ds.text.search',
           params: {
-            // Confirmed mandatory camelCase params (live tested — see test-ae-sig*.mjs)
-            keyWord:       params.query,       // primary search text (camelCase)
-            search_text:   params.query,       // keep snake_case alias as fallback
+            keyWord:       'popular',
+            search_text:   'popular',
             sort:          'default',
-            pageNo:        String(params.page || 1),
-            page_no:       String(params.page || 1),
+            pageNo:        '1',
+            page_no:       '1',
             pageSize:      '20',
             page_size:     '20',
-            currency:      'USD',              // mandatory (NOT target_currency)
-            local:         'en_US',            // mandatory locale
-            countryCode:   'GH',              // mandatory (camelCase)
-            shipToCountry: 'GH',              // shipping destination
+            currency:      'USD',
+            local:         'en_US',
+            countryCode:   'GH',
+            shipToCountry: 'GH',
           }
         });
 
-        // Response shape can vary: Streamlined (res.data.products) OR Wrapped (res.aliexpress_ds_text_search_response.result...)
         const wrapper = res?.aliexpress_ds_text_search_response || res;
-        
         let resultList: any[] = [];
         
         if (Array.isArray(wrapper?.data?.products?.selection_search_product)) {
-          // New API format structure
           resultList = wrapper.data.products.selection_search_product;
-        } else if (Array.isArray(wrapper?.data?.products)) {
-          // Fallback legacy Streamlined
-          resultList = wrapper.data.products;
-        } else if (Array.isArray(wrapper?.result?.item_record_list?.ae_item_search_result_d_t_o)) {
-          // Fallback legacy Wrapped
-          resultList = wrapper.result.item_record_list.ae_item_search_result_d_t_o;
-        } else if (Array.isArray(wrapper?.result?.result_list?.item_info)) {
-          // Fallback alternative Wrapped
-          resultList = wrapper.result.result_list.item_info;
         } else if (Array.isArray(res?.data?.products?.selection_search_product)) {
-           // Direct from res structure
-           resultList = res.data.products.selection_search_product;
-        } else if (Array.isArray(res?.data?.products)) {
-          resultList = res.data.products;
+          resultList = res.data.products.selection_search_product;
+        } else if (Array.isArray(wrapper?.data?.products)) {
+          resultList = wrapper.data.products;
         }
 
         if (resultList.length > 0) {
           alibabaProducts = resultList.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
-
-          // Save to Cache (TTL 12 hours)
-          const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 12);
-
-          await supabase.from("search_query_cache").upsert({
-            query_hash:  qHash,
-            query_text:  params.query,
-            result_data: resultList,
-            expires_at:  expiresAt.toISOString()
-          });
         }
       } catch (e) {
-        console.error("AliExpress Search Failed, falling back to local only", e);
+        console.error("AliExpress Default Fallback Search Failed", e);
       }
     }
-  }
 
   // Merge (Local first, then Alibaba)
   // Ensure no duplicates if a product was promoted to local DB but also returned in Alibaba search
