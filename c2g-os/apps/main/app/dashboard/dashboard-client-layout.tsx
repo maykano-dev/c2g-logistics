@@ -144,7 +144,7 @@ export default function DashboardClientLayout({
         {/* Mobile Header */}
         <header 
           className="md:hidden glass border-b border-border/50 z-40 w-full shrink-0 flex flex-col"
-          style={{ paddingTop: 'env(safe-area-inset-top, 20px)' }}
+          style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}
         >
           <div className="h-14 px-4 flex items-center justify-between w-full">
             <div className="flex items-center gap-2 min-w-0">
@@ -177,7 +177,7 @@ export default function DashboardClientLayout({
         {/* Desktop Header */}
         <header 
           className="hidden md:flex glass border-b border-border/50 z-40 w-full shrink-0 flex-col"
-          style={{ paddingTop: 'env(safe-area-inset-top, 16px)' }}
+          style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}
         >
           <div className="h-16 px-6 flex items-center justify-end w-full">
             <div className="flex items-center gap-4">

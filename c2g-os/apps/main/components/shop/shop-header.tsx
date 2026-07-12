@@ -157,7 +157,7 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
   return (
     <div 
       className="fixed top-0 inset-x-0 z-[100] bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg shadow-black/5"
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}
     >
       {/* Top bar: Logo + Search + Cart */}
       <div className="max-w-7xl mx-auto px-4">
