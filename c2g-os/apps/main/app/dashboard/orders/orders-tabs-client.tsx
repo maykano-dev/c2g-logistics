@@ -34,10 +34,10 @@ export default function OrdersTabsClient({
   return (
     <div className="space-y-6">
       {/* Tabs Navigation */}
-      <div className="flex p-1 bg-secondary/50 rounded-xl w-fit border border-border/50 shadow-inner relative">
+      <div className="flex p-1 bg-secondary/50 rounded-xl w-full sm:w-max border border-border/50 shadow-inner relative">
         <button
           onClick={() => handleTabChange("link")}
-          className={`relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors duration-300 ${
+          className={`relative z-10 flex flex-1 sm:flex-none justify-center items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 rounded-lg font-bold text-[13px] sm:text-sm whitespace-nowrap transition-colors duration-300 ${
             activeTab === "link"
               ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
@@ -50,15 +50,15 @@ export default function OrdersTabsClient({
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
             />
           )}
-          <LinkIcon className="w-4 h-4" />
+          <LinkIcon className="w-4 h-4 shrink-0" />
           Link Orders
-          <span className={`ml-1.5 px-2 py-0.5 rounded-md text-xs transition-colors ${activeTab === "link" ? "bg-black/20 text-white" : "bg-background/80 text-foreground"}`}>
+          <span className={`ml-0.5 sm:ml-1.5 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-xs transition-colors ${activeTab === "link" ? "bg-black/20 text-white" : "bg-background/80 text-foreground"}`}>
             {linkOrders.length}
           </span>
         </button>
         <button
           onClick={() => handleTabChange("mall")}
-          className={`relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors duration-300 ${
+          className={`relative z-10 flex flex-1 sm:flex-none justify-center items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 rounded-lg font-bold text-[13px] sm:text-sm whitespace-nowrap transition-colors duration-300 ${
             activeTab === "mall"
               ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground hover:bg-white/5"
