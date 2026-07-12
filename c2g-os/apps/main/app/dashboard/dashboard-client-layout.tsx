@@ -81,7 +81,7 @@ export default function DashboardClientLayout({
   ];
 
   return (
-    <div className="h-screen h-[100dvh] overflow-hidden bg-background flex flex-col md:flex-row relative">
+    <div className="fixed inset-0 overflow-hidden bg-background flex flex-col md:flex-row z-0">
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 glass border-r border-border/50 sticky top-0 h-screen overflow-y-auto z-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="p-6">
@@ -143,56 +143,60 @@ export default function DashboardClientLayout({
 
         {/* Mobile Header */}
         <header 
-          className="md:hidden pb-3 px-4 glass border-b border-border/50 flex items-center justify-between z-40 w-full shrink-0 min-h-[3.5rem]"
+          className="md:hidden glass border-b border-border/50 z-40 w-full shrink-0 flex flex-col"
           style={{ paddingTop: 'env(safe-area-inset-top, 20px)' }}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 relative flex items-center justify-center -ml-1 shrink-0">
-              <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="32px" className="object-contain" />
+          <div className="h-14 px-4 flex items-center justify-between w-full">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 relative flex items-center justify-center -ml-1 shrink-0">
+                <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="32px" className="object-contain" />
+              </div>
+              <span className="font-bold tracking-tight text-foreground hidden [@media(min-width:400px)]:block truncate">C2G Logistics</span>
             </div>
-            <span className="font-bold tracking-tight text-foreground hidden [@media(min-width:400px)]:block truncate">C2G Logistics</span>
-          </div>
-          
-          <div className="flex items-center gap-2 shrink-0">
-            <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full shrink-0">
-              <Bell className="w-5 h-5" />
-              {stats?.unreadNotificationsCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-[9px] font-bold text-white flex items-center justify-center rounded-full border border-background">
-                  {stats.unreadNotificationsCount > 9 ? '9+' : stats.unreadNotificationsCount}
-                </span>
-              )}
-            </Link>
-            <Link href="/dashboard/wallet" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-tr from-primary/10 to-accent/10 border border-border hover:bg-white/10 transition-colors shadow-sm min-w-0">
-              <Wallet className="w-4 h-4 text-primary shrink-0" />
-              <span className="text-sm font-bold tracking-tight truncate">₵{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(walletBalance)}</span>
-            </Link>
-            <Link href="/dashboard/settings" className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-accent border-2 border-background shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-              <Settings className="w-3.5 h-3.5 text-white mix-blend-overlay" />
-            </Link>
+            
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full shrink-0">
+                <Bell className="w-5 h-5" />
+                {stats?.unreadNotificationsCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-[9px] font-bold text-white flex items-center justify-center rounded-full border border-background">
+                    {stats.unreadNotificationsCount > 9 ? '9+' : stats.unreadNotificationsCount}
+                  </span>
+                )}
+              </Link>
+              <Link href="/dashboard/wallet" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-tr from-primary/10 to-accent/10 border border-border hover:bg-white/10 transition-colors shadow-sm min-w-0">
+                <Wallet className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-sm font-bold tracking-tight truncate">₵{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(walletBalance)}</span>
+              </Link>
+              <Link href="/dashboard/settings" className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-accent border-2 border-background shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                <Settings className="w-3.5 h-3.5 text-white mix-blend-overlay" />
+              </Link>
+            </div>
           </div>
         </header>
 
         {/* Desktop Header */}
         <header 
-          className="hidden md:flex glass border-b border-border/50 items-center justify-end px-6 z-40 w-full shrink-0 min-h-[4rem] pb-2"
+          className="hidden md:flex glass border-b border-border/50 z-40 w-full shrink-0 flex-col"
           style={{ paddingTop: 'env(safe-area-inset-top, 16px)' }}
         >
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20 shrink-0">
-              <Bell className="w-5 h-5" />
-              {stats?.unreadNotificationsCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-[9px] font-bold text-white flex items-center justify-center rounded-full border border-background">
-                  {stats.unreadNotificationsCount > 9 ? '9+' : stats.unreadNotificationsCount}
-                </span>
-              )}
-            </Link>
-            <Link href="/dashboard/wallet" className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-tr from-primary/10 to-accent/10 border border-border hover:bg-white/10 transition-colors shadow-sm min-w-0 max-w-[200px]">
-              <Wallet className="w-4 h-4 text-primary shrink-0" />
-              <span className="text-sm font-bold tracking-tight truncate">₵{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(walletBalance)}</span>
-            </Link>
-            <Link href="/dashboard/settings" className="shrink-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent border-2 border-background shadow-sm hover:scale-105 transition-transform" />
-            </Link>
+          <div className="h-16 px-6 flex items-center justify-end w-full">
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20 shrink-0">
+                <Bell className="w-5 h-5" />
+                {stats?.unreadNotificationsCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-[9px] font-bold text-white flex items-center justify-center rounded-full border border-background">
+                    {stats.unreadNotificationsCount > 9 ? '9+' : stats.unreadNotificationsCount}
+                  </span>
+                )}
+              </Link>
+              <Link href="/dashboard/wallet" className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-tr from-primary/10 to-accent/10 border border-border hover:bg-white/10 transition-colors shadow-sm min-w-0 max-w-[200px]">
+                <Wallet className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-sm font-bold tracking-tight truncate">₵{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(walletBalance)}</span>
+              </Link>
+              <Link href="/dashboard/settings" className="shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent border-2 border-background shadow-sm hover:scale-105 transition-transform" />
+              </Link>
+            </div>
           </div>
         </header>
 
