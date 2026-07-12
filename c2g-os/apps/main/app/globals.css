@@ -71,8 +71,31 @@
   * {
     @apply border-border;
   }
+  html, body {
+    overscroll-behavior-y: none; /* Prevent rubber-banding on iOS */
+  }
   body {
     @apply bg-background text-foreground bg-gradient-to-br from-background to-secondary/20 min-h-screen antialiased selection:bg-primary/30;
+  }
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    /* Use a min of the safe area or whatever padding is originally there, but typically it's just padding-bottom */
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .mb-safe {
+    margin-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+  .min-h-screen-safe {
+    min-height: calc(100vh + env(safe-area-inset-bottom));
   }
 }
 

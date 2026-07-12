@@ -25,7 +25,7 @@ export default function AdminMobileNav() {
 
   return (
     <>
-      <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
+      <div className="flex items-center justify-between p-4 pt-safe border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-indigo-500/10 text-indigo-500 rounded-lg flex items-center justify-center">
             <ShieldAlert className="w-4 h-4" />
@@ -53,7 +53,7 @@ export default function AdminMobileNav() {
 
           {/* Drawer Content */}
           <div 
-            className={`fixed top-0 left-0 h-[100dvh] w-72 bg-zinc-950 border-r border-zinc-800 z-[999] transform transition-transform duration-300 ease-in-out flex flex-col pt-[env(safe-area-inset-top)] ${
+            className={`fixed top-0 left-0 h-[100dvh] w-72 bg-zinc-950 border-r border-zinc-800 z-[999] transform transition-transform duration-300 ease-in-out flex flex-col pt-safe ${
               isOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
           >
@@ -97,7 +97,7 @@ export default function AdminMobileNav() {
               ))}
             </div>
 
-            <div className="p-4 border-t border-zinc-800 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="p-4 border-t border-zinc-800 shrink-0 pb-safe">
               <button 
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors font-medium text-sm"

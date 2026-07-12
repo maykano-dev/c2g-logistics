@@ -91,9 +91,8 @@ export function Footer({ hideCta = false, settings }: { hideCta?: boolean, setti
         </div>
       </div>
 
-      {/* Footer Bottom */}
       <div className="border-t border-border/50 bg-background/50">
-        <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="container mx-auto px-4 pt-6 pb-safe flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground font-medium">
             © {new Date().getFullYear()} {storeName}. All rights reserved.
           </p>
