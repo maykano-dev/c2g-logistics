@@ -56,6 +56,7 @@ export default function DashboardClientLayout({
       name: "Reservations", 
       href: "/dashboard/reservations", 
       icon: PlaneTakeoff,
+      count: stats?.pendingReservationsCount || 0
     },
     { 
       name: "Orders", 
@@ -79,6 +80,7 @@ export default function DashboardClientLayout({
       name: "Reservations", 
       href: "/dashboard/reservations", 
       icon: PlaneTakeoff,
+      count: stats?.pendingReservationsCount || 0
     },
     { 
       name: "Orders", 

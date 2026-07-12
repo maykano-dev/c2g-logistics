@@ -100,6 +100,13 @@ export async function getDashboardStats() {
     .eq('user_id', user.id)
     .eq('is_read', false)
 
+  // 11. Active Reservations
+  const { count: pendingReservationsCount } = await supabase
+    .from('shipment_reservations')
+    .select('*', { count: 'exact', head: true })
+    .eq('customer_id', user.id)
+    .in('status', ['waiting_for_deposit', 'reserved_for_shipment', 'pending'])
+
   return {
     transitOrdersCount: transitOrdersCount || 0,
     readyForPickupCount: (pickupOrdersCount || 0) + (pickupShipmentsCount || 0),
@@ -111,6 +118,7 @@ export async function getDashboardStats() {
     linkOrdersCount: linkOrdersCount || 0,
     pendingPackagesCount: pendingPackagesCount || 0,
     unreadNotificationsCount: unreadNotificationsCount || 0,
+    pendingReservationsCount: pendingReservationsCount || 0,
     userName,
   }
 }

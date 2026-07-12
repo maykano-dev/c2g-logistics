@@ -147,6 +147,8 @@ export default function ReservationsClient({
     );
   };
 
+  const activeReservationsCount = reservations.filter(r => ['waiting_for_deposit', 'reserved_for_shipment', 'pending'].includes(r.status)).length;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Tabs */}
@@ -159,9 +161,14 @@ export default function ReservationsClient({
         </button>
         <button 
           onClick={() => setActiveTab('history')}
-          className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'history' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
+          className={`relative flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'history' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
         >
           My Reservations
+          {activeReservationsCount > 0 && (
+            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold shadow-sm ${activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-destructive text-white'}`}>
+              {activeReservationsCount > 9 ? '9+' : activeReservationsCount}
+            </span>
+          )}
         </button>
       </div>
 
