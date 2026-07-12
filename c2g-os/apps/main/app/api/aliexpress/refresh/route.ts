@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { aliexpressRequest, saveAliExpressToken } from '@/lib/aliexpress/client';
+import { aliexpressRequest, saveAliExpressToken, refreshAliExpressToken } from '@/lib/aliexpress/client';
 
 /**
  * AliExpress Token Refresh Endpoint
@@ -24,27 +24,7 @@ export async function POST() {
       return NextResponse.json({ error: 'No refresh token available' }, { status: 400 });
     }
 
-    const tokenData = await aliexpressRequest({
-      apiMethod: '/auth/token/security/refresh',
-      params:    { refresh_token: data.refresh_token },
-      isAuthCall: true,
-    });
-
-    const newToken = tokenData?.access_token || tokenData?.result?.access_token;
-    if (!newToken) {
-      throw new Error(tokenData?.msg || 'Failed to refresh access_token');
-    }
-
-    await saveAliExpressToken({
-      access_token:             newToken,
-      refresh_token:            tokenData.refresh_token            || tokenData?.result?.refresh_token,
-      expires_in:               tokenData.expire_time
-                                  ? Math.floor((tokenData.expire_time - Date.now()) / 1000)
-                                  : undefined,
-      refresh_token_valid_time: tokenData.refresh_token_valid_time,
-      user_nick:                tokenData.user_nick,
-      buyer_access_token:       tokenData.buyer_access_token,
-    });
+    await refreshAliExpressToken(data.refresh_token);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

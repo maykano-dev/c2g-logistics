@@ -178,7 +178,7 @@ export async function getShopProducts(params?: {
 
   if (!searchQuery && !searchCategory) {
     const mixKeywords = ['bestseller', 'home', 'fashion', 'electronics', 'trending', 'sports', 'beauty'];
-    searchQuery = mixKeywords[page % mixKeywords.length];
+    searchQuery = mixKeywords[page % mixKeywords.length] || '';
   }
   
   const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}`);
@@ -308,7 +308,7 @@ export async function getProductDetails(id: string) {
 
     if (cacheData && new Date(cacheData.expires_at) > new Date()) {
       // Track View Count (For Auto-Promotion Engine) in background
-      supabase.rpc('increment_view_count', { p_id: id }).catch(() => {});
+      supabase.rpc('increment_view_count', { p_id: id }).then(null, () => {});
       return { success: true, product: cacheData.result_data, exchangeRate };
     }
 
@@ -447,7 +447,7 @@ export async function getProductDetails(id: string) {
       query_text:  `product_detail_fetch`,
       result_data: mappedProduct,
       expires_at:  expiresAt.toISOString()
-    }).catch(e => console.error("Failed to cache product details", e));
+    }).then(null, (e: any) => console.error("Failed to cache product details", e));
 
     // Track View Count (For Auto-Promotion Engine)
     try {
@@ -611,7 +611,7 @@ export async function getShippingRecommendation(weightKg?: number, volumeCbm?: n
 export async function getSimilarProducts(productId: string, category?: string) {
   if (category) {
     const res = await getShopProducts({ category, page: 1 });
-    const filtered = res.products.filter(p => String(p.id) !== productId);
+    const filtered = res.products.filter((p: any) => String(p.id) !== productId);
     return { products: filtered.slice(0, 8), exchangeRate: res.exchangeRate };
   }
   return { products: [], exchangeRate: 1 };

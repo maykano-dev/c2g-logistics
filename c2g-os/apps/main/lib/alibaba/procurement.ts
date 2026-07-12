@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { alibabaRequest } from "./client";
 import { secureLog } from "@/utils/logger";
+import { createBuyNowOrder } from "./api";
 
 export async function procureOrder(jobId: string) {
   const supabase = await createClient();
@@ -49,16 +50,13 @@ export async function procureOrder(jobId: string) {
   };
 
   try {
-    // alibaba.trade.order.create — official ICBU trade order creation API (from docs)
-    const response = await alibabaRequest({
-      apiMethod: 'alibaba.trade.order.create',
-      params: { 
-        channel_refer_id:  payload.channel_refer_id,
-        product_list:      JSON.stringify(payload.product_list),
-        logistics_detail:  JSON.stringify(payload.logistics_detail),
-        remark:            payload.remark,
-        properties:        payload.properties
-      }
+    // 4. Create the Dropshipping BuyNow order using the new SDK wrapper
+    const response = await createBuyNowOrder({
+      channel_refer_id: payload.channel_refer_id,
+      product_list: payload.product_list,
+      logistics_detail: payload.logistics_detail,
+      remark: payload.remark,
+      properties: payload.properties
     });
 
     // 5. Handle Response

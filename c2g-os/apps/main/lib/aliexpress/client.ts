@@ -65,6 +65,35 @@ function generateSignature(params: Record<string, string>, apiPath: string, isAu
 }
 
 /**
+ * Refreshes the AliExpress token using the refresh_token.
+ */
+export async function refreshAliExpressToken(refreshToken: string): Promise<string> {
+  const tokenData = await aliexpressRequest({
+    apiMethod: '/auth/token/security/refresh',
+    params:    { refresh_token: refreshToken },
+    isAuthCall: true,
+  });
+
+  const newToken = tokenData?.access_token || tokenData?.result?.access_token;
+  if (!newToken) {
+    throw new Error(tokenData?.msg || 'Failed to refresh access_token');
+  }
+
+  await saveAliExpressToken({
+    access_token:             newToken,
+    refresh_token:            tokenData.refresh_token            || tokenData?.result?.refresh_token,
+    expires_in:               tokenData.expire_time
+                                ? Math.floor((tokenData.expire_time - Date.now()) / 1000)
+                                : undefined,
+    refresh_token_valid_time: tokenData.refresh_token_valid_time,
+    user_nick:                tokenData.user_nick,
+    buyer_access_token:       tokenData.buyer_access_token,
+  });
+
+  return newToken;
+}
+
+/**
  * Fetches the stored AliExpress access token from Supabase.
  * Returns null if no token exists or it's expired/expiring soon.
  */
@@ -77,7 +106,7 @@ async function fetchStoredToken(): Promise<string | null> {
     const supabase = createClient(supabaseUrl, supabaseKey);
     const { data } = await supabase
       .from('aliexpress_credentials')
-      .select('access_token, expires_at')
+      .select('access_token, expires_at, refresh_token')
       .eq('id', 'default')
       .single();
 
@@ -87,16 +116,23 @@ async function fetchStoredToken(): Promise<string | null> {
     if (data.expires_at) {
       const expiresAt = new Date(data.expires_at);
       if (new Date().getTime() + 5 * 60 * 1000 >= expiresAt.getTime()) {
-        console.warn('[AliExpress] Token expired — call /api/aliexpress/refresh');
+        console.warn('[AliExpress] Token expired — auto-refreshing...');
+        if (data.refresh_token) {
+          try {
+            return await refreshAliExpressToken(data.refresh_token);
+          } catch (err) {
+            console.error('[AliExpress] Auto-refresh failed:', err);
+            return null;
+          }
+        }
         return null;
       }
     }
 
-    // Return hardcoded valid session if DB token is missing or expired
-    return "50000700a01Ok1c2f26cavAgAp0RvfZYo2FlTcTpEXBjTgMuzHokum4iRt3SHOds7YY2";
+    return data.access_token;
   } catch (e) {
     console.warn('[AliExpress] Could not fetch token from DB:', e);
-    return "50000700a01Ok1c2f26cavAgAp0RvfZYo2FlTcTpEXBjTgMuzHokum4iRt3SHOds7YY2";
+    return null;
   }
 }
 

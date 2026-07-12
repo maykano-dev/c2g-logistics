@@ -108,9 +108,9 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
       const items = e.clipboardData?.items;
       if (!items) return;
       for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf("image") !== -1) {
+        if (items[i]?.type.indexOf("image") !== -1) {
           e.preventDefault();
-          const file = items[i].getAsFile();
+          const file = items[i]?.getAsFile();
           if (file) handleFile(file);
           break;
         }
@@ -126,7 +126,7 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
       if (!items) return;
       let hasImage = false;
       for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf("image") !== -1) {
+        if (items[i]?.type.indexOf("image") !== -1) {
           hasImage = true;
           break;
         }
@@ -134,8 +134,8 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
       if (hasImage) {
         e.preventDefault();
         for (let i = 0; i < items.length; i++) {
-          if (items[i].type.indexOf("image") !== -1) {
-            const file = items[i].getAsFile();
+          if (items[i]?.type.indexOf("image") !== -1) {
+            const file = items[i]?.getAsFile();
             if (file) handleFile(file);
             break;
           }
