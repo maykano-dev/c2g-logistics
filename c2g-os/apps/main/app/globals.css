@@ -81,7 +81,7 @@
 
 @layer utilities {
   .pt-safe {
-    padding-top: env(safe-area-inset-top);
+    padding-top: max(env(safe-area-inset-top), 0.75rem);
   }
   .pb-safe {
     /* Use a min of the safe area or whatever padding is originally there, but typically it's just padding-bottom */
