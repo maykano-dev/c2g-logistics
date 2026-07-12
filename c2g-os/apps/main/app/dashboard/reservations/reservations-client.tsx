@@ -12,7 +12,7 @@ type Item = { id: string, type: 'warehouse_package' | 'link_order' | 'mall_order
 export default function ReservationsClient({ 
   availableItems, 
   depositRates, 
-  reservations,
+  reservations = [],
   walletBalance 
 }: { 
   availableItems: any, 
@@ -147,7 +147,7 @@ export default function ReservationsClient({
     );
   };
 
-  const activeReservationsCount = reservations.filter(r => ['waiting_for_deposit', 'reserved_for_shipment', 'pending'].includes(r.status)).length;
+  const activeReservationsCount = (reservations || []).filter(r => ['waiting_for_deposit', 'reserved_for_shipment', 'pending'].includes(r?.status)).length;
 
   return (
     <div className="space-y-4 sm:space-y-6">
