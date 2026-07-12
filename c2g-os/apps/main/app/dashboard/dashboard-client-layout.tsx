@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { 
   LayoutDashboard, 
@@ -34,6 +35,14 @@ export default function DashboardClientLayout({
 }) {
   const pathname = usePathname();
   const { items: wishlistItems } = useWishlist();
+
+  // Force body to not scroll on dashboard to prevent double scrollbars globally
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   const desktopNavLinks = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -142,10 +151,7 @@ export default function DashboardClientLayout({
         <div className="fixed bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full animate-pulse delay-1000 -z-10" />
 
         {/* Mobile Header */}
-        <header 
-          className="md:hidden glass border-b border-border/50 z-40 w-full shrink-0 flex flex-col"
-          style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}
-        >
+        <header className="md:hidden glass border-b border-border/50 z-40 w-full shrink-0 flex flex-col ios-safe-pt">
           <div className="h-14 px-4 flex items-center justify-between w-full">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 relative flex items-center justify-center -ml-1 shrink-0">
@@ -175,10 +181,7 @@ export default function DashboardClientLayout({
         </header>
 
         {/* Desktop Header */}
-        <header 
-          className="hidden md:flex glass border-b border-border/50 z-40 w-full shrink-0 flex-col"
-          style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}
-        >
+        <header className="hidden md:flex glass border-b border-border/50 z-40 w-full shrink-0 flex-col ios-safe-pt">
           <div className="h-16 px-6 flex items-center justify-end w-full">
             <div className="flex items-center gap-4">
               <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20 shrink-0">

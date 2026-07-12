@@ -155,10 +155,7 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
   }, [isUploadingImage]);
 
   return (
-    <div 
-      className="fixed top-0 inset-x-0 z-[100] bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg shadow-black/5"
-      style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}
-    >
+    <div className="fixed top-0 inset-x-0 z-[100] bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg shadow-black/5 ios-safe-pt">
       {/* Top bar: Logo + Search + Cart */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-3 h-14 md:h-16">

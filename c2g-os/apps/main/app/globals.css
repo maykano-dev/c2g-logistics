@@ -83,6 +83,10 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top, 20px);
   }
+  .ios-safe-pt {
+    padding-top: 20px;
+    padding-top: max(env(safe-area-inset-top), 20px);
+  }
   .pb-safe {
     /* Use a min of the safe area or whatever padding is originally there, but typically it's just padding-bottom */
     padding-bottom: max(env(safe-area-inset-bottom), 1rem);
