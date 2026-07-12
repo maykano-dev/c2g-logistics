@@ -6,7 +6,7 @@ import {
   BuyNowOrderResponse, 
   ProductSearchRequest, 
   ProductSearchResponse 
-} from "../../types/alibaba";
+} from "@/types/alibaba";
 
 /**
  * Product Discovery & Sourcing
