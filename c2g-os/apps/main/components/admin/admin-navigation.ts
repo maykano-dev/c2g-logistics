@@ -52,7 +52,6 @@ export const ADMIN_NAV_GROUPS = [
     group: 'Commerce',
     items: [
       { name: 'Products', href: '/admin/commerce/products', icon: PackageSearch },
-      { name: 'Importers', href: '/admin/commerce/importers', icon: Users },
       { name: 'Marketing', href: '/admin/commerce/marketing', icon: Megaphone },
     ]
   },

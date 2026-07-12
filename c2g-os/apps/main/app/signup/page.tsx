@@ -32,7 +32,7 @@ export default function SignupPage() {
                 Join the C2G Family Today
               </h1>
               <p className="hidden sm:block text-muted-foreground text-sm sm:text-base">
-                Join 450+ importers using C2G to source, ship, and grow.
+                Join 450+ customers using C2G to source, ship, and grow.
               </p>
               <p className="block sm:hidden text-muted-foreground text-sm font-medium mt-1">
                 Your China, our responsibility
@@ -124,7 +124,7 @@ export default function SignupPage() {
               <div className="w-8 h-8 rounded-full border-2 border-background bg-secondary flex items-center justify-center text-xs font-bold">+450</div>
             </div>
             <p className="text-sm font-medium text-muted-foreground">
-              Joined by <span className="text-foreground font-bold">450+ Importers</span> across Ghana
+              Joined by <span className="text-foreground font-bold">450+ Customers</span> across Ghana
             </p>
           </div>
         </div>

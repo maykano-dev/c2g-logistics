@@ -19,7 +19,7 @@ export function ClientFooter({ settings }: { settings?: any }) {
   }, [pathname]);
   
   // Hide footer on dashboard, auth, admin, staff and other full-screen app routes
-  const hideFooterRoutes = ["/dashboard", "/admin", "/finance", "/staff", "/agent", "/login", "/signup", "/forgot-password", "/importers/login", "/importers/register"];
+  const hideFooterRoutes = ["/dashboard", "/admin", "/finance", "/staff", "/agent", "/login", "/signup", "/forgot-password"];
   const shouldHide = hideFooterRoutes.some(route => pathname?.startsWith(route));
 
   // Hide footer on specific routes when user is logged in
