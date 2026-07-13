@@ -16,10 +16,12 @@ export default function AdminCustomersView() {
   const [isPending, startTransition] = useTransition();
   const { showConfirm, showAlert } = useModal();
 
-  // Modals state
+  // Modals & Filters state
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     fetchCustomers();
@@ -80,11 +82,13 @@ export default function AdminCustomersView() {
     });
   };
 
-  const filteredCustomers = customers.filter(c => 
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone?.includes(searchTerm)
-  );
+  const filteredCustomers = customers.filter(c => {
+    const matchesSearch = c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          c.phone?.includes(searchTerm);
+    const matchesStatus = filterStatus === 'all' || c.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-24">
@@ -101,13 +105,37 @@ export default function AdminCustomersView() {
         </button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-2xl items-center">
-        <div className="flex-1 w-full">
-          <OmniSearchBar onSelectCustomer={(id) => handleViewUser(id)} />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-2xl items-center">
+          <div className="flex-1 w-full">
+            <OmniSearchBar onSelectCustomer={(id) => handleViewUser(id)} />
+          </div>
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 h-10 border border-zinc-800 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shrink-0 ${showFilters ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-zinc-950 text-white hover:bg-zinc-800'}`}
+          >
+            <Filter className="w-4 h-4" /> Filters
+          </button>
         </div>
-        <button className="px-4 h-10 border border-zinc-800 bg-zinc-950 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-zinc-800 transition-colors shrink-0">
-          <Filter className="w-4 h-4" /> Filters
-        </button>
+
+        {showFilters && (
+          <div className="flex items-center gap-2 p-4 bg-zinc-900 border border-zinc-800 rounded-xl animate-in fade-in slide-in-from-top-2">
+            <span className="text-sm font-bold text-zinc-500 mr-2 uppercase tracking-wider">Status:</span>
+            {['all', 'active', 'banned'].map(status => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
+                  filterStatus === status 
+                    ? 'bg-zinc-100 text-zinc-900' 
+                    : 'bg-zinc-950 text-zinc-400 border border-zinc-800 hover:text-white'
+                }`}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">

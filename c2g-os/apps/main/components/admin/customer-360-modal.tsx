@@ -210,7 +210,7 @@ export default function Customer360Modal({
                     <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-xl text-center text-zinc-500 text-sm">No transactions found for this customer.</div>
                   ) : (
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                      <table className="w-full text-left">
+                      <table className="w-full text-left hidden md:table">
                         <thead className="bg-zinc-950 border-b border-zinc-800">
                           <tr>
                             <th className="p-4 text-xs font-semibold text-zinc-400 uppercase">Date</th>
@@ -237,6 +237,26 @@ export default function Customer360Modal({
                           })}
                         </tbody>
                       </table>
+                      
+                      {/* Mobile View */}
+                      <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+                        {financials.transactions.map((tx: any) => {
+                          const isCredit = tx.transaction_type === 'top_up' || tx.transaction_type === 'refund';
+                          return (
+                            <div key={tx.id} className="p-4 flex flex-col gap-3">
+                              <div className="flex justify-between items-start">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isCredit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{tx.transaction_type?.replace('_', ' ')}</span>
+                                <span className="text-sm font-medium text-white">₵{Number(tx.amount).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs text-zinc-400">
+                                <span>{format(new Date(tx.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                                <span className="capitalize">{tx.status}</span>
+                              </div>
+                              <p className="text-[10px] text-zinc-500 font-mono">Ref: {tx.reference_id || 'N/A'}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </>
@@ -257,7 +277,7 @@ export default function Customer360Modal({
                     <h3 className="font-bold text-white mb-4">Link Orders</h3>
                     {orders.linkOrders?.length === 0 ? <p className="text-zinc-500 text-sm">No link orders found.</p> : (
                       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                        <table className="w-full text-left">
+                        <table className="w-full text-left hidden md:table">
                           <thead className="bg-zinc-950 border-b border-zinc-800">
                             <tr>
                               <th className="p-4 text-xs font-semibold text-zinc-400 uppercase">ID / Date</th>
@@ -275,6 +295,22 @@ export default function Customer360Modal({
                             ))}
                           </tbody>
                         </table>
+                        
+                        {/* Mobile View */}
+                        <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+                          {orders.linkOrders.map((o: any) => (
+                            <div key={o.id} className="p-4 flex flex-col gap-2">
+                              <div className="flex justify-between items-start">
+                                <span className="text-sm text-zinc-300 font-medium">#{o.id}</span>
+                                <span className="text-sm font-medium text-white">₵{Number(o.total || 0).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs text-zinc-400">
+                                <span>{format(new Date(o.created_at), 'MMM dd, yyyy')}</span>
+                                <span className="capitalize">{o.order_status?.replace('_',' ')}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -315,7 +351,7 @@ export default function Customer360Modal({
                     <h3 className="font-bold text-white mb-4">Shipments</h3>
                     {logistics.shipments?.length === 0 ? <p className="text-zinc-500 text-sm">No active shipments found.</p> : (
                       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden overflow-x-auto">
-                        <table className="w-full text-left min-w-[600px]">
+                        <table className="w-full text-left min-w-[600px] hidden md:table">
                           <thead className="bg-zinc-950 border-b border-zinc-800">
                             <tr>
                               <th className="p-4 text-xs font-semibold text-zinc-400 uppercase">Tracking #</th>
@@ -337,6 +373,22 @@ export default function Customer360Modal({
                             ))}
                           </tbody>
                         </table>
+                        
+                        {/* Mobile View */}
+                        <div className="md:hidden flex flex-col divide-y divide-zinc-800">
+                          {logistics.shipments.map((s: any) => (
+                            <div key={s.id} className="p-4 flex flex-col gap-3">
+                              <div className="flex justify-between items-start gap-2">
+                                <span className="text-sm text-zinc-300 font-mono break-all">{s.tracking_number}</span>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-500/10 text-indigo-400 shrink-0">{s.status?.replace('_', ' ')}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs text-zinc-400">
+                                <span className="uppercase font-medium">{s.method}</span>
+                                <span className="font-medium text-white text-sm">₵{Number(s.shipping_cost || 0).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
