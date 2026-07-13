@@ -140,7 +140,7 @@ export default function CommandBar() {
   return (
     <>
       <div 
-        className="flex-1 max-w-2xl hidden md:flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300 transition-colors cursor-text"
+        className="flex-1 max-w-2xl flex items-center gap-2 px-4 py-3 md:py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300 transition-colors cursor-text"
         onClick={() => setIsOpen(true)}
       >
         <Search className="w-4 h-4" />
