@@ -54,13 +54,24 @@ export default function CommandBar() {
       
       const q = `%${query}%`;
       
+      const isNum = !isNaN(Number(query)) && query.trim() !== '';
+      const orderQuery = isNum 
+        ? `id.eq.${query},product_name.ilike.${q},notes.ilike.${q}`
+        : `product_name.ilike.${q},notes.ilike.${q}`;
+
       const [customers, shipments, linkOrders, mallOrders, reservations] = await Promise.all([
         supabase.from('customers').select('id, full_name, email, phone, unique_id').or(`full_name.ilike.${q},email.ilike.${q},phone.ilike.${q},unique_id.ilike.${q}`).limit(5),
-        supabase.from('shipments').select('id, tracking_number, items_description').or(`tracking_number.ilike.${q},items_description.ilike.${q},id.ilike.${q}`).limit(5),
-        supabase.from('orders').select('id, product_name, order_notes').eq('type', 'link_order').or(`id.ilike.${q},product_name.ilike.${q}`).limit(5),
-        supabase.from('ecom_orders').select('id, order_number, product_name').or(`id.ilike.${q},order_number.ilike.${q},product_name.ilike.${q}`).limit(5),
+        supabase.from('shipments').select('id, tracking_number, items_description').or(`tracking_number.ilike.${q},items_description.ilike.${q}`).limit(5),
+        supabase.from('orders').select('id, product_name, notes').eq('type', 'link_order').or(orderQuery).limit(5),
+        supabase.from('ecom_orders').select('id, order_id, customer_name').or(`order_id.ilike.${q},customer_name.ilike.${q}`).limit(5),
         supabase.from('shipment_reservations').select('id').or(`id.ilike.${q}`).limit(5)
       ]);
+
+      if (customers.error) console.error("Customers Search Error:", customers.error);
+      if (shipments.error) console.error("Shipments Search Error:", shipments.error);
+      if (linkOrders.error) console.error("Link Orders Search Error:", linkOrders.error);
+      if (mallOrders.error) console.error("Mall Orders Search Error:", mallOrders.error);
+      if (reservations.error) console.error("Reservations Search Error:", reservations.error);
 
       const formattedResults: SearchResult[] = [];
 
@@ -81,7 +92,7 @@ export default function CommandBar() {
       }
       if (mallOrders.data) {
         mallOrders.data.forEach(m => formattedResults.push({
-          id: m.id, type: 'mall_order', title: m.order_number || `MALL-${m.id.substring(0,8).toUpperCase()}`, subtitle: m.product_name || 'Mall Order', icon: ShoppingCart, route: `/agent/global-orders/mall-orders?search=${m.id}`
+          id: m.id, type: 'mall_order', title: m.order_id || `MALL-${m.id.substring(0,8).toUpperCase()}`, subtitle: m.customer_name || 'Mall Order', icon: ShoppingCart, route: `/agent/global-orders/mall-orders?search=${m.id}`
         }));
       }
       if (reservations.data) {
