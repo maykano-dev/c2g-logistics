@@ -88,30 +88,30 @@ export default function Customer360Modal({
       <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
         
         {/* Header Header */}
-        <div className="bg-zinc-900 border-b border-zinc-800 p-6 flex items-start justify-between shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-2xl border border-indigo-500/30">
+        <div className="bg-zinc-900 border-b border-zinc-800 p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between shrink-0 gap-4 sm:gap-0">
+          <div className="flex items-start sm:items-center gap-4 w-full">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-xl sm:text-2xl border border-indigo-500/30">
               {core.name?.substring(0, 2).toUpperCase() || 'CU'}
             </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-white tracking-tight">{core.name || 'Unknown'}</h2>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">{core.name || 'Unknown'}</h2>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
                   core.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
                 }`}>
                   {core.status}
                 </span>
-                {readOnly && <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 border border-zinc-700">Read Only</span>}
+                {readOnly && <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">Read Only</span>}
               </div>
-              <div className="flex items-center gap-4 mt-2 text-sm text-zinc-400">
-                <span className="flex items-center gap-1.5"><Mail className="w-4 h-4" /> {core.email}</span>
-                {core.phone && <span className="flex items-center gap-1.5"><Phone className="w-4 h-4" /> {core.phone}</span>}
-                <span className="flex items-center gap-1.5 font-mono bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">{core.customer_unique_id}</span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-zinc-400">
+                <span className="flex items-center gap-1.5 whitespace-nowrap"><Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="truncate">{core.email}</span></span>
+                {core.phone && <span className="flex items-center gap-1.5 whitespace-nowrap"><Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {core.phone}</span>}
+                <span className="flex items-center gap-1.5 font-mono bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800 whitespace-nowrap shrink-0">{core.customer_unique_id}</span>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 bg-zinc-950 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="absolute sm:relative top-4 right-4 sm:top-auto sm:right-auto p-2 bg-zinc-950 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 hover:bg-zinc-800 transition-colors shrink-0">
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
@@ -300,13 +300,43 @@ export default function Customer360Modal({
                         {logistics.reservations.map((r: any) => (
                           <div key={r.id} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
                             <div className="flex justify-between items-start mb-2">
-                              <span className="font-mono text-sm text-indigo-400">{r.master_tracking_number}</span>
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-zinc-800 text-zinc-300">{r.status}</span>
+                              <span className="font-mono text-sm text-indigo-400 break-all">{r.tracking_number || r.id}</span>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-zinc-800 text-zinc-300 shrink-0 ml-2">{r.status?.replace('_', ' ')}</span>
                             </div>
-                            <p className="text-xs text-zinc-500">Destination: {r.destination}</p>
-                            <p className="text-xs text-zinc-500">Expected: {r.expected_delivery_date || 'N/A'}</p>
+                            <p className="text-xs text-zinc-500">Destination: {r.destination || 'N/A'}</p>
+                            <p className="text-xs text-zinc-500">Mode: <span className="uppercase">{r.shipping_mode?.replace('_', ' ') || 'N/A'}</span></p>
                           </div>
                         ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-white mb-4">Shipments</h3>
+                    {logistics.shipments?.length === 0 ? <p className="text-zinc-500 text-sm">No active shipments found.</p> : (
+                      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden overflow-x-auto">
+                        <table className="w-full text-left min-w-[600px]">
+                          <thead className="bg-zinc-950 border-b border-zinc-800">
+                            <tr>
+                              <th className="p-4 text-xs font-semibold text-zinc-400 uppercase">Tracking #</th>
+                              <th className="p-4 text-xs font-semibold text-zinc-400 uppercase">Status</th>
+                              <th className="p-4 text-xs font-semibold text-zinc-400 uppercase">Method</th>
+                              <th className="p-4 text-xs font-semibold text-zinc-400 uppercase">Fee</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-800">
+                            {logistics.shipments.map((s: any) => (
+                              <tr key={s.id}>
+                                <td className="p-4 text-sm text-zinc-300 font-mono">{s.tracking_number}</td>
+                                <td className="p-4">
+                                  <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-indigo-500/10 text-indigo-400">{s.status?.replace('_', ' ')}</span>
+                                </td>
+                                <td className="p-4 text-xs text-zinc-400 uppercase">{s.method}</td>
+                                <td className="p-4 text-sm font-medium text-white">₵{Number(s.shipping_cost || 0).toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>

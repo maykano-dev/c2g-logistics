@@ -25,16 +25,16 @@ export default function AgentMobileNav() {
 
   return (
     <>
-      <div className="flex items-center justify-between p-4 pt-safe border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
+      <div className="flex items-center justify-between px-4 h-16 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-500/10 text-indigo-500 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-indigo-500/10 text-indigo-500 rounded-lg flex items-center justify-center shrink-0">
             <Headset className="w-4 h-4" />
           </div>
           <span className="font-bold text-white">C2G COS</span>
         </div>
         <button 
           onClick={() => setIsOpen(true)}
-          className="p-2 -mr-2 text-zinc-400 hover:text-white transition-colors"
+          className="w-10 h-10 flex items-center justify-center -mr-2 text-zinc-400 hover:text-white transition-colors shrink-0"
         >
           <Menu className="w-6 h-6" />
         </button>
