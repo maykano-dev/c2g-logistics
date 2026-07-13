@@ -56,13 +56,13 @@ export default function CommandBar() {
       
       const isNum = !isNaN(Number(query)) && query.trim() !== '';
       const orderQuery = isNum 
-        ? `id.eq.${query},product_name.ilike.${q},notes.ilike.${q}`
-        : `product_name.ilike.${q},notes.ilike.${q}`;
+        ? `id.eq.${query},product_name.ilike.${q},notes.ilike.${q},customer_name.ilike.${q}`
+        : `product_name.ilike.${q},notes.ilike.${q},customer_name.ilike.${q}`;
 
       const [customers, shipments, linkOrders, mallOrders, reservations] = await Promise.all([
         supabase.from('customers').select('id, full_name, email, phone, unique_id').or(`full_name.ilike.${q},email.ilike.${q},phone.ilike.${q},unique_id.ilike.${q}`).limit(5),
-        supabase.from('shipments').select('id, tracking_number, items_description').or(`tracking_number.ilike.${q},items_description.ilike.${q}`).limit(5),
-        supabase.from('orders').select('id, product_name, notes').eq('type', 'link_order').or(orderQuery).limit(5),
+        supabase.from('shipments').select('id, tracking_number, items_description, customer_name').or(`tracking_number.ilike.${q},items_description.ilike.${q},customer_name.ilike.${q}`).limit(5),
+        supabase.from('orders').select('id, product_name, notes, customer_name').eq('type', 'link_order').or(orderQuery).limit(5),
         supabase.from('ecom_orders').select('id, order_id, customer_name').or(`order_id.ilike.${q},customer_name.ilike.${q}`).limit(5),
         supabase.from('shipment_reservations').select('id').or(`id.ilike.${q}`).limit(5)
       ]);
@@ -82,12 +82,12 @@ export default function CommandBar() {
       }
       if (shipments.data) {
         shipments.data.forEach(s => formattedResults.push({
-          id: s.id, type: 'shipment', title: s.tracking_number, subtitle: s.items_description || 'Shipment', icon: Ship, route: `/agent/shipments?search=${s.tracking_number}`
+          id: s.id, type: 'shipment', title: s.tracking_number, subtitle: `${s.customer_name ? s.customer_name + ' • ' : ''}${s.items_description || 'Shipment'}`, icon: Ship, route: `/agent/shipments?search=${s.tracking_number}`
         }));
       }
       if (linkOrders.data) {
         linkOrders.data.forEach(o => formattedResults.push({
-          id: o.id, type: 'link_order', title: `LNK-${o.id.substring(0,8).toUpperCase()}`, subtitle: o.product_name || 'Link Order', icon: Package, route: `/agent/global-orders/link-orders?search=${o.id}`
+          id: o.id, type: 'link_order', title: `LNK-${o.id.toString().substring(0,8).toUpperCase()}`, subtitle: `${o.customer_name ? o.customer_name + ' • ' : ''}${o.product_name || 'Link Order'}`, icon: Package, route: `/agent/global-orders/link-orders?search=${o.id}`
         }));
       }
       if (mallOrders.data) {
