@@ -10,6 +10,17 @@ export default function AdminOrdersView() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All Statuses');
+
+  const STATUS_OPTIONS = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'processing', label: 'Processing' },
+    { value: 'purchased', label: 'Purchased' },
+    { value: 'arrived_warehouse', label: 'Arrived Wh' },
+    { value: 'shipped', label: 'Shipped' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'cancelled', label: 'Cancelled' }
+  ];
 
   useEffect(() => {
     fetchOrders();
@@ -54,7 +65,12 @@ export default function AdminOrdersView() {
     const isLinkOrder = o.type === 'link_order';
     
     // STRICTLY filter out Link Orders for this page
-    return !isLinkOrder;
+    if (isLinkOrder) return false;
+    
+    const matchesStatus = filterStatus === 'All Statuses' || o.order_status === filterStatus || (!o.order_status && filterStatus === 'pending');
+    if (!matchesStatus) return false;
+    
+    return true;
   });
 
   return (
@@ -77,9 +93,17 @@ export default function AdminOrdersView() {
             className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
           />
         </div>
-        <button className="px-4 h-10 border border-zinc-800 bg-zinc-950 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-zinc-800 transition-colors shrink-0">
-          <Filter className="w-4 h-4" /> Filters
-        </button>
+        <div className="flex gap-2 shrink-0 overflow-x-auto pb-1 lg:pb-0">
+          <select 
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none pr-8 relative"
+            style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a1a1aa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
+          >
+            <option value="All Statuses">All Statuses</option>
+            {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+        </div>
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">

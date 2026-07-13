@@ -24,6 +24,7 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All Statuses');
   
   // Modal State
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -42,6 +43,13 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
 
   useEffect(() => {
     fetchOrders();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const statusParam = params.get('status');
+      if (statusParam) {
+        setFilterStatus(statusParam);
+      }
+    }
   }, []);
 
   const fetchOrders = async () => {
@@ -165,10 +173,17 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
     return option ? option.color : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30';
   };
 
-  const filteredOrders = orders.filter(o => 
-    o.order_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = orders.filter(o => {
+    const matchesSearch = o.order_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    
+    const statusVal = o.order_status || o.procurement_status || 'pending_payment';
+    const matchesStatus = filterStatus === 'All Statuses' || statusVal === filterStatus;
+    if (!matchesStatus) return false;
+    
+    return true;
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-24 relative">
@@ -198,9 +213,17 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
             className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
           />
         </div>
-        <button className="px-4 h-10 border border-zinc-800 bg-zinc-950 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-zinc-800 transition-colors shrink-0">
-          <Filter className="w-4 h-4" /> Filters
-        </button>
+        <div className="flex gap-2 shrink-0 overflow-x-auto pb-1 lg:pb-0">
+          <select 
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none pr-8 relative"
+            style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a1a1aa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
+          >
+            <option value="All Statuses">All Statuses</option>
+            {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+        </div>
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden relative">
@@ -251,7 +274,7 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                           <select
                             value={statusVal}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                            disabled={isPending}
+                            disabled={isPending || readOnly}
                             className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-xs font-bold tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-50 ${getStatusColor(statusVal)}`}
                             style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                           >
@@ -323,7 +346,7 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                         <select
                           value={statusVal}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          disabled={isPending}
+                          disabled={isPending || readOnly}
                           className={`appearance-none px-3 py-1 pr-6 rounded-md text-[10px] font-bold tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-50 ${getStatusColor(statusVal)}`}
                           style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.25rem center', backgroundSize: '1em' }}
                         >
@@ -396,13 +419,13 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
               <div className="px-4 sm:px-6 py-4 bg-zinc-900/50 border-b border-zinc-800 flex flex-col sm:flex-row flex-wrap gap-4 items-center shrink-0">
                 <div className="w-full sm:flex-1 sm:min-w-[200px]">
                   <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Order Status</label>
-                  <select value={selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment'} onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)} disabled={isPending} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
+                  <select value={selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment'} onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)} disabled={isPending || readOnly} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
                     {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
                 <div className="w-full sm:flex-1 sm:min-w-[200px]">
                   <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Payment Status</label>
-                  <select value={selectedOrder.payment_status || 'pending'} onChange={(e) => handlePaymentStatusChange(selectedOrder.id, e.target.value)} disabled={isPending} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
+                  <select value={selectedOrder.payment_status || 'pending'} onChange={(e) => handlePaymentStatusChange(selectedOrder.id, e.target.value)} disabled={isPending || readOnly} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
                     <option value="pending">Pending</option>
                     <option value="paid">Paid</option>
                     <option value="failed">Failed</option>
@@ -411,7 +434,7 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                 </div>
                 <div className="w-full sm:flex-1 sm:min-w-[200px]">
                   <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Shipping Method</label>
-                  <select value={selectedOrder.shipping_method || 'sea'} onChange={(e) => handleShippingMethodChange(selectedOrder.id, e.target.value)} disabled={isPending} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
+                  <select value={selectedOrder.shipping_method || 'sea'} onChange={(e) => handleShippingMethodChange(selectedOrder.id, e.target.value)} disabled={isPending || readOnly} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
                     <option value="sea">🚢 Sea Shipping</option>
                     <option value="normal">✈️ Air Normal</option>
                     <option value="express">⚡ Air Express</option>

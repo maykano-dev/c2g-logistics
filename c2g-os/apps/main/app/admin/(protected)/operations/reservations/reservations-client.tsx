@@ -47,6 +47,13 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
 
   useEffect(() => {
     fetchReservations();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const statusParam = params.get('status');
+      if (statusParam) {
+        setFilterStatus(statusParam);
+      }
+    }
   }, []);
 
   const fetchReservations = async () => {
@@ -173,7 +180,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
     // Default to 'In Warehouse' if not set, for matching purposes
     const resStatus = res.status || 'In Warehouse';
     
-    const matchesStatus = filterStatus === 'All Statuses' || (resStatus.toLowerCase() === filterStatus.toLowerCase());
+    const matchesStatus = filterStatus === 'All Statuses' || (resStatus.toLowerCase().replace(/ /g, '_') === filterStatus.toLowerCase().replace(/ /g, '_'));
     return matchesSearch && matchesStatus;
   });
 
@@ -241,7 +248,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
               ) : (
                 paginatedReservations.map(res => {
                   const currentStatusRaw = res.status || 'in_warehouse';
-                  const normalizedStatus = STATUS_OPTIONS.find(s => s.toLowerCase().replace(/ /g, '_') === currentStatusRaw.toLowerCase()) || 'In Warehouse';
+                  const normalizedStatus = STATUS_OPTIONS.find(s => s.toLowerCase().replace(/ /g, '_') === currentStatusRaw.toLowerCase().replace(/ /g, '_')) || 'In Warehouse';
                   return (
                   <tr key={res.id} className={`hover:bg-zinc-800/50 transition-colors group ${selectedIds.has(res.id) ? 'bg-indigo-500/5' : ''}`}>
                     <td className="p-4">
@@ -328,7 +335,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
             ) : (
               paginatedReservations.map(res => {
                 const currentStatusRaw = res.status || 'in_warehouse';
-                const normalizedStatus = STATUS_OPTIONS.find(s => s.toLowerCase().replace(/ /g, '_') === currentStatusRaw.toLowerCase()) || 'In Warehouse';
+                const normalizedStatus = STATUS_OPTIONS.find(s => s.toLowerCase().replace(/ /g, '_') === currentStatusRaw.toLowerCase().replace(/ /g, '_')) || 'In Warehouse';
                 return (
                   <div key={res.id} className={`p-4 flex flex-col gap-4 ${selectedIds.has(res.id) ? 'bg-indigo-500/5' : ''}`}>
                     <div className="flex items-start gap-3">

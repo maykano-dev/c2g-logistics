@@ -16,8 +16,7 @@ export default function AgentMallOrdersPage() {
         button:has(.lucide-trash-2) {
           display: none !important;
         }
-        input[type="number"],
-        select {
+        input[type="number"] {
           pointer-events: none;
           opacity: 0.7;
         }

@@ -8,20 +8,20 @@ import { updateShipmentStatus, bulkUpdateShipmentStatus, createAdminShipment, up
 
 // Constants for Dropdowns
 const STATUS_OPTIONS = [
-  'Pending',
-  'Awaiting Arrival (China)',
-  'In Warehouse',
-  'In Transit',
-  'Clearance',
-  'Available for pickup',
-  'Delivered',
-  'Cancelled'
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Awaiting Arrival (China)', label: 'Awaiting Arrival (China)' },
+  { value: 'In Warehouse', label: 'In Warehouse' },
+  { value: 'In Transit', label: 'In Transit' },
+  { value: 'Clearance', label: 'Clearance' },
+  { value: 'Available for pickup', label: 'Available for pickup' },
+  { value: 'Delivered', label: 'Delivered' },
+  { value: 'Cancelled', label: 'Cancelled' }
 ];
 
 const METHOD_OPTIONS = [
-  'Air Express',
-  'Air Normal',
-  'Sea Shipping'
+  { value: 'Air Express', label: 'Air Express' },
+  { value: 'Air Normal', label: 'Air Normal' },
+  { value: 'Sea Shipping', label: 'Sea Shipping' }
 ];
 
 export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
@@ -176,8 +176,13 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
   const filteredShipments = shipments.filter(s => {
     const matchesSearch = s.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           s.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'All Statuses' || (s.status && s.status.toLowerCase() === filterStatus.toLowerCase());
-    const matchesMethod = filterMethod === 'All Methods' || (s.method && s.method.toLowerCase() === filterMethod.toLowerCase());
+                          
+    const sStatus = s.status || 'Pending';
+    const matchesStatus = filterStatus === 'All Statuses' || sStatus === filterStatus || sStatus.toLowerCase() === filterStatus.toLowerCase();
+    
+    const sMethod = s.method || 'Air Normal';
+    const matchesMethod = filterMethod === 'All Methods' || sMethod === filterMethod || sMethod.toLowerCase() === filterMethod.toLowerCase();
+    
     return matchesSearch && matchesStatus && matchesMethod;
   });
 
@@ -222,7 +227,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
             style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a1a1aa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
           >
             <option>All Statuses</option>
-            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
           
           <select 
@@ -232,7 +237,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
             style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a1a1aa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
           >
             <option>All Methods</option>
-            {METHOD_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            {METHOD_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
       </div>
@@ -265,7 +270,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                 <tr><td colSpan={9} className="p-8 text-center text-zinc-500">No shipments found.</td></tr>
               ) : (
                 paginatedShipments.map(shipment => {
-                  const normalizedStatus = STATUS_OPTIONS.find(s => s.toLowerCase() === shipment.status?.toLowerCase()) || 'Pending';
+                  const normalizedStatus = STATUS_OPTIONS.find(s => s.value.toLowerCase() === shipment.status?.toLowerCase()) ? shipment.status : 'Pending';
                   return (
                   <tr key={shipment.id} className={`hover:bg-zinc-800/50 transition-colors group ${selectedIds.has(shipment.id) ? 'bg-indigo-500/5' : ''}`}>
                     <td className="p-4">
@@ -296,7 +301,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                           className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-xs font-bold tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-50 ${getStatusColorClass(normalizedStatus)}`}
                           style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                         >
-                          {STATUS_OPTIONS.map(s => <option key={s} value={s} className="bg-zinc-900 text-white">{s}</option>)}
+                          {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value} className="bg-zinc-900 text-white">{s.label}</option>)}
                         </select>
                       </div>
                     </td>
@@ -332,7 +337,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
               <div className="p-8 text-center text-zinc-500">No shipments found.</div>
             ) : (
               paginatedShipments.map(shipment => {
-                const normalizedStatus = STATUS_OPTIONS.find(s => s.toLowerCase() === shipment.status?.toLowerCase()) || 'Pending';
+                const normalizedStatus = STATUS_OPTIONS.find(s => s.value.toLowerCase() === shipment.status?.toLowerCase()) ? shipment.status : 'Pending';
                 return (
                   <div key={shipment.id} className={`p-4 flex flex-col gap-4 ${selectedIds.has(shipment.id) ? 'bg-indigo-500/5' : ''}`}>
                     <div className="flex items-start gap-3">
@@ -362,7 +367,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                           className={`appearance-none w-full px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-50 ${getStatusColorClass(normalizedStatus)}`}
                           style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                         >
-                          {STATUS_OPTIONS.map(s => <option key={s} value={s} className="bg-zinc-900 text-white">{s}</option>)}
+                          {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value} className="bg-zinc-900 text-white">{s.label}</option>)}
                         </select>
                       </div>
                       <span className="px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-bold text-zinc-300">
@@ -461,7 +466,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                 style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a1a1aa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
               >
                 <option value="">Choose...</option>
-                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
             <button onClick={() => setSelectedIds(new Set())} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-xl transition-colors" title="Clear Selection">
@@ -504,13 +509,13 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Shipping Method</label>
                     <select value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500">
-                      {METHOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {METHOD_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Initial Status</label>
                     <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500">
-                      {STATUS_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {STATUS_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                   </div>
                 </div>
@@ -573,13 +578,13 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Shipping Method</label>
                     <select value={showEditModal.method} onChange={e => setShowEditModal({...showEditModal, method: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500">
-                      {METHOD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {METHOD_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Status</label>
                     <select value={showEditModal.status} onChange={e => setShowEditModal({...showEditModal, status: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500">
-                      {STATUS_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {STATUS_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                   </div>
                 </div>

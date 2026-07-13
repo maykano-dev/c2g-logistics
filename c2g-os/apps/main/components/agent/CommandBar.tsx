@@ -125,7 +125,7 @@ export default function CommandBar() {
 
   const groupedResults = results.reduce((acc, curr) => {
     if (!acc[curr.type]) acc[curr.type] = [];
-    acc[curr.type].push(curr);
+    acc[curr.type]!.push(curr);
     return acc;
   }, {} as Record<string, SearchResult[]>);
 
