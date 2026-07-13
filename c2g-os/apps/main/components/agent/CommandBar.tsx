@@ -53,21 +53,29 @@ export default function CommandBar() {
       const supabase = createClient();
       
       const q = `%${query}%`;
-      
       const isNum = !isNaN(Number(query)) && query.trim() !== '';
-      const orderQuery = isNum 
-        ? `id.eq.${query},product_name.ilike.${q},notes.ilike.${q},customer_name.ilike.${q}`
-        : `product_name.ilike.${q},notes.ilike.${q},customer_name.ilike.${q}`;
+      
+      const customers = await supabase.from('customers').select('id, name, email, phone, customer_unique_id').or(`name.ilike.${q},email.ilike.${q},phone.ilike.${q},customer_unique_id.ilike.${q}`).limit(5);
+      if (customers.error) console.error("Customers Search Error:", customers.error);
 
-      const [customers, shipments, linkOrders, mallOrders, reservations] = await Promise.all([
-        supabase.from('customers').select('id, full_name, email, phone, unique_id').or(`full_name.ilike.${q},email.ilike.${q},phone.ilike.${q},unique_id.ilike.${q}`).limit(5),
-        supabase.from('shipments').select('id, tracking_number, items_description, customer_name').or(`tracking_number.ilike.${q},items_description.ilike.${q},customer_name.ilike.${q}`).limit(5),
+      const customerIds = customers.data ? customers.data.map(c => c.id) : [];
+      const customerIdsIn = customerIds.length > 0 ? `,customer_id.in.(${customerIds.join(',')})` : '';
+
+      const orderQuery = isNum 
+        ? `id.eq.${query},product_name.ilike.${q},notes.ilike.${q},customer_name.ilike.${q}${customerIdsIn}`
+        : `product_name.ilike.${q},notes.ilike.${q},customer_name.ilike.${q}${customerIdsIn}`;
+
+      const shipmentQuery = `tracking_number.ilike.${q},items_description.ilike.${q},customer_name.ilike.${q}${customerIdsIn}`;
+      const mallQuery = `order_id.ilike.${q},customer_name.ilike.${q}${customerIdsIn}`;
+      const resQuery = `id.ilike.${q}${customerIdsIn}`;
+
+      const [shipments, linkOrders, mallOrders, reservations] = await Promise.all([
+        supabase.from('shipments').select('id, tracking_number, items_description, customer_name').or(shipmentQuery).limit(5),
         supabase.from('orders').select('id, product_name, notes, customer_name').eq('type', 'link_order').or(orderQuery).limit(5),
-        supabase.from('ecom_orders').select('id, order_id, customer_name').or(`order_id.ilike.${q},customer_name.ilike.${q}`).limit(5),
-        supabase.from('shipment_reservations').select('id').or(`id.ilike.${q}`).limit(5)
+        supabase.from('ecom_orders').select('id, order_id, customer_name').or(mallQuery).limit(5),
+        supabase.from('shipment_reservations').select('id').or(resQuery).limit(5)
       ]);
 
-      if (customers.error) console.error("Customers Search Error:", customers.error);
       if (shipments.error) console.error("Shipments Search Error:", shipments.error);
       if (linkOrders.error) console.error("Link Orders Search Error:", linkOrders.error);
       if (mallOrders.error) console.error("Mall Orders Search Error:", mallOrders.error);
@@ -77,7 +85,7 @@ export default function CommandBar() {
 
       if (customers.data) {
         customers.data.forEach(c => formattedResults.push({
-          id: c.id, type: 'customer', title: c.full_name, subtitle: `${c.unique_id} • ${c.phone}`, icon: User, route: `/agent/customers/${c.id}`
+          id: c.id, type: 'customer', title: c.name, subtitle: `${c.customer_unique_id || ''} • ${c.phone || ''}`, icon: User, route: `/agent/customers/${c.id}`
         }));
       }
       if (shipments.data) {
