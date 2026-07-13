@@ -101,7 +101,6 @@ export default function Customer360Modal({
                 }`}>
                   {core.status}
                 </span>
-                {readOnly && <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">Read Only</span>}
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-zinc-400">
                 <span className="flex items-center gap-1.5 whitespace-nowrap"><Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="truncate">{core.email}</span></span>
