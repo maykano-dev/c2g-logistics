@@ -106,13 +106,6 @@ export default function AgentDashboardClient({ stats }: { stats: DashboardStats 
           color="bg-amber-500" 
           href="/agent/reservations?status=active"
         />
-        <KpiCard 
-          title="Total Customers" 
-          value={stats.totalCustomers.toLocaleString()} 
-          icon={Users} 
-          color="bg-blue-500" 
-          href="/agent/customers"
-        />
       </div>
 
       {/* Secondary KPIs */}
