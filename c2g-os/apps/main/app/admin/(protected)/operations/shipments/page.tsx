@@ -273,8 +273,8 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                         {selectedIds.has(shipment.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                       </button>
                     </td>
-                    <td className="p-4">
-                      <p className="text-sm text-white font-mono font-medium">{shipment.tracking_number}</p>
+                    <td className="p-4 max-w-[250px]">
+                      <p className="text-sm text-white font-mono font-medium truncate" title={shipment.tracking_number}>{shipment.tracking_number}</p>
                     </td>
                     <td className="p-4">
                       <p className="text-sm text-zinc-200">{shipment.customer_name || 'N/A'}</p>
@@ -341,7 +341,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                       </button>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm text-white font-mono font-medium">{shipment.tracking_number}</p>
+                          <p className="text-sm text-white font-mono font-medium truncate max-w-[200px]" title={shipment.tracking_number}>{shipment.tracking_number}</p>
                           <button 
                             onClick={() => setShowEditModal(shipment)}
                             className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors shrink-0 ml-2" 
