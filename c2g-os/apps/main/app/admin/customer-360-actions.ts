@@ -35,24 +35,57 @@ export async function getCustomer360Core(customerId: string) {
 
   const { data: customer, error } = await adminClient
     .from('customers')
-    .select('*, wallet:wallets(*)')
+    .select('*')
     .eq('id', customerId)
     .single();
 
   if (error || !customer) return { success: false, error: 'Customer not found' };
 
-  // Calculate lifetime value (very basic implementation for now, sums wallet_transactions or orders)
-  // For now, we'll just sum all DEBIT transactions in wallet as lifetime value
-  const { data: txs } = await adminClient
-    .from('wallet_transactions')
-    .select('amount')
-    .eq('wallet_id', customer.wallet?.id)
-    .eq('type', 'debit')
-    .eq('status', 'successful');
-    
+  // Fetch Auth User Details for last_login
+  const { data: authData } = await adminClient.auth.admin.getUserById(customerId);
+  if (authData?.user) {
+    customer.last_login = authData.user.last_sign_in_at;
+  }
+  customer.user_id = customerId;
+
+  // Fetch Wallet
+  const { data: wallet } = await adminClient.from('wallets').select('*').eq('customer_id', customerId).single();
+  customer.wallet = wallet;
+
+  // Calculate LTV
   let ltv = 0;
-  if (txs) {
-    ltv = txs.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
+  
+  // Sum Mall Orders
+  const { data: ecomOrders } = await adminClient
+    .from('ecom_orders')
+    .select('total_amount')
+    .eq('customer_id', customerId)
+    .in('payment_status', ['paid', 'successful']);
+  
+  if (ecomOrders) {
+    ltv += ecomOrders.reduce((sum: number, o: any) => sum + Number(o.total_amount || 0), 0);
+  }
+
+  // Sum Link Orders
+  const { data: linkOrders } = await adminClient
+    .from('orders')
+    .select('total')
+    .eq('customer_id', customerId)
+    .in('payment_status', ['paid', 'completed']);
+    
+  if (linkOrders) {
+    ltv += linkOrders.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0);
+  }
+
+  // Sum Shipments
+  const { data: shipments } = await adminClient
+    .from('shipments')
+    .select('shipping_cost')
+    .eq('customer_id', customerId)
+    .eq('shipping_fee_paid', true);
+    
+  if (shipments) {
+    ltv += shipments.reduce((sum: number, s: any) => sum + Number(s.shipping_cost || 0), 0);
   }
 
   return { success: true, data: { ...customer, lifetime_value: ltv } };
@@ -63,7 +96,7 @@ export async function getCustomer360Financials(customerId: string) {
   if (!hasAccess) return { success: false, error: 'Unauthorized' };
 
   const adminClient = getAdminClient();
-  const { data: wallet } = await adminClient.from('wallets').select('id').eq('user_id', customerId).single();
+  const { data: wallet } = await adminClient.from('wallets').select('id').eq('customer_id', customerId).single();
   
   let transactions: any[] = [];
   if (wallet) {
@@ -89,15 +122,13 @@ export async function getCustomer360Orders(customerId: string) {
     .from('orders')
     .select('*')
     .eq('customer_id', customerId)
-    .eq('type', 'link_order')
     .order('created_at', { ascending: false })
     .limit(50);
     
   const { data: mallOrders } = await adminClient
-    .from('orders')
+    .from('ecom_orders')
     .select('*')
     .eq('customer_id', customerId)
-    .neq('type', 'link_order')
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -113,7 +144,7 @@ export async function getCustomer360Logistics(customerId: string) {
   const { data: reservations } = await adminClient
     .from('shipment_reservations')
     .select('*')
-    .eq('user_id', customerId)
+    .eq('customer_id', customerId)
     .order('created_at', { ascending: false });
 
   const { data: shipments } = await adminClient
