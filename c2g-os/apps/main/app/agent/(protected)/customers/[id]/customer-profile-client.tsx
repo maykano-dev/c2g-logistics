@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   User, 
   Phone, 
@@ -25,6 +26,7 @@ interface CustomerProfileClientProps {
 
 export default function CustomerProfileClient({ customer, linkOrders, mallOrders, shipments }: CustomerProfileClientProps) {
   const [activeTab, setActiveTab] = useState('timeline'); // Actually the right panel tab
+  const router = useRouter();
 
   // Calculate Quick Stats
   const totalOrders = linkOrders.length + mallOrders.length;
@@ -147,12 +149,9 @@ export default function CustomerProfileClient({ customer, linkOrders, mallOrders
           <h2 className="text-sm font-bold uppercase tracking-widest text-white flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-500" /> Activity Timeline
           </h2>
-          <button className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors font-bold shadow-lg shadow-indigo-900/20">
-            + New Ticket
-          </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {timelineEvents.length === 0 ? (
             <div className="text-center py-10 text-zinc-500">No activity recorded for this customer yet.</div>
           ) : (
@@ -222,13 +221,17 @@ export default function CustomerProfileClient({ customer, linkOrders, mallOrders
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 bg-zinc-950/30">
+        <div className="flex-1 overflow-y-auto p-4 bg-zinc-950/30 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {activeTab === 'mall' && (
             <div className="space-y-3">
               {mallOrders.length === 0 ? (
                 <div className="text-center py-8 text-xs text-zinc-500">No Mall Orders found.</div>
               ) : mallOrders.map((o) => (
-                <div key={o.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 hover:border-zinc-700 transition-colors cursor-pointer">
+                <div 
+                  key={o.id} 
+                  onClick={() => router.push(`/agent/global-orders/mall-orders?search=${o.id}`)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 hover:border-zinc-700 transition-colors cursor-pointer"
+                >
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-bold text-white">{o.order_id || `MALL-${o.id.substring(0,8).toUpperCase()}`}</span>
                     <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold uppercase">{o.order_status || 'Pending'}</span>
@@ -243,7 +246,11 @@ export default function CustomerProfileClient({ customer, linkOrders, mallOrders
               {linkOrders.length === 0 ? (
                 <div className="text-center py-8 text-xs text-zinc-500">No Link Orders found.</div>
               ) : linkOrders.map((o) => (
-                <div key={o.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 hover:border-zinc-700 transition-colors cursor-pointer">
+                <div 
+                  key={o.id} 
+                  onClick={() => router.push(`/agent/global-orders/link-orders?search=${o.id}`)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 hover:border-zinc-700 transition-colors cursor-pointer"
+                >
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-bold text-white">LNK-{o.id.toString().substring(0,8).toUpperCase()}</span>
                     <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-bold uppercase">{o.order_status || 'Pending'}</span>
@@ -258,7 +265,11 @@ export default function CustomerProfileClient({ customer, linkOrders, mallOrders
               {packages.length === 0 ? (
                 <div className="text-center py-8 text-xs text-zinc-500">No Packages in warehouse.</div>
               ) : packages.map((p) => (
-                <div key={p.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 hover:border-zinc-700 transition-colors cursor-pointer">
+                <div 
+                  key={p.id} 
+                  onClick={() => router.push(`/agent/shipments?search=${p.tracking_number}`)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 hover:border-zinc-700 transition-colors cursor-pointer"
+                >
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-bold text-white">{p.tracking_number}</span>
                     <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold uppercase">{p.status || 'In Warehouse'}</span>
@@ -273,7 +284,11 @@ export default function CustomerProfileClient({ customer, linkOrders, mallOrders
               {actualShipments.length === 0 ? (
                 <div className="text-center py-8 text-xs text-zinc-500">No Active Shipments found.</div>
               ) : actualShipments.map((s) => (
-               <div key={s.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 hover:border-zinc-700 transition-colors cursor-pointer relative overflow-hidden">
+               <div 
+                 key={s.id} 
+                 onClick={() => router.push(`/agent/shipments?search=${s.tracking_number}`)}
+                 className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 hover:border-zinc-700 transition-colors cursor-pointer relative overflow-hidden"
+               >
                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
                  <div className="flex justify-between items-start mb-2 pl-2">
                    <span className="text-xs font-bold text-white">{s.tracking_number}</span>
