@@ -221,17 +221,20 @@ export default function Customer360Modal({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800">
-                          {financials.transactions.map((tx: any) => (
-                            <tr key={tx.id} className="hover:bg-zinc-800/50">
-                              <td className="p-4 text-sm text-zinc-300">{format(new Date(tx.created_at), 'MMM dd, yyyy HH:mm')}</td>
-                              <td className="p-4">
-                                <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${tx.type === 'credit' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{tx.type}</span>
-                              </td>
-                              <td className="p-4 text-sm font-medium text-white">₵{Number(tx.amount).toFixed(2)}</td>
-                              <td className="p-4 text-sm text-zinc-400 capitalize">{tx.status}</td>
-                              <td className="p-4 text-xs text-zinc-500 font-mono">{tx.reference || 'N/A'}</td>
-                            </tr>
-                          ))}
+                          {financials.transactions.map((tx: any) => {
+                            const isCredit = tx.transaction_type === 'top_up' || tx.transaction_type === 'refund';
+                            return (
+                              <tr key={tx.id} className="hover:bg-zinc-800/50">
+                                <td className="p-4 text-sm text-zinc-300">{format(new Date(tx.created_at), 'MMM dd, yyyy HH:mm')}</td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${isCredit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{tx.transaction_type?.replace('_', ' ')}</span>
+                                </td>
+                                <td className="p-4 text-sm font-medium text-white">₵{Number(tx.amount).toFixed(2)}</td>
+                                <td className="p-4 text-sm text-zinc-400 capitalize">{tx.status}</td>
+                                <td className="p-4 text-xs text-zinc-500 font-mono">{tx.reference_id || 'N/A'}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

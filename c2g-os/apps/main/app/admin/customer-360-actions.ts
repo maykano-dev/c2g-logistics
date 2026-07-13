@@ -50,7 +50,11 @@ export async function getCustomer360Core(customerId: string) {
 
   // Fetch Wallet
   const { data: wallet } = await adminClient.from('wallets').select('*').eq('customer_id', customerId).single();
-  customer.wallet = wallet;
+  if (wallet) {
+    customer.wallet = { ...wallet, balance: wallet.available_balance };
+  } else {
+    customer.wallet = null;
+  }
 
   // Calculate LTV
   let ltv = 0;
