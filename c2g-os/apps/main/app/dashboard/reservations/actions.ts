@@ -88,7 +88,7 @@ export async function payReservationDeposit(reservationId: string) {
   // Get Wallet
   const { data: wallet, error: walletError } = await supabase
     .from('wallets')
-    .select('id, available_balance')
+    .select('id, available_balance, held_balance')
     .eq('customer_id', user.id)
     .single();
 
@@ -109,7 +109,7 @@ export async function payReservationDeposit(reservationId: string) {
     throw new Error('Insufficient wallet balance');
   }
 
-  // Use Atomic RPC to process the payment
+  // Use Atomic RPC to process the payment (moves funds to held_balance)
   const { data: rpcResult, error: rpcError } = await supabase.rpc('process_reservation_deposit_atomic', {
     p_reservation_id: reservationId,
     p_wallet_id: wallet.id,
@@ -126,17 +126,22 @@ export async function payReservationDeposit(reservationId: string) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
     
-    const newBalance = Number(wallet.available_balance) - Number(reservation.deposit_amount);
+    // Move funds from available_balance to held_balance (escrow)
+    const newAvailable = Number(wallet.available_balance) - Number(reservation.deposit_amount);
+    const newHeld = Number(wallet.held_balance || 0) + Number(reservation.deposit_amount);
     
-    const { error: wErr } = await adminSupabase.from('wallets').update({ available_balance: newBalance }).eq('id', wallet.id);
-    if (wErr) throw new Error('Failed to deduct from wallet');
+    const { error: wErr } = await adminSupabase.from('wallets').update({ 
+      available_balance: newAvailable,
+      held_balance: newHeld 
+    }).eq('id', wallet.id);
+    if (wErr) throw new Error('Failed to hold deposit in wallet');
 
     const { error: txErr } = await adminSupabase.from('wallet_transactions').insert({
       wallet_id: wallet.id,
       amount: -Number(reservation.deposit_amount),
       transaction_type: 'shipping_deposit_hold',
       status: 'completed',
-      description: `Shipping Deposit for Reservation ${reservationId}`,
+      description: `Shipping deposit held for Reservation ${reservationId}`,
       metadata: { reservation_id: reservationId }
     });
     

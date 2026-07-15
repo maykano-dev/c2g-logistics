@@ -83,9 +83,9 @@ export default function ReservationsClient({
     // Show payment confirmation
     const confirmed = await showConfirm({
       title: "Confirm Shipping Advance",
-      message: `You are about to pay ₵${totalAdvance.toFixed(2)} from your wallet to reserve shipment space for ${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''} via ${shippingModeLabel(shippingMode)}.\n\nThis amount will be deducted from your final shipping invoice.\n\nWallet Balance: ₵${walletBalance.toFixed(2)}\nAfter Payment: ₵${(walletBalance - totalAdvance).toFixed(2)}`,
+      message: `You are about to hold ₵${totalAdvance.toFixed(2)} from your wallet as a shipping deposit for ${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''} via ${shippingModeLabel(shippingMode)}.\n\nThis amount will be held in your wallet and settled against your final shipping invoice. If your shipping fee is less than this deposit, the difference will be refunded to your available balance.\n\nAvailable Balance: ₵${walletBalance.toFixed(2)}\nAfter Hold: ₵${(walletBalance - totalAdvance).toFixed(2)}`,
       type: "warning",
-      confirmText: `Pay ₵${totalAdvance.toFixed(2)}`,
+      confirmText: `Hold ₵${totalAdvance.toFixed(2)}`,
       cancelText: "Cancel",
     });
 
@@ -105,7 +105,7 @@ export default function ReservationsClient({
       // 2. Process the atomic payment immediately
       await payReservationDeposit(resResult.reservationId);
       
-      showAlert({ title: "Success!", message: "Shipment space reserved and advance paid successfully. Your items are now queued for the next shipment.", type: "success" });
+      showAlert({ title: "Success!", message: "Shipment space reserved! Your deposit has been held in your wallet and will be settled against your final shipping invoice.", type: "success" });
       setSelectedItems([]);
       setActiveTab('history');
       router.refresh();
@@ -119,10 +119,10 @@ export default function ReservationsClient({
   const handlePayExisting = async (reservationId: string, depositAmount: number) => {
     // Show payment confirmation
     const confirmed = await showConfirm({
-      title: "Confirm Payment",
-      message: `You are about to pay ₵${depositAmount.toFixed(2)} from your wallet for reservation ${reservationId}.\n\nWallet Balance: ₵${walletBalance.toFixed(2)}\nAfter Payment: ₵${(walletBalance - depositAmount).toFixed(2)}`,
+      title: "Confirm Deposit Hold",
+      message: `You are about to hold ₵${depositAmount.toFixed(2)} from your wallet as a shipping deposit for reservation ${reservationId}.\n\nThis will be settled against your final shipping invoice.\n\nAvailable Balance: ₵${walletBalance.toFixed(2)}\nAfter Hold: ₵${(walletBalance - depositAmount).toFixed(2)}`,
       type: "warning",
-      confirmText: `Pay ₵${depositAmount.toFixed(2)}`,
+      confirmText: `Hold ₵${depositAmount.toFixed(2)}`,
       cancelText: "Cancel",
     });
 
@@ -131,7 +131,7 @@ export default function ReservationsClient({
     setIsProcessing(true);
     try {
       await payReservationDeposit(reservationId);
-      showAlert({ title: "Payment Success", message: "Shipping advance paid successfully!", type: "success" });
+      showAlert({ title: "Deposit Held", message: "Your shipping deposit has been held successfully. It will be settled against your final shipping invoice.", type: "success" });
       router.refresh();
     } catch (err: any) {
       showAlert({ title: "Payment Failed", message: err.message || "Payment failed", type: "danger" });
@@ -331,7 +331,7 @@ export default function ReservationsClient({
               className="w-full relative group overflow-hidden rounded-xl bg-primary px-4 py-3 sm:py-3.5 font-bold text-sm sm:text-base text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
             >
               {isProcessing ? <RefreshCcw className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />}
-              {isProcessing ? 'Processing...' : `Reserve & Pay ₵${totalAdvance.toFixed(2)}`}
+              {isProcessing ? 'Processing...' : `Reserve & Hold ₵${totalAdvance.toFixed(2)}`}
             </button>
             {!canAfford && selectedItems.length > 0 && (
               <p className="text-xs text-center text-destructive mt-2 sm:mt-3 font-medium flex items-center justify-center gap-1">
