@@ -10,7 +10,10 @@ import {
   ClipboardList, 
   Package, 
   Info,
-  ChevronRight
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 
@@ -30,24 +33,49 @@ export default function FloatingGuide() {
         icon: PlaneTakeoff,
         color: "text-blue-500",
         bg: "bg-blue-500/10",
-        steps: [
-          {
-            title: "Select Items",
-            desc: "Pick packages or orders from your warehouse inventory that you want to ship."
-          },
-          {
-            title: "Choose Shipping Method",
-            desc: "Select between Air Normal (12-16 Days), Air Express (3-7 Days), or Sea Freight (50-60 Days)."
-          },
-          {
-            title: "Shipping Advance",
-            desc: "Review the required deposit to reserve space. This amount is held safely in your wallet."
-          },
-          {
-            title: "Final Settlement",
-            desc: "Once your items arrive, the held deposit is settled against your final shipping invoice. If the fee is less than the deposit, you get a refund."
-          }
-        ]
+        body: (
+          <div className="space-y-6 text-sm text-muted-foreground leading-relaxed pb-4">
+            <p>Reservations allow you to decide <strong className="text-foreground font-bold">what items to ship, how to ship them, and when to ship them.</strong></p>
+            <p>Every item that reaches our warehouse will appear in the Reservations page. This includes Buy For Me Orders, C2G Mall Orders, and Registered Packages.</p>
+
+            <div className="space-y-3">
+              <h3 className="font-bold text-foreground text-base border-b border-border/50 pb-2">Creating a Reservation</h3>
+              <ol className="list-decimal pl-4 space-y-2">
+                <li><strong className="text-foreground font-bold">Select the items</strong> you want to ship together.</li>
+                <li><strong className="text-foreground font-bold">Choose your preferred shipping method</strong> (Air Normal, Air Express, Sea Freight).</li>
+                <li><strong className="text-foreground font-bold">Pay the Reservation Deposit</strong> to secure your space on the next shipment.</li>
+              </ol>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-bold text-foreground text-base border-b border-border/50 pb-2">Combine Multiple Items</h3>
+              <p>You can combine many items into a single reservation. For example, 8 Buy For Me Orders and 4 Registered Packages.</p>
+              <p>Create <strong className="text-foreground font-bold">one reservation</strong> for all 12 items and pay <strong className="text-foreground font-bold">one Reservation Deposit.</strong> If you create multiple separate reservations, each reservation requires its own deposit.</p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-bold text-foreground text-base border-b border-border/50 pb-2">Reservation Deposit</h3>
+              <p>The Reservation Deposit is <strong className="text-foreground font-bold">not an extra charge.</strong> It forms part of your final shipping cost.</p>
+              <div className="p-4 bg-secondary/30 rounded-xl space-y-2 border border-border/50">
+                <p className="font-bold text-foreground text-xs uppercase tracking-wider">When your items arrive in Ghana:</p>
+                <ul className="list-disc pl-4 space-y-1.5 mt-2">
+                  <li>If your final shipping fee is <strong className="text-foreground font-bold">less than the deposit</strong>, the remaining balance is automatically credited to your C2G Wallet.</li>
+                  <li>If your final shipping fee is <strong className="text-foreground font-bold">more than the deposit</strong>, you simply top up the difference.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-bold text-foreground text-base border-b border-border/50 pb-2">Why Reservations?</h3>
+              <p>Reservations help us reserve space on upcoming shipments, process shipments more efficiently, prevent delays caused by unpaid shipping fees, and ensure every shipment leaving China has confirmed payment.</p>
+            </div>
+
+            <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl text-destructive-foreground">
+              <h4 className="font-bold flex items-start gap-2 mb-2 leading-none"><AlertTriangle className="w-5 h-5 shrink-0 -mt-0.5" /> Important</h4>
+              <p>Items that are not reserved will remain in our China warehouse and will not be included in the next shipment until a reservation has been created.</p>
+            </div>
+          </div>
+        )
       };
     }
     
@@ -57,51 +85,117 @@ export default function FloatingGuide() {
         icon: ClipboardList,
         color: "text-purple-500",
         bg: "bg-purple-500/10",
-        steps: [
-          {
-            title: "Find a Product",
-            desc: "Copy the link to an item from 1688, Taobao, Alibaba, or any Chinese supplier."
-          },
-          {
-            title: "Submit Details",
-            desc: "Paste the link, enter the product name, price in RMB/USD, quantity, and variations (size/color)."
-          },
-          {
-            title: "Pay Instantly",
-            desc: "The cost is automatically converted to GHS. Pay directly from your C2G wallet."
-          },
-          {
-            title: "We Handle the Rest",
-            desc: "Our team will purchase the item on your behalf and notify you when it arrives at our warehouse."
-          }
-        ]
+        body: (
+          <div className="space-y-6 text-sm text-muted-foreground leading-relaxed pb-4">
+            <p>Link Orders allow C2G to purchase products from Chinese marketplaces such as <strong className="text-foreground font-bold">1688, Taobao, Pinduoduo, Alibaba</strong> and many others on your behalf.</p>
+            
+            <div className="space-y-4">
+              <h3 className="font-bold text-foreground text-base border-b border-border/50 pb-2">Before placing a Link Order:</h3>
+              
+              <div className="space-y-5">
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Paste the Product Link</h4>
+                  <ul className="list-disc pl-9 space-y-1">
+                    <li>Copy the product link from the supplier's website or app.</li>
+                    <li>You can paste the entire copied text—C2G will automatically extract the correct link.</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Enter the Quantity</h4>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Enter the Final Price in Yuan</h4>
+                  <ul className="list-disc pl-9 space-y-1">
+                    <li>This is very important.</li>
+                    <li>The first price displayed on many Chinese marketplaces is <strong className="text-foreground font-bold">often NOT the final price.</strong></li>
+                    <li>Select the correct color, size or specification, then proceed to the supplier's checkout page to view the <strong className="text-foreground font-bold">actual final price</strong> before placing your order.</li>
+                    <li>Enter that final price in C2G to avoid additional top-up requests later.</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Upload the Product Image</h4>
+                  <p className="pl-9">Upload a clear image of the exact item you want.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Add Notes (Optional)</h4>
+                  <p className="pl-9 mb-2">Include any specifications such as:</p>
+                  <ul className="list-disc pl-14 space-y-1">
+                    <li>Color</li>
+                    <li>Size</li>
+                    <li>Model</li>
+                    <li>Storage Capacity</li>
+                    <li>Any other important instructions</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl text-foreground font-medium">
+              <p>Once payment is confirmed, our procurement team purchases your item and keeps you updated throughout the process.</p>
+            </div>
+          </div>
+        )
       };
     }
 
     if (pathname.includes("/dashboard/packages")) {
       return {
-        title: "How Packages Work",
+        title: "How Package Registration Works",
         icon: Package,
         color: "text-emerald-500",
         bg: "bg-emerald-500/10",
-        steps: [
-          {
-            title: "Get Your Address",
-            desc: "Go to the 'Warehouse Address' tab and copy your personalized C2G delivery address."
-          },
-          {
-            title: "Shop & Ship",
-            desc: "Use this exact address at checkout on your favorite Chinese platforms or give it to your supplier."
-          },
-          {
-            title: "Get Tracking Info",
-            desc: "Once your supplier ships the goods, they will provide a local Chinese tracking number."
-          },
-          {
-            title: "Register Package",
-            desc: "Enter the tracking number here. Pay a small registration fee so our warehouse team expects your package."
-          }
-        ]
+        body: (
+          <div className="space-y-6 text-sm text-muted-foreground leading-relaxed pb-4">
+            <p>Register every package you ship to our China warehouse so C2G can identify and track it.</p>
+            
+            <div className="space-y-4">
+              <h3 className="font-bold text-foreground text-base border-b border-border/50 pb-2">When registering a package:</h3>
+              
+              <div className="space-y-5">
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Enter the Tracking Number</h4>
+                  <ul className="list-disc pl-9 space-y-1">
+                    <li>Enter <strong className="text-foreground font-bold">ONLY the numbers</strong> in the tracking number.</li>
+                    <li>Do <strong className="text-foreground font-bold">NOT</strong> include prefixes such as YT, STO, JT, ZTO, SF, or any other letters.</li>
+                  </ul>
+                  <div className="ml-9 mt-3 p-3 bg-secondary/30 rounded-xl space-y-2 border border-border/50">
+                    <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Example:</p>
+                    <div className="flex items-center gap-2 text-destructive font-medium"><XCircle className="w-4 h-4" /> YT123456789</div>
+                    <div className="flex items-center gap-2 text-emerald-500 font-medium"><CheckCircle2 className="w-4 h-4" /> 123456789</div>
+                  </div>
+                </div>
+
+                <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl text-destructive-foreground">
+                  <h4 className="font-bold flex items-start gap-2 mb-1 leading-none"><AlertTriangle className="w-4 h-4 shrink-0" /> Do NOT register Pickup Codes</h4>
+                  <p>Pickup codes are different from tracking numbers and cannot be used to identify your package.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Upload an Image</h4>
+                  <p className="pl-9">Upload a clear image of the item you are expecting.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Add a Description</h4>
+                  <p className="pl-9">Briefly describe the product (e.g., White Sneakers, Black Office Chair, iPhone 14 Pro Case).</p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-foreground flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Select the Store</h4>
+                  <p className="pl-9">Choose where you purchased the item from (1688, Taobao, Pinduoduo, Alibaba, JD, etc).</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl text-foreground font-medium">
+              <p>After your package arrives at our warehouse and is scanned, its status will automatically update to <strong className="font-bold">In Warehouse</strong>.</p>
+            </div>
+          </div>
+        )
       };
     }
 
@@ -228,22 +322,7 @@ export default function FloatingGuide() {
                   </div>
                 </div>
               ) : (
-                <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border/50 before:to-transparent">
-                  {content.steps?.map((step, i) => (
-                    <div key={i} className="relative flex items-start gap-4">
-                      {/* Step Number Badge */}
-                      <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm z-10 border-4 border-background ${i === 0 ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-secondary text-muted-foreground'}`}>
-                        {i + 1}
-                      </div>
-                      <div className="pt-2 pb-1 flex-1">
-                        <h4 className="font-bold text-foreground mb-1 leading-none">{step.title}</h4>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {step.desc}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                content.body
               )}
             </div>
 
