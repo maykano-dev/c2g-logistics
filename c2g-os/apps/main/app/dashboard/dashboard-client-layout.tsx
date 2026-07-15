@@ -21,7 +21,7 @@ import {
   Heart,
   Wallet,
   PlaneTakeoff,
-  RefreshCw
+  RotateCw
 } from "lucide-react";
 import { logout } from "../auth/actions";
 import { useWishlist } from "@/components/shop/wishlist-context";
@@ -171,7 +171,7 @@ export default function DashboardClientLayout({
                 aria-label="Refresh page"
                 disabled={isRefreshing}
               >
-                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+                <RotateCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
               </button>
               <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full shrink-0">
                 <Bell className="w-5 h-5" />
@@ -202,7 +202,7 @@ export default function DashboardClientLayout({
                 aria-label="Refresh page"
                 disabled={isRefreshing}
               >
-                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+                <RotateCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
               </button>
               <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20 shrink-0">
                 <Bell className="w-5 h-5" />
