@@ -214,7 +214,7 @@ export default function DashboardClientLayout({
 }
 
 // Separate client component for the animated nav to avoid hook issues
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import AnnouncementsOverlay from "../../components/dashboard/announcements-overlay";
 
 function MobileNav({
