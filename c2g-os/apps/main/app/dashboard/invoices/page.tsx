@@ -2,6 +2,7 @@ import { getInvoices } from "./actions";
 import Link from "next/link";
 import { FileText, Download, CreditCard, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Metadata } from "next";
+import ExportPdfButton from "./export-pdf-button";
 
 export const metadata: Metadata = {
   title: "Invoices & Payments | C2G Logistics",
@@ -24,22 +25,77 @@ export default async function InvoicesPage() {
         <div className="glass-panel p-6">
           <p className="text-sm font-semibold text-muted-foreground mb-1">Total Outstanding</p>
           <p className="text-3xl font-black text-destructive">
-            {formatCurrency(invoices.filter(i => i.status === 'unpaid').reduce((acc, curr) => acc + curr.amount, 0))}
+            {formatCurrency(invoices.filter((i: any) => i.status === 'unpaid').reduce((acc: number, curr: any) => acc + curr.amount, 0))}
           </p>
         </div>
-        <div className="glass-panel p-6 md:col-span-2 flex items-center justify-between">
+        <div className="glass-panel p-6 md:col-span-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-bold text-lg">Download Account Statement</h3>
             <p className="text-sm text-muted-foreground">Get a consolidated PDF of all your transactions.</p>
           </div>
-          <button disabled className="h-11 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium opacity-50 cursor-not-allowed">
-            Export PDF
-          </button>
+          <ExportPdfButton />
         </div>
       </div>
 
       <div className="glass-panel overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile View */}
+        <div className="md:hidden divide-y divide-border/50">
+          {invoices.length > 0 ? (
+            invoices.map((invoice: any) => (
+              <div key={invoice.id} className="p-4 flex flex-col gap-3 relative">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-mono text-sm font-semibold">{invoice.reference}</span>
+                  </div>
+                  <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                    invoice.status === 'paid' 
+                      ? 'bg-green-500/10 text-green-500 border-green-500/20' 
+                      : 'bg-destructive/10 text-destructive border-destructive/20 animate-pulse'
+                  }`}>
+                    {invoice.status === 'paid' ? 'PAID' : 'UNPAID'}
+                  </span>
+                </div>
+                
+                <div>
+                  <p className="font-medium text-sm">{invoice.type}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-1" title={invoice.description}>{invoice.description}</p>
+                </div>
+
+                <div className="flex justify-between items-end mt-1">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{formatDate(invoice.date)}</p>
+                    <p className="text-lg font-bold text-foreground mt-0.5">{formatCurrency(invoice.amount)}</p>
+                  </div>
+                  <div>
+                    {invoice.status === 'paid' ? (
+                      <Link 
+                        href={invoice.url}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/50 hover:bg-secondary text-xs font-medium transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" /> View
+                      </Link>
+                    ) : (
+                      <Link 
+                        href={invoice.url}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold shadow-sm transition-transform active:scale-95"
+                      >
+                        Pay Now <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">
+              No invoices found.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-border/50 text-sm text-muted-foreground bg-secondary/20">
@@ -112,3 +168,4 @@ export default async function InvoicesPage() {
     </div>
   );
 }
+

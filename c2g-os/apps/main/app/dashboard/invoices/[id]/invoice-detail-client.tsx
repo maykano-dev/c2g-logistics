@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import { Printer, ArrowLeft, CreditCard, Download, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -89,19 +90,19 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
       </div>
 
       {/* Printable Invoice Container */}
-      <div className="bg-white text-black p-8 sm:p-12 rounded-2xl shadow-sm border border-gray-200 print:p-0 print:border-none print:shadow-none">
+      <div className="printable-invoice bg-card text-card-foreground p-8 sm:p-12 rounded-2xl shadow-sm border border-border print:bg-white print:text-black print:p-0 print:border-none print:shadow-none">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12 border-b border-gray-200 pb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12 border-b border-border print:border-gray-200 pb-8">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#FF6A00] rounded-lg flex items-center justify-center print:bg-[#FF6A00] print:print-color-adjust-exact">
-                <span className="text-white font-bold text-xl">C</span>
+              <div className="w-10 h-10 relative flex items-center justify-center print:print-color-adjust-exact">
+                <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="40px" className="object-contain" />
               </div>
-              <h1 className="text-3xl font-black tracking-tight text-gray-900">INVOICE</h1>
+              <h1 className="text-3xl font-black tracking-tight text-foreground print:text-gray-900">INVOICE</h1>
             </div>
-            <div className="text-gray-500 text-sm space-y-1">
-              <p className="font-bold text-gray-900">{companyInfo.name}</p>
+            <div className="text-muted-foreground print:text-gray-500 text-sm space-y-1">
+              <p className="font-bold text-foreground print:text-gray-900">{companyInfo.name}</p>
               <p>{companyInfo.address}</p>
               <p>{companyInfo.email}</p>
               <p>{companyInfo.phone}</p>
@@ -110,19 +111,19 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
           <div className="text-left md:text-right w-full md:w-auto">
             <div className="grid grid-cols-2 md:block gap-4 mb-4 md:space-y-4">
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Invoice Number</p>
-                <p className="text-lg font-mono font-bold text-gray-900">{invoice.reference}</p>
+                <p className="text-xs font-bold text-muted-foreground print:text-gray-400 uppercase tracking-wider mb-1">Invoice Number</p>
+                <p className="text-lg font-mono font-bold text-foreground print:text-gray-900">{invoice.reference}</p>
               </div>
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Date Issued</p>
-                <p className="text-base font-semibold text-gray-700">{formatDate(invoice.date)}</p>
+                <p className="text-xs font-bold text-muted-foreground print:text-gray-400 uppercase tracking-wider mb-1">Date Issued</p>
+                <p className="text-base font-semibold text-foreground print:text-gray-700">{formatDate(invoice.date)}</p>
               </div>
             </div>
             
             <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest border-2 print:border-2 ${
               invoice.status === 'paid' 
-                ? 'bg-green-50 text-green-600 border-green-200 print:border-green-600' 
-                : 'bg-red-50 text-red-600 border-red-200 print:border-red-600'
+                ? 'bg-green-500/10 text-green-500 border-green-500/20 print:bg-green-50 print:text-green-600 print:border-green-200' 
+                : 'bg-destructive/10 text-destructive border-destructive/20 print:bg-red-50 print:text-red-600 print:border-red-200'
             }`}>
               {invoice.status === 'paid' ? 'PAID IN FULL' : 'UNPAID BALANCE'}
             </div>
@@ -131,27 +132,27 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
 
         {/* Bill To */}
         <div className="mb-12">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Billed To</p>
-          <p className="text-lg font-bold text-gray-900">{invoice.type}</p>
-          <p className="text-gray-500 mt-1">Customer ID: {invoice.customer_id}</p>
+          <p className="text-xs font-bold text-muted-foreground print:text-gray-400 uppercase tracking-wider mb-2">Billed To</p>
+          <p className="text-lg font-bold text-foreground print:text-gray-900">{invoice.type}</p>
+          <p className="text-muted-foreground print:text-gray-500 mt-1">Customer ID: {invoice.customer_id}</p>
         </div>
 
         {/* Items Table */}
         <div className="mb-12">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b-2 border-gray-900">
-                <th className="py-3 px-2 font-bold text-gray-900">Description</th>
-                <th className="py-3 px-2 font-bold text-gray-900 text-center w-24">Qty</th>
-                <th className="py-3 px-2 font-bold text-gray-900 text-right w-32">Amount</th>
+              <tr className="border-b-2 border-border print:border-gray-900">
+                <th className="py-3 px-2 font-bold text-foreground print:text-gray-900">Description</th>
+                <th className="py-3 px-2 font-bold text-foreground print:text-gray-900 text-center w-24">Qty</th>
+                <th className="py-3 px-2 font-bold text-foreground print:text-gray-900 text-right w-32">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border print:divide-gray-100">
               {invoice.items.map((item: any, i: number) => (
                 <tr key={i}>
-                  <td className="py-4 px-2 text-gray-700 font-medium">{item.description}</td>
-                  <td className="py-4 px-2 text-center text-gray-600">{item.quantity}</td>
-                  <td className="py-4 px-2 text-right font-semibold text-gray-900">{formatCurrency(item.amount)}</td>
+                  <td className="py-4 px-2 text-foreground print:text-gray-700 font-medium">{item.description}</td>
+                  <td className="py-4 px-2 text-center text-muted-foreground print:text-gray-600">{item.quantity}</td>
+                  <td className="py-4 px-2 text-right font-semibold text-foreground print:text-gray-900">{formatCurrency(item.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -160,22 +161,22 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
 
         {/* Totals */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-          <div className="w-full md:w-1/2 text-gray-500 text-sm">
-            <p className="font-bold text-gray-900 mb-1 flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-green-600" /> Secure Internal Wallet Payment</p>
-            <p>If you have any questions concerning this invoice, contact our support team at support@c2g-logistics.com.</p>
+          <div className="w-full md:w-1/2 text-muted-foreground print:text-gray-500 text-sm">
+            <p className="font-bold text-foreground print:text-gray-900 mb-1 flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-green-500 print:text-green-600" /> Secure Internal Wallet Payment</p>
+            <p>If you have any questions concerning this invoice, contact our support team at {companyInfo.email}.</p>
           </div>
           <div className="w-full md:w-80 space-y-3">
-            <div className="flex justify-between text-gray-600">
+            <div className="flex justify-between text-muted-foreground print:text-gray-600">
               <span>Subtotal</span>
               <span className="font-medium">{formatCurrency(invoice.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-gray-600">
+            <div className="flex justify-between text-muted-foreground print:text-gray-600">
               <span>Service Fee</span>
               <span className="font-medium">{formatCurrency(invoice.fee)}</span>
             </div>
-            <div className="flex justify-between border-t-2 border-gray-900 pt-3 mt-3">
-              <span className="text-lg font-black text-gray-900">Total Due</span>
-              <span className="text-2xl font-black text-[#FF6A00]">{formatCurrency(invoice.total)}</span>
+            <div className="flex justify-between border-t-2 border-border print:border-gray-900 pt-3 mt-3">
+              <span className="text-lg font-black text-foreground print:text-gray-900">Total Due</span>
+              <span className="text-2xl font-black text-primary print:text-[#FF6A00]">{formatCurrency(invoice.total)}</span>
             </div>
           </div>
         </div>
@@ -184,11 +185,19 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
+          body * {
+            visibility: hidden;
+          }
+          .printable-invoice, .printable-invoice * {
+            visibility: visible;
+          }
+          .printable-invoice {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
           body { background: white !important; }
-          .print\\:hidden { display: none !important; }
-          .print\\:p-0 { padding: 0 !important; }
-          .print\\:border-none { border: none !important; }
-          .print\\:shadow-none { box-shadow: none !important; }
         }
       `}} />
     </>

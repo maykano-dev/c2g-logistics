@@ -90,8 +90,13 @@ export async function getInvoiceDetail(invoiceId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
+  if (!invoiceId || typeof invoiceId !== 'string') {
+    console.error('[getInvoiceDetail] Invalid invoiceId:', invoiceId);
+    return null;
+  }
+
   const [type, ...idParts] = invoiceId.split('_');
-  const id = idParts.join('_');
+  const id = decodeURIComponent(idParts.join('_'));
 
   const settings = await getCachedSettings();
 
