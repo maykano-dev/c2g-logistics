@@ -72,17 +72,7 @@ export default function TopUpModal({ currentPhone }: { currentPhone?: string }) 
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-400">Mobile Money Number</label>
-            <input 
-              type="tel" 
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl h-12 px-4 text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-              placeholder="054XXXXXXX"
-            />
-          </div>
+
 
           <div className="pt-2 flex gap-3">
             <button 
@@ -95,7 +85,7 @@ export default function TopUpModal({ currentPhone }: { currentPhone?: string }) 
             </button>
             <button 
               type="submit"
-              disabled={isLoading || !amount || !phone}
+              disabled={isLoading || !amount}
               className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Proceed to Pay'}

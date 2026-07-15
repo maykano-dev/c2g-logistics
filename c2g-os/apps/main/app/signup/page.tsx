@@ -21,11 +21,11 @@ export default function SignupPage() {
       <div className="w-full flex z-10 max-w-6xl mx-auto h-[100dvh] sm:h-auto sm:min-h-[600px] sm:rounded-2xl sm:shadow-2xl overflow-y-auto sm:overflow-hidden border-border/50 sm:border bg-background/80 backdrop-blur-xl">
         
         {/* Left Column: Form (Visible on all sizes) */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-6 sm:px-12 sm:py-12 relative overflow-y-auto sm:overflow-visible">
-          <div className="max-w-[400px] mx-auto w-full space-y-4 sm:space-y-8">
+        <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-4 sm:px-10 sm:py-8 relative overflow-y-auto sm:overflow-visible">
+          <div className="max-w-[400px] mx-auto w-full space-y-4 sm:space-y-5">
             {/* Logo & Header */}
             <div className="flex flex-col animate-fade-in text-center sm:text-left">
-              <div className="w-24 h-24 sm:w-32 sm:h-32 relative flex items-center justify-center sm:justify-start mb-2 sm:mb-4 mx-auto sm:mx-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center sm:justify-start mb-2 sm:mb-3 mx-auto sm:mx-0">
                 <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
               </div>
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground mb-1 sm:mb-2">
@@ -64,17 +64,17 @@ export default function SignupPage() {
         </div>
 
         {/* Right Column: Value Proposition (Hidden on mobile) */}
-        <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-primary/10 via-secondary to-background p-12 flex-col justify-between border-l border-border/50 relative overflow-hidden">
+        <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-primary/10 via-secondary to-background p-8 sm:p-10 flex-col justify-between border-l border-border/50 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" />
           
-          <div className="relative z-10 space-y-8 animate-fade-in">
+          <div className="relative z-10 space-y-6 animate-fade-in">
             <h2 className="text-3xl font-bold tracking-tight text-foreground">
               Everything you need to <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">import from China</span>
             </h2>
             
-            <div className="space-y-4 pt-4">
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+            <div className="space-y-3 pt-2">
+              <div className="flex items-start gap-4 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 border border-blue-500/30">
                   <Globe className="w-5 h-5 text-blue-500" />
                 </div>
@@ -84,7 +84,7 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+              <div className="flex items-start gap-4 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0 border border-orange-500/30">
                   <ShoppingCart className="w-5 h-5 text-orange-500" />
                 </div>
@@ -94,7 +94,7 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+              <div className="flex items-start gap-4 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 border border-green-500/30">
                   <PackageCheck className="w-5 h-5 text-green-500" />
                 </div>
@@ -104,7 +104,7 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+              <div className="flex items-start gap-4 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/30">
                   <ShieldCheck className="w-5 h-5 text-purple-500" />
                 </div>

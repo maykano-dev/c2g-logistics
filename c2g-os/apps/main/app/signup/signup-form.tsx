@@ -142,9 +142,8 @@ export function SignupForm() {
     );
   }
 
-  // Initial Signup Form
   return (
-    <form action={action} className="space-y-2 sm:space-y-4 w-full max-w-sm mx-auto">
+    <form action={action} className="space-y-2 sm:space-y-3 w-full max-w-sm mx-auto">
       {state?.error && (
         <div className="p-3 text-sm font-medium bg-destructive/10 text-destructive rounded-md border border-destructive/20 animate-fade-in flex items-start gap-2">
           <ShieldCheck className="w-5 h-5 shrink-0" />
@@ -251,7 +250,7 @@ export function SignupForm() {
         )}
       </div>
 
-      <div className="pt-2 sm:pt-4 animate-slide-up-5 relative z-0">
+      <div className="pt-2 sm:pt-2 animate-slide-up-5 relative z-0">
         <button
           type="submit"
           disabled={isPending}
