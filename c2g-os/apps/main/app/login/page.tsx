@@ -51,7 +51,7 @@ export default function LoginPage() {
             {/* Mobile Trust Badges (Only visible on small screens) */}
             <div className="flex lg:hidden pt-4 border-t border-border/50 flex-nowrap justify-center gap-1.5 sm:gap-3 animate-slide-up-5 w-full">
               <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[9px] sm:text-[11px] font-bold uppercase tracking-wider leading-none h-7 whitespace-nowrap">
-                <Banknote className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Buy-for-me
+                <Banknote className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Buy for me
               </span>
               <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[9px] sm:text-[11px] font-bold uppercase tracking-wider leading-none h-7 whitespace-nowrap">
                 <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> C2G Mall
