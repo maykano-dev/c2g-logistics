@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { createNotification } from '@/utils/notifications';
 
 export async function getDepositRates() {
   const supabase = await createClient();
@@ -158,6 +159,42 @@ export async function payReservationDeposit(reservationId: string) {
   revalidatePath('/dashboard/reservations');
   revalidatePath('/dashboard/wallet');
   revalidatePath('/dashboard/packages');
+
+  createNotification({
+    userId: user.id,
+    title: 'Shipping Deposit Held',
+    message: `Your deposit of ₵${reservation.deposit_amount} for reservation ${reservationId} has been successfully held.`,
+    type: 'payment_success',
+    priority: 'info',
+    link: `/dashboard/reservations`
+  }).catch(e => console.warn('Failed to dispatch notification:', e));
+
+  supabase.functions.invoke('telegram-notify', {
+    body: {
+        customer_id: user.id,
+        type: 'reservation_paid',
+        title: '📦 Shipping Deposit Held!',
+        message: `A shipping deposit of ₵${reservation.deposit_amount} for reservation ${reservationId} was successfully held.\n\nIt is now reserved for shipment.`,
+        data: {
+            'Reservation ID': reservationId,
+            'Amount': `₵${reservation.deposit_amount}`
+        },
+        priority: 'high'
+    }
+  }).catch(e => console.warn('Failed to send telegram:', e));
+
+  supabase.functions.invoke('telegram-admin-notify', {
+    body: {
+        type: 'reservation_paid',
+        title: '🆕 Shipping Deposit Paid',
+        message: `A shipping deposit was paid and held for reservation.`,
+        data: {
+            'Reservation ID': reservationId,
+            'Customer': user.id
+        },
+        priority: 'medium'
+    }
+  }).catch(e => console.warn('Failed to send admin telegram:', e));
 
   return { success: true };
 }
