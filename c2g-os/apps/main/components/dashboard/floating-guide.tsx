@@ -127,41 +127,41 @@ export default function FloatingGuide() {
   return (
     <>
       {/* Floating Action Button */}
-      <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-[60]">
-        <button
-          onClick={() => setIsOpen(true)}
-          className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95 border border-white/20 backdrop-blur-md relative overflow-hidden group ${isOpen ? 'bg-zinc-800' : 'bg-primary'}`}
-        >
-          {/* Subtle pulse animation for the FAB when closed */}
-          {!isOpen && (
-            <span className="absolute inset-0 rounded-full bg-white opacity-20 animate-ping group-hover:hidden" style={{ animationDuration: '3s' }}></span>
+      <motion.button
+        drag
+        dragMomentum={false}
+        onClick={() => setIsOpen(true)}
+        className={`fixed bottom-32 right-4 md:bottom-28 md:right-8 z-[60] w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center shadow-2xl transition-colors border border-white/20 backdrop-blur-md overflow-hidden group cursor-grab active:cursor-grabbing ${isOpen ? 'bg-zinc-800' : 'bg-primary'}`}
+      >
+        {/* Subtle pulse animation for the FAB when closed */}
+        {!isOpen && (
+          <span className="absolute inset-0 rounded-full bg-white opacity-20 animate-ping group-hover:hidden" style={{ animationDuration: '3s' }}></span>
+        )}
+        
+        <AnimatePresence mode="wait">
+          {isOpen ? (
+            <motion.div
+              key="close"
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <X className="w-6 h-6 text-white" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="help"
+              initial={{ rotate: 90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: -90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <HelpCircle className="w-6 h-6 text-white" />
+            </motion.div>
           )}
-          
-          <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.div
-                key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <X className="w-6 h-6 text-white" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="help"
-                initial={{ rotate: 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: -90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <HelpCircle className="w-6 h-6 text-white" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </button>
-      </div>
+        </AnimatePresence>
+      </motion.button>
 
       {/* Backdrop */}
       <AnimatePresence>
