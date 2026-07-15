@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadImage, deleteImage } from "@/utils/image-service";
 import { createClient } from "@/utils/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+
+const BUCKET = 'order-screenshots';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -58,22 +60,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid file content." }, { status: 400 });
     }
 
-    // Upload using our Image Abstraction Layer (which handles WebP conversion + ImgBB upload)
-    const result = await uploadImage(buffer, file.name);
+    // Upload directly to Supabase Storage using the service-role key
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const uniqueId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const filePath = `uploads/${uniqueId}.${ext}`;
+
+    const { error: uploadError } = await serviceSupabase.storage
+      .from(BUCKET)
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Supabase Storage upload error:', uploadError.message);
+      return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
+
+    const { data: urlData } = serviceSupabase.storage.from(BUCKET).getPublicUrl(filePath);
 
     return NextResponse.json({ 
       success: true, 
-      url: result.url,
-      id: result.id 
+      url: urlData.publicUrl,
+      id: filePath
     });
 
   } catch (error: any) {
-    console.error("Upload API error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("Upload API error:", error?.message || error);
+    return NextResponse.json({ error: error?.message || "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -94,11 +113,21 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "No image ID or URL provided" }, { status: 400 });
     }
 
-    // 2. Call image abstraction layer
-    const result = await deleteImage(imageIdOrUrl);
+    // 2. Delete from Supabase Storage
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    if (!result) {
-      return NextResponse.json({ error: "Failed to delete image" }, { status: 500 });
+    let filePath = imageIdOrUrl;
+    if (imageIdOrUrl.startsWith('http')) {
+      const parts = imageIdOrUrl.split(`/${BUCKET}/`);
+      filePath = parts.length > 1 ? (parts[1] || '') : '';
+    }
+
+    if (filePath) {
+      const { error: delError } = await serviceSupabase.storage.from(BUCKET).remove([filePath]);
+      if (delError) console.error('Storage delete error:', delError.message);
     }
 
     return NextResponse.json({ success: true, message: "Image deleted successfully" });

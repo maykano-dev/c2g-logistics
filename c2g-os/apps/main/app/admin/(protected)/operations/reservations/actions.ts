@@ -5,9 +5,14 @@ import { revalidatePath } from 'next/cache';
 
 export async function updateReservationStatus(id: string, status: string) {
   const supabase = await createClient();
+  const payload: any = { status };
+  if (status === 'in_transit') {
+    payload.updated_at = new Date().toISOString();
+  }
+
   const { error } = await supabase
     .from('shipment_reservations')
-    .update({ status })
+    .update(payload)
     .eq('id', id);
 
   if (error) {
@@ -20,9 +25,14 @@ export async function updateReservationStatus(id: string, status: string) {
 
 export async function bulkUpdateReservationStatus(ids: string[], status: string) {
   const supabase = await createClient();
+  const payload: any = { status };
+  if (status === 'in_transit') {
+    payload.updated_at = new Date().toISOString();
+  }
+
   const { error } = await supabase
     .from('shipment_reservations')
-    .update({ status })
+    .update(payload)
     .in('id', ids);
 
   if (error) {

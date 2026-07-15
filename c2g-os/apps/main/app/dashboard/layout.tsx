@@ -10,6 +10,10 @@ import { getSecureWalletBalance } from "./wallet/shared-actions";
 export const metadata: Metadata = {
   title: "Dashboard | C2G Logistics",
   description: "Manage your shipments, link orders, and mall purchases.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function DashboardLayout({

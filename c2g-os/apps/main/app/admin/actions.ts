@@ -148,7 +148,7 @@ export async function verifyTOTP(userId: string, token: string) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/admin',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 10, // 10 hours
     });
 
     return { success: true };

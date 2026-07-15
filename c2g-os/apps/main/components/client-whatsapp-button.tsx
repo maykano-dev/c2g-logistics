@@ -13,7 +13,7 @@ export function ClientWhatsAppButton({ settings }: { settings?: any }) {
     return null;
   }
 
-  const publicPhone = settings?.public_phone || "233241465282";
+  const publicPhone = settings?.support_number || "233209140388";
   const whatsappNumber = publicPhone.replace(/\D/g, '');
 
   return (

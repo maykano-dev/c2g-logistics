@@ -19,7 +19,7 @@ export const ResetPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
-const SHIPPING_MODES = z.union([z.literal('air'), z.literal('sea'), z.literal('express'), z.literal('normal')]);
+const SHIPPING_MODES = z.union([z.literal('air_express'), z.literal('air_normal'), z.literal('sea'), z.literal('pending')]);
 
 export const CreateLinkOrderSchema = z.object({
   items_json: z.string().refine((val) => {

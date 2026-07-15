@@ -194,7 +194,7 @@ export async function createLinkOrder(prevState: any, formData: FormData) {
   }).catch(e => console.warn('Failed to dispatch notification:', e));
 
   // We no longer initialize Hubtel here. The user will pay from their wallet.
-  return { success: true, redirectUrl: `/dashboard/orders` };
+  return { success: true, redirectUrl: `/dashboard/orders`, orderId: newOrder.id };
 }
 
 export async function payLinkOrder(orderId: string) {
@@ -231,6 +231,7 @@ export async function payLinkOrder(orderId: string) {
     .from('orders')
     .update({
       payment_status: 'paid',
+      created_at: new Date().toISOString(),
       order_status: 'processing'
     })
     .eq('id', order.id);

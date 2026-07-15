@@ -3,9 +3,11 @@ export const dynamic = 'force-dynamic';
 import { Copy, MapPin, Building2, Phone, User, CheckCircle2 } from "lucide-react";
 import { createClient } from '@/utils/supabase/server';
 import { CopyAddressButton } from './copy-button';
+import { getCachedSettings } from '@/utils/cache';
 
 export default async function WarehouseAddressPage() {
   const supabase = await createClient();
+  const settings = await getCachedSettings();
   const { data: { user } } = await supabase.auth.getUser();
   
   let customerId = 'C2G-CUST-XXXX';
@@ -21,9 +23,8 @@ export default async function WarehouseAddressPage() {
     if (customer?.customer_unique_id) {
       customerId = customer.customer_unique_id;
     }
-    if (customer?.name) {
-      customerName = customer.name.split(' ')[0];
-    }
+    // Always use Okyere as the receiver name as requested
+    customerName = 'Okyere';
     if (customer?.warehouse_code) {
       warehouseCode = customer.warehouse_code;
     }
@@ -39,7 +40,7 @@ export default async function WarehouseAddressPage() {
     console.error("Error fetching warehouse addresses:", error);
   }
 
-  const activeAddresses = addresses && addresses.length > 0 ? addresses : [{
+  const activeAddresses = addresses && addresses.length > 0 ? addresses.filter(addr => addr.is_default) : [{
     id: 'default',
     is_default: true,
     name: "Guangzhou Warehouse",
@@ -146,7 +147,7 @@ export default async function WarehouseAddressPage() {
               If you are having trouble adding the address to a specific platform, our support team can help you.
             </p>
             <a 
-              href="https://wa.me/233241465282"
+              href={`https://wa.me/${(settings?.support_number || "233209140388").replace(/\D/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4"

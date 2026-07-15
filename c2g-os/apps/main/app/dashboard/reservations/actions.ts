@@ -167,16 +167,18 @@ export async function getAvailableItemsForReservation() {
     .from('shipments')
     .select('id, tracking_number, items_description, status, image_url')
     .eq('customer_id', user.id)
-    .eq('status', 'in_warehouse')
+    .in('status', ['in_warehouse', 'In Warehouse'])
     .is('reservation_id', null)
     .order('created_at', { ascending: false });
+
+  console.log("DEBUG: fetched packages", { customerId: user.id, packages, pkgError });
 
   // Fetch link orders
   const { data: linkOrders, error: orderError } = await supabase
     .from('orders')
     .select('id, product_name, notes, status:order_status, screenshot_url')
     .eq('customer_id', user.id)
-    .eq('order_status', 'in_warehouse')
+    .in('order_status', ['in_warehouse', 'In Warehouse'])
     .is('reservation_id', null)
     .order('created_at', { ascending: false });
 
@@ -185,7 +187,7 @@ export async function getAvailableItemsForReservation() {
     .from('ecom_orders')
     .select('id, order_id, total_amount, status:order_status, items')
     .eq('customer_id', user.id)
-    .eq('order_status', 'in_warehouse')
+    .in('order_status', ['in_warehouse', 'In Warehouse'])
     .is('reservation_id', null)
     .order('created_at', { ascending: false });
 
@@ -236,4 +238,57 @@ export async function getMyReservations() {
   }
 
   return data;
+}
+
+export async function getReservationItems(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const { data: packages, error: pkgError } = await supabase
+    .from('shipments')
+    .select('id, tracking_number, items_description, total_weight_kg, status, image_url')
+    .eq('reservation_id', id)
+    .eq('customer_id', user.id);
+
+  const { data: linkOrders, error: linkError } = await supabase
+    .from('orders')
+    .select('id, product_name, notes, order_status, screenshot_url')
+    .eq('reservation_id', id)
+    .eq('customer_id', user.id);
+
+  const { data: mallOrders, error: mallError } = await supabase
+    .from('ecom_orders')
+    .select('id, order_id, total_amount, order_status, items')
+    .eq('reservation_id', id)
+    .eq('customer_id', user.id);
+
+  let flatMallOrders: any[] = [];
+  if (mallOrders) {
+    mallOrders.forEach((order) => {
+      if (Array.isArray(order.items)) {
+        order.items.forEach((item: any, idx: number) => {
+          flatMallOrders.push({
+            id: order.id,
+            item_id: `${order.id}-${idx}`,
+            order_id: order.order_id,
+            product_name: item.name,
+            total_amount: item.priceGhs || item.price,
+            image_url: item.imageUrl || item.image_url,
+            status: order.order_status
+          });
+        });
+      }
+    });
+  }
+
+  if (pkgError || linkError || mallError) {
+    throw new Error('Failed to fetch items');
+  }
+
+  return {
+    packages: packages || [],
+    linkOrders: linkOrders || [],
+    mallOrders: flatMallOrders || []
+  };
 }

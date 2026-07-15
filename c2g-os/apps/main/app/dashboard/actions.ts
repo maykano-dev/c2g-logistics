@@ -105,7 +105,7 @@ export async function getDashboardStats() {
     .from('shipment_reservations')
     .select('*', { count: 'exact', head: true })
     .eq('customer_id', user.id)
-    .in('status', ['waiting_for_deposit', 'reserved_for_shipment', 'pending'])
+    .in('status', ['waiting_for_deposit', 'reserved_for_shipment', 'pending', 'in_transit', 'arrived_ghana', 'clearing_customs', 'ready_for_pickup'])
 
   return {
     transitOrdersCount: transitOrdersCount || 0,

@@ -120,10 +120,10 @@ export default function OfflinePage() {
           C2G Mall requires an active internet connection to browse products and track shipments. Please check your network and try again.
         </p>
 
-        <Link href="/" className="retry-btn">
+        <a href="/" className="retry-btn border-none cursor-pointer">
           <RefreshCw className="retry-svg" />
           Try Again
-        </Link>
+        </a>
       </div>
     </>
   );

@@ -2,6 +2,7 @@ import { getAvailableItemsForReservation, getDepositRates, getMyReservations } f
 import ReservationsClient from "./reservations-client";
 import { getSecureWalletBalance } from "../wallet/shared-actions";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: 'Shipment Reservations | C2G Logistics',
@@ -29,12 +30,14 @@ export default async function ReservationsPage() {
         </p>
       </div>
       
-      <ReservationsClient 
-        availableItems={availableItems} 
-        depositRates={depositRates} 
-        reservations={myReservations}
-        walletBalance={walletBalance} 
-      />
+      <Suspense fallback={<div className="h-40 flex items-center justify-center">Loading...</div>}>
+        <ReservationsClient 
+          availableItems={availableItems} 
+          depositRates={depositRates} 
+          reservations={myReservations}
+          walletBalance={walletBalance} 
+        />
+      </Suspense>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { createNotification } from '@/utils/notifications';
 import { revalidatePath } from 'next/cache';
 
@@ -20,7 +21,7 @@ export async function updateShipmentStatus(shipmentId: string, newStatus: string
 
   const { error: updateError } = await supabase
     .from('shipments')
-    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .update({ status: newStatus })
     .eq('id', shipmentId);
 
   if (updateError) {
@@ -52,7 +53,7 @@ export async function bulkUpdateShipmentStatus(shipmentIds: string[], newStatus:
 
   const { error } = await supabase
     .from('shipments')
-    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .update({ status: newStatus })
     .in('id', shipmentIds);
 
   if (error) {
@@ -148,7 +149,7 @@ export async function updateAdminShipment(id: string, data: any) {
   
   const { error } = await supabase
     .from('shipments')
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({ ...data })
     .eq('id', id);
 
   if (error) {
@@ -157,4 +158,20 @@ export async function updateAdminShipment(id: string, data: any) {
 
   revalidatePath('/admin/operations/shipments');
   return { success: true };
+}
+
+export async function getAdminShipments() {
+  const supabase = createAdminClient();
+  
+  const { data, error } = await supabase
+    .from('shipments')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching admin shipments:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data };
 }

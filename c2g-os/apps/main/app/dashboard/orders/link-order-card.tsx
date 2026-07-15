@@ -1,6 +1,6 @@
 "use client";
 
-import { Link as LinkIcon, Plane, Ship, CreditCard, Edit, Map, Loader2, Trash2 } from "lucide-react";
+import { Link as LinkIcon, Plane, Ship, CreditCard, Edit, Map, Loader2, Trash2, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useModal } from "@/components/providers/modal-provider";
@@ -11,6 +11,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
   const router = useRouter();
   const [isPaying, setIsPaying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isTrackLoading, setIsTrackLoading] = useState(false);
   const [isPendingDelete, startDelete] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showAlert, showConfirm } = useModal();
@@ -152,7 +153,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
           <div className="flex items-center justify-between text-sm border-b border-border/50 pb-2">
             <span className="text-muted-foreground">Shipping Mode</span>
             <span className="font-semibold flex items-center gap-1.5 capitalize">
-              {order.shipping_mode === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
+              {order.shipping_mode === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : order.shipping_mode === "pending" ? <Clock className="w-4 h-4 text-amber-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
               {order.shipping_mode?.replace('_', ' ') || 'Air Express'}
             </span>
           </div>
@@ -199,10 +200,15 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
             </>
           ) : (
             <button 
-              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/reservations`); }}
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setIsTrackLoading(true);
+                router.push(`/dashboard/reservations`); 
+              }}
+              disabled={isTrackLoading}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1 disabled:opacity-50"
             >
-              <Map className="w-4 h-4" /> Track Reservation
+              {isTrackLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Map className="w-4 h-4" />} Track Reservation
             </button>
           )}
         </div>

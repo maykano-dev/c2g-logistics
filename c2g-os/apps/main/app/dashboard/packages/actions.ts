@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { RegisterPackagesSchema } from '@/utils/security-schemas';
 import { deductFromWallet } from '../wallet/actions';
 import { createNotification } from '@/utils/notifications';
+import { uploadImage } from '@/utils/image-service';
 
 export async function getRegistrationFee() {
   const supabase = await createClient();
@@ -34,7 +35,7 @@ export async function getPackages() {
     .from('shipments')
     .select('*')
     .eq('customer_id', user.id)
-    .in('status', ['awaiting_arrival', 'in_warehouse', 'pending_payment', 'pending', 'clearing_customs'])
+    .in('status', ['awaiting_arrival', 'in_warehouse', 'In Warehouse', 'pending_payment', 'pending', 'clearing_customs'])
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -78,6 +79,23 @@ export async function registerPackages(formData: FormData) {
     .eq('id', user.id)
     .single();
 
+  // Upload images server-side (same pattern as link orders — no /api/upload call needed)
+  const uploadedImageUrls: (string | null)[] = [];
+  for (let i = 0; i < trackingNumbers.length; i++) {
+    const imageFile = formData.get(`image_${i}`) as File | null;
+    if (imageFile && imageFile.size > 0) {
+      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      const result = await uploadImage(buffer, imageFile.name);
+      if (!result.success || !result.url) {
+        throw new Error(`Failed to upload image for tracking number ${i + 1}: ${result.error || 'Unknown error'}`);
+      }
+      uploadedImageUrls.push(result.url);
+    } else {
+      // Fall back to a pre-uploaded URL if provided (legacy support)
+      uploadedImageUrls.push(imageUrlsRaw[i] || null);
+    }
+  }
+
   const payloads = trackingNumbers.map((tracking, index) => ({
     customer_id: user.id,
     customer_name: customer?.name || 'Customer',
@@ -88,7 +106,7 @@ export async function registerPackages(formData: FormData) {
     registration_fee_paid: false,
     method: 'pending',
     customer_contact: customer?.phone || '',
-    image_url: imageUrlsRaw[index] || null
+    image_url: uploadedImageUrls[index] || null
   }));
 
   const { data, error } = await supabase
@@ -207,7 +225,8 @@ export async function payPackageRegistrationFee(packageId: string) {
     .update({
         registration_fee_paid: true,
         status: 'awaiting_arrival',
-        registration_fee_payment_reference: ref
+        registration_fee_payment_reference: ref,
+        created_at: new Date().toISOString()
     })
     .eq('id', packageId);
 
@@ -303,7 +322,8 @@ export async function payBulkPackageRegistrationFees(packageIds: string[]) {
     .update({
         registration_fee_paid: true,
         status: 'awaiting_arrival',
-        registration_fee_payment_reference: ref
+        registration_fee_payment_reference: ref,
+        created_at: new Date().toISOString()
     })
     .in('id', unpaidIds);
 

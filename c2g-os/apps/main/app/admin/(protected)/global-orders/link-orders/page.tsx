@@ -520,7 +520,8 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                                 quantity: item.qty || item.quantity,
                                 screenshot_url: item.screenshotUrl || item.screenshot_url,
                                 tracking_number: item.tracking_number,
-                                status: item.status
+                                status: item.status,
+                                notes: item.notes || item.note
                               }));
                             }
                             displayNotes = parts[0].replace(/HUBTEL_CHECKOUT:.*(\n|$)/g, '').trim();
@@ -605,6 +606,12 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                                    </div>
                                  </div>
 
+                                 {(item.notes || item.note) && (
+                                   <div className="mb-3 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                     <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block mb-1">📝 Customer Notes</span>
+                                     <p className="text-sm text-zinc-300 whitespace-pre-wrap">{item.notes || item.note}</p>
+                                   </div>
+                                 )}
                                  <div className="flex flex-wrap gap-4">
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Tracking #</span>

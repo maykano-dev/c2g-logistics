@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Package, PlaneTakeoff, Ship, CheckCircle2, Wallet, RefreshCcw, Box, Link as LinkIcon, ShoppingBag, Clock, ShieldCheck, AlertTriangle, MapPin } from 'lucide-react';
-import { createReservation, payReservationDeposit } from './actions';
-import { useRouter } from 'next/navigation';
+import { createReservation, payReservationDeposit, getReservationItems } from './actions';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useModal } from '@/components/providers/modal-provider';
 
@@ -21,8 +21,20 @@ export default function ReservationsClient({
   walletBalance: number 
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showAlert, showConfirm } = useModal();
-  const [activeTab, setActiveTab] = useState<'new' | 'history'>('new');
+  
+  const initialTab = (searchParams.get('tab') as 'new' | 'history') || 'new';
+  const [activeTab, setActiveTab] = useState<'new' | 'history'>(initialTab);
+  
+  const [viewingReservation, setViewingReservation] = useState<any | null>(null);
+  const [reservationDetails, setReservationDetails] = useState<any | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const handleTabChange = (tab: 'new' | 'history') => {
+    setActiveTab(tab);
+    router.replace(`?tab=${tab}`);
+  };
   
   // Selection State
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
@@ -32,8 +44,8 @@ export default function ReservationsClient({
   // Flatten available items into a single selectable list
   const allAvailable: Item[] = [
     ...(availableItems.packages || []).map((p: any) => ({ id: p.id, type: 'warehouse_package' as const, label: p.tracking_number, desc: p.items_description || 'Warehouse Package', imageUrl: p.image_url })),
-    ...(availableItems.linkOrders || []).map((o: any) => ({ id: o.id, type: 'link_order' as const, label: `LNK-${o.id.substring(0, 8).toUpperCase()}`, desc: o.product_name || 'Link Order', imageUrl: o.screenshot_url })),
-    ...(availableItems.mallOrders || []).map((m: any) => ({ id: m.item_id, type: 'mall_order' as const, label: m.order_id || `ECOM-${m.id.substring(0, 8).toUpperCase()}`, desc: m.product_name || 'Mall Order Item', imageUrl: m.image_url, parentId: m.id }))
+    ...(availableItems.linkOrders || []).map((o: any) => ({ id: o.id, type: 'link_order' as const, label: `LNK-${String(o.id).substring(0, 8).toUpperCase()}`, desc: o.product_name || 'Link Order', imageUrl: o.screenshot_url })),
+    ...(availableItems.mallOrders || []).map((m: any) => ({ id: m.item_id, type: 'mall_order' as const, label: m.order_id || `ECOM-${String(m.id).substring(0, 8).toUpperCase()}`, desc: m.product_name || 'Mall Order Item', imageUrl: m.image_url, parentId: m.id }))
   ];
 
   const handleSelectAll = () => {
@@ -147,20 +159,34 @@ export default function ReservationsClient({
     );
   };
 
-  const activeReservationsCount = (reservations || []).filter(r => ['waiting_for_deposit', 'reserved_for_shipment', 'pending'].includes(r?.status)).length;
+  const handleViewDetails = async (res: any) => {
+    setViewingReservation(res);
+    setLoadingDetails(true);
+    try {
+      const details = await getReservationItems(res.id);
+      setReservationDetails(details);
+    } catch (err) {
+      showAlert({ title: "Error", message: "Failed to load reservation details", type: "danger" });
+      setViewingReservation(null);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const activeReservationsCount = (reservations || []).length;
 
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Tabs */}
       <div className="flex bg-accent/20 p-1 rounded-xl w-full sm:w-max border border-border/50">
         <button 
-          onClick={() => setActiveTab('new')}
+          onClick={() => handleTabChange('new')}
           className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'new' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
         >
           Reserve Space
         </button>
         <button 
-          onClick={() => setActiveTab('history')}
+          onClick={() => handleTabChange('history')}
           className={`relative flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'history' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
         >
           My Reservations
@@ -199,7 +225,7 @@ export default function ReservationsClient({
                   </label>
                   <span className="text-xs text-muted-foreground font-medium">{selectedItems.length}/{allAvailable.length}</span>
                 </div>
-                <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+                <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
                   {allAvailable.map((item) => {
                     const isSelected = !!selectedItems.find(i => i.id === item.id);
                     return (
@@ -325,7 +351,7 @@ export default function ReservationsClient({
           ) : (
             <div className="grid gap-3 sm:gap-4">
               {reservations.map(res => (
-                <div key={res.id} className="glass p-4 sm:p-5 rounded-2xl border border-border/50 transition-colors hover:bg-white/5">
+                <div key={res.id} onClick={() => handleViewDetails(res)} className="glass p-4 sm:p-5 rounded-2xl border border-border/50 transition-colors hover:bg-white/5 cursor-pointer">
                   {/* Top row: ID + Badge */}
                   <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
                     <span className="font-bold font-mono text-sm sm:text-lg text-primary truncate">{res.id}</span>
@@ -355,7 +381,7 @@ export default function ReservationsClient({
                     
                     {!res.deposit_paid && (
                       <button 
-                        onClick={() => handlePayExisting(res.id, Number(res.deposit_amount))}
+                        onClick={(e) => { e.stopPropagation(); handlePayExisting(res.id, Number(res.deposit_amount)); }}
                         disabled={isProcessing}
                         className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 text-xs sm:text-sm whitespace-nowrap active:scale-95"
                       >
@@ -364,19 +390,144 @@ export default function ReservationsClient({
                     )}
                     
                     {res.deposit_paid && ['in_transit', 'arrived_ghana', 'clearing_customs', 'ready_for_pickup', 'completed'].includes(res.status) && (
-                      <Link 
-                        href={`/dashboard/reservations/track/${res.id}`} 
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/reservations/track/${res.id}`); }} 
                         className="px-4 py-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 font-bold rounded-lg transition-all shadow-sm text-xs sm:text-sm whitespace-nowrap active:scale-95 flex items-center gap-1.5"
                       >
                         <MapPin className="w-4 h-4" />
                         Track Shipment
-                      </Link>
+                      </button>
                     )}
                   </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Reservation Details Modal */}
+      {viewingReservation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => { setViewingReservation(null); setReservationDetails(null); }}></div>
+          <div className="relative glass-panel w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl border border-border/50 animate-in zoom-in-95 duration-200">
+            <div className="p-4 sm:p-6 border-b border-border/50 flex justify-between items-center bg-secondary/20">
+              <div>
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <Package className="w-5 h-5 text-primary" />
+                  Reservation {viewingReservation.id}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {new Date(viewingReservation.created_at).toLocaleString()}
+                </p>
+              </div>
+              <button onClick={() => { setViewingReservation(null); setReservationDetails(null); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-secondary/50 hover:bg-secondary text-foreground transition-colors">
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+              {loadingDetails ? (
+                <div className="flex flex-col items-center justify-center h-40 gap-3 text-muted-foreground">
+                  <RefreshCcw className="w-6 h-6 animate-spin" />
+                  <p className="text-sm">Loading items...</p>
+                </div>
+              ) : reservationDetails ? (
+                <>
+                  {/* Warehouse Packages */}
+                  {reservationDetails.packages.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Package className="w-4 h-4" /> Warehouse Packages ({reservationDetails.packages.length})
+                      </h4>
+                      <div className="grid gap-2">
+                        {reservationDetails.packages.map((pkg: any) => (
+                          <div key={pkg.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/10">
+                            {pkg.image_url ? (
+                              <img src={pkg.image_url} alt="" className="w-10 h-10 rounded bg-black/20 object-cover shrink-0" />
+                            ) : (
+                              <div className="w-10 h-10 rounded bg-secondary/30 flex items-center justify-center shrink-0">
+                                <Package className="w-5 h-5 opacity-30" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-sm">{pkg.tracking_number}</p>
+                              <p className="text-xs text-muted-foreground">{pkg.items_description || 'No description'}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Link Orders */}
+                  {reservationDetails.linkOrders.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <LinkIcon className="w-4 h-4" /> Link Orders ({reservationDetails.linkOrders.length})
+                      </h4>
+                      <div className="grid gap-2">
+                        {reservationDetails.linkOrders.map((order: any) => (
+                          <div key={order.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/10">
+                            {order.screenshot_url ? (
+                              <img src={order.screenshot_url} alt="" className="w-10 h-10 rounded bg-black/20 object-cover shrink-0" />
+                            ) : (
+                              <div className="w-10 h-10 rounded bg-secondary/30 flex items-center justify-center shrink-0">
+                                <LinkIcon className="w-5 h-5 opacity-30" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-sm">LNK-{String(order.id).substring(0, 8).toUpperCase()}</p>
+                              <p className="text-xs text-muted-foreground">{order.product_name}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mall Orders */}
+                  {reservationDetails.mallOrders.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <ShoppingBag className="w-4 h-4" /> Mall Order Items ({reservationDetails.mallOrders.length})
+                      </h4>
+                      <div className="grid gap-2">
+                        {reservationDetails.mallOrders.map((mallItem: any) => (
+                          <div key={mallItem.item_id} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/10">
+                            {mallItem.image_url ? (
+                              <img src={mallItem.image_url} alt="" className="w-10 h-10 rounded bg-black/20 object-cover shrink-0" />
+                            ) : (
+                              <div className="w-10 h-10 rounded bg-secondary/30 flex items-center justify-center shrink-0">
+                                <ShoppingBag className="w-5 h-5 opacity-30" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-sm">{mallItem.product_name}</p>
+                              <p className="text-xs text-muted-foreground">{mallItem.order_id || `ECOM-${String(mallItem.id).substring(0, 8).toUpperCase()}`}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {reservationDetails.packages.length === 0 && reservationDetails.linkOrders.length === 0 && reservationDetails.mallOrders.length === 0 && (
+                    <p className="text-center text-muted-foreground text-sm py-4">No items found in this reservation.</p>
+                  )}
+                </>
+              ) : null}
+            </div>
+            
+            <div className="p-4 sm:p-6 border-t border-border/50 bg-secondary/10 flex justify-end">
+              <button 
+                onClick={() => { setViewingReservation(null); setReservationDetails(null); }}
+                className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

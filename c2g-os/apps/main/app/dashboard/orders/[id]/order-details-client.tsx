@@ -150,7 +150,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
                   <span className="font-semibold text-primary">{formatCurrency(order.total || 0)}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-4 text-sm font-medium capitalize">
-                  {order.shipping_mode === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
+                  {order.shipping_mode === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : order.shipping_mode === "pending" ? <Clock className="w-4 h-4 text-amber-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
                   {order.shipping_mode || 'Air Express'}
                 </div>
               </div>
@@ -285,7 +285,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
             <div className="flex justify-between items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">Shipping Mode</span>
               <span className="font-medium capitalize flex items-center gap-1.5">
-                {order.shipping_mode === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
+                {order.shipping_mode === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : order.shipping_mode === "pending" ? <Clock className="w-4 h-4 text-amber-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
                 {order.shipping_mode?.replace('_', ' ') || 'Air Express'}
               </span>
             </div>

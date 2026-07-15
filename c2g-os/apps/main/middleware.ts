@@ -65,6 +65,20 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Determine cookie namespace based on the requested path
+  let cookieName = 'sb-c2g-auth-token';
+  const truePath = path === '/auth/callback' ? request.nextUrl.searchParams.get('next') || path : path;
+  
+  if (truePath.startsWith('/admin')) {
+    cookieName = 'sb-c2g-admin-auth-token';
+  } else if (truePath.startsWith('/staff') || truePath.startsWith('/finance')) {
+    cookieName = 'sb-c2g-staff-auth-token';
+  }
+
+  // Inject the pathname into headers so Server Components can read it
+  supabaseResponse.headers.set('x-pathname', truePath);
+  request.headers.set('x-pathname', truePath); // Also set on incoming request so downstream code sees it
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
 
@@ -78,16 +92,23 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          // Recreate response to update headers safely
           supabaseResponse = NextResponse.next({
             request: {
               headers: request.headers,
             },
           })
+          // Re-apply our custom header!
+          supabaseResponse.headers.set('x-pathname', truePath);
+          
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
         },
       },
+      cookieOptions: {
+        name: cookieName,
+      }
     }
   )
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSettings } from "../actions";
 import { NewLinkOrderForm } from "./new-link-order-form";
+import { getSecureWalletBalance } from "../../wallet/shared-actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,9 @@ export default async function NewLinkOrderPage() {
   const minServiceFee = settings?.minimum_service_fee || 5;
   const localDeliveryPercentage = settings?.local_delivery_percentage != null ? settings.local_delivery_percentage : 0;
   const minLocalDeliveryFee = settings?.minimum_local_delivery_fee || 0;
+
+  const walletRes = await getSecureWalletBalance();
+  const walletBalance = walletRes.available_balance || 0;
 
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
@@ -33,6 +37,7 @@ export default async function NewLinkOrderPage() {
         minServiceFee={minServiceFee}
         localDeliveryPercentage={localDeliveryPercentage}
         minLocalDeliveryFee={minLocalDeliveryFee}
+        walletBalance={walletBalance}
       />
     </div>
   );

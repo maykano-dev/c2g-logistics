@@ -166,7 +166,7 @@ export function PolicyCallout({ type = "warning", children }: { type?: "warning"
   );
 }
 
-export function PolicyContactCard() {
+export function PolicyContactCard({ supportNumber = "+233 20 914 0388" }: { supportNumber?: string }) {
   return (
     <div className="mt-4 p-5 rounded-xl border border-border bg-card shadow-sm">
       <h4 className="font-bold mb-4 text-foreground">C2G Logistics</h4>
@@ -181,7 +181,7 @@ export function PolicyContactCard() {
           <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <i className="fab fa-whatsapp text-sm" />
           </span>
-          <a href="https://wa.me/233241465282" target="_blank" rel="noopener" className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors">+233 24 146 5282</a>
+          <a href={`https://wa.me/${supportNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors">{supportNumber}</a>
         </li>
         <li className="flex items-center gap-3">
           <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">

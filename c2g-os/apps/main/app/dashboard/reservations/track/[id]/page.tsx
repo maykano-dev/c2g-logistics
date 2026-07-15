@@ -61,7 +61,7 @@ export default async function ReservationTrackingPage({ params }: { params: Prom
       pkg={pkg} 
       walletBalance={walletBalance} 
       registrationFee={0} 
-      backLink="/dashboard/reservations" 
+      backLink="/dashboard/reservations?tab=history"
       backLabel="Back to Reservations" 
     />
   );

@@ -1,12 +1,17 @@
 /**
  * Image Abstraction Layer for C2G Mall.
- * 
- * All image operations strictly route through this service.
- * Currently uses ImgBB as the underlying storage provider, but is designed 
- * so it can be swapped out seamlessly for MinIO or Cloudflare R2 in the future.
+ *
+ * Uploads images directly to Supabase Storage (order-screenshots bucket).
+ * Images are automatically compressed to WebP using sharp before upload,
+ * reducing file sizes by 60-80% while maintaining visual quality.
  */
 
-const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
+import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const BUCKET = 'order-screenshots';
 
 export interface ImageUploadResult {
   success: boolean;
@@ -16,81 +21,103 @@ export interface ImageUploadResult {
 }
 
 /**
- * Uploads an image. If a buffer is provided, it is first compressed 
- * to a lightweight WebP format on the backend before being sent to the storage provider.
+ * Compresses an image buffer to WebP using sharp.
+ * - Resizes to max 1920px wide (preserving aspect ratio, no upscaling)
+ * - Converts to WebP at 85% quality — visually lossless but much smaller
+ * - Auto-corrects EXIF orientation (fixes sideways phone photos)
+ */
+async function compressImage(buffer: Buffer): Promise<{ data: Buffer; ext: string }> {
+  try {
+    const compressed = await sharp(buffer)
+      .rotate()                                        // auto-correct EXIF rotation
+      .resize({ width: 1920, withoutEnlargement: true }) // cap width, keep aspect ratio
+      .webp({ quality: 85 })                           // convert to WebP, high quality
+      .toBuffer();
+    return { data: compressed, ext: 'webp' };
+  } catch (e) {
+    // If sharp fails for any reason, fall back to the raw buffer
+    console.warn('[Image Service] Compression failed, uploading original:', e);
+    return { data: buffer, ext: 'jpg' };
+  }
+}
+
+/**
+ * Uploads an image buffer to Supabase Storage.
+ * Automatically compresses to WebP before upload.
  */
 export async function uploadImage(fileBuffer: Buffer, fileName: string): Promise<ImageUploadResult> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    console.error("Missing Supabase configuration");
-    return { success: false, error: "Supabase configuration missing in .env" };
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return { success: false, error: 'Supabase configuration missing' };
   }
 
   try {
-    // Removed sharp processing to fix Netlify/Vercel serverless environment module errors.
-    // The image will be uploaded directly to ImgBB which handles hosting efficiently.
-    const base64Image = fileBuffer.toString('base64');
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/imgbb-upload`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`
-      },
-      body: JSON.stringify({
-        fileData: base64Image,
-        fileName: fileName.replace(/\.[^/.]+$/, "") + ".webp"
-      })
-    });
+    // Compress before uploading
+    const { data: compressedBuffer, ext } = await compressImage(fileBuffer);
 
-    const data = await response.json();
+    // Unique path to prevent collisions
+    const uniqueId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const filePath = `uploads/${uniqueId}.${ext}`;
 
-    if (response.ok && data.url) {
-      return {
-        success: true,
-        url: data.url, 
-        id: data.public_id,
-      };
-    } else {
-      console.error("Edge Function Upload Error:", data);
-      return { success: false, error: data.error || "Upload failed" };
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(filePath, compressedBuffer, {
+        contentType: ext === 'webp' ? 'image/webp' : 'image/jpeg',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Supabase storage upload error:', uploadError);
+      return { success: false, error: uploadError.message };
     }
+
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+
+    return {
+      success: true,
+      url: urlData.publicUrl,
+      id: filePath,
+    };
   } catch (error: any) {
-    console.error("Error in uploadImage:", error);
+    console.error('Error in uploadImage:', error);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Deletes an image from the storage provider.
- * Note: ImgBB's API does not actually support deleting images via API unless using a specific user token,
- * but this abstraction function ensures future-proofing when migrating to S3/R2/MinIO.
+ * Deletes an image from Supabase Storage.
  */
 export async function deleteImage(imageIdOrUrl: string): Promise<boolean> {
-  // TODO: Implement deletion when migrating to a provider that fully supports it.
-  // For now, this is a no-op placeholder to fulfill the abstraction contract.
-  console.log(`[Image Abstraction] deleteImage called for ${imageIdOrUrl}`);
-  return true; 
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    let filePath = imageIdOrUrl;
+    if (imageIdOrUrl.startsWith('http')) {
+      const url = new URL(imageIdOrUrl);
+      const parts = url.pathname.split(`/${BUCKET}/`);
+      if (parts.length > 1) filePath = parts[1] as string;
+      else return true;
+    }
+    const { error } = await supabase.storage.from(BUCKET).remove([filePath]);
+    if (error) console.error('[Image Service] Delete error:', error.message);
+    return !error;
+  } catch (e) {
+    console.error('[Image Service] deleteImage exception:', e);
+    return false;
+  }
 }
 
 /**
- * Retrieves the public URL for an image.
- * For direct-link providers like ImgBB/Cloudflare R2, this often just returns the URL.
- * For private buckets, this could generate a signed URL.
+ * Returns the public URL for an image path.
  */
 export function getImageUrl(pathOrUrl: string): string {
-  // If we ever move to private buckets, signed URL generation logic goes here.
   return pathOrUrl;
 }
 
 /**
- * Moves or renames an image within the storage provider.
- * S3/MinIO/R2 equivalent of "CopyObject" then "DeleteObject".
+ * No-op move placeholder for future S3/R2 migration.
  */
 export async function moveImage(sourceIdOrUrl: string, destinationPath: string): Promise<boolean> {
-  // TODO: Implement move when migrating to S3/R2/MinIO.
-  console.log(`[Image Abstraction] moveImage called to move ${sourceIdOrUrl} to ${destinationPath}`);
+  console.log(`[Image Service] moveImage: ${sourceIdOrUrl} -> ${destinationPath}`);
   return true;
 }

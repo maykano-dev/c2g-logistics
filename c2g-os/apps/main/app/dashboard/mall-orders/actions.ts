@@ -117,6 +117,7 @@ export async function payMallOrder(orderId: string) {
     .from('ecom_orders')
     .update({
       payment_status: 'paid',
+      created_at: new Date().toISOString(),
       order_status: 'processing'
     })
     .eq('id', order.id);

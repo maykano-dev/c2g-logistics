@@ -68,15 +68,13 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
 
   const fetchShipments = async () => {
     setLoading(true);
-    const supabase = createClient();
+    const { getAdminShipments } = await import('./actions');
+    const res = await getAdminShipments();
     
-    const { data, error } = await supabase
-      .from('shipments')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data && !error) {
-      setShipments(data);
+    if (res.success && res.data) {
+      setShipments(res.data);
+    } else {
+      console.error('Failed to fetch shipments:', res.error);
     }
     setLoading(false);
   };
@@ -172,16 +170,40 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
     });
   };
 
+  // Data Normalization Helpers
+  const normalizeDBStatus = (status: string | undefined): string => {
+    if (!status) return 'Pending';
+    const s = status.toLowerCase();
+    if (s.includes('transit')) return 'In Transit';
+    if (s.includes('warehouse')) return 'In Warehouse';
+    if (s.includes('clearance') || s.includes('clearing')) return 'Clearance';
+    if (s.includes('pickup') || s.includes('arrived')) return 'Available for pickup';
+    if (s.includes('deliver') || s.includes('completed')) return 'Delivered';
+    if (s.includes('cancel')) return 'Cancelled';
+    if (s.includes('china') || s.includes('awaiting_arrival') || s.includes('awaiting arrival')) return 'Awaiting Arrival (China)';
+    return 'Pending';
+  };
+
+  const normalizeDBMethod = (method: string | undefined): string => {
+    if (!method) return 'Air Normal';
+    const m = method.toLowerCase();
+    if (m.includes('sea')) return 'Sea Shipping';
+    if (m.includes('express')) return 'Air Express';
+    if (m.includes('air')) return 'Air Normal';
+    return 'Air Normal'; // fallback for 'pending' or unknown
+  };
+
   // Filter Logic
   const filteredShipments = shipments.filter(s => {
     const matchesSearch = s.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          s.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
+                          s.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.customer_unique_id?.toLowerCase().includes(searchTerm.toLowerCase());
                           
-    const sStatus = s.status || 'Pending';
-    const matchesStatus = filterStatus === 'All Statuses' || sStatus === filterStatus || sStatus.toLowerCase() === filterStatus.toLowerCase();
+    const sStatus = normalizeDBStatus(s.status);
+    const matchesStatus = filterStatus === 'All Statuses' || sStatus === filterStatus;
     
-    const sMethod = s.method || 'Air Normal';
-    const matchesMethod = filterMethod === 'All Methods' || sMethod === filterMethod || sMethod.toLowerCase() === filterMethod.toLowerCase();
+    const sMethod = normalizeDBMethod(s.method);
+    const matchesMethod = filterMethod === 'All Methods' || sMethod === filterMethod;
     
     return matchesSearch && matchesStatus && matchesMethod;
   });
@@ -270,7 +292,8 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                 <tr><td colSpan={9} className="p-8 text-center text-zinc-500">No shipments found.</td></tr>
               ) : (
                 paginatedShipments.map(shipment => {
-                  const normalizedStatus = STATUS_OPTIONS.find(s => s.value.toLowerCase() === shipment.status?.toLowerCase()) ? shipment.status : 'Pending';
+                  const normalizedStatus = normalizeDBStatus(shipment.status);
+                  const normalizedMethod = normalizeDBMethod(shipment.method);
                   return (
                   <tr key={shipment.id} className={`hover:bg-zinc-800/50 transition-colors group ${selectedIds.has(shipment.id) ? 'bg-indigo-500/5' : ''}`}>
                     <td className="p-4">
@@ -289,7 +312,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                       {shipment.created_at ? format(new Date(shipment.created_at), 'dd MMM yyyy') : 'N/A'}
                     </td>
                     <td className="p-4 text-sm text-zinc-300">
-                      {shipment.method || 'N/A'}
+                      {normalizedMethod}
                     </td>
                     <td className="p-4">
                       {/* Inline Status Dropdown */}
@@ -337,7 +360,8 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
               <div className="p-8 text-center text-zinc-500">No shipments found.</div>
             ) : (
               paginatedShipments.map(shipment => {
-                const normalizedStatus = STATUS_OPTIONS.find(s => s.value.toLowerCase() === shipment.status?.toLowerCase()) ? shipment.status : 'Pending';
+                const normalizedStatus = normalizeDBStatus(shipment.status);
+                const normalizedMethod = normalizeDBMethod(shipment.method);
                 return (
                   <div key={shipment.id} className={`p-4 flex flex-col gap-4 ${selectedIds.has(shipment.id) ? 'bg-indigo-500/5' : ''}`}>
                     <div className="flex items-start gap-3">
@@ -371,7 +395,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                         </select>
                       </div>
                       <span className="px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-bold text-zinc-300">
-                        {shipment.method || 'N/A'}
+                        {normalizedMethod}
                       </span>
                     </div>
 

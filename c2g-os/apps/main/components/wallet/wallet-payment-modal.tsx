@@ -15,6 +15,10 @@ interface WalletPaymentModalProps {
   itemName: string;
   isProcessing: boolean;
   onSuccessRedirect?: () => void;
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 export default function WalletPaymentModal({
@@ -25,12 +29,20 @@ export default function WalletPaymentModal({
   walletBalance,
   itemName,
   isProcessing,
-  onSuccessRedirect
+  onSuccessRedirect,
+  secondaryAction
 }: WalletPaymentModalProps) {
   const router = useRouter();
   const [status, setStatus] = useState<"confirm" | "insufficient" | "success">("confirm");
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [activeAction, setActiveAction] = useState<"confirm" | "secondary" | null>(null);
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setActiveAction(null);
+    }
+  }, [isProcessing]);
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +59,7 @@ export default function WalletPaymentModal({
   }
 
   const handleConfirm = async () => {
+    setActiveAction("confirm");
     if (hasInsufficientFunds) {
       setStatus("insufficient");
       return;
@@ -162,6 +175,22 @@ export default function WalletPaymentModal({
                   >
                     Cancel
                   </button>
+                  {secondaryAction && (
+                    <button
+                      onClick={(e) => {
+                        setActiveAction("secondary");
+                        secondaryAction.onClick();
+                      }}
+                      disabled={isProcessing}
+                      className="w-full py-3 rounded-xl font-bold text-foreground bg-secondary/50 hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isProcessing && activeAction === "secondary" ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Processing</>
+                      ) : (
+                        secondaryAction.label
+                      )}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -189,18 +218,29 @@ export default function WalletPaymentModal({
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <button
-                      onClick={handleClose}
+                      onClick={(e) => {
+                        if (secondaryAction) {
+                          setActiveAction("secondary");
+                          secondaryAction.onClick();
+                        } else {
+                          handleClose(e);
+                        }
+                      }}
                       disabled={isProcessing}
-                      className="w-full py-3 rounded-xl font-bold text-foreground bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-foreground bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50"
                     >
-                      Cancel
+                      {isProcessing && activeAction === "secondary" ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Processing</>
+                      ) : (
+                        secondaryAction ? secondaryAction.label : "Cancel"
+                      )}
                     </button>
                     <button
                       onClick={handleConfirm}
                       disabled={isProcessing}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-primary-foreground bg-primary hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-primary/20"
                     >
-                      {isProcessing ? (
+                      {isProcessing && activeAction === "confirm" ? (
                         <><Loader2 className="w-4 h-4 animate-spin" /> Processing</>
                       ) : (
                         "Confirm & Pay"

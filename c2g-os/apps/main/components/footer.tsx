@@ -5,7 +5,7 @@ import { ArrowRight, MapPin, Mail, Phone } from "lucide-react";
 export function Footer({ hideCta = false, settings }: { hideCta?: boolean, settings?: any }) {
   const storeName = settings?.store_name || "C2G Logistics";
   const publicEmail = settings?.public_email || "c2glogisticsgh@gmail.com";
-  const publicPhone = settings?.public_phone || "233241465282";
+  const publicPhone = settings?.support_number || "233209140388";
   const formattedPhone = publicPhone.replace(/[^0-9]/g, "");
   
   return (

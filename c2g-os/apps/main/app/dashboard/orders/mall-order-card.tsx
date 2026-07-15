@@ -10,6 +10,7 @@ import { deleteMallOrder } from "../mall-orders/actions";
 export function MallOrderCard({ order }: { order: any }) {
   const router = useRouter();
   const [isPaying, setIsPaying] = useState(false);
+  const [isTrackLoading, setIsTrackLoading] = useState(false);
   const [isPendingDelete, startDelete] = useTransition();
   const { showConfirm, showAlert } = useModal();
 
@@ -196,10 +197,15 @@ export function MallOrderCard({ order }: { order: any }) {
             </>
           ) : (
             <button 
-              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/reservations`); }}
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setIsTrackLoading(true);
+                router.push(`/dashboard/reservations`); 
+              }}
+              disabled={isTrackLoading}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1 disabled:opacity-50"
             >
-              <Map className="w-4 h-4" /> Track Reservation
+              {isTrackLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Map className="w-4 h-4" />} Track Reservation
             </button>
           )}
         </div>
