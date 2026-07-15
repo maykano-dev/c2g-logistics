@@ -1,14 +1,13 @@
+"use client";
+
 import { WifiOff, RefreshCw } from "lucide-react";
 import Link from "next/link";
-
-export const metadata = {
-  title: "No Internet Connection | C2G Mall",
-  description: "You are currently offline.",
-};
 
 export default function OfflinePage() {
   return (
     <>
+      <title>No Internet Connection | C2G Mall</title>
+      <meta name="description" content="You are currently offline." />
       <style dangerouslySetInnerHTML={{ __html: `
         body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background-color: #050505; color: #ffffff; }
         /* Hide all layout elements that might be unstyled */
@@ -120,10 +119,10 @@ export default function OfflinePage() {
           C2G Mall requires an active internet connection to browse products and track shipments. Please check your network and try again.
         </p>
 
-        <a href="/" className="retry-btn border-none cursor-pointer">
+        <button onClick={() => window.location.reload()} className="retry-btn border-none cursor-pointer">
           <RefreshCw className="retry-svg" />
           Try Again
-        </a>
+        </button>
       </div>
     </>
   );

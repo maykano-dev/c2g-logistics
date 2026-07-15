@@ -105,7 +105,7 @@ export async function getInvoiceDetail(invoiceId: string) {
     if (!order) return null;
     return {
       type: 'Link Order',
-      reference: order.id.split('-').pop().substring(0, 8).toUpperCase(),
+      reference: String(order.id).split('-').pop()?.substring(0, 8).toUpperCase() || String(order.id),
       date: order.created_at,
       status: (order.payment_status === 'paid' || order.payment_status === 'Paid') ? 'paid' : 'unpaid',
       customer_id: order.customer_id,
