@@ -21,7 +21,7 @@ import {
   Heart,
   Wallet,
   PlaneTakeoff,
-  RefreshCcw
+  RefreshCw
 } from "lucide-react";
 import { logout } from "../auth/actions";
 import { useWishlist } from "@/components/shop/wishlist-context";
@@ -37,6 +37,12 @@ export default function DashboardClientLayout({
 }) {
   const pathname = usePathname();
   const { items: wishlistItems } = useWishlist();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    window.location.reload();
+  };
 
   // Layout manages its own scrolling via fixed inset-0
 
@@ -159,8 +165,13 @@ export default function DashboardClientLayout({
             </div>
             
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => window.location.reload()} className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full shrink-0" aria-label="Refresh page">
-                <RefreshCcw className="w-5 h-5" />
+              <button 
+                onClick={handleRefresh} 
+                className={`p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full shrink-0 ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                aria-label="Refresh page"
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
               </button>
               <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full shrink-0">
                 <Bell className="w-5 h-5" />
@@ -185,8 +196,13 @@ export default function DashboardClientLayout({
         <header className="hidden md:flex glass border-none z-40 w-full shrink-0 flex-col pt-[env(safe-area-inset-top)]">
           <div className="h-16 px-6 flex items-center justify-end w-full">
             <div className="flex items-center gap-4">
-              <button onClick={() => window.location.reload()} className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20 shrink-0" aria-label="Refresh page">
-                <RefreshCcw className="w-5 h-5" />
+              <button 
+                onClick={handleRefresh} 
+                className={`p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20 shrink-0 ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                aria-label="Refresh page"
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
               </button>
               <Link href="/dashboard/notifications" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/10 dark:hover:bg-black/20 shrink-0">
                 <Bell className="w-5 h-5" />
