@@ -7,7 +7,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import sharp from 'sharp';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -28,6 +27,8 @@ export interface ImageUploadResult {
  */
 async function compressImage(buffer: Buffer): Promise<{ data: Buffer; ext: string }> {
   try {
+    // Dynamically import sharp to prevent Netlify Serverless crashes on startup
+    const sharp = (await import('sharp')).default;
     const compressed = await sharp(buffer)
       .rotate()                                        // auto-correct EXIF rotation
       .resize({ width: 1920, withoutEnlargement: true }) // cap width, keep aspect ratio
@@ -35,8 +36,8 @@ async function compressImage(buffer: Buffer): Promise<{ data: Buffer; ext: strin
       .toBuffer();
     return { data: compressed, ext: 'webp' };
   } catch (e) {
-    // If sharp fails for any reason, fall back to the raw buffer
-    console.warn('[Image Service] Compression failed, uploading original:', e);
+    // If sharp is missing native binaries on Netlify or fails, fall back to raw buffer
+    console.warn('[Image Service] Sharp not available or compression failed, uploading original:', e);
     return { data: buffer, ext: 'jpg' };
   }
 }
