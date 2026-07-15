@@ -23,8 +23,9 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
   const { showConfirm, showAlert } = useModal();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  const getStatusDisplay = (status: string, registrationFeePaid: boolean) => {
-    if (!registrationFeePaid) {
+  const getStatusDisplay = (status: string, registrationFeePaid: boolean | null) => {
+    // Only show "Pending Payment" when explicitly unpaid (false), not when null
+    if (registrationFeePaid === false) {
       return { label: 'Pending Payment', className: 'bg-orange-500/10 text-orange-500 border-orange-500/20' };
     }
     if (status === 'pending' || status === 'awaiting_arrival') {
@@ -49,7 +50,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
     let matchesStatus = true;
     if (statusFilter !== 'all') {
       if (statusFilter === 'pending_payment') {
-        matchesStatus = pkg.status === 'pending_payment' && !pkg.registration_fee_paid;
+        matchesStatus = pkg.status === 'pending_payment' && pkg.registration_fee_paid === false;
       } else if (statusFilter === 'awaiting_arrival') {
         matchesStatus = pkg.status === 'pending' || pkg.status === 'awaiting_arrival';
       } else if (statusFilter === 'in_warehouse') {
@@ -92,8 +93,8 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
         <div className="flex flex-wrap items-center gap-3">
           <div className="hidden md:block">
             <PackageBulkPayButton 
-              unpaidCount={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).length}
-              unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).map(p => p.id)}
+              unpaidCount={packages.filter(p => p.status === 'pending_payment' && p.registration_fee_paid === false).length}
+              unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && p.registration_fee_paid === false).map(p => p.id)}
               registrationFee={registrationFee}
               walletBalance={walletBalance}
             />
@@ -165,8 +166,8 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
       {/* Mobile Bulk Pay Button */}
       <div className="block md:hidden w-full px-2">
         <PackageBulkPayButton 
-          unpaidCount={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).length}
-          unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && !p.registration_fee_paid).map(p => p.id)}
+          unpaidCount={packages.filter(p => p.status === 'pending_payment' && p.registration_fee_paid === false).length}
+          unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && p.registration_fee_paid === false).map(p => p.id)}
           registrationFee={registrationFee}
           walletBalance={walletBalance}
           className="w-full"
@@ -198,7 +199,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredPackages.map((pkg: any) => {
             const statusDisplay = getStatusDisplay(pkg.status, pkg.registration_fee_paid);
-            const needsPayment = pkg.status === 'pending_payment' && !pkg.registration_fee_paid;
+            const needsPayment = pkg.status === 'pending_payment' && pkg.registration_fee_paid === false;
 
             return (
               <div key={pkg.id} className="glass-panel p-6 flex flex-col group hover:border-primary/50 transition-colors">

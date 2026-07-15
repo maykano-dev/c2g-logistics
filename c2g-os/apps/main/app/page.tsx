@@ -3,6 +3,7 @@ import Image from "next/image";
 import { SiteNav } from "../components/site-nav";
 import ProductCard from "../components/shop/product-card";
 import { getTopPurchasedProducts } from "./shop/actions";
+import { getHeroImages } from "@/app/admin/hero-actions";
 import { 
   ShoppingCart, 
   Globe, 
@@ -18,8 +19,41 @@ import {
   Link as LinkIcon
 } from "lucide-react";
 
+const DEFAULT_IMAGES = [
+  'https://images.unsplash.com/photo-1586528116311-ad8ed7c663c0?w=400&q=80',
+  'https://images.unsplash.com/photo-1553413077-190dd305871c?w=400&q=80',
+  'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=400&q=80',
+  'https://images.unsplash.com/photo-1586528116311-ad8ed7c663c0?w=400&q=80',
+  'https://images.unsplash.com/photo-1553413077-190dd305871c?w=400&q=80'
+];
+
 export default async function LandingPage() {
   const { products: featuredProducts, exchangeRate } = await getTopPurchasedProducts(8);
+  
+  // Fetch dynamic hero images
+  const { success, images } = await getHeroImages();
+  
+  let col1 = DEFAULT_IMAGES;
+  let col2 = [
+    "https://images.unsplash.com/photo-1491897554428-130a60dd4757?w=400&q=80",
+    "https://images.unsplash.com/photo-1494412685616-a5d310fbb07d?w=400&q=80",
+    "https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=400&q=80",
+    "https://images.unsplash.com/photo-1491897554428-130a60dd4757?w=400&q=80",
+    "https://images.unsplash.com/photo-1494412685616-a5d310fbb07d?w=400&q=80",
+  ];
+  let col3 = [
+    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80",
+    "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=400&q=80",
+    "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=400&q=80",
+    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80",
+    "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=400&q=80",
+  ];
+
+  if (success && images && images.length === 15) {
+    col1 = images.filter((img: any) => img.column_index === 1).map((img: any) => img.image_url);
+    col2 = images.filter((img: any) => img.column_index === 2).map((img: any) => img.image_url);
+    col3 = images.filter((img: any) => img.column_index === 3).map((img: any) => img.image_url);
+  }
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden font-sans">
@@ -70,36 +104,21 @@ export default async function LandingPage() {
             <div className="flex gap-3 h-full">
               {/* Column 1 — scroll up */}
               <div className="flex-1 flex flex-col gap-3" style={{ animation: "galleryUp 20s linear infinite" }}>
-                {["https://images.unsplash.com/photo-1586528116311-ad8ed7c663c0?w=400&q=80",
-                  "https://images.unsplash.com/photo-1553413077-190dd305871c?w=400&q=80",
-                  "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=400&q=80",
-                  "https://images.unsplash.com/photo-1586528116311-ad8ed7c663c0?w=400&q=80",
-                  "https://images.unsplash.com/photo-1553413077-190dd305871c?w=400&q=80",
-                ].map((src, i) => (
+                {[...col1, ...col1].map((src, i) => (
                   <img key={i} src={src} alt="" className="w-full h-52 object-cover rounded-2xl border border-white/10 shadow-md flex-shrink-0" />
                 ))}
               </div>
 
               {/* Column 2 — scroll down, offset start */}
-              <div className="flex-1 flex flex-col gap-3 -translate-y-16" style={{ animation: "galleryDown 25s linear infinite" }}>
-                {["https://images.unsplash.com/photo-1491897554428-130a60dd4757?w=400&q=80",
-                  "https://images.unsplash.com/photo-1494412685616-a5d310fbb07d?w=400&q=80",
-                  "https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=400&q=80",
-                  "https://images.unsplash.com/photo-1491897554428-130a60dd4757?w=400&q=80",
-                  "https://images.unsplash.com/photo-1494412685616-a5d310fbb07d?w=400&q=80",
-                ].map((src, i) => (
+              <div className="flex-1 flex flex-col gap-3 -translate-y-16" style={{ animation: "galleryDown 10s linear infinite" }}>
+                {[...col2, ...col2].map((src, i) => (
                   <img key={i} src={src} alt="" className="w-full h-60 object-cover rounded-2xl border border-white/10 shadow-md flex-shrink-0" />
                 ))}
               </div>
 
               {/* Column 3 — scroll up, offset start (hidden on md, visible lg) */}
               <div className="flex-1 hidden lg:flex flex-col gap-3 translate-y-8" style={{ animation: "galleryUp 30s linear infinite" }}>
-                {["https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80",
-                  "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=400&q=80",
-                  "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=400&q=80",
-                  "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80",
-                  "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=400&q=80",
-                ].map((src, i) => (
+                {[...col3, ...col3].map((src, i) => (
                   <img key={i} src={src} alt="" className="w-full h-56 object-cover rounded-2xl border border-white/10 shadow-md flex-shrink-0" />
                 ))}
               </div>

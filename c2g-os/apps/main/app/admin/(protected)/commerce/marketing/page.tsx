@@ -5,14 +5,18 @@ import { createClient } from '@/utils/supabase/client';
 import { Megaphone, Plus, Image as ImageIcon, Send, Edit, Trash2, Search, Video, ImagePlus, CheckCircle, XCircle, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { adminHandleGalleryStatus } from '@/app/admin/gallery-actions';
+import { adminBulkUpdateHeroImages, getHeroImages } from '@/app/admin/hero-actions';
 import { useModal } from "@/components/providers/modal-provider";
 
-type TabType = 'announcements' | 'broadcasts' | 'ads' | 'gallery' | 'searchLogs';
+type TabType = 'hero' | 'announcements' | 'broadcasts' | 'ads' | 'gallery' | 'searchLogs';
 
 export default function AdminMarketingView() {
-  const [activeTab, setActiveTab] = useState<TabType>('ads');
+  const [activeTab, setActiveTab] = useState<TabType>('hero');
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDraggingHero, setIsDraggingHero] = useState(false);
   const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
@@ -23,7 +27,10 @@ export default function AdminMarketingView() {
     setLoading(true);
     const supabase = createClient();
     
-    if (activeTab === 'announcements') {
+    if (activeTab === 'hero') {
+      const res = await getHeroImages();
+      if (res.success) setData(res.images || []);
+    } else if (activeTab === 'announcements') {
       const { data: res } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
       if (res) setData(res);
     } else if (activeTab === 'ads') {
@@ -68,6 +75,92 @@ export default function AdminMarketingView() {
     }
   };
 
+  const processHeroFiles = async (files: FileList | null, resetInput?: () => void) => {
+    if (!files || files.length !== 15) {
+      showAlert({ title: 'Error', message: 'Please select exactly 15 images to upload.', type: 'danger' });
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file) continue;
+      if (!allowedTypes.includes(file.type)) {
+        showAlert({ title: 'Error', message: `File "${file.name}" has an invalid type. Only JPEG, PNG, WEBP, and GIF are allowed.`, type: 'danger' });
+        if (resetInput) resetInput();
+        return;
+      }
+    }
+
+    setUploadingHero(true);
+    setUploadProgress(0);
+    const uploadedUrls: string[] = [];
+
+    try {
+      // Upload all 15 images
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file) continue;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('intent', 'marketing');
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.success && data.url) {
+          uploadedUrls.push(data.url);
+          setUploadProgress(i + 1);
+        } else {
+          throw new Error(data.error || 'Failed to upload one of the images');
+        }
+      }
+
+      if (uploadedUrls.length === 15) {
+        setUploadProgress(16); // indicates updating DB
+        const updateRes = await adminBulkUpdateHeroImages(uploadedUrls);
+        if (updateRes.success) {
+          showAlert({ title: 'Success', message: 'Hero images replaced successfully!', type: 'success' });
+          fetchData();
+        } else {
+          throw new Error(updateRes.error);
+        }
+      }
+    } catch (err: any) {
+      showAlert({ title: 'Error', message: err.message || 'An error occurred during upload', type: 'danger' });
+    } finally {
+      setUploadingHero(false);
+      setUploadProgress(0);
+      if (resetInput) resetInput();
+    }
+  };
+
+  const handleHeroBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const target = e.target;
+    processHeroFiles(target.files, () => {
+      target.value = '';
+    });
+  };
+
+  const handleDragOverHero = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingHero(true);
+  };
+
+  const handleDragLeaveHero = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingHero(false);
+  };
+
+  const handleDropHero = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingHero(false);
+    processHeroFiles(e.dataTransfer.files);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -83,6 +176,12 @@ export default function AdminMarketingView() {
       </div>
 
       <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-fit overflow-x-auto max-w-full">
+        <button 
+          onClick={() => setActiveTab('hero')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeTab === 'hero' ? 'bg-indigo-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+        >
+          <ImageIcon className="w-4 h-4" /> Hero Images
+        </button>
         <button 
           onClick={() => setActiveTab('ads')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeTab === 'ads' ? 'bg-indigo-600 text-white shadow' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
@@ -116,7 +215,65 @@ export default function AdminMarketingView() {
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        {activeTab === 'gallery' ? (
+        {activeTab === 'hero' ? (
+          <div className="p-6 space-y-6">
+            <div 
+              className={`flex items-center justify-between p-6 border-2 border-dashed rounded-xl transition-colors ${isDraggingHero ? 'border-indigo-500 bg-indigo-500/10' : 'border-transparent'}`}
+              onDragOver={handleDragOverHero}
+              onDragLeave={handleDragLeaveHero}
+              onDrop={handleDropHero}
+            >
+              <div>
+                <h2 className="text-lg font-bold text-white">Landing Page Hero Gallery</h2>
+                <p className="text-sm text-zinc-400">These 15 images are displayed in the 3 sliding columns on the main landing page.</p>
+                {isDraggingHero && <p className="text-sm text-indigo-400 font-bold mt-2 animate-pulse">Drop images here to upload!</p>}
+              </div>
+              <div className="relative">
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/jpeg, image/png, image/webp" 
+                  onChange={handleHeroBulkUpload}
+                  disabled={uploadingHero}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" 
+                />
+                <button 
+                  disabled={uploadingHero}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" /> 
+                  {uploadingHero 
+                    ? (uploadProgress === 16 ? 'Updating Gallery...' : `Uploading ${uploadProgress}/15...`) 
+                    : 'Bulk Replace 15 Images'}
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center text-zinc-500 py-8">Loading images...</div>
+            ) : data.length === 0 ? (
+              <div className="text-center text-zinc-500 py-8">No hero images found. Please upload 15 images.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[1, 2, 3].map(colIndex => (
+                  <div key={colIndex} className="space-y-4">
+                    <h3 className="font-bold text-zinc-400 text-sm">Column {colIndex} (Scrolls {colIndex === 2 ? 'Down' : 'Up'})</h3>
+                    <div className="flex flex-col gap-3">
+                      {data.filter(img => img.column_index === colIndex).map((item, idx) => (
+                        <div key={item.id} className="relative group rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800 h-32">
+                          <img src={item.image_url} alt={`Hero ${colIndex}-${idx}`} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                          <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] text-white font-bold backdrop-blur-sm">
+                            {idx + 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'gallery' ? (
           <div className="p-6">
             {loading ? (
               <div className="text-center text-zinc-500 py-8">Loading gallery...</div>

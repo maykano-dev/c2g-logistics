@@ -125,8 +125,8 @@
 }
 
 @keyframes galleryDown {
-  0%   { transform: translateY(-16%); }
-  100% { transform: translateY(calc(-50% + -16%)); }
+  0%   { transform: translateY(calc(-50% - 16%)); }
+  100% { transform: translateY(-16%); }
 }
 
 @keyframes marquee {
