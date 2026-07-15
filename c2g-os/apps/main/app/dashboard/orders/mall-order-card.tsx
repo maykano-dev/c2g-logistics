@@ -16,9 +16,11 @@ export function MallOrderCard({ order }: { order: any }) {
 
   const formatCurrency = (amount: number) => `₵${parseFloat((amount || 0).toString()).toFixed(2)}`;
   
-  const formattedDate = new Date(order.created_at).toLocaleDateString('en-GB', {
-    year: 'numeric', month: 'short', day: 'numeric'
-  });
+  const formattedDate = order.created_at && !isNaN(new Date(order.created_at).getTime())
+    ? new Date(order.created_at).toLocaleDateString('en-GB', {
+        year: 'numeric', month: 'short', day: 'numeric'
+      })
+    : 'Pending';
 
   const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
   

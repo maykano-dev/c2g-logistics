@@ -18,7 +18,7 @@ export function WelcomeModal({ createdAt }: WelcomeModalProps) {
     setMounted(true);
     
     // Check if the user is truly new (created within the last 24 hours)
-    const accountAgeMs = new Date().getTime() - new Date(createdAt).getTime();
+    const accountAgeMs = new Date().getTime() - new Date(createdAt.replace(' ', 'T')).getTime();
     const isNewAccount = accountAgeMs < 24 * 60 * 60 * 1000;
     
     const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");

@@ -143,7 +143,7 @@ export default function AnnouncementsOverlay() {
                               </span>
                             )}
                             <span className="text-xs text-muted-foreground font-medium">
-                              {new Date(ann.created_at).toLocaleDateString("en-GB", {
+                              {new Date(ann.created_at.replace(' ', 'T')).toLocaleDateString("en-GB", {
                                 day: "numeric",
                                 month: "short",
                               })}

@@ -211,7 +211,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
                       <Link href={`/dashboard/packages/${pkg.id}`} className="font-bold text-foreground font-mono text-sm hover:text-primary hover:underline transition-colors block">
                         {pkg.tracking_number}
                       </Link>
-                      <p className="text-xs text-muted-foreground">{new Date(pkg.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-muted-foreground">{pkg.created_at && !isNaN(new Date(pkg.created_at).getTime()) ? new Date(pkg.created_at).toLocaleDateString() : 'Pending'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

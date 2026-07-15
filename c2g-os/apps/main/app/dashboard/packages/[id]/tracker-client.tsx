@@ -245,7 +245,7 @@ export default function TrackerClient({ pkg, backLink = "/dashboard/packages", b
               )}
               <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
                 <span className="text-sm text-muted-foreground font-medium">Registered On</span>
-                <span className="text-sm font-semibold">{new Date(pkg.created_at).toLocaleDateString()}</span>
+                <span className="text-sm font-semibold">{pkg.created_at && !isNaN(new Date(pkg.created_at).getTime()) ? new Date(pkg.created_at).toLocaleDateString() : 'Pending'}</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-border/50 last:border-0 last:pb-0">
                 <span className="text-sm text-muted-foreground font-medium">Est. Arrival</span>

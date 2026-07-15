@@ -36,13 +36,7 @@ export default function DashboardClientLayout({
   const pathname = usePathname();
   const { items: wishlistItems } = useWishlist();
 
-  // Force body to not scroll on dashboard to prevent double scrollbars globally
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
+  // Layout manages its own scrolling via fixed inset-0
 
   const desktopNavLinks = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -298,22 +292,24 @@ function MobileNav({
                   style={{ width: "22px", height: "22px", strokeWidth: isActive ? 2.5 : 2 }}
                 />
                 
-                {isActive && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, width: "auto", scale: 1 }}
-                    exit={{ opacity: 0, width: 0, scale: 0.8 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 30,
-                      opacity: { duration: 0.2 },
-                    }}
-                    className="text-white font-semibold text-[13px] whitespace-nowrap overflow-hidden"
-                  >
-                    {shortName}
-                  </motion.span>
-                )}
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, width: "auto", scale: 1 }}
+                      exit={{ opacity: 0, width: 0, scale: 0.8 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                        opacity: { duration: 0.2 },
+                      }}
+                      className="text-white font-semibold text-[13px] whitespace-nowrap overflow-hidden"
+                    >
+                      {shortName}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </div>
             </Link>
           );

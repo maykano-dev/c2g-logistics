@@ -211,7 +211,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
             <div className="flex justify-between items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">Date Placed</span>
               <span className="font-medium">
-                {new Date(order.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {order.created_at && !isNaN(new Date(order.created_at).getTime()) ? new Date(order.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Pending'}
               </span>
             </div>
 
