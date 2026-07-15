@@ -207,6 +207,7 @@ export default function DashboardClientLayout({
       </main>
 
       <AnnouncementsOverlay />
+      <FloatingGuide />
 
       {/* Mobile Bottom Navigation — Liquid Glass Animated Pill */}
       <MobileNav navLinks={mobileNavLinks as any} pathname={pathname} />
@@ -216,6 +217,7 @@ export default function DashboardClientLayout({
 
 // Separate client component for the animated nav to avoid hook issues
 import AnnouncementsOverlay from "../../components/dashboard/announcements-overlay";
+import FloatingGuide from "../../components/dashboard/floating-guide";
 
 function MobileNav({
   navLinks,
