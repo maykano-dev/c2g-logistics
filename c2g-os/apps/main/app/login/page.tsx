@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { LoginForm } from "./login-form";
-import { ShieldCheck, Globe, PackageCheck, Loader2, Zap } from "lucide-react";
+import { ShieldCheck, Globe, PackageCheck, Loader2, Banknote, ShoppingCart, Warehouse } from "lucide-react";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
@@ -51,13 +51,13 @@ export default function LoginPage() {
             {/* Mobile Trust Badges (Only visible on small screens) */}
             <div className="flex lg:hidden pt-4 border-t border-border/50 flex-nowrap justify-center gap-1.5 sm:gap-3 animate-slide-up-5 w-full">
               <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[9px] sm:text-[11px] font-bold uppercase tracking-wider leading-none h-7 whitespace-nowrap">
-                <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Buy-for-me
+                <Banknote className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Buy-for-me
               </span>
               <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[9px] sm:text-[11px] font-bold uppercase tracking-wider leading-none h-7 whitespace-nowrap">
-                <PackageCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> C2G Mall
+                <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> C2G Mall
               </span>
               <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-[9px] sm:text-[11px] font-bold uppercase tracking-wider leading-none h-7 whitespace-nowrap">
-                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Warehouse Address
+                <Warehouse className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Warehouse Address
               </span>
             </div>
           </div>
