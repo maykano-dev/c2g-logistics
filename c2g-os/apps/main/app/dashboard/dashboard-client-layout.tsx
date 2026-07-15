@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, 
   Package, 
@@ -214,7 +215,6 @@ export default function DashboardClientLayout({
 }
 
 // Separate client component for the animated nav to avoid hook issues
-import { motion, AnimatePresence } from "framer-motion";
 import AnnouncementsOverlay from "../../components/dashboard/announcements-overlay";
 
 function MobileNav({
