@@ -205,7 +205,7 @@ export async function getInvoiceDetail(invoiceId: string) {
   return null;
 }
 
-import { deductFromWallet } from '../wallet/actions';
+import { deductFromWallet, resolveShippingHold } from '../wallet/actions';
 
 export async function payReservationShippingFee(reservationId: string) {
   const supabase = await createClient();
@@ -215,7 +215,7 @@ export async function payReservationShippingFee(reservationId: string) {
   // 1. Check if reservation belongs to user and is unpaid
   const { data: res } = await supabase
     .from('shipment_reservations')
-    .select('shipping_fee_paid, final_shipping_cost, id')
+    .select('shipping_fee_paid, final_shipping_cost, deposit_amount, id')
     .eq('id', reservationId)
     .eq('customer_id', user.id)
     .single();
@@ -225,12 +225,13 @@ export async function payReservationShippingFee(reservationId: string) {
   if (!res.final_shipping_cost || parseFloat(res.final_shipping_cost) <= 0) return { success: false, error: 'No shipping fee to pay' };
 
   const feeAmount = parseFloat(res.final_shipping_cost);
-  const ref = `RES-SHIP-${reservationId}`;
+  const heldAmount = parseFloat(res.deposit_amount || '0');
+  const ref = `SHIP-FEE-${reservationId}`;
   
-  const deductRes = await deductFromWallet(feeAmount, 'shipping_fee', `Shipping Fee for Reservation ${res.id}`, reservationId);
+  const deductRes = await resolveShippingHold(ref, heldAmount, feeAmount);
   
   if (!deductRes.success) {
-    return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
+    return { success: false, error: deductRes.error || 'Failed to resolve shipping hold' };
   }
 
   // 3. Update reservation status

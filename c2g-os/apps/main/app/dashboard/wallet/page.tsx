@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { Wallet, ArrowDownToLine, ArrowUpRight, History, AlertCircle, Clock, XCircle } from "lucide-react";
+import { Wallet, ArrowDownToLine, ArrowUpRight, History, AlertCircle, Clock, XCircle, Lock, Coins } from "lucide-react";
 import TopUpModal from "./top-up-modal";
 import Link from "next/link";
 import { cleanupStalePendingTransactions, markTransactionAsFailed } from "./shared-actions";
@@ -108,23 +108,29 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Wallet className="w-24 h-24" />
           </div>
-          <p className="text-sm font-medium text-primary mb-2">Available Balance</p>
-          <h2 className="text-4xl font-black text-foreground">₵{Number(wallet.available_balance).toFixed(2)}</h2>
-          <p className="text-xs text-muted-foreground mt-2">Ready to use for orders & shipping</p>
+          <p className="text-sm font-medium text-primary mb-2 relative z-10">Available Balance</p>
+          <h2 className="text-4xl font-black text-foreground relative z-10">₵{Number(wallet.available_balance).toFixed(2)}</h2>
+          <p className="text-xs text-muted-foreground mt-2 relative z-10">Ready to use for orders & shipping</p>
         </div>
 
-        <div className="glass-panel p-6 bg-zinc-900 border-zinc-800">
-          <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+        <div className="glass-panel p-6 bg-zinc-900 border-zinc-800 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5">
+            <Lock className="w-24 h-24" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2 relative z-10">
             Held Funds <AlertCircle className="w-4 h-4" />
           </p>
-          <h2 className="text-3xl font-bold text-foreground">₵{Number(wallet.held_balance).toFixed(2)}</h2>
-          <p className="text-xs text-muted-foreground mt-2">Reserved for shipping deposits</p>
+          <h2 className="text-3xl font-bold text-foreground relative z-10">₵{Number(wallet.held_balance).toFixed(2)}</h2>
+          <p className="text-xs text-muted-foreground mt-2 relative z-10">Reserved for shipping deposits</p>
         </div>
 
-        <div className="glass-panel p-6 bg-zinc-900 border-zinc-800">
-          <p className="text-sm font-medium text-muted-foreground mb-2">Total Wallet Value</p>
-          <h2 className="text-3xl font-bold text-foreground">₵{totalBalance.toFixed(2)}</h2>
-          <p className="text-xs text-muted-foreground mt-2">Available + Held</p>
+        <div className="glass-panel p-6 bg-zinc-900 border-zinc-800 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5">
+            <Coins className="w-24 h-24" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground mb-2 relative z-10">Total Wallet Value</p>
+          <h2 className="text-3xl font-bold text-foreground relative z-10">₵{totalBalance.toFixed(2)}</h2>
+          <p className="text-xs text-muted-foreground mt-2 relative z-10">Available + Held</p>
         </div>
       </div>
 
@@ -167,7 +173,15 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-sm capitalize">{tx.transaction_type.replace(/_/g, ' ')}</p>
+                        <p className="font-semibold text-sm capitalize">
+                          {tx.transaction_type === 'invoice' && tx.description?.toLowerCase().includes('shipping fee') 
+                            ? 'Shipping Fee Payment' 
+                            : tx.transaction_type === 'shipping_deficit_payment'
+                            ? 'Shipping Fee Payment'
+                            : tx.transaction_type === 'shipping_deposit_refund'
+                            ? 'Shipping Deposit Refund'
+                            : tx.transaction_type.replace(/_/g, ' ')}
+                        </p>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold ${
                           tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-500' :
                           tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :

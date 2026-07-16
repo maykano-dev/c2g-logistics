@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, PlaneTakeoff, Ship, CheckCircle2, Wallet, RefreshCcw, Box, Link as LinkIcon, ShoppingBag, Clock, ShieldCheck, AlertTriangle, MapPin } from 'lucide-react';
+import { Package, PlaneTakeoff, Ship, CheckCircle2, Wallet, RefreshCcw, Loader2, Box, Link as LinkIcon, ShoppingBag, Clock, ShieldCheck, AlertTriangle, MapPin } from 'lucide-react';
 import { createReservation, payReservationDeposit, getReservationItems } from './actions';
+import { payReservationShippingFee } from '../invoices/actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useModal } from '@/components/providers/modal-provider';
@@ -132,6 +133,52 @@ export default function ReservationsClient({
     try {
       await payReservationDeposit(reservationId);
       showAlert({ title: "Deposit Held", message: "Your shipping deposit has been held successfully. It will be settled against your final shipping invoice.", type: "success" });
+      router.refresh();
+    } catch (err: any) {
+      showAlert({ title: "Payment Failed", message: err.message || "Payment failed", type: "danger" });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePayShippingFee = async (reservationId: string, feeAmount: number, depositAmount: number) => {
+    const deficit = Math.max(0, feeAmount - depositAmount);
+    const refund = Math.max(0, depositAmount - feeAmount);
+    
+    let message = `The final shipping fee is ₵${feeAmount.toFixed(2)}.\n\n`;
+    if (depositAmount > 0) {
+      message += `Your held deposit of ₵${depositAmount.toFixed(2)} will be applied.\n`;
+    }
+    
+    if (deficit > 0) {
+      message += `You need to pay the remaining ₵${deficit.toFixed(2)} from your wallet.\n\nAvailable Balance: ₵${walletBalance.toFixed(2)}\nAfter Payment: ₵${(walletBalance - deficit).toFixed(2)}`;
+    } else if (refund > 0) {
+      message += `The remaining ₵${refund.toFixed(2)} from your deposit will be refunded to your available balance.\n\nAvailable Balance: ₵${walletBalance.toFixed(2)}\nBalance After Refund: ₵${(walletBalance + refund).toFixed(2)}`;
+    } else {
+      message += `Your deposit covers the exact amount. No extra deduction needed.`;
+    }
+
+    const confirmed = await showConfirm({
+      title: "Confirm Shipping Fee Payment",
+      message,
+      type: "warning",
+      confirmText: deficit > 0 ? `Pay ₵${deficit.toFixed(2)}` : `Settle Invoice`,
+      cancelText: "Cancel",
+    });
+
+    if (!confirmed) return;
+
+    if (deficit > 0 && walletBalance < deficit) {
+      return showAlert({ title: "Insufficient Funds", message: "Your wallet balance is insufficient to cover the remaining shipping deficit. Please top up your wallet first.", type: "danger" });
+    }
+
+    setIsProcessing(true);
+    try {
+      const res = await payReservationShippingFee(reservationId);
+      if (!res.success) {
+        throw new Error(res.error || "Failed to process payment");
+      }
+      showAlert({ title: "Payment Successful", message: "Your shipping fee has been paid successfully.", type: "success" });
       router.refresh();
     } catch (err: any) {
       showAlert({ title: "Payment Failed", message: err.message || "Payment failed", type: "danger" });
@@ -373,25 +420,27 @@ export default function ReservationsClient({
                   </div>
 
                   {/* Bottom row: Amount + Pay button */}
-                  <div className="flex items-center justify-between gap-3 pt-2 sm:pt-3 border-t border-border/30">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 sm:pt-3 border-t border-border/30">
+                    <div className="flex flex-wrap items-center gap-4">
                       <div>
                         <p className="text-[11px] sm:text-xs text-muted-foreground">Shipping Advance</p>
                         <p className="font-bold text-base sm:text-lg text-foreground">₵{Number(res.deposit_amount).toFixed(2)}</p>
                       </div>
                       
                       {res.final_shipping_cost > 0 && (
-                        <div className="flex items-center gap-3 border-l border-border/30 pl-4">
+                        <div className="flex flex-wrap items-center gap-3 border-l border-border/30 pl-4">
                           <div>
                             <p className="text-[11px] sm:text-xs text-muted-foreground">Shipping Fee</p>
                             <p className="font-bold text-base sm:text-lg text-foreground">₵{Number(res.final_shipping_cost).toFixed(2)}</p>
                           </div>
                           {!res.shipping_fee_paid && (
                             <button 
-                              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/invoices/res_${res.id}`); }}
-                              className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 text-xs sm:text-sm whitespace-nowrap active:scale-95"
+                              onClick={(e) => { e.stopPropagation(); handlePayShippingFee(res.id, Number(res.final_shipping_cost), Number(res.deposit_amount)); }}
+                              disabled={isProcessing}
+                              className="px-6 py-2 min-w-[90px] flex items-center justify-center gap-1.5 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 text-xs sm:text-sm whitespace-nowrap active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                              Pay
+                              {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                              {isProcessing ? '...' : 'Pay'}
                             </button>
                           )}
                           {res.shipping_fee_paid && (

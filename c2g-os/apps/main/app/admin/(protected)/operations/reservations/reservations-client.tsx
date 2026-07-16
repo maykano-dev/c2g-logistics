@@ -625,7 +625,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                           <div key={order.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
                             <div>
                               <p className="text-sm font-medium text-white line-clamp-1">{order.product_name}</p>
-                              <p className="text-xs text-zinc-400 font-mono text-[10px]">LNK-{order.id.substring(0, 8).toUpperCase()}</p>
+                              <p className="text-xs text-zinc-400 font-mono text-[10px]">LNK-{String(order.id)}</p>
                             </div>
                             <div className="text-right">
                             </div>

@@ -45,6 +45,14 @@ export async function bulkUpdateReservationStatus(ids: string[], status: string)
 
 export async function updateAdminReservation(id: string, data: any) {
   const supabase = await createClient();
+  
+  // Fetch old data to detect if shipping fee is newly invoiced
+  const { data: oldRes } = await supabase
+    .from('shipment_reservations')
+    .select('final_shipping_cost, customer_id')
+    .eq('id', id)
+    .single();
+
   const { error } = await supabase
     .from('shipment_reservations')
     .update(data)
@@ -52,6 +60,21 @@ export async function updateAdminReservation(id: string, data: any) {
 
   if (error) {
     return { success: false, error: error.message };
+  }
+
+  // Check if newly invoiced
+  if (data.final_shipping_cost && Number(data.final_shipping_cost) > 0) {
+    const oldCost = oldRes?.final_shipping_cost ? Number(oldRes.final_shipping_cost) : 0;
+    const newCost = Number(data.final_shipping_cost);
+    
+    if (oldCost !== newCost && oldCost === 0 && oldRes?.customer_id) {
+      await supabase.from('notifications').insert({
+        user_id: oldRes.customer_id,
+        title: 'Shipping Fee Invoiced',
+        message: `Your shipping fee for reservation ${id} has been invoiced. The final cost is ₵${newCost.toFixed(2)}. Please pay the fee to avoid delays.`,
+        type: 'info'
+      });
+    }
   }
 
   // Update tracking number on all shipments linked to this reservation

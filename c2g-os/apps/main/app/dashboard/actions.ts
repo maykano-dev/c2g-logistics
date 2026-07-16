@@ -100,12 +100,12 @@ export async function getDashboardStats() {
     .eq('user_id', user.id)
     .eq('is_read', false)
 
-  // 11. Active Reservations
+  // 11. Active Reservations (Requires Attention)
   const { count: pendingReservationsCount } = await supabase
     .from('shipment_reservations')
     .select('*', { count: 'exact', head: true })
     .eq('customer_id', user.id)
-    .in('status', ['waiting_for_deposit', 'reserved_for_shipment', 'pending', 'in_transit', 'arrived_ghana', 'clearing_customs', 'ready_for_pickup'])
+    .eq('shipping_fee_paid', false)
 
   return {
     transitOrdersCount: transitOrdersCount || 0,
