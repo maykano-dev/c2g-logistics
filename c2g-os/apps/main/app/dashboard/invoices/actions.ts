@@ -29,6 +29,14 @@ export async function getInvoices() {
     .eq('customer_id', user.id)
     .order('created_at', { ascending: false });
 
+  // Fetch Reservation Shipping Fees
+  const { data: reservations } = await supabase
+    .from('shipment_reservations')
+    .select('id, tracking_number, created_at, final_shipping_cost, shipping_fee_paid')
+    .eq('customer_id', user.id)
+    .gt('final_shipping_cost', 0)
+    .order('created_at', { ascending: false });
+
   const invoices: any[] = [];
 
   if (orders) {
@@ -77,6 +85,22 @@ export async function getInvoices() {
         status: s.registration_fee_paid ? 'paid' : 'unpaid',
         date: s.created_at,
         url: `/dashboard/invoices/reg_${s.id}`
+      });
+    });
+  }
+
+  if (reservations) {
+    reservations.forEach(r => {
+      invoices.push({
+        id: `res_${r.id}`,
+        original_id: r.id,
+        type: 'Reservation Shipping',
+        reference: r.tracking_number || r.id,
+        description: `Shipping Fee for Reservation ${r.id}`,
+        amount: parseFloat(r.final_shipping_cost || 0),
+        status: r.shipping_fee_paid ? 'paid' : 'unpaid',
+        date: r.created_at,
+        url: `/dashboard/invoices/res_${r.id}`
       });
     });
   }
@@ -156,7 +180,72 @@ export async function getInvoiceDetail(invoiceId: string) {
       payId: id,
       payType: 'package_registration'
     };
+  } else if (type === 'res') {
+    const { data: res } = await supabase.from('shipment_reservations').select('*').eq('id', id).eq('customer_id', user.id).single();
+    if (!res) return null;
+    const fee = parseFloat(res.final_shipping_cost || 0);
+    return {
+      type: 'Reservation Shipping',
+      reference: res.tracking_number || res.id,
+      date: res.created_at,
+      status: res.shipping_fee_paid ? 'paid' : 'unpaid',
+      customer_id: res.customer_id,
+      items: [
+        { description: `Shipping Fee for Reservation ${res.id}`, quantity: 1, amount: fee }
+      ],
+      subtotal: fee,
+      tax: 0,
+      fee: 0,
+      total: fee,
+      payId: id,
+      payType: 'reservation_shipping_fee'
+    };
   }
 
   return null;
+}
+
+import { deductFromWallet } from '../wallet/actions';
+
+export async function payReservationShippingFee(reservationId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  // 1. Check if reservation belongs to user and is unpaid
+  const { data: res } = await supabase
+    .from('shipment_reservations')
+    .select('shipping_fee_paid, final_shipping_cost, id')
+    .eq('id', reservationId)
+    .eq('customer_id', user.id)
+    .single();
+
+  if (!res) return { success: false, error: 'Reservation not found' };
+  if (res.shipping_fee_paid) return { success: false, error: 'Shipping fee already paid' };
+  if (!res.final_shipping_cost || parseFloat(res.final_shipping_cost) <= 0) return { success: false, error: 'No shipping fee to pay' };
+
+  const feeAmount = parseFloat(res.final_shipping_cost);
+  const ref = `RES-SHIP-${reservationId}`;
+  
+  const deductRes = await deductFromWallet(feeAmount, 'shipping_fee', `Shipping Fee for Reservation ${res.id}`, reservationId);
+  
+  if (!deductRes.success) {
+    return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
+  }
+
+  // 3. Update reservation status
+  const { error } = await supabase
+    .from('shipment_reservations')
+    .update({
+        shipping_fee_paid: true,
+        shipping_fee_payment_reference: ref
+    })
+    .eq('id', reservationId);
+
+  if (error) {
+    console.error('Error updating reservation after fee payment:', error);
+    return { success: false, error: 'Failed to update reservation status, but wallet was deducted. Please contact support.' };
+  }
+
+  return { success: true };
 }

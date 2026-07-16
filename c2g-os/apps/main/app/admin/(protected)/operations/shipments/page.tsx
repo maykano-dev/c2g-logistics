@@ -306,7 +306,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                     </td>
                     <td className="p-4">
                       <p className="text-sm text-zinc-200">{shipment.customer_name || 'N/A'}</p>
-                      <p className="text-[10px] text-zinc-500">CUS-{shipment.customer_unique_id || 'UNKNOWN'}</p>
+                      <p className="text-[10px] text-zinc-500">{shipment.customer_unique_id || 'UNKNOWN'}</p>
                     </td>
                     <td className="p-4 text-sm text-zinc-300">
                       {shipment.created_at ? format(new Date(shipment.created_at), 'dd MMM yyyy') : 'N/A'}
@@ -378,7 +378,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                             <Edit className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">{shipment.customer_name || 'N/A'} <span className="text-zinc-600">(CUS-{shipment.customer_unique_id || 'UNKNOWN'})</span></p>
+                        <p className="text-xs text-zinc-400 mt-0.5">{shipment.customer_name || 'N/A'} <span className="text-zinc-600">({shipment.customer_unique_id || 'UNKNOWN'})</span></p>
                       </div>
                     </div>
                     

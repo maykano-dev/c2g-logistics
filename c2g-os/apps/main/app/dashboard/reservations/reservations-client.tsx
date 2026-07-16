@@ -374,9 +374,33 @@ export default function ReservationsClient({
 
                   {/* Bottom row: Amount + Pay button */}
                   <div className="flex items-center justify-between gap-3 pt-2 sm:pt-3 border-t border-border/30">
-                    <div>
-                      <p className="text-[11px] sm:text-xs text-muted-foreground">Shipping Advance</p>
-                      <p className="font-bold text-base sm:text-lg text-foreground">₵{Number(res.deposit_amount).toFixed(2)}</p>
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground">Shipping Advance</p>
+                        <p className="font-bold text-base sm:text-lg text-foreground">₵{Number(res.deposit_amount).toFixed(2)}</p>
+                      </div>
+                      
+                      {res.final_shipping_cost > 0 && (
+                        <div className="flex items-center gap-3 border-l border-border/30 pl-4">
+                          <div>
+                            <p className="text-[11px] sm:text-xs text-muted-foreground">Shipping Fee</p>
+                            <p className="font-bold text-base sm:text-lg text-foreground">₵{Number(res.final_shipping_cost).toFixed(2)}</p>
+                          </div>
+                          {!res.shipping_fee_paid && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/invoices/res_${res.id}`); }}
+                              className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 text-xs sm:text-sm whitespace-nowrap active:scale-95"
+                            >
+                              Pay
+                            </button>
+                          )}
+                          {res.shipping_fee_paid && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              <CheckCircle2 className="w-3 h-3" /> Paid
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     
                     {!res.deposit_paid && (

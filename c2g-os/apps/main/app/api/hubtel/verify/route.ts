@@ -234,7 +234,38 @@ export async function GET(req: Request) {
                     }
                 }
 
-                // 6. WALLET TOP UP
+                // 6. RESERVATION SHIPPING FEES
+                if (ref.startsWith('RES-SHIP-')) {
+                    const { data: res } = await supabase
+                        .from('shipment_reservations')
+                        .select('id, shipping_fee_paid, customer_id')
+                        .eq('shipping_fee_payment_reference', ref)
+                        .maybeSingle();
+
+                    if (res && !res.shipping_fee_paid) {
+                        await supabase
+                            .from('shipment_reservations')
+                            .update({
+                                shipping_fee_paid: true,
+                            })
+                            .eq('id', res.id);
+                        
+                        console.log(`[Verify API] Reservation ${res.id} shipping fee verified as paid`);
+
+                        if (res.customer_id) {
+                            await createNotification({
+                                userId: res.customer_id,
+                                title: 'Shipping Fee Paid',
+                                message: `Your shipping fee for reservation #${res.id} has been paid successfully.`,
+                                type: 'reservation_shipping_paid',
+                                priority: 'info',
+                                link: '/dashboard/reservations'
+                            });
+                        }
+                    }
+                }
+
+                // 7. WALLET TOP UP
                 if (ref.startsWith('WLT-') || ref.startsWith('WALLET-')) {
                     const urlParams = new URL(req.url);
                     const queryCustomerId = urlParams.searchParams.get('customerId');

@@ -229,7 +229,7 @@ export default function AdminCustomersView() {
                       </div>
                       <div>
                         <p className="text-sm text-white font-medium">{customer.name || 'No Name'}</p>
-                        <p className="text-xs text-zinc-500 font-mono mt-0.5">CUS-{customer.customer_unique_id || 'UNKNOWN'}</p>
+                        <p className="text-xs text-zinc-500 font-mono mt-0.5">{customer.customer_unique_id || 'UNKNOWN'}</p>
                       </div>
                     </div>
                     {customer.status === 'banned' ? (

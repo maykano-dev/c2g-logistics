@@ -8,6 +8,7 @@ import { useModal } from "@/components/providers/modal-provider";
 import { payMallOrder } from "../../mall-orders/actions";
 import { payLinkOrder } from "../../orders/actions";
 import { payPackageRegistrationFee } from "../../packages/actions";
+import { payReservationShippingFee } from "../actions";
 
 export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice: any, companyInfo: any }) {
   const router = useRouter();
@@ -42,6 +43,8 @@ export default function InvoiceDetailClient({ invoice, companyInfo }: { invoice:
         res = await payLinkOrder(invoice.payId);
       } else if (invoice.payType === 'package_registration') {
         res = await payPackageRegistrationFee(invoice.payId);
+      } else if (invoice.payType === 'reservation_shipping_fee') {
+        res = await payReservationShippingFee(invoice.payId);
       } else {
         res = { success: false, error: 'Unsupported payment type.' };
       }

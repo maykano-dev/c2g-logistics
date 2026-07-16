@@ -192,6 +192,43 @@ export async function POST(request: Request) {
         .from('ecom_orders')
         .update({ shipping_fee_payment_reference: clientReference })
         .eq('id', ecomOrder.id);
+    } else if (type === 'reservation_shipping_fee' && orderId) {
+      // Handle Reservation Shipping Fee
+      const { data: res, error: resError } = await supabase
+        .from('shipment_reservations')
+        .select('*')
+        .eq('id', orderId)
+        .eq('customer_id', user.id)
+        .single();
+
+      if (resError || !res) {
+        return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
+      }
+
+      if (res.shipping_fee_paid) {
+        return NextResponse.json({ error: 'Reservation shipping fee is already paid' }, { status: 400 });
+      }
+      
+      if (!res.final_shipping_cost || parseFloat(res.final_shipping_cost) <= 0) {
+        return NextResponse.json({ error: 'Invalid reservation shipping fee amount' }, { status: 400 });
+      }
+
+      totalAmount = parseFloat(res.final_shipping_cost);
+      description = `Shipping Fee - Reservation ${res.id} - ${storeName}`;
+      
+      const shortRandom = Math.random().toString(36).substring(2, 10).toUpperCase();
+      clientReference = `RES-SHIP-${shortRandom}`;
+      
+      returnUrl = `${origin}/payment-status?reference=${clientReference}`;
+      cancelUrl = `${origin}/dashboard/reservations`;
+      
+      dbTable = 'shipment_reservations';
+      dbId = res.id;
+
+      await supabase
+        .from('shipment_reservations')
+        .update({ shipping_fee_payment_reference: clientReference })
+        .eq('id', res.id);
     } else if (orderId) {
       // Handle Link Orders
       const { data: order, error: orderError } = await supabase

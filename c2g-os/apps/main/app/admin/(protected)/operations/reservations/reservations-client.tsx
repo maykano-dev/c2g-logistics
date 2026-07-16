@@ -239,6 +239,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Method</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Deposit</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Shipping Fee</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
@@ -300,6 +301,20 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                         )}
                         <span className="text-xs font-bold">₵{Number(res.deposit_amount).toFixed(2)}</span>
                       </div>
+                    </td>
+                    <td className="p-4">
+                      {res.final_shipping_cost ? (
+                        <div className="flex items-center gap-2">
+                          {res.shipping_fee_paid ? (
+                            <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold rounded-md uppercase tracking-wider">Paid</span>
+                          ) : (
+                            <span className="px-2 py-1 bg-orange-500/10 text-orange-500 text-[10px] font-bold rounded-md uppercase tracking-wider">Unpaid</span>
+                          )}
+                          <span className="text-xs font-bold">₵{Number(res.final_shipping_cost).toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Not Set</span>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -389,6 +404,19 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                         <p className="text-[10px] text-zinc-500 mb-1 uppercase tracking-wider font-bold">Deposit ({res.deposit_paid ? 'Paid' : 'Unpaid'})</p>
                         <p className="text-zinc-300 font-bold">
                           {res.deposit_paid ? <span className="text-emerald-400">₵{Number(res.deposit_amount).toFixed(2)}</span> : <span className="text-orange-500">₵{Number(res.deposit_amount).toFixed(2)}</span>}
+                        </p>
+                      </div>
+                      <div className="col-span-2 pt-2 mt-1 border-t border-zinc-800/50">
+                        <p className="text-[10px] text-zinc-500 mb-1 uppercase tracking-wider font-bold flex justify-between">
+                          <span>Shipping Fee</span>
+                          <span>{res.final_shipping_cost ? (res.shipping_fee_paid ? 'Paid' : 'Unpaid') : 'Not Set'}</span>
+                        </p>
+                        <p className="text-zinc-300 font-bold">
+                          {res.final_shipping_cost ? (
+                            res.shipping_fee_paid ? <span className="text-emerald-400">₵{Number(res.final_shipping_cost).toFixed(2)}</span> : <span className="text-orange-500">₵{Number(res.final_shipping_cost).toFixed(2)}</span>
+                          ) : (
+                            <span className="text-zinc-500 font-medium">--</span>
+                          )}
                         </p>
                       </div>
                     </div>

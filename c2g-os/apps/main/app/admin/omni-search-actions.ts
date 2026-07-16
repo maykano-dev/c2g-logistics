@@ -52,7 +52,7 @@ export async function searchOmni(query: string) {
         id: c.id,
         title: c.name,
         subtitle: `${c.email} | ${c.phone || 'No phone'}`,
-        badge: `CUS-${c.customer_unique_id}`
+        badge: c.customer_unique_id ? `${c.customer_unique_id}` : 'UNKNOWN',
       });
     });
   }
