@@ -363,7 +363,7 @@ export default function ReservationsClient({
                     <span className="flex items-center gap-1">
                       <Package className="w-3.5 h-3.5" /> {res.total_items} Item{res.total_items > 1 ? 's' : ''}
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1" suppressHydrationWarning>
                       <Clock className="w-3.5 h-3.5" /> {new Date(res.created_at).toLocaleDateString()}
                     </span>
                     <span className="capitalize flex items-center gap-1">
@@ -441,7 +441,7 @@ export default function ReservationsClient({
                   <Package className="w-5 h-5 text-primary" />
                   Reservation {viewingReservation.id}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1" suppressHydrationWarning>
                   {new Date(viewingReservation.created_at).toLocaleString()}
                 </p>
               </div>
