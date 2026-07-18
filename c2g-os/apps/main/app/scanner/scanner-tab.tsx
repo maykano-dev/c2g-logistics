@@ -98,7 +98,6 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       isInitializingRef.current = true;
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("reader", {
-          formatsToSupport: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ],
           useBarCodeDetectorIfSupported: true,
           verbose: false
         });
