@@ -19,7 +19,14 @@ export default async function EditPackagePage(props: { params: Promise<{ id: str
     .single();
 
   if (error || !pkg) {
-    redirect('/dashboard/packages');
+    console.error("Edit package query error:", error, "id:", id, "user_id:", user.id);
+    return (
+      <div className="max-w-3xl mx-auto space-y-6 pb-20 p-8 text-center text-red-500">
+        <h1 className="text-2xl font-bold">Error loading package</h1>
+        <p>{error?.message || "Package not found or you do not have permission."}</p>
+        <p className="text-sm text-zinc-500">ID: {id}</p>
+      </div>
+    );
   }
 
   return (

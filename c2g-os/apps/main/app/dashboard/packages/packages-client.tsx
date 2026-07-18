@@ -215,13 +215,13 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Link
+                    <a
                       href={`/dashboard/packages/${pkg.id}/edit`}
-                      className="p-1 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors border border-transparent"
+                      className="p-1 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors border border-transparent inline-flex"
                       title="Edit Package"
                     >
                       <Edit2 className="w-4 h-4" />
-                    </Link>
+                    </a>
                     {needsPayment && (
                       <button
                         onClick={(e) => handleDelete(e, pkg.id)}
