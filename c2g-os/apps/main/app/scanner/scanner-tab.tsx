@@ -16,11 +16,26 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
   const [isProcessing, setIsProcessing] = useState(false);
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isProcessingRef = useRef(false);
+  const lastScannedCodeRef = useRef<string>('');
+  const lastScannedTimeRef = useRef<number>(0);
   const isInitializingRef = useRef(false);
   const supabase = createClient();
 
   const handleScan = useCallback(async (decodedText: string) => {
-    if (isProcessing) return;
+    const now = Date.now();
+    // Debounce exact same barcode for 3 seconds to prevent duplicate logs
+    if (lastScannedCodeRef.current === decodedText && (now - lastScannedTimeRef.current) < 3000) {
+      return;
+    }
+    
+    // Global processing lock
+    if (isProcessingRef.current) return;
+    
+    lastScannedCodeRef.current = decodedText;
+    lastScannedTimeRef.current = now;
+    
+    isProcessingRef.current = true;
     setIsProcessing(true);
 
     try {
@@ -70,10 +85,11 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       setScanLog(errLog);
       onScanLog(errLog);
     } finally {
+      isProcessingRef.current = false;
       setTimeout(() => setIsProcessing(false), 2000);
       setTimeout(() => setScanLog(null), 4000); // Hide toast after 4s
     }
-  }, [isProcessing, supabase]);
+  }, [supabase]);
 
   const startScanner = async (isManualClick = false) => {
     if (isInitializingRef.current || isScanning) return;
@@ -89,7 +105,12 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       }
 
       await scannerRef.current.start(
-        { facingMode: "environment" },
+        { 
+          facingMode: "environment",
+          width: { ideal: 1920, min: 1280 }, 
+          height: { ideal: 1080, min: 720 },
+          advanced: [{ focusMode: 'continuous' } as any]
+        },
         { 
           fps: 20, 
           aspectRatio: 1.0
