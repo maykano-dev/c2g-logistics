@@ -7,7 +7,6 @@ export async function getWallets(query: string = '') {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
 
-  // Build query — wallets FK to customers via customer_id
   let req = supabase
     .from('wallets')
     .select(`
@@ -23,9 +22,27 @@ export async function getWallets(query: string = '') {
         phone,
         customer_unique_id
       )
-    `)
-    .order('created_at', { ascending: false })
-    .limit(100);
+    `);
+
+  if (query) {
+    const q = `%${query}%`;
+    // Find matching customers first
+    const { data: matchedCustomers } = await supabase
+      .from('customers')
+      .select('id')
+      .or(`name.ilike.${q},email.ilike.${q},phone.ilike.${q},customer_unique_id.ilike.${q}`);
+
+    const customerIds = (matchedCustomers || []).map(c => c.id);
+
+    if (customerIds.length > 0) {
+      req = req.or(`id.ilike.${q},customer_id.ilike.${q},customer_id.in.(${customerIds.join(',')})`);
+    } else {
+      req = req.or(`id.ilike.${q},customer_id.ilike.${q}`);
+    }
+  }
+
+  // Then limit to 100
+  req = req.order('created_at', { ascending: false }).limit(100);
 
   const { data, error } = await req;
 
@@ -34,24 +51,10 @@ export async function getWallets(query: string = '') {
     return { success: false, error: error.message };
   }
 
-  let wallets = (data || []).map((wallet: any) => ({
+  const wallets = (data || []).map((wallet: any) => ({
     ...wallet,
     totalBalance: parseFloat(wallet.available_balance || 0) + parseFloat(wallet.held_balance || 0),
   }));
-
-  // Client-side search filtering
-  if (query) {
-    const q = query.toLowerCase();
-    wallets = wallets.filter((w: any) =>
-      w.id.toLowerCase().includes(q) ||
-      w.customer_id?.toLowerCase().includes(q) ||
-      (w.customers && (
-        (w.customers.name || '').toLowerCase().includes(q) ||
-        (w.customers.email || '').toLowerCase().includes(q) ||
-        (w.customers.phone || '').includes(q)
-      ))
-    );
-  }
 
   return { success: true, wallets };
 }
