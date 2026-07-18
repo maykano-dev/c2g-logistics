@@ -109,6 +109,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
           fps: 20, 
           aspectRatio: 1.0,
           videoConstraints: {
+            facingMode: "environment",
             width: { ideal: 1920 }, 
             height: { ideal: 1080 }
           }
