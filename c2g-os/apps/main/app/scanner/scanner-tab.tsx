@@ -19,6 +19,52 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
   const isProcessingRef = useRef(false);
   const lastScannedCodeRef = useRef<string>('');
   const lastScannedTimeRef = useRef<number>(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const playBeep = useCallback((type: 'success' | 'info' | 'error') => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume();
+
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+      } else if (type === 'info') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.2);
+      } else {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.2);
+        gainNode.gain.setValueAtTime(0, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      }
+    } catch (err) {
+      console.warn("Audio play failed:", err);
+    }
+  }, []);
   const isInitializingRef = useRef(false);
   const supabase = createClient();
 
@@ -62,24 +108,24 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       onScanLog(newLog); // Add to global session history
       
       if (newLog.status === 'updated') {
-        new Audio('/sounds/success.mp3').play().catch(() => {});
+        playBeep('success');
         navigator.vibrate?.([100, 50, 100]);
       } else if (newLog.status === 'already_processed') {
-        new Audio('/sounds/info.mp3').play().catch(() => {});
+        playBeep('info');
         navigator.vibrate?.([50]);
       } else {
-        new Audio('/sounds/error.mp3').play().catch(() => {});
+        playBeep('error');
         navigator.vibrate?.([200, 100, 200]);
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       const errLog: ScanLog = {
         id: crypto.randomUUID(),
         trackingNumber: decodedText,
         customerName: 'Error',
         status: 'error',
-        message: 'Database connection failed',
+        message: err?.message || 'Database connection failed',
         timestamp: new Date(),
       };
       setScanLog(errLog);
@@ -106,7 +152,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       await scannerRef.current.start(
         { facingMode: "environment" },
         { 
-          fps: 20, 
+          fps: 30, 
           aspectRatio: 1.0,
           videoConstraints: {
             facingMode: "environment",

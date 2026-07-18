@@ -1,10 +1,13 @@
 'use server';
 
-import { createClient } from '@/utils/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 
 export async function processScannedPackage(candidates: string[]) {
-  const supabase = await createClient();
+  const supabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   
   try {
     let finalStatus = 'not_found';
@@ -30,19 +33,16 @@ export async function processScannedPackage(candidates: string[]) {
       
       // Best effort insert to scan logs
       await supabase.from('scan_logs').insert({
-        scanned_tracking: trackingNumberMatched,
-        scan_result: finalStatus,
+        tracking_number: trackingNumberMatched,
+        status: finalStatus,
         customer_name: customerName,
-        package_type: rpcData.type || null,
-        package_id: rpcData.id || null,
-        current_status: currentStatus || null,
-        items_description: rpcData.items_description || null
+        message: `Package type: ${rpcData.type || 'unknown'}, ID: ${rpcData.id || 'none'}`
       });
     } else {
       // Not found
       await supabase.from('scan_logs').insert({
-        scanned_tracking: candidates[0],
-        scan_result: 'not_found'
+        tracking_number: candidates[0],
+        status: 'not_found'
       });
     }
 
