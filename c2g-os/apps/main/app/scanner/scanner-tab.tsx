@@ -115,30 +115,30 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
         scannerRef.current = new Html5Qrcode("reader");
       }
 
-      // Fetch available cameras first (this prompts the user for permission)
-      const cameras = await Html5Qrcode.getCameras();
+      await scannerRef.current.start(
+        { facingMode: "environment" },
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          formatsToSupport: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ] // Support all formats including CODE_128, QR_CODE
+        },
+        (decodedText) => handleScan(decodedText),
+        () => {} // ignore scan failures (happens every frame when no code is found)
+      );
       
-      if (cameras && cameras.length > 0) {
-        // Prefer back camera if available
-        const backCamera = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('environment'));
-        const cameraId = backCamera ? backCamera.id : cameras[0]!.id;
-
-        await scannerRef.current.start(
-          cameraId,
-          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-          (decodedText) => handleScan(decodedText),
-          () => {} 
-        );
-        setIsScanning(true);
-        setHasCameraPermission(true);
-      } else {
-        throw new Error("No cameras found on this device.");
-      }
+      setIsScanning(true);
+      setHasCameraPermission(true);
     } catch (err: any) {
-      console.error("Error getting userMedia, error =", err);
-      setHasCameraPermission(false);
+      console.error("Error starting scanner, error =", err);
+      // Only set to false if it's explicitly a NotAllowedError (permission denied)
+      // Otherwise it might be a hardware issue or "already in use" error
+      if (err?.name === 'NotAllowedError' || err?.message?.includes('permission')) {
+        setHasCameraPermission(false);
+      }
+      
       if (isManualClick) {
-        alert("Camera Error: " + (err.message || err));
+        alert("Camera Error: " + (err?.message || err));
       }
     } finally {
       isInitializingRef.current = false;
