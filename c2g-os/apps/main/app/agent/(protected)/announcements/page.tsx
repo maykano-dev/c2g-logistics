@@ -4,12 +4,14 @@ import { useState, useEffect, useTransition } from 'react';
 import { Radio, Plus, Trash2, Power, Eye, Calendar, Info, AlertTriangle, MessageCircle, X } from 'lucide-react';
 import { fetchAnnouncements, createAnnouncement, toggleAnnouncement, deleteAnnouncement } from './actions';
 import { format } from 'date-fns';
+import { useModal } from '@/components/providers/modal-provider';
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [showModal, setShowModal] = useState(false);
+  const { showAlert, showConfirm } = useModal();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -52,7 +54,7 @@ export default function AnnouncementsPage() {
         setFormData({ title: '', message: '', type: 'info', priority: 0, start_date: '', end_date: '' });
         loadAnnouncements();
       } else {
-        alert("Error creating announcement: " + res.error);
+        showAlert({ title: 'Error', message: "Error creating announcement: " + res.error, type: 'danger' });
       }
     });
   };
@@ -65,7 +67,14 @@ export default function AnnouncementsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this announcement?')) return;
+    const isConfirmed = await showConfirm({ 
+      title: 'Delete Announcement', 
+      message: 'Are you sure you want to delete this announcement?', 
+      type: 'danger', 
+      confirmText: 'Delete' 
+    });
+    if (!isConfirmed) return;
+    
     startTransition(async () => {
       await deleteAnnouncement(id);
       loadAnnouncements();

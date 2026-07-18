@@ -8,6 +8,7 @@ import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import { useCart } from "./cart-context";
 import { useWishlist } from "./wishlist-context";
 import { processImageSearch } from "../../app/shop/actions";
+import { useModal } from "../providers/modal-provider";
 
 export default function ShopHeader({ walletBalance }: { walletBalance?: number }) {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
   const [isPending, startTransition] = useTransition();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
+  const { showAlert } = useModal();
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -83,11 +85,11 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
           if (res.success && res.searchId) {
             router.push(`/shop?searchId=${res.searchId}`);
           } else {
-            alert(res.error || "Image search failed");
+            showAlert({ title: 'Error', message: res.error || "Image search failed", type: 'danger' });
           }
         } catch (err) {
           console.error(err);
-          alert("An error occurred while uploading the image.");
+          showAlert({ title: 'Error', message: "An error occurred while uploading the image.", type: 'danger' });
         } finally {
           setIsUploadingImage(false);
           if (fileInputRef.current) fileInputRef.current.value = "";

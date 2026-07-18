@@ -274,6 +274,9 @@ export function NewLinkOrderForm({
                         inputMode="decimal"
                         value={item.cny_price || ''}
                         placeholder="0.00" 
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+                        }}
                         onChange={(e) => {
                           const val = e.target.value.replace(/[^0-9.]/g, '');
                           updateItem(item.id, 'cny_price', parseFloat(val) || 0);
@@ -304,6 +307,9 @@ export function NewLinkOrderForm({
                       inputMode="numeric"
                       value={item.quantity}
                       placeholder="1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+                      }}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, '');
                         updateItem(item.id, 'quantity', parseInt(val) || 1);

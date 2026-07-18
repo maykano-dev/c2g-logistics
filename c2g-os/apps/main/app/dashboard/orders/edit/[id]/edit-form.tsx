@@ -221,13 +221,16 @@ export function EditLinkOrderForm({
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">¥</span>
                       <input 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         value={item.cny_price || ''}
                         placeholder="0.00" 
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+                        }}
                         onChange={(e) => {
-                          updateItem(item.id, 'cny_price', parseFloat(e.target.value) || 0);
+                          const val = e.target.value.replace(/[^0-9.]/g, '');
+                          updateItem(item.id, 'cny_price', parseFloat(val) || 0);
                           if (errors[`price_${item.id}`]) setErrors(prev => ({...prev, [`price_${item.id}`]: ''}));
                         }}
                         className={`flex h-11 w-full rounded-md border bg-background/50 pl-8 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${
@@ -244,11 +247,15 @@ export function EditLinkOrderForm({
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Quantity <span className="text-red-600">*</span></label>
                     <input 
-                      type="number" 
-                      min="1" 
+                      type="text"
+                      inputMode="numeric"
                       value={item.quantity}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+                      }}
                       onChange={(e) => {
-                        updateItem(item.id, 'quantity', parseInt(e.target.value) || 1);
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        updateItem(item.id, 'quantity', parseInt(val) || 1);
                         if (errors[`qty_${item.id}`]) setErrors(prev => ({...prev, [`qty_${item.id}`]: ''}));
                       }}
                       className={`flex h-11 w-full rounded-md border bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${

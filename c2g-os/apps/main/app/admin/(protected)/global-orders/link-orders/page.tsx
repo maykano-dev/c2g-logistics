@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { updateLinkOrderStatus, invoiceLinkOrderShipping, updateLinkOrderPaymentStatus } from './actions';
+import { useModal } from '@/components/providers/modal-provider';
 
 const STATUS_OPTIONS = [
   { value: 'pending_payment', label: 'Pending Payment', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' },
@@ -25,6 +26,7 @@ const STATUS_OPTIONS = [
 ];
 
 export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
+  const { showAlert, showConfirm } = useModal();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -120,13 +122,14 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
 
   const handleDeleteOrder = async (orderId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this link order? This action cannot be undone.')) {
+    const isConfirmed = await showConfirm({ title: 'Delete Order', message: 'Are you sure you want to delete this link order? This action cannot be undone.', type: 'danger', confirmText: 'Delete' });
+    if (isConfirmed) {
       const supabase = createClient();
       const { error } = await supabase.from('orders').delete().eq('id', orderId);
       if (!error) {
         setOrders(orders.filter(o => o.id !== orderId));
       } else {
-        alert('Failed to delete order.');
+        showAlert({ title: 'Error', message: 'Failed to delete order.', type: 'danger' });
         console.error(error);
       }
     }

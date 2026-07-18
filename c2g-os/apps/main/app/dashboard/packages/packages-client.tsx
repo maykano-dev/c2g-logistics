@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useTransition } from "react";
-import { Package, PlusCircle, Search, Filter, Lock, Trash2, Loader2 } from "lucide-react";
+import { Package, PlusCircle, Search, Filter, Lock, Trash2, Loader2, Edit2, X, Save } from "lucide-react";
 import Link from "next/link";
 import PackagePayButton from "./package-pay-button";
 import PackageBulkPayButton from "./package-bulk-pay-button";
 import { useModal } from "@/components/providers/modal-provider";
-import { deletePackage } from "./actions";
+import { deletePackage, updatePackageDetails } from "./actions";
 import { useRouter } from "next/navigation";
 
 interface PackagesClientProps {
@@ -41,8 +41,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
   };
 
   const filteredPackages = packages.filter(pkg => {
-    // Search by tracking number or description
-    const matchesSearch = 
+    const matchesSearch = !searchQuery ||
       (pkg.tracking_number && pkg.tracking_number.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (pkg.items_description && pkg.items_description.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -69,7 +68,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
       confirmText: 'Delete',
       type: 'danger',
     });
-    
+
     if (confirmed) {
       setIsDeleting(pkgId);
       const result = await deletePackage(pkgId);
@@ -92,20 +91,20 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="hidden md:block">
-            <PackageBulkPayButton 
+            <PackageBulkPayButton
               unpaidCount={packages.filter(p => p.status === 'pending_payment' && p.registration_fee_paid === false).length}
               unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && p.registration_fee_paid === false).map(p => p.id)}
               registrationFee={registrationFee}
               walletBalance={walletBalance}
             />
           </div>
-          <Link 
-            href="/dashboard/packages/register" 
-          className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 gap-2 shadow-lg shadow-primary/25 hover:scale-[1.02]"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Register Package
-        </Link>
+          <Link
+            href="/dashboard/packages/register"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 gap-2 shadow-lg shadow-primary/25 hover:scale-[1.02]"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Register Package
+          </Link>
         </div>
       </div>
 
@@ -113,46 +112,46 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
       <div className="glass-panel p-4 flex flex-col md:flex-row gap-4 relative z-10">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Tracking Number or Description..." 
+            placeholder="Search by Tracking Number or Description..."
             className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 pl-9 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors backdrop-blur-sm"
           />
         </div>
         <div className="relative">
-          <button 
+          <button
             onClick={() => setShowFilterMenu(!showFilterMenu)}
             className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2 w-full md:w-auto"
           >
             <Filter className="w-4 h-4" />
-            {statusFilter === 'all' ? 'All Packages' : 
-             statusFilter === 'pending_payment' ? 'Pending Payment' :
-             statusFilter === 'awaiting_arrival' ? 'Awaiting Arrival' : 'In Warehouse'}
+            {statusFilter === 'all' ? 'All Packages' :
+              statusFilter === 'pending_payment' ? 'Pending Payment' :
+                statusFilter === 'awaiting_arrival' ? 'Awaiting Arrival' : 'In Warehouse'}
           </button>
-          
+
           {showFilterMenu && (
             <div className="absolute right-0 top-12 w-48 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md outline-none animate-in fade-in-80 slide-in-from-top-1 z-50">
-              <button 
+              <button
                 onClick={() => { setStatusFilter('all'); setShowFilterMenu(false); }}
                 className={`relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${statusFilter === 'all' ? 'bg-accent text-accent-foreground' : ''}`}
               >
                 All Packages
               </button>
-              <button 
+              <button
                 onClick={() => { setStatusFilter('pending_payment'); setShowFilterMenu(false); }}
                 className={`relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${statusFilter === 'pending_payment' ? 'bg-accent text-accent-foreground' : ''}`}
               >
                 Pending Payment
               </button>
-              <button 
+              <button
                 onClick={() => { setStatusFilter('awaiting_arrival'); setShowFilterMenu(false); }}
                 className={`relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${statusFilter === 'awaiting_arrival' ? 'bg-accent text-accent-foreground' : ''}`}
               >
                 Awaiting Arrival
               </button>
-              <button 
+              <button
                 onClick={() => { setStatusFilter('in_warehouse'); setShowFilterMenu(false); }}
                 className={`relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${statusFilter === 'in_warehouse' ? 'bg-accent text-accent-foreground' : ''}`}
               >
@@ -165,7 +164,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
 
       {/* Mobile Bulk Pay Button */}
       <div className="block md:hidden w-full px-2">
-        <PackageBulkPayButton 
+        <PackageBulkPayButton
           unpaidCount={packages.filter(p => p.status === 'pending_payment' && p.registration_fee_paid === false).length}
           unpaidPackageIds={packages.filter(p => p.status === 'pending_payment' && p.registration_fee_paid === false).map(p => p.id)}
           registrationFee={registrationFee}
@@ -182,13 +181,13 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
           </div>
           <h3 className="text-xl font-bold mb-2">No Packages Found</h3>
           <p className="text-muted-foreground mb-6 max-w-sm">
-            {packages.length === 0 
+            {packages.length === 0
               ? "You haven't registered any packages yet. Add your tracking numbers once your supplier ships your items."
               : "No packages match your search criteria. Try adjusting your filters."}
           </p>
           {packages.length === 0 && (
-            <Link 
-              href="/dashboard/packages/register" 
+            <Link
+              href="/dashboard/packages/register"
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
             >
               Register Your First Package
@@ -209,15 +208,22 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
                       <Package className="w-5 h-5" />
                     </div>
                     <div>
-                      <Link href={`/dashboard/packages/${pkg.id}`} className="font-bold text-foreground font-mono text-sm hover:text-primary hover:underline transition-colors block">
+                      <span className="font-bold text-foreground font-mono text-sm block">
                         {pkg.tracking_number}
-                      </Link>
+                      </span>
                       <p className="text-xs text-muted-foreground">{pkg.created_at && !isNaN(new Date(pkg.created_at).getTime()) ? new Date(pkg.created_at).toLocaleDateString() : 'Pending'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Link
+                      href={`/dashboard/packages/${pkg.id}/edit`}
+                      className="p-1 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors border border-transparent"
+                      title="Edit Package"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Link>
                     {needsPayment && (
-                      <button 
+                      <button
                         onClick={(e) => handleDelete(e, pkg.id)}
                         disabled={isDeleting === pkg.id}
                         className="p-1 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 border border-transparent"

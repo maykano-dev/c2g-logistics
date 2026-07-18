@@ -161,6 +161,90 @@ export async function updatePackageStatus(id: string, status: string) {
   return { success: true };
 }
 
+export async function updatePackageFull(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const id = formData.get('id') as string;
+  const trackingNumber = formData.get('tracking_number') as string;
+  const storeName = formData.get('store_name') as string;
+  const description = formData.get('description') as string;
+  const imageFile = formData.get('image') as File | null;
+
+  if (!id || !trackingNumber || !description) {
+    throw new Error('Tracking number and description are required');
+  }
+
+  let imageUrl = undefined;
+  if (imageFile && imageFile.size > 0) {
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
+    const result = await uploadImage(buffer, imageFile.name);
+    if (!result.success || !result.url) {
+      throw new Error(`Failed to upload new image: ${result.error || 'Unknown error'}`);
+    }
+    imageUrl = result.url;
+  }
+
+  const updates: any = {
+    tracking_number: trackingNumber,
+    items_description: `${storeName ? storeName + ': ' : ''}${description}`
+  };
+  if (imageUrl !== undefined) {
+    updates.image_url = imageUrl;
+  }
+
+  const { error } = await supabase
+    .from('shipments')
+    .update(updates)
+    .eq('id', id)
+    .eq('customer_id', user.id);
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('This tracking number is already registered.');
+    }
+    console.error('Error updating package:', error);
+    throw new Error('Failed to update package details');
+  }
+
+  revalidatePath('/dashboard/packages');
+  revalidatePath(`/dashboard/packages/${id}`);
+  return { success: true };
+}
+
+export async function updatePackageDetails(id: string, updates: { tracking_number: string; items_description: string }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  if (!updates.tracking_number?.trim() || !updates.items_description?.trim()) {
+    return { error: 'Tracking number and description are required' };
+  }
+
+  const { error } = await supabase
+    .from('shipments')
+    .update({
+      tracking_number: updates.tracking_number,
+      items_description: updates.items_description
+    })
+    .eq('id', id)
+    .eq('customer_id', user.id);
+
+  if (error) {
+    if (error.code === '23505') {
+      return { error: 'This tracking number has already been registered.' };
+    }
+    console.error('Error updating package:', error);
+    return { error: 'Failed to update package details' };
+  }
+
+  revalidatePath('/dashboard/packages');
+  revalidatePath(`/dashboard/packages/${id}`);
+  return { success: true };
+}
+
 export async function deletePackage(id: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -174,7 +258,7 @@ export async function deletePackage(id: string) {
     .eq('id', id)
     .eq('customer_id', user.id)
     .single();
-    
+
   if (!pkg) return { error: 'Package not found' };
   if (pkg.registration_fee_paid) return { error: 'Cannot delete a paid package' };
 
@@ -212,9 +296,9 @@ export async function payPackageRegistrationFee(packageId: string) {
   // 2. Fetch dynamic fee
   const feeAmount = await getRegistrationFee();
   const ref = `REG-${packageId}`;
-  
+
   const deductRes = await deductFromWallet(feeAmount, 'package_fee', `Package Registration Fee for ${pkg.tracking_number}`, packageId);
-  
+
   if (!deductRes.success) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
   }
@@ -223,10 +307,10 @@ export async function payPackageRegistrationFee(packageId: string) {
   const { error } = await supabase
     .from('shipments')
     .update({
-        registration_fee_paid: true,
-        status: 'awaiting_arrival',
-        registration_fee_payment_reference: ref,
-        created_at: new Date().toISOString()
+      registration_fee_paid: true,
+      status: 'awaiting_arrival',
+      registration_fee_payment_reference: ref,
+      created_at: new Date().toISOString()
     })
     .eq('id', packageId);
 
@@ -246,28 +330,28 @@ export async function payPackageRegistrationFee(packageId: string) {
 
   supabase.functions.invoke('telegram-notify', {
     body: {
-        customer_id: user.id,
-        type: 'package_registered',
-        title: '📦 Registration Fee Paid!',
-        message: `Your registration fee of ₵${feeAmount} for package ${pkg.tracking_number} was successfully paid.\n\nIt is now visible to admins and awaiting arrival.`,
-        data: {
-            'Tracking #': pkg.tracking_number || 'N/A',
-            'Amount': `₵${feeAmount}`
-        },
-        priority: 'medium'
+      customer_id: user.id,
+      type: 'package_registered',
+      title: '📦 Registration Fee Paid!',
+      message: `Your registration fee of ₵${feeAmount} for package ${pkg.tracking_number} was successfully paid.\n\nIt is now visible to admins and awaiting arrival.`,
+      data: {
+        'Tracking #': pkg.tracking_number || 'N/A',
+        'Amount': `₵${feeAmount}`
+      },
+      priority: 'medium'
     }
   }).catch(e => console.warn('Failed to send telegram:', e));
 
   supabase.functions.invoke('telegram-admin-notify', {
     body: {
-        type: 'package_registered',
-        title: '🆕 Package Fee Paid',
-        message: `A package registration fee was paid.`,
-        data: {
-            'Tracking #': pkg.tracking_number || 'N/A',
-            'Customer': user.id
-        },
-        priority: 'low'
+      type: 'package_registered',
+      title: '🆕 Package Fee Paid',
+      message: `A package registration fee was paid.`,
+      data: {
+        'Tracking #': pkg.tracking_number || 'N/A',
+        'Customer': user.id
+      },
+      priority: 'low'
     }
   }).catch(e => console.warn('Failed to send admin telegram:', e));
 
@@ -294,7 +378,7 @@ export async function payBulkPackageRegistrationFees(packageIds: string[]) {
   if (fetchError || !packages) return { success: false, error: 'Failed to fetch packages' };
 
   const unpaidPackages = packages.filter(p => !p.registration_fee_paid);
-  
+
   if (unpaidPackages.length === 0) {
     return { success: false, error: 'All selected packages are already paid.' };
   }
@@ -309,9 +393,9 @@ export async function payBulkPackageRegistrationFees(packageIds: string[]) {
   // 3. Deduct from wallet atomically
   const ref = `BULK-REG-${Date.now()}`;
   const description = `Bulk Registration Fee for ${count} package(s)`;
-  
+
   const deductRes = await deductFromWallet(totalAmount, 'package_fee', description, ref);
-  
+
   if (!deductRes.success) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
   }
@@ -320,10 +404,10 @@ export async function payBulkPackageRegistrationFees(packageIds: string[]) {
   const { error } = await supabase
     .from('shipments')
     .update({
-        registration_fee_paid: true,
-        status: 'awaiting_arrival',
-        registration_fee_payment_reference: ref,
-        created_at: new Date().toISOString()
+      registration_fee_paid: true,
+      status: 'awaiting_arrival',
+      registration_fee_payment_reference: ref,
+      created_at: new Date().toISOString()
     })
     .in('id', unpaidIds);
 
@@ -343,29 +427,29 @@ export async function payBulkPackageRegistrationFees(packageIds: string[]) {
 
   supabase.functions.invoke('telegram-notify', {
     body: {
-        customer_id: user.id,
-        type: 'package_registered',
-        title: '📦 Bulk Registration Paid!',
-        message: `Your bulk payment of ₵${totalAmount} for ${count} packages was successful.\n\nThey are now visible to admins and awaiting arrival.`,
-        data: {
-            'Packages Count': count,
-            'Total Amount': `₵${totalAmount}`
-        },
-        priority: 'medium'
+      customer_id: user.id,
+      type: 'package_registered',
+      title: '📦 Bulk Registration Paid!',
+      message: `Your bulk payment of ₵${totalAmount} for ${count} packages was successful.\n\nThey are now visible to admins and awaiting arrival.`,
+      data: {
+        'Packages Count': count,
+        'Total Amount': `₵${totalAmount}`
+      },
+      priority: 'medium'
     }
   }).catch(e => console.warn('Failed to send telegram:', e));
 
   supabase.functions.invoke('telegram-admin-notify', {
     body: {
-        type: 'package_registered',
-        title: '🆕 Bulk Package Fees Paid',
-        message: `A bulk package registration fee was paid.`,
-        data: {
-            'Packages Count': count,
-            'Total Amount': `₵${totalAmount}`,
-            'Customer': user.id
-        },
-        priority: 'low'
+      type: 'package_registered',
+      title: '🆕 Bulk Package Fees Paid',
+      message: `A bulk package registration fee was paid.`,
+      data: {
+        'Packages Count': count,
+        'Total Amount': `₵${totalAmount}`,
+        'Customer': user.id
+      },
+      priority: 'low'
     }
   }).catch(e => console.warn('Failed to send admin telegram:', e));
 

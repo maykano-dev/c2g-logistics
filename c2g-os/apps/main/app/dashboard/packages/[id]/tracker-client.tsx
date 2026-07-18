@@ -117,13 +117,9 @@ export default function TrackerClient({ pkg, backLink = "/dashboard/packages", b
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              {modeDisplay.icon}
               Tracking: {pkg.tracking_number}
             </h1>
             <p className="text-muted-foreground mt-1 max-w-2xl line-clamp-1">{pkg.items_description}</p>
-          </div>
-          <div className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-lg font-mono font-bold text-sm">
-            {modeDisplay.label} &middot; {isAir ? (modeLower.includes('express') ? '3-7' : '12-16') : '50-60'} Days
           </div>
         </div>
       </div>

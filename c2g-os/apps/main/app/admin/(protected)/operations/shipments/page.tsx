@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Search, Plus, Filter, Edit, Save, Plane, Ship, Zap, ChevronDown, CheckSquare, Square, Copy, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { updateShipmentStatus, bulkUpdateShipmentStatus, createAdminShipment, updateAdminShipment } from './actions';
+import { useModal } from '@/components/providers/modal-provider';
 
 // Constants for Dropdowns
 const STATUS_OPTIONS = [
@@ -25,6 +26,7 @@ const METHOD_OPTIONS = [
 ];
 
 export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
+  const { showAlert } = useModal();
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -130,7 +132,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
     const selectedShipments = shipments.filter(s => selectedIds.has(s.id));
     const trackings = selectedShipments.map(s => s.tracking_number).join('\n');
     navigator.clipboard.writeText(trackings);
-    alert(`Copied ${selectedShipments.length} tracking numbers to clipboard!`);
+    showAlert({ title: 'Success', message: `Copied ${selectedShipments.length} tracking numbers to clipboard!`, type: 'success' });
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -143,7 +145,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
         // reset form
         setFormData({ tracking_number: '', customer_name: '', customer_unique_id: '', method: 'Air Normal', total_weight_kg: 0, shipping_cost: 0, status: 'Pending' });
       } else {
-        alert("Failed to create shipment: " + res.error);
+        showAlert({ title: 'Error', message: "Failed to create shipment: " + res.error, type: 'danger' });
       }
     });
   };
@@ -165,7 +167,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
         setShowEditModal(null);
         fetchShipments(); // refresh
       } else {
-        alert("Failed to edit shipment: " + res.error);
+        showAlert({ title: 'Error', message: "Failed to edit shipment: " + res.error, type: 'danger' });
       }
     });
   };

@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server'
 export async function getDashboardStats() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return null
   }
@@ -16,7 +16,7 @@ export async function getDashboardStats() {
     .select('name')
     .eq('id', user.id)
     .maybeSingle()
-    
+
   const userName = customerData?.name ? customerData.name.split(' ')[0] : 'there'
 
   // 1. Orders in Transit (shipped, arrived_ghana, clearing_customs)
@@ -32,7 +32,7 @@ export async function getDashboardStats() {
     .select('*', { count: 'exact', head: true })
     .eq('customer_id', user.id)
     .eq('order_status', 'ready_for_pickup')
-    
+
   const { count: pickupShipmentsCount } = await supabase
     .from('shipments')
     .select('*', { count: 'exact', head: true })
@@ -91,7 +91,7 @@ export async function getDashboardStats() {
     .from('shipments')
     .select('*', { count: 'exact', head: true })
     .eq('customer_id', user.id)
-    .or('status.eq.pending_payment,registration_fee_paid.eq.false,shipping_fee_paid.eq.false')
+    .or('status.eq.pending_payment,registration_fee_paid.eq.false')
 
   // 10. Unread Notifications Count
   const { count: unreadNotificationsCount } = await supabase
@@ -126,7 +126,7 @@ export async function getDashboardStats() {
 export async function getRecentActivity() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) return []
 
   // Fetch recent updates from the 3 primary tables

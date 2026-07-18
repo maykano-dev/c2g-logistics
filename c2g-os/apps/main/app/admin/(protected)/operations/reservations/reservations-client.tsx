@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { updateReservationStatus, bulkUpdateReservationStatus, updateAdminReservation, getReservationItems } from './actions';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { useModal } from '@/components/providers/modal-provider';
 
 // Constants for Dropdowns
 const STATUS_OPTIONS = [
@@ -21,6 +22,7 @@ const STATUS_OPTIONS = [
 
 export default function ReservationsClient({ readOnly = false }: { readOnly?: boolean }) {
   const router = useRouter();
+  const { showAlert } = useModal();
   
   const [initialReservations, setInitialReservations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +137,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
   const handleCopyIds = () => {
     const ids = Array.from(selectedIds).join('\n');
     navigator.clipboard.writeText(ids);
-    alert(`Copied ${selectedIds.size} reservation IDs to clipboard!`);
+    showAlert({ title: 'Success', message: `Copied ${selectedIds.size} reservation IDs to clipboard!`, type: 'success' });
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -154,7 +156,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
         setShowEditModal(null);
         router.refresh();
       } else {
-        alert("Failed to edit reservation: " + res.error);
+        showAlert({ title: 'Error', message: "Failed to edit reservation: " + res.error, type: 'danger' });
       }
     });
   };
@@ -166,7 +168,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
     if (result.success) {
       setReservationItems(result.data);
     } else {
-      alert("Failed to load items");
+      showAlert({ title: 'Error', message: "Failed to load items", type: 'danger' });
     }
     setLoadingItems(false);
   };
@@ -596,9 +598,22 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                 <>
                   {reservationItems.packages.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <Package className="w-4 h-4" /> Warehouse Packages ({reservationItems.packages.length})
-                      </h3>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
+                          <Package className="w-4 h-4" /> Warehouse Packages ({reservationItems.packages.length})
+                        </h3>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const trackingNumbers = reservationItems.packages.map((pkg: any) => pkg.tracking_number).join('\n');
+                            navigator.clipboard.writeText(trackingNumbers);
+                            showAlert({ title: 'Success', message: `Copied ${reservationItems.packages.length} tracking numbers!`, type: 'success' });
+                          }}
+                          className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors px-2 py-1 rounded-md"
+                        >
+                          <Copy className="w-3 h-3" /> Copy All
+                        </button>
+                      </div>
                       <div className="space-y-2">
                         {reservationItems.packages.map((pkg: any) => (
                           <div key={pkg.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
