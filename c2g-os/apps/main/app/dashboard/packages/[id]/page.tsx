@@ -4,8 +4,8 @@ import TrackerClient from './tracker-client';
 import Link from 'next/link';
 import { getRegistrationFee } from '../actions';
 
-export default async function PackageTrackingPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
+export default async function PackageTrackingPage(props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -17,7 +17,7 @@ export default async function PackageTrackingPage({ params }: { params: Promise<
   const { data: pkg, error } = await supabase
     .from('shipments')
     .select('*')
-    .eq('id', resolvedParams.id)
+    .eq('id', id)
     .eq('customer_id', user.id)
     .single();
 
