@@ -59,13 +59,13 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
 
       const { success, data, error } = await processScannedPackage(candidatesArray);
 
-      if (!success) {
+      if (!success || !data) {
         throw new Error(error || 'Failed to process scan');
       }
 
       const newLog: ScanLog = {
         id: crypto.randomUUID(),
-        trackingNumber: data.tracking_number || trackingRaw,
+        trackingNumber: data.tracking_number || decodedText,
         customerName: data.customer_name || 'Unknown',
         status: data.status as 'updated' | 'already_processed' | 'not_found' | 'error',
         message: data.status === 'updated' ? 'Package marked as IN WAREHOUSE' : 
@@ -121,7 +121,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       if (cameras && cameras.length > 0) {
         // Prefer back camera if available
         const backCamera = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('environment'));
-        const cameraId = backCamera ? backCamera.id : cameras[0].id;
+        const cameraId = backCamera ? backCamera.id : cameras[0]!.id;
 
         await scannerRef.current.start(
           cameraId,
@@ -242,7 +242,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
                       setIsProcessing(true);
                       try {
                         const html5QrCode = new Html5Qrcode("reader");
-                        const decodedText = await html5QrCode.scanFile(e.target.files[0], true);
+                        const decodedText = await html5QrCode.scanFile(e.target.files[0]!, true);
                         await handleScan(decodedText);
                       } catch (err) {
                         alert("Could not find a barcode in this image. Please try again.");
