@@ -35,14 +35,14 @@ export default function OfflineIndicator() {
       </h1>
       
       <p className="text-muted-foreground text-center mb-10 max-w-sm">
-        It looks like you're offline. Please check your network settings and try again. C2G Mall requires an active connection to browse products.
+        It looks like you're offline. Please check your network settings and try again. C2G Logistics requires an active connection to browse products.
       </p>
 
       <button 
         onClick={() => window.location.reload()}
-        className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-full font-bold shadow-lg shadow-primary/25 hover:scale-105 transition-all"
+        className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-full font-bold shadow-lg shadow-primary/25 hover:scale-105 transition-all group"
       >
-        <RefreshCw className="w-5 h-5" />
+        <RefreshCw className="w-5 h-5 group-hover:animate-spin" />
         Retry Connection
       </button>
     </div>

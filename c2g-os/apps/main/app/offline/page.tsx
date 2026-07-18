@@ -107,6 +107,15 @@ export default function OfflinePage() {
           width: 1.25rem; 
           height: 1.25rem; 
         }
+        
+        .retry-btn:hover .retry-svg {
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
       `}} />
       <div className="offline-wrapper">
         <div className="icon-pulse">
@@ -116,7 +125,7 @@ export default function OfflinePage() {
         <h1 className="title">Connection Lost</h1>
         
         <p className="desc">
-          C2G Mall requires an active internet connection to browse products and track shipments. Please check your network and try again.
+          C2G Logistics requires an active internet connection to browse products and track shipments. Please check your network and try again.
         </p>
 
         <button onClick={() => window.location.reload()} className="retry-btn border-none cursor-pointer">
