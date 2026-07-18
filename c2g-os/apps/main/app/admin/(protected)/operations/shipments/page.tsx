@@ -339,7 +339,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
-                          onClick={() => setShowEditModal(shipment)}
+                          onClick={() => setShowEditModal({...shipment, status: normalizedStatus, method: normalizedMethod})}
                           className="p-2 text-zinc-400 hover:text-white bg-zinc-950 border border-zinc-800 hover:bg-zinc-800 rounded-lg transition-colors" 
                           title="Edit Shipment"
                         >
@@ -374,7 +374,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-white font-mono font-medium truncate max-w-[200px]" title={shipment.tracking_number}>{shipment.tracking_number}</p>
                           <button 
-                            onClick={() => setShowEditModal(shipment)}
+                            onClick={() => setShowEditModal({...shipment, status: normalizedStatus, method: normalizedMethod})}
                             className="bg-zinc-800/50 hover:bg-zinc-800 text-white p-2 rounded-xl transition-colors shrink-0 ml-2" 
                           >
                             <Edit className="w-4 h-4" />

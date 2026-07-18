@@ -2,7 +2,8 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import EditPackageForm from './edit-package-form';
 
-export default async function EditPackagePage({ params }: { params: { id: string } }) {
+export default async function EditPackagePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -13,7 +14,7 @@ export default async function EditPackagePage({ params }: { params: { id: string
   const { data: pkg, error } = await supabase
     .from('shipments')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', resolvedParams.id)
     .eq('customer_id', user.id)
     .single();
 
