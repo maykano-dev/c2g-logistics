@@ -11,6 +11,7 @@ export async function processScannedPackage(candidates: string[]) {
     let customerName = 'Unknown';
     let trackingNumberMatched = candidates[0];
     let currentStatus = '';
+    let shipmentMatch: any = null;
 
     // 1. Check Orders (Link Orders)
     const { data: orderMatch, error: orderError } = await supabase
@@ -88,12 +89,14 @@ export async function processScannedPackage(candidates: string[]) {
       // 2. Check Shipments
       // We use .in() for arrays in Supabase JS to check if a column matches any in an array
       // Wait, we need to find a shipment where tracking_number is in candidates
-      const { data: shipmentMatch, error: shipmentError } = await supabase
+      const { data, error: shipmentError } = await supabase
         .from('shipments')
         .select('id, tracking_number, customer_name, status')
         .in('tracking_number', candidates)
         .limit(1)
         .single();
+      
+      shipmentMatch = data;
 
       if (shipmentMatch && !shipmentError) {
         customerName = shipmentMatch.customer_name || 'Unknown';

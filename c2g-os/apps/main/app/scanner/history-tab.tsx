@@ -7,7 +7,6 @@ import { formatDistanceToNow } from 'date-fns';
 
 import { ScanLog } from './scanner-client';
 
-import { ScanLog } from './scanner-client';
 
 export default function HistoryTab({ sessionHistory }: { sessionHistory: ScanLog[] }) {
   const [items, setItems] = useState<any[]>([]);
