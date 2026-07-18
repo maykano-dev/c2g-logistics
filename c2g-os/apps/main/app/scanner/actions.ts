@@ -59,6 +59,19 @@ export async function processScannedPackage(candidates: string[]) {
         rpcData = { type: 'ecom_order', ...ecom };
         break;
       }
+      
+      // Check Regular Orders
+      const { data: order } = await supabase
+        .from('orders')
+        .select('id, tracking_number, status, customer_name, items_description')
+        .eq('tracking_number', tracking)
+        .maybeSingle();
+
+      if (order) {
+        match = order;
+        rpcData = { type: 'order', ...order };
+        break;
+      }
     }
 
     if (match) {
@@ -73,7 +86,8 @@ export async function processScannedPackage(candidates: string[]) {
       } else {
         finalStatus = 'updated';
         const tableName = rpcData.type === 'shipment' ? 'shipments' : 
-                          rpcData.type === 'incoming' ? 'incoming_packages' : 'ecom_orders';
+                          rpcData.type === 'incoming' ? 'incoming_packages' : 
+                          rpcData.type === 'ecom_order' ? 'ecom_orders' : 'orders';
                           
         await supabase
           .from(tableName)
