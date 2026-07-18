@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, Camera, CheckCircle2, XCircle, AlertCircle, ScanLine, Keyboard } from 'lucide-react';
+import { Loader2, Camera, CheckCircle2, XCircle, AlertCircle, ScanLine, Keyboard, LogOut } from 'lucide-react';
 
 import { ScanLog } from './scanner-client';
 import { processScannedPackage } from './actions';
@@ -104,14 +104,14 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       }
 
       await scannerRef.current.start(
-        { 
-          facingMode: "environment",
-          width: { ideal: 1920 }, 
-          height: { ideal: 1080 }
-        },
+        { facingMode: "environment" },
         { 
           fps: 20, 
-          aspectRatio: 1.0
+          aspectRatio: 1.0,
+          videoConstraints: {
+            width: { ideal: 1920 }, 
+            height: { ideal: 1080 }
+          }
         },
         (decodedText) => handleScan(decodedText),
         () => {} // ignore scan failures (happens every frame when no code is found)
@@ -160,19 +160,27 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
     setManualInput('');
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/scanner/login';
+  };
+
   return (
     <div className="absolute inset-0 flex flex-col bg-black">
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 p-4 z-20 bg-gradient-to-b from-black/80 to-transparent pt-safe">
+      <header className="absolute top-0 left-0 right-0 p-4 z-20 bg-gradient-to-b from-black/80 to-transparent pt-8 sm:pt-10 pb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ScanLine className="w-6 h-6 text-blue-500" />
             <h1 className="text-xl font-bold text-white tracking-tight">C2G Scanner</h1>
           </div>
-          <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-            <span className="text-sm font-bold text-green-400">{sessionCount}</span>
-            <span className="text-[10px] uppercase tracking-wider text-zinc-400 ml-1">Today</span>
-          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5 text-red-400" />
+            <span className="text-[11px] font-bold text-red-400 tracking-wider">LOGOUT</span>
+          </button>
         </div>
 
         {/* Manual Input overlaying top */}
