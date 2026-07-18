@@ -107,9 +107,8 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       await scannerRef.current.start(
         { 
           facingMode: "environment",
-          width: { ideal: 1920, min: 1280 }, 
-          height: { ideal: 1080, min: 720 },
-          advanced: [{ focusMode: 'continuous' } as any]
+          width: { ideal: 1920 }, 
+          height: { ideal: 1080 }
         },
         { 
           fps: 20, 
