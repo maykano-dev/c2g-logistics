@@ -54,7 +54,7 @@ export async function verifyStaffCredentials(email: string, pass: string) {
       break;
     // Add warehouse, etc., in the future
     case 'warehouse':
-      redirectTo = '/warehouse/dashboard';
+      redirectTo = '/scanner';
       break;
     default:
       // If role is undefined or unknown, just send them to default dashboard

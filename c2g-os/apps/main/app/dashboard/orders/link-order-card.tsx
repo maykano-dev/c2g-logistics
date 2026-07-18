@@ -144,7 +144,35 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
             <h3 className="font-bold text-base leading-tight mb-1 pr-16 truncate" title={order.product_name}>
               {order.product_name || 'Link Order Items'}
             </h3>
-            <p className="text-xs text-muted-foreground mb-1">Qty: {order.quantity || 1}</p>
+            
+            {/* Item Level Warehouse Status Tracking */}
+            <div className="flex flex-col gap-1 mb-1">
+              <p className="text-xs text-muted-foreground">Qty: {order.quantity || 1}</p>
+              {(() => {
+                let parsedItems = [];
+                if (Array.isArray(order.items) && order.items.length > 0) {
+                  parsedItems = order.items;
+                } else if (order.notes && order.notes.includes('JSON_ITEMS:')) {
+                  try {
+                    parsedItems = JSON.parse(order.notes.split('JSON_ITEMS:')[1]);
+                  } catch(e) {}
+                }
+                
+                if (parsedItems.length > 0) {
+                  const totalItems = parsedItems.length;
+                  const inWarehouseCount = parsedItems.filter((i: any) => i.status === 'in_warehouse').length;
+                  if (totalItems > 1 || (totalItems === 1 && inWarehouseCount > 0)) {
+                    return (
+                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded w-fit ${inWarehouseCount === totalItems ? 'bg-green-500/10 text-green-500' : inWarehouseCount > 0 ? 'bg-blue-500/10 text-blue-500' : 'bg-zinc-500/10 text-zinc-500'}`}>
+                        {inWarehouseCount}/{totalItems} In Warehouse
+                      </span>
+                    );
+                  }
+                }
+                return null;
+              })()}
+            </div>
+            
             <p className="text-sm font-black text-primary">
               {formatCurrency(order.total || 0)}
             </p>

@@ -96,13 +96,21 @@ export async function registerPackages(formData: FormData) {
     }
   }
 
+  // Check if any of these tracking numbers were already scanned in the warehouse
+  const { data: scanMatches } = await supabase
+    .from('scan_logs')
+    .select('scanned_tracking')
+    .in('scanned_tracking', trackingNumbers);
+    
+  const scannedSet = new Set((scanMatches || []).map(s => s.scanned_tracking));
+
   const payloads = trackingNumbers.map((tracking, index) => ({
     customer_id: user.id,
     customer_name: customer?.name || 'Customer',
     customer_unique_id: customer?.customer_unique_id || '',
     tracking_number: tracking,
     items_description: `${storeName}: ${description}`,
-    status: 'pending_payment',
+    status: scannedSet.has(tracking) ? 'in_warehouse' : 'pending_payment',
     registration_fee_paid: false,
     method: 'pending',
     customer_contact: customer?.phone || '',

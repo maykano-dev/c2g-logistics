@@ -36,6 +36,7 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
   const [shippingFeeInput, setShippingFeeInput] = useState<string>('');
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [trackingInputs, setTrackingInputs] = useState<Record<number, string>>({});
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -45,6 +46,38 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
   const handleOpenModal = (order: any) => {
     setSelectedOrder(order);
     setShippingFeeInput(order.shipping_cost ? String(order.shipping_cost) : '');
+    setTrackingInputs({});
+  };
+
+  const handleUpdateTracking = (e: React.FormEvent, index: number) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    const newTracking = trackingInputs[index];
+    if (newTracking === undefined) return;
+
+    startTransition(async () => {
+      const { updateLinkOrderItemTracking } = await import('./actions');
+      const res = await updateLinkOrderItemTracking(selectedOrder.id, index, newTracking);
+      if (res.success) {
+        showToast('Tracking number saved!', 'success');
+        fetchOrders(); // refresh global list
+        // Update local selectedOrder state so modal updates
+        setSelectedOrder((prev: any) => {
+          let updatedNotes = prev.notes || '';
+          if (updatedNotes.includes('JSON_ITEMS:')) {
+            const parts = updatedNotes.split('JSON_ITEMS:');
+            const parsedItems = JSON.parse(parts[1]);
+            if (Array.isArray(parsedItems) && parsedItems.length > index) {
+              parsedItems[index] = { ...parsedItems[index], tracking_number: newTracking };
+              updatedNotes = `${parts[0]}JSON_ITEMS:${JSON.stringify(parsedItems)}`;
+            }
+          }
+          return { ...prev, notes: updatedNotes };
+        });
+      } else {
+        showToast('Failed to save tracking: ' + res.error, 'error');
+      }
+    });
   };
 
   const handleStatusChange = (id: number, newStatus: string) => {
@@ -616,9 +649,20 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                                    </div>
                                  )}
                                  <div className="flex flex-wrap gap-4">
-                                   <div>
+                                   <div className="flex-1">
                                      <span className="text-xs text-zinc-500 block mb-0.5">Tracking #</span>
-                                     <span className="text-sm text-zinc-300 font-mono bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800/50">{item.tracking_number || 'N/A'}</span>
+                                     <form onSubmit={(e) => handleUpdateTracking(e, idx)} className="flex gap-2">
+                                       <input 
+                                         type="text" 
+                                         value={trackingInputs[idx] !== undefined ? trackingInputs[idx] : (item.tracking_number || '')}
+                                         onChange={(e) => setTrackingInputs(prev => ({...prev, [idx]: e.target.value}))}
+                                         className="w-full bg-zinc-950 px-2 py-1.5 rounded border border-zinc-800/50 text-sm text-zinc-300 focus:border-indigo-500 outline-none"
+                                         placeholder="Enter tracking #"
+                                       />
+                                       <button type="submit" disabled={isPending} className="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-bold rounded border border-indigo-500/20 transition-colors disabled:opacity-50">
+                                         Save
+                                       </button>
+                                     </form>
                                    </div>
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Item Status</span>

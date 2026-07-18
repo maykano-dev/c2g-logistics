@@ -6,7 +6,7 @@ export function ClientWhatsAppButton({ settings }: { settings?: any }) {
   const pathname = usePathname();
   
   // Hide whatsapp button on admin, staff, agent, and auth pages
-  const hideRoutes = ["/admin", "/staff", "/agent", "/login", "/signup", "/forgot-password", "/employee", "/importer-dashboard"];
+  const hideRoutes = ["/admin", "/staff", "/agent", "/login", "/signup", "/forgot-password", "/employee", "/importer-dashboard", "/scanner"];
   const shouldHide = hideRoutes.some(route => pathname?.startsWith(route));
 
   if (shouldHide) {

@@ -15,6 +15,9 @@ export default function EmployeesDirectoryView() {
   const [addEmail, setAddEmail] = useState('');
   const [addRole, setAddRole] = useState('support');
   const [isAdding, setIsAdding] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState<any>(null);
+  const [editRole, setEditRole] = useState('support');
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
@@ -71,6 +74,23 @@ export default function EmployeesDirectoryView() {
       showAlert({ title: 'Error', message: res.error || 'Failed to add employee', type: 'danger' });
     }
     setIsAdding(false);
+  };
+
+  const handleUpdateRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showRoleModal) return;
+    
+    setIsUpdatingRole(true);
+    const res = await adminSetEmployeeStatus(showRoleModal.id, showRoleModal.status, undefined, editRole);
+    
+    if (res.success) {
+      showAlert({ title: 'Success', message: 'Employee role updated successfully', type: 'success' });
+      setShowRoleModal(null);
+      fetchEmployees();
+    } else {
+      showAlert({ title: 'Error', message: res.error || 'Failed to update role', type: 'danger' });
+    }
+    setIsUpdatingRole(false);
   };
 
   const filtered = employees.filter(emp => {
@@ -184,7 +204,10 @@ export default function EmployeesDirectoryView() {
                      </button>
                    </div>
                  ) : (
-                   <button className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
+                   <button 
+                     onClick={() => { setShowRoleModal(emp); setEditRole(emp.staff_role || 'support'); }}
+                     className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
+                   >
                      Manage Role
                    </button>
                  )}
@@ -241,6 +264,46 @@ export default function EmployeesDirectoryView() {
                 className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold mt-4 transition-colors"
               >
                 {isAdding ? 'Adding Staff...' : 'Onboard Employee'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showRoleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !isUpdatingRole && setShowRoleModal(null)}></div>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">Manage Employee Role</h3>
+              <button onClick={() => !isUpdatingRole && setShowRoleModal(null)} className="text-zinc-500 hover:text-white">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateRole} className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-zinc-400 mb-4">
+                  Update role for <strong className="text-white">{showRoleModal.full_name}</strong>
+                </p>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Assign Role</label>
+                <select 
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value)}
+                  className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="support">Customer Service (Agent)</option>
+                  <option value="warehouse">China Warehouse Staff</option>
+                  <option value="admin">Administrator</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isUpdatingRole}
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold mt-4 transition-colors"
+              >
+                {isUpdatingRole ? 'Updating Role...' : 'Save Role'}
               </button>
             </form>
           </div>
