@@ -16,27 +16,77 @@ export async function processScannedPackage(candidates: string[]) {
     let currentStatus = '';
     let shipmentMatch: any = null;
 
-    // 1. Call Atomic RPC for instant lookup and update
-    const { data: rpcData, error: rpcError } = await supabase.rpc('process_scanned_package_bulk', {
-        candidates: candidates
-    });
+    let rpcData: any = {};
+    let match: any = null;
 
-    if (rpcError) {
-      throw new Error(rpcError.message);
+    // 1. Search across tables for any matching tracking number
+    for (const tracking of candidates) {
+      // Check Shipments
+      const { data: shipment } = await supabase
+        .from('shipments')
+        .select('id, tracking_number, status, customer_name, items_description')
+        .eq('tracking_number', tracking)
+        .maybeSingle();
+      
+      if (shipment) {
+        match = shipment;
+        rpcData = { type: 'shipment', ...shipment };
+        break;
+      }
+      
+      // Check Incoming Packages
+      const { data: incoming } = await supabase
+        .from('incoming_packages')
+        .select('id, tracking_number, status, customer_name, items_description')
+        .eq('tracking_number', tracking)
+        .maybeSingle();
+
+      if (incoming) {
+        match = incoming;
+        rpcData = { type: 'incoming', ...incoming };
+        break;
+      }
+      
+      // Check Ecom Orders
+      const { data: ecom } = await supabase
+        .from('ecom_orders')
+        .select('id, tracking_number, status, customer_name, items_description')
+        .eq('tracking_number', tracking)
+        .maybeSingle();
+
+      if (ecom) {
+        match = ecom;
+        rpcData = { type: 'ecom_order', ...ecom };
+        break;
+      }
     }
 
-    if (rpcData && rpcData.status !== 'not_found') {
-      finalStatus = rpcData.status;
-      customerName = rpcData.customer_name || 'Unknown';
-      trackingNumberMatched = rpcData.tracking_number || candidates[0];
-      currentStatus = rpcData.current_status || '';
+    if (match) {
+      customerName = match.customer_name || 'Unknown';
+      trackingNumberMatched = match.tracking_number || candidates[0];
+      currentStatus = match.status || '';
       
+      const isAlreadyProcessed = ['in_warehouse', 'In Warehouse', 'ready_for_pickup', 'completed', 'picked_up', 'arrived_at_warehouse'].includes(currentStatus);
+      
+      if (isAlreadyProcessed) {
+        finalStatus = 'already_processed';
+      } else {
+        finalStatus = 'updated';
+        const tableName = rpcData.type === 'shipment' ? 'shipments' : 
+                          rpcData.type === 'incoming' ? 'incoming_packages' : 'ecom_orders';
+                          
+        await supabase
+          .from(tableName)
+          .update({ status: 'in_warehouse' })
+          .eq('id', match.id);
+      }
+
       // Best effort insert to scan logs
       await supabase.from('scan_logs').insert({
         tracking_number: trackingNumberMatched,
         status: finalStatus,
         customer_name: customerName,
-        message: `Package type: ${rpcData.type || 'unknown'}, ID: ${rpcData.id || 'none'}`
+        message: `Package type: ${rpcData.type || 'unknown'}, ID: ${match.id || 'none'}`
       });
     } else {
       // Not found
