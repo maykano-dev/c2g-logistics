@@ -112,7 +112,10 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
     try {
       isInitializingRef.current = true;
       if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode("reader");
+        scannerRef.current = new Html5Qrcode("reader", {
+          formatsToSupport: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ],
+          verbose: false
+        });
       }
 
       await scannerRef.current.start(
@@ -120,8 +123,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
         { 
           fps: 10, 
           qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          formatsToSupport: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ] // Support all formats including CODE_128, QR_CODE
+          aspectRatio: 1.0
         },
         (decodedText) => handleScan(decodedText),
         () => {} // ignore scan failures (happens every frame when no code is found)
