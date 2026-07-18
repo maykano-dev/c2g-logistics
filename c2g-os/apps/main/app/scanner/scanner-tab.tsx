@@ -121,8 +121,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       await scannerRef.current.start(
         { facingMode: "environment" },
         { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
+          fps: 20, 
           aspectRatio: 1.0
         },
         (decodedText) => handleScan(decodedText),
@@ -206,7 +205,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
         
         {/* Viewfinder Target Box overlay */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="w-[250px] h-[250px] border-2 border-white/50 rounded-2xl relative shadow-[0_0_0_4000px_rgba(0,0,0,0.6)]">
+          <div className="w-[300px] h-[180px] border-2 border-white/50 rounded-2xl relative shadow-[0_0_0_4000px_rgba(0,0,0,0.6)]">
             <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-blue-500 rounded-tl-2xl"></div>
             <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-blue-500 rounded-tr-2xl"></div>
             <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-blue-500 rounded-bl-2xl"></div>
@@ -266,7 +265,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       </div>
 
       {/* Toast Overlay */}
-      <div className="absolute bottom-6 left-0 right-0 px-4 z-20 pointer-events-none flex flex-col justify-end">
+      <div className="absolute bottom-28 left-0 right-0 px-4 z-20 pointer-events-none flex flex-col justify-end">
         {scanLog && (
           <div className={`p-4 rounded-2xl shadow-2xl backdrop-blur-xl border animate-slide-up transition-all ${
             scanLog.status === 'updated' ? "bg-green-500/20 border-green-500/50" : 
