@@ -24,38 +24,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
     setIsProcessing(true);
 
     try {
-      const candidates = new Set<string>();
-      
-      // 1. Exact match (uppercase to be safe)
-      candidates.add(decodedText.trim());
-      candidates.add(decodedText.trim().toUpperCase());
-      
-      // 2. Strip JSON or garbage (e.g. MMM={...}) to find the longest alphanumeric string
-      const alphaNumMatches = decodedText.match(/[a-zA-Z0-9]+/g);
-      let longestAlphaNum = '';
-      if (alphaNumMatches) {
-        longestAlphaNum = alphaNumMatches.reduce((a, b) => a.length > b.length ? a : b);
-        candidates.add(longestAlphaNum);
-        candidates.add(longestAlphaNum.toUpperCase());
-      }
-      
-      const primaryTarget = longestAlphaNum ? longestAlphaNum.toUpperCase() : decodedText.trim().toUpperCase();
-
-      // 3. Dynamic Prefix Stripping (Handles ANY unknown carrier letters)
-      // If the string starts with letters followed by numbers (e.g. XYZ123456789), strip the leading letters
-      const strippedLeadingLetters = primaryTarget.replace(/^[A-Z]+/i, '');
-      if (strippedLeadingLetters !== primaryTarget && strippedLeadingLetters.length >= 6) {
-        candidates.add(strippedLeadingLetters);
-      }
-
-      // 4. Extract purely the digits if there are letters mixed throughout
-      // For example, YT123456789R -> 123456789. Only add if it's a reasonably long number
-      const digitsOnly = primaryTarget.replace(/[^0-9]/g, '');
-      if (digitsOnly.length >= 6) {
-        candidates.add(digitsOnly);
-      }
-
-      const candidatesArray = Array.from(candidates);
+      const candidatesArray = extractAllDigitSequences(decodedText);
 
       const { success, data, error } = await processScannedPackage(candidatesArray);
 
@@ -114,6 +83,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("reader", {
           formatsToSupport: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ],
+          useBarCodeDetectorIfSupported: true,
           verbose: false
         });
       }
@@ -297,4 +267,77 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       </div>
     </div>
   );
+}
+
+// ----------------------------------------------------------------------
+// Robust Tracking Number Extraction Utilities
+// ----------------------------------------------------------------------
+function extractAllDigitSequences(text: string): string[] {
+  if (!text) return [];
+  const results: string[] = [];
+
+  // Keep the raw original text (without hyphens, spaces, custom symbols)
+  const rawTrimmed = text.trim();
+  if (rawTrimmed.length >= 4) {
+      results.push(rawTrimmed);
+      results.push(rawTrimmed.toUpperCase());
+  }
+
+  // Jingdong/JDL multi-package suffix slicer (e.g., JDVC36161125581-1-1- -> JDVC36161125581)
+  const segments = text.split(/[-_ ]+/);
+  if (segments.length > 0 && segments[0]) {
+      const firstSegment = segments[0].trim();
+      if (firstSegment.length >= 4 && firstSegment !== rawTrimmed) {
+          results.push(firstSegment);
+          results.push(firstSegment.toUpperCase());
+      }
+  }
+
+  // QR tracking URL path segment parser
+  try {
+      if (text.includes('/') || text.includes('?')) {
+          const urlObj = new URL(text.includes('://') ? text : 'https://' + text);
+          const pathParts = urlObj.pathname.split('/').filter(Boolean);
+          if (pathParts.length > 0) {
+              const lastPart = pathParts[pathParts.length - 1];
+              if (lastPart && lastPart.length >= 4) results.push(lastPart);
+          }
+          urlObj.searchParams.forEach((val) => {
+              if (val && val.length >= 4) results.push(val);
+          });
+      }
+  } catch (e) { }
+
+  // Extract digits sequence fallback
+  const clean = text.replace(/\s+/g, '');
+  const match = clean.match(/\d{4,30}/g) || [];
+  for (const m of match) {
+      results.push(m);
+  }
+
+  // Alphanumeric variations (Strip ALL special characters including hyphens for direct matches)
+  const finalCandidates: string[] = [];
+  for (const cand of results) {
+      finalCandidates.push(cand);
+      const cleanCand = cand.replace(/[^A-Za-z0-9]/g, '');
+      if (cleanCand && cleanCand !== cand) {
+          finalCandidates.push(cleanCand);
+      }
+  }
+
+  // Dynamic Prefix Stripping (Handles ANY unknown carrier letters)
+  const primaryTarget = finalCandidates.length > 0 ? (finalCandidates[0]?.toUpperCase() || '') : '';
+  if (primaryTarget) {
+      const strippedLeadingLetters = primaryTarget.replace(/^[A-Z]+/i, '');
+      if (strippedLeadingLetters !== primaryTarget && strippedLeadingLetters.length >= 6) {
+          finalCandidates.push(strippedLeadingLetters);
+      }
+      
+      const digitsOnly = primaryTarget.replace(/[^0-9]/g, '');
+      if (digitsOnly.length >= 6) {
+          finalCandidates.push(digitsOnly);
+      }
+  }
+
+  return [...new Set(finalCandidates)].filter(r => r.length >= 4);
 }
