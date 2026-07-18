@@ -8,5 +8,5 @@ export default async function PackagesPage() {
   const walletRes = await getSecureWalletBalance();
   const walletBalance = walletRes.available_balance || 0;
 
-  return <PackagesClient packages={packages} walletBalance={walletBalance} registrationFee={registrationFee} />;
+  return <PackagesClient packages={JSON.parse(JSON.stringify(packages))} walletBalance={walletBalance} registrationFee={registrationFee} />;
 }

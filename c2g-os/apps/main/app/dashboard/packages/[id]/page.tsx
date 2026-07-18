@@ -43,5 +43,5 @@ export default async function PackageTrackingPage(props: { params: Promise<{ id:
 
   const registrationFee = await getRegistrationFee();
 
-  return <TrackerClient pkg={pkg} walletBalance={walletBalance} registrationFee={registrationFee} />;
+  return <TrackerClient pkg={JSON.parse(JSON.stringify(pkg))} walletBalance={walletBalance} registrationFee={registrationFee} />;
 }
