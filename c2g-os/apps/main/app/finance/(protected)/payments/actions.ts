@@ -61,7 +61,7 @@ export async function getPayments() {
   // 3. Link Orders
   const { data: linkOrders, error: e3 } = await supabase
     .from('orders')
-    .select('id, customer_name, customer_phone, total, payment_reference, updated_at')
+    .select('id, customer_name, total, payment_reference, updated_at')
     .eq('payment_status', 'paid')
     .order('updated_at', { ascending: false })
     .limit(100);
@@ -73,7 +73,7 @@ export async function getPayments() {
       id: p.id,
       order_id: 'LINK-' + (String(p.id).split('-')[0] || '').toUpperCase(),
       customer_name: p.customer_name,
-      customer_phone: p.customer_phone,
+      customer_phone: 'N/A',
       total_amount: p.total,
       payment_gateway: 'Hubtel',
       payment_reference: p.payment_reference,
@@ -143,7 +143,7 @@ export async function getPayments() {
   // 6. Package Shipping Fees
   const { data: pkgShip, error: e6 } = await supabase
     .from('shipments')
-    .select('id, tracking_number, customer_name, customer_contact, shipping_fee, updated_at, shipping_fee_payment_reference')
+    .select('id, tracking_number, customer_name, customer_contact, shipping_cost, updated_at, shipping_fee_payment_reference')
     .eq('shipping_fee_paid', true)
     .order('updated_at', { ascending: false })
     .limit(100);
@@ -156,7 +156,7 @@ export async function getPayments() {
       order_id: p.tracking_number || p.id.substring(0, 8),
       customer_name: p.customer_name || 'Customer',
       customer_phone: p.customer_contact || 'N/A',
-      total_amount: p.shipping_fee || 0,
+      total_amount: p.shipping_cost || 0,
       payment_gateway: 'Wallet/Hubtel',
       payment_reference: p.shipping_fee_payment_reference || 'N/A',
       created_at: p.updated_at,
