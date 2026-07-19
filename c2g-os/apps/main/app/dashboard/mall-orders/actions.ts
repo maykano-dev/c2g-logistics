@@ -106,7 +106,7 @@ export async function payMallOrder(orderId: string) {
 
   // 2. Deduct from wallet
   const amount = parseFloat(order.total_amount);
-  const deductRes = await deductFromWallet(amount, 'mall_order', `Payment for Mall Order #${order.order_id}`, order.id);
+  const deductRes = await deductFromWallet(amount, 'mall_order', `Payment for Mall Order #${order.order_id}`, `MALL-${order.id}`);
 
   if (!deductRes.success) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };

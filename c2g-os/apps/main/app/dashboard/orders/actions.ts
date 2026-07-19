@@ -220,7 +220,7 @@ export async function payLinkOrder(orderId: string) {
 
   // 2. Deduct from wallet
   const amount = parseFloat(order.total);
-  const deductRes = await deductFromWallet(amount, 'link_order', `Payment for Link Order ${order.payment_reference}`, order.id);
+  const deductRes = await deductFromWallet(amount, 'link_order', `Payment for Link Order ${order.payment_reference}`, `LNK-${order.id}`);
 
   if (!deductRes.success) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };

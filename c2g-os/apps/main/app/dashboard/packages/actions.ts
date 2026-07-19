@@ -305,7 +305,7 @@ export async function payPackageRegistrationFee(packageId: string) {
   const feeAmount = await getRegistrationFee();
   const ref = `REG-${packageId}`;
 
-  const deductRes = await deductFromWallet(feeAmount, 'package_fee', `Package Registration Fee for ${pkg.tracking_number}`, packageId);
+  const deductRes = await deductFromWallet(feeAmount, 'package_fee', `Package Registration Fee for ${pkg.tracking_number}`, ref);
 
   if (!deductRes.success) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };

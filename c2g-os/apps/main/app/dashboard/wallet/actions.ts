@@ -91,6 +91,9 @@ export async function deductFromWallet(amount: number, type: string, description
 
   if (error) {
     console.error("RPC Wallet Deduction Error:", error);
+    if (error.message.includes('unique constraint') || error.message.includes('wallet_transactions_reference_id_key')) {
+      return { success: false, error: 'This transaction is already being processed. Please refresh the page to see the updated status.' };
+    }
     return { success: false, error: error.message };
   }
 
