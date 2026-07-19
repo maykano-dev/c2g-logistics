@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, RefreshCw } from "lucide-react";
+import { Search, Download, RefreshCw, X, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 function downloadCSV(data: any[]) {
   const headers = "Order ID,Type,Customer,Phone,Amount,Gateway,Reference,Date\n";
@@ -18,6 +18,35 @@ function downloadCSV(data: any[]) {
 
 export default function PaymentsClient({ payments, summary }: { payments: any[], summary: any }) {
   const [search, setSearch] = useState("");
+  const [syncState, setSyncState] = useState<'idle' | 'confirm' | 'syncing' | 'success' | 'error'>('idle');
+  const [syncResult, setSyncResult] = useState<{reconciled: number, failed: number} | null>(null);
+  const [syncError, setSyncError] = useState('');
+
+  const handleSync = async () => {
+    setSyncState('syncing');
+    try {
+      const res = await fetch('/api/cron/reconcile-hubtel', { method: 'GET' });
+      const json = await res.json();
+      if (json.success) {
+        setSyncResult({ reconciled: json.results?.reconciled || 0, failed: json.results?.failed || 0 });
+        setSyncState('success');
+      } else {
+        setSyncError(json.error || 'Unknown error occurred');
+        setSyncState('error');
+      }
+    } catch (e) {
+      setSyncError('Network request failed');
+      setSyncState('error');
+    }
+  };
+
+  const closeSyncModal = () => {
+    if (syncState === 'success') {
+      window.location.reload();
+    } else {
+      setSyncState('idle');
+    }
+  };
 
   const filtered = payments.filter(p => {
     if (!search) return true;
@@ -58,22 +87,7 @@ export default function PaymentsClient({ payments, summary }: { payments: any[],
           />
         </div>
         <button
-          onClick={async () => {
-            if (confirm("Run Hubtel Reconciliation for all pending transactions?")) {
-              try {
-                const res = await fetch('/api/cron/reconcile-hubtel', { method: 'GET' });
-                const json = await res.json();
-                if (json.success) {
-                  alert(`Reconciliation complete. Reconciled: ${json.results?.reconciled || 0}, Failed: ${json.results?.failed || 0}`);
-                  window.location.reload();
-                } else {
-                  alert('Error: ' + json.error);
-                }
-              } catch (e) {
-                alert('Request failed');
-              }
-            }
-          }}
+          onClick={() => setSyncState('confirm')}
           className="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/20"
         >
           <RefreshCw className="w-4 h-4" /> Sync Hubtel
@@ -145,6 +159,86 @@ export default function PaymentsClient({ payments, summary }: { payments: any[],
           </table>
         </div>
       </div>
+
+      {/* Sync Modal */}
+      {syncState !== 'idle' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="p-6">
+              {syncState === 'confirm' && (
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <RefreshCw className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Manual Reconciliation</h3>
+                  <p className="text-zinc-400 text-sm">
+                    This will force the engine to immediately interrogate Hubtel for all pending and stuck transactions from the last 24 hours. Are you sure?
+                  </p>
+                  <div className="flex gap-3 pt-4">
+                    <button onClick={() => setSyncState('idle')} className="flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-medium transition-colors">
+                      Cancel
+                    </button>
+                    <button onClick={handleSync} className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-colors">
+                      Yes, Sync Now
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {syncState === 'syncing' && (
+                <div className="text-center space-y-6 py-8">
+                  <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mx-auto" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Interrogating Hubtel</h3>
+                    <p className="text-zinc-400 text-sm mt-2">Checking status of stuck transactions...</p>
+                  </div>
+                </div>
+              )}
+
+              {syncState === 'success' && (
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Reconciliation Complete</h3>
+                  <div className="bg-zinc-950 rounded-xl p-4 space-y-2 text-sm text-zinc-300">
+                    <div className="flex justify-between border-b border-zinc-800/50 pb-2">
+                      <span>Successfully Rescued:</span>
+                      <span className="font-bold text-emerald-400">{syncResult?.reconciled}</span>
+                    </div>
+                    <div className="flex justify-between pt-1">
+                      <span>Marked as Failed:</span>
+                      <span className="font-bold text-red-400">{syncResult?.failed}</span>
+                    </div>
+                  </div>
+                  <div className="pt-4">
+                    <button onClick={closeSyncModal} className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-medium transition-colors">
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {syncState === 'error' && (
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <AlertCircle className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Sync Failed</h3>
+                  <p className="text-red-400/80 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20 break-words">
+                    {syncError}
+                  </p>
+                  <div className="pt-4">
+                    <button onClick={() => setSyncState('idle')} className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-medium transition-colors">
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
