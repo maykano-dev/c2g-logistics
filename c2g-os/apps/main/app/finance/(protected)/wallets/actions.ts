@@ -26,6 +26,9 @@ export async function getWallets(query: string = '') {
 
   if (query) {
     const q = `%${query}%`;
+    const cleanQuery = query.trim();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanQuery);
+
     // Find matching customers first
     const { data: matchedCustomers } = await supabase
       .from('customers')
@@ -34,10 +37,19 @@ export async function getWallets(query: string = '') {
 
     const customerIds = (matchedCustomers || []).map(c => c.id);
 
-    if (customerIds.length > 0) {
-      req = req.or(`id.ilike.${q},customer_id.ilike.${q},customer_id.in.(${customerIds.join(',')})`);
+    if (isUUID) {
+      if (customerIds.length > 0) {
+        req = req.or(`id.eq.${cleanQuery},customer_id.eq.${cleanQuery},customer_id.in.(${customerIds.join(',')})`);
+      } else {
+        req = req.or(`id.eq.${cleanQuery},customer_id.eq.${cleanQuery}`);
+      }
     } else {
-      req = req.or(`id.ilike.${q},customer_id.ilike.${q}`);
+      if (customerIds.length > 0) {
+        req = req.in('customer_id', customerIds);
+      } else {
+        // Not a UUID and no customers matched the text, so no wallet will match.
+        return { success: true, wallets: [] };
+      }
     }
   }
 
