@@ -173,7 +173,7 @@ export async function topUpWallet(amount: number, phone?: string) {
     customer = newCustomer;
   }
 
-  const ref = `WLT-${Math.random().toString(36).substring(2, 12)}`.toUpperCase();
+  const ref = `WLT-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
   
   const headersList = await headers();
   const host = headersList.get('host') || 'localhost:3000';
