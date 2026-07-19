@@ -634,8 +634,8 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                                  <div className="grid grid-cols-3 gap-2 py-2 border-y border-zinc-800/50 mb-3">
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Price</span>
-                                     <span className="text-sm text-white font-medium">¥{item.price ? Number(item.price).toFixed(2) : '0.00'}</span>
-                                     {exchangeRate > 0 && <span className="text-[10px] text-zinc-400 block mt-0.5">≈ ₵{(Number(item.price || 0) * exchangeRate).toFixed(2)}</span>}
+                                     <span className="text-sm text-white font-medium">¥{(item.cny_price || item.price || 0).toFixed(2)}</span>
+                                     {exchangeRate > 0 && <span className="text-[10px] text-zinc-400 block mt-0.5">≈ ₵{(Number(item.cny_price || item.price || 0) * exchangeRate).toFixed(2)}</span>}
                                    </div>
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Quantity</span>
@@ -643,8 +643,8 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                                    </div>
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Total</span>
-                                     <span className="text-sm text-indigo-400 font-medium">¥{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
-                                     {exchangeRate > 0 && <span className="text-[10px] text-zinc-400 block mt-0.5">≈ ₵{((item.price || 0) * (item.quantity || 1) * exchangeRate).toFixed(2)}</span>}
+                                     <span className="text-sm text-indigo-400 font-medium">¥{((item.cny_price || item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                                     {exchangeRate > 0 && <span className="text-[10px] text-zinc-400 block mt-0.5">≈ ₵{((item.cny_price || item.price || 0) * (item.quantity || 1) * exchangeRate).toFixed(2)}</span>}
                                    </div>
                                  </div>
 
