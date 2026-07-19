@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { CreateLinkOrderSchema, UpdateLinkOrderSchema } from '@/utils/security-schemas'
 import { uploadImage } from '@/utils/image-service'
 import { deductFromWallet } from '../wallet/actions'
@@ -226,12 +227,17 @@ export async function payLinkOrder(orderId: string) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
   }
 
-  // 3. Update order status
-  const { error: updateError } = await supabase
+  // 3. Update order status securely using admin client to bypass RLS
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { error: updateError } = await adminClient
     .from('orders')
     .update({
       payment_status: 'paid',
-      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       order_status: 'processing'
     })
     .eq('id', order.id);

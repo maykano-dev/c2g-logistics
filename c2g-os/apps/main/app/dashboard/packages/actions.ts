@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { RegisterPackagesSchema } from '@/utils/security-schemas';
 import { deductFromWallet } from '../wallet/actions';
@@ -311,14 +312,19 @@ export async function payPackageRegistrationFee(packageId: string) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
   }
 
-  // 3. Update shipment status
-  const { error } = await supabase
+  // 3. Update shipment status securely using admin client to bypass RLS
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { error } = await adminClient
     .from('shipments')
     .update({
       registration_fee_paid: true,
       status: 'awaiting_arrival',
       registration_fee_payment_reference: ref,
-      created_at: new Date().toISOString()
+      updated_at: new Date().toISOString()
     })
     .eq('id', packageId);
 
@@ -408,14 +414,19 @@ export async function payBulkPackageRegistrationFees(packageIds: string[]) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
   }
 
-  // 4. Update shipment statuses
-  const { error } = await supabase
+  // 4. Update shipment statuses securely using admin client
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { error } = await adminClient
     .from('shipments')
     .update({
       registration_fee_paid: true,
       status: 'awaiting_arrival',
       registration_fee_payment_reference: ref,
-      created_at: new Date().toISOString()
+      updated_at: new Date().toISOString()
     })
     .in('id', unpaidIds);
 

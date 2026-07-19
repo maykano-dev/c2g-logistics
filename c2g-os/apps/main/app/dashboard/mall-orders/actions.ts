@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 export async function getMallOrders() {
   const supabase = await createClient();
@@ -112,12 +113,17 @@ export async function payMallOrder(orderId: string) {
     return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
   }
 
-  // 3. Update order status
-  const { error: updateError } = await supabase
+  // 3. Update order status securely using admin client to bypass RLS
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { error: updateError } = await adminClient
     .from('ecom_orders')
     .update({
       payment_status: 'paid',
-      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       order_status: 'processing'
     })
     .eq('id', order.id);
