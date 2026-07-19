@@ -550,9 +550,9 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                             const jsonPart = parts[1];
                             const parsedItems = JSON.parse(jsonPart);
                             if (Array.isArray(parsedItems)) {
-                              displayItems = parsedItems.map((item: any) => ({
-                                product_link: item.link || item.product_link,
-                                price: item.price,
+                                displayItems = parsedItems.map((item: any) => ({
+                                  product_link: item.link || item.product_link,
+                                  price: item.cny_price || item.price || 0,
                                 quantity: item.qty || item.quantity,
                                 screenshot_url: item.screenshotUrl || item.screenshot_url,
                                 tracking_number: item.tracking_number,
@@ -577,6 +577,10 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                         
                         return { items: displayItems, notes: displayNotes };
                      })();
+
+                     const exchangeRate = selectedOrder.cny_price && selectedOrder.total && selectedOrder.cny_price > 0 
+                       ? (Number(selectedOrder.total) / Number(selectedOrder.cny_price)) 
+                       : 0;
 
                      return (
                        <div className="space-y-6">
@@ -630,7 +634,8 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                                  <div className="grid grid-cols-3 gap-2 py-2 border-y border-zinc-800/50 mb-3">
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Price</span>
-                                     <span className="text-sm text-white font-medium">₵{item.price ? Number(item.price).toFixed(2) : '0.00'}</span>
+                                     <span className="text-sm text-white font-medium">¥{item.price ? Number(item.price).toFixed(2) : '0.00'}</span>
+                                     {exchangeRate > 0 && <span className="text-[10px] text-zinc-400 block mt-0.5">≈ ₵{(Number(item.price || 0) * exchangeRate).toFixed(2)}</span>}
                                    </div>
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Quantity</span>
@@ -638,7 +643,8 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                                    </div>
                                    <div>
                                      <span className="text-xs text-zinc-500 block mb-0.5">Total</span>
-                                     <span className="text-sm text-indigo-400 font-medium">₵{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                                     <span className="text-sm text-indigo-400 font-medium">¥{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                                     {exchangeRate > 0 && <span className="text-[10px] text-zinc-400 block mt-0.5">≈ ₵{((item.price || 0) * (item.quantity || 1) * exchangeRate).toFixed(2)}</span>}
                                    </div>
                                  </div>
 
