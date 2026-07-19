@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download } from "lucide-react";
+import { Search, Download, RefreshCw } from "lucide-react";
 
 function downloadCSV(data: any[]) {
   const headers = "Order ID,Type,Customer,Phone,Amount,Gateway,Reference,Date\n";
@@ -58,6 +58,27 @@ export default function PaymentsClient({ payments, summary }: { payments: any[],
           />
         </div>
         <button
+          onClick={async () => {
+            if (confirm("Run Hubtel Reconciliation for all pending transactions?")) {
+              try {
+                const res = await fetch('/api/cron/reconcile-hubtel', { method: 'GET' });
+                const json = await res.json();
+                if (json.success) {
+                  alert(`Reconciliation complete. Reconciled: ${json.results?.reconciled || 0}, Failed: ${json.results?.failed || 0}`);
+                  window.location.reload();
+                } else {
+                  alert('Error: ' + json.error);
+                }
+              } catch (e) {
+                alert('Request failed');
+              }
+            }
+          }}
+          className="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+        >
+          <RefreshCw className="w-4 h-4" /> Sync Hubtel
+        </button>
+        <button
           onClick={() => downloadCSV(filtered)}
           className="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-medium transition-colors flex items-center gap-2"
         >
@@ -77,6 +98,7 @@ export default function PaymentsClient({ payments, summary }: { payments: any[],
                 <th className="px-6 py-4">Amount</th>
                 <th className="px-6 py-4">Gateway</th>
                 <th className="px-6 py-4">Reference</th>
+                <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Date</th>
               </tr>
             </thead>
@@ -96,6 +118,19 @@ export default function PaymentsClient({ payments, summary }: { payments: any[],
                     </span>
                   </td>
                   <td className="px-6 py-4 font-mono text-xs text-zinc-500">{p.payment_reference || '—'}</td>
+                  <td className="px-6 py-4">
+                    {p.status ? (
+                      <span className={`px-2 py-1 rounded text-xs font-bold border ${
+                        p.status === 'completed' || p.status === 'success' || p.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                        p.status === 'failed' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                        'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                      }`}>
+                        {p.status}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-600 text-xs">—</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-zinc-500 text-xs">{new Date(p.created_at).toLocaleString()}</td>
                 </tr>
               ))}

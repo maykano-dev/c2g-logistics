@@ -120,6 +120,17 @@ export async function fetchHubtelTransactionStatusLocal(
                 'IP address not whitelisted. Contact Hubtel Retail Systems Engineer.'
             )
         }
+        // Try to parse error response to see if it's NO_MATCH (4720)
+        try {
+            const errData = JSON.parse(responseText);
+            const rc = normalizeBodyResponseCode(errData);
+            if (rc === '4720') {
+                throw new Error(HUBTEL_NO_MATCH);
+            }
+        } catch (e) {
+            if (e instanceof Error && e.message === HUBTEL_NO_MATCH) throw e;
+            // Ignore parse errors, throw generic
+        }
         throw new Error(`Hubtel Status Check API error: ${hubtelResponse.status} - ${responseText}`)
     }
 

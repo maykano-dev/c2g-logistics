@@ -86,13 +86,12 @@ export async function getPayments() {
   const { data: walletTx, error: e4 } = await supabase
     .from('wallet_transactions')
     .select(`
-      id, amount, reference_id, created_at,
+      id, amount, reference_id, created_at, status,
       wallets (
         customers ( name, phone )
       )
     `)
     .eq('transaction_type', 'top_up')
-    .eq('status', 'completed')
     .order('created_at', { ascending: false })
     .limit(100);
     
@@ -111,7 +110,8 @@ export async function getPayments() {
         payment_gateway: 'Hubtel/Admin',
         payment_reference: p.reference_id,
         created_at: p.created_at,
-        type: 'Wallet Top-Up'
+        type: 'Wallet Top-Up',
+        status: p.status
       };
     })];
   }
