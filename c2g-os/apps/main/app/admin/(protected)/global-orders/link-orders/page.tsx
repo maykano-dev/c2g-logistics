@@ -9,7 +9,7 @@ import {
   Box, User, CreditCard, Receipt, Trash2, Save, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { updateLinkOrderStatus, invoiceLinkOrderShipping, updateLinkOrderPaymentStatus } from './actions';
+import { updateLinkOrderStatus, invoiceLinkOrderShipping, updateLinkOrderPaymentStatus, getAllLinkOrders } from './actions';
 import { useModal } from '@/components/providers/modal-provider';
 
 const STATUS_OPTIONS = [
@@ -127,17 +127,11 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
 
   const fetchOrders = async () => {
     setLoading(true);
-    const supabase = createClient();
-    
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data && !error) {
-      setOrders(data);
+    const res = await getAllLinkOrders();
+    if (res.success && res.data) {
+      setOrders(res.data);
     } else {
-      console.error('Error fetching orders', error);
+      console.error('Error fetching orders');
     }
     setLoading(false);
   };

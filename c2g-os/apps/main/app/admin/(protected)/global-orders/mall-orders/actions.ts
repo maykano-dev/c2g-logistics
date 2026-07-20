@@ -1,8 +1,27 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createNotification } from '@/utils/notifications';
 import { revalidatePath } from 'next/cache';
+
+export async function getAllMallOrders() {
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data, error } = await supabaseAdmin
+    .from('ecom_orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching admin mall orders:', error);
+    return { success: false, data: [] };
+  }
+  return { success: true, data };
+}
 
 export async function updateMallOrderStatus(orderId: string, newStatus: string) {
   const supabase = await createClient();

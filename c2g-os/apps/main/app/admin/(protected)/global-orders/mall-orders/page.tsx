@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Search, Filter, Eye, Edit, Copy, Save, X, ExternalLink, Package, CheckCircle2, AlertCircle, Trash2, Bell, Truck, CreditCard, Calendar, Ship, Plane } from 'lucide-react';
 import { format } from 'date-fns';
-import { updateMallOrderStatus, invoiceMallOrderShipping, updateMallOrderPaymentStatus, updateMallOrderShippingMethod, deleteMallOrder } from './actions';
+import { updateMallOrderStatus, invoiceMallOrderShipping, updateMallOrderPaymentStatus, updateMallOrderShippingMethod, deleteMallOrder, getAllMallOrders } from './actions';
 
 // Mapped from DB enum values for Order Status
 const STATUS_OPTIONS = [
@@ -54,13 +54,8 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
 
   const fetchOrders = async () => {
     setLoading(true);
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('ecom_orders')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data && !error) setOrders(data);
+    const res = await getAllMallOrders();
+    if (res.success && res.data) setOrders(res.data);
     setLoading(false);
   };
 
