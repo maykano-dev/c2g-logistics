@@ -30,6 +30,7 @@ export default async function FinanceDashboard() {
 
   const metrics = res.success && res.metrics ? res.metrics : {
     monthlyRevenue: 0,
+    monthlyTopUps: 0,
     revenueGrowth: "0%",
     monthlyExpenses: 0,
     monthlyProfit: 0,
@@ -58,7 +59,7 @@ export default async function FinanceDashboard() {
       )}
 
       {/* Primary KPI Row */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <KpiCard 
           title="Cash Available" 
           amount={`₵${kpis.cash_available.toLocaleString(undefined, {minimumFractionDigits: 2})}`} 
@@ -76,12 +77,20 @@ export default async function FinanceDashboard() {
           bg="bg-orange-500/10"
         />
         <KpiCard 
-          title="Monthly Revenue" 
+          title="Cash Inflows" 
+          amount={`₵${(metrics.monthlyTopUps || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`} 
+          icon={TrendingUp} 
+          subtitle="Total wallet top-ups" 
+          color="text-emerald-400"
+          bg="bg-emerald-400/10"
+        />
+        <KpiCard 
+          title="Earned Revenue" 
           amount={`₵${metrics.monthlyRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`} 
           icon={TrendingUp} 
-          trend={metrics.revenueGrowth} 
-          color="text-blue-500"
-          bg="bg-blue-500/10"
+          subtitle="From paid services" 
+          color="text-indigo-400"
+          bg="bg-indigo-400/10"
         />
         <KpiCard 
           title="Monthly Profit" 

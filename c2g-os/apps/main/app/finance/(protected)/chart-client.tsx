@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend } from 'recharts';
 
 export function RevenueBarChart({ data }: { data: any[] }) {
   return (
@@ -11,9 +11,10 @@ export function RevenueBarChart({ data }: { data: any[] }) {
         <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₵${value}`} />
         <Tooltip 
           contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '8px', color: '#fff' }}
-          itemStyle={{ color: '#818cf8' }}
         />
-        <Bar dataKey="revenue" fill="#818cf8" radius={[4, 4, 0, 0]} />
+        <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+        <Bar dataKey="revenue" name="Earned Revenue" fill="#818cf8" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="topups" name="Cash Inflows (Top-ups)" fill="#10b981" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

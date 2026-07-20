@@ -22,33 +22,40 @@ export async function getDetailedAnalytics() {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0,0,0,0);
 
-    const { data: revenueTxs } = await supabase
+    const { data: allTxs } = await supabase
       .from('wallet_transactions')
-      .select('amount, created_at')
-      .in('transaction_type', ['link_order', 'mall_order', 'package_fee', 'invoice'])
+      .select('amount, created_at, transaction_type')
+      .in('transaction_type', ['link_order', 'mall_order', 'package_fee', 'invoice', 'top_up'])
       .eq('status', 'completed')
-      .gte('created_at', startOfMonthISO); // We fetch for the whole month, filter last 7 days in memory
+      .gte('created_at', startOfMonthISO);
 
     let monthlyRevenue = 0;
-    const revenueByDayMap: Record<string, number> = {};
+    let monthlyTopUps = 0;
+    const revenueByDayMap: Record<string, { revenue: number, topups: number }> = {};
 
-    // Initialize last 7 days with 0
+    // Initialize last 7 days
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      revenueByDayMap[d.toLocaleDateString('en-US', { weekday: 'short' })] = 0;
+      revenueByDayMap[d.toLocaleDateString('en-US', { weekday: 'short' })] = { revenue: 0, topups: 0 };
     }
 
-    if (revenueTxs) {
-      revenueTxs.forEach(tx => {
+    if (allTxs) {
+      allTxs.forEach(tx => {
         const amt = Math.abs(Number(tx.amount || 0));
-        monthlyRevenue += amt; // Add to monthly total
-
         const txDate = new Date(tx.created_at);
-        if (txDate >= sevenDaysAgo) {
-          const dayStr = txDate.toLocaleDateString('en-US', { weekday: 'short' });
-          if (revenueByDayMap[dayStr] !== undefined) {
-            revenueByDayMap[dayStr] += amt;
+        const dayStr = txDate.toLocaleDateString('en-US', { weekday: 'short' });
+        const isRecent = txDate >= sevenDaysAgo;
+
+        if (tx.transaction_type === 'top_up') {
+          monthlyTopUps += amt;
+          if (isRecent && revenueByDayMap[dayStr] !== undefined) {
+            revenueByDayMap[dayStr].topups += amt;
+          }
+        } else {
+          monthlyRevenue += amt;
+          if (isRecent && revenueByDayMap[dayStr] !== undefined) {
+            revenueByDayMap[dayStr].revenue += amt;
           }
         }
       });
@@ -56,7 +63,8 @@ export async function getDetailedAnalytics() {
 
     const revenueByDay = Object.keys(revenueByDayMap).map(key => ({
       name: key,
-      revenue: revenueByDayMap[key]
+      revenue: revenueByDayMap[key]!.revenue,
+      topups: revenueByDayMap[key]!.topups
     }));
 
     // 2. Accurate Profit by Month (Last 7 Months)
@@ -156,6 +164,7 @@ export async function getDetailedAnalytics() {
       },
       metrics: {
         monthlyRevenue,
+        monthlyTopUps,
         revenueGrowth: "0%", // Dynamic growth requires previous day
         monthlyExpenses,
         monthlyProfit,
