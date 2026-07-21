@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import AdminLogin from '@/components/admin/admin-login';
 
-export default async function AdminPage() {
+export default async function AdminLoginRoute() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

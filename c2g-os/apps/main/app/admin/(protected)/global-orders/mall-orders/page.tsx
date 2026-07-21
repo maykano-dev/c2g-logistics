@@ -173,7 +173,11 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                           o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
     if (!matchesSearch) return false;
     
-    const statusVal = o.order_status || o.procurement_status || 'pending_payment';
+    const isPaid = o.payment_status === 'paid' || o.payment_status === 'Paid';
+    let statusVal = o.order_status || o.procurement_status || 'pending_payment';
+    if (isPaid && (statusVal === 'pending_payment' || statusVal === 'new' || statusVal === 'pending')) {
+      statusVal = 'processing';
+    }
     const matchesStatus = filterStatus === 'All Statuses' || statusVal === filterStatus;
     if (!matchesStatus) return false;
     
@@ -244,7 +248,11 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
               ) : (
                 filteredOrders.map(order => {
                   const itemsList = Array.isArray(order.items) ? order.items : [];
-                  const statusVal = order.order_status || order.procurement_status || 'pending_payment';
+                  const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
+                  let statusVal = order.order_status || order.procurement_status || 'pending_payment';
+                  if (isPaid && (statusVal === 'pending_payment' || statusVal === 'new' || statusVal === 'pending')) {
+                    statusVal = 'processing';
+                  }
                   return (
                     <tr key={order.id} className="hover:bg-zinc-800/50 transition-colors group">
                       <td className="p-4">
@@ -312,7 +320,11 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
             ) : (
               filteredOrders.map(order => {
                 const itemsList = Array.isArray(order.items) ? order.items : [];
-                const statusVal = order.order_status || order.procurement_status || 'pending_payment';
+                const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
+                let statusVal = order.order_status || order.procurement_status || 'pending_payment';
+                if (isPaid && (statusVal === 'pending_payment' || statusVal === 'new' || statusVal === 'pending')) {
+                  statusVal = 'processing';
+                }
                 return (
                   <div key={order.id} className="p-4 flex flex-col gap-4">
                     <div className="flex items-start justify-between">
@@ -397,9 +409,18 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                   }`}>
                     {selectedOrder.payment_status || 'pending'}
                   </span>
-                  <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusColor(selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment')}`}>
-                    {(selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment').replace(/_/g, ' ')}
-                  </span>
+                  {(() => {
+                    const isPaid = selectedOrder.payment_status === 'paid' || selectedOrder.payment_status === 'Paid';
+                    let displayStatus = selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment';
+                    if (isPaid && (displayStatus === 'pending_payment' || displayStatus === 'new' || displayStatus === 'pending')) {
+                      displayStatus = 'processing';
+                    }
+                    return (
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusColor(displayStatus)}`}>
+                        {displayStatus.replace(/_/g, ' ')}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -414,9 +435,18 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
               <div className="px-4 sm:px-6 py-4 bg-zinc-900/50 border-b border-zinc-800 flex flex-col sm:flex-row flex-wrap gap-4 items-center shrink-0">
                 <div className="w-full sm:flex-1 sm:min-w-[200px]">
                   <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Order Status</label>
-                  <select value={selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment'} onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)} disabled={isPending || readOnly} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
-                    {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select>
+                  {(() => {
+                    const isPaid = selectedOrder.payment_status === 'paid' || selectedOrder.payment_status === 'Paid';
+                    let currentStatusVal = selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment';
+                    if (isPaid && (currentStatusVal === 'pending_payment' || currentStatusVal === 'new' || currentStatusVal === 'pending')) {
+                      currentStatusVal = 'processing';
+                    }
+                    return (
+                      <select value={currentStatusVal} onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)} disabled={isPending || readOnly} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
+                        {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    );
+                  })()}
                 </div>
                 <div className="w-full sm:flex-1 sm:min-w-[200px]">
                   <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Payment Status</label>

@@ -213,7 +213,12 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
       
     if (!matchesSearch) return false;
     
-    const matchesStatus = filterStatus === 'All Statuses' || o.order_status === filterStatus || (!o.order_status && filterStatus === 'pending_payment');
+    const isPaid = o.payment_status === 'paid' || o.payment_status === 'Paid';
+    let statusVal = o.order_status || o.procurement_status || 'pending_payment';
+    if (isPaid && (statusVal === 'pending_payment' || statusVal === 'new' || statusVal === 'pending')) {
+      statusVal = 'processing';
+    }
+    const matchesStatus = filterStatus === 'All Statuses' || statusVal === filterStatus || (!statusVal && filterStatus === 'pending_payment');
     if (!matchesStatus) return false;
     
     // STRICTLY filter for Link Orders
@@ -448,9 +453,18 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                 <div className="px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl flex flex-col sm:flex-row flex-wrap gap-4 items-center">
                   <div className="w-full sm:flex-1 sm:min-w-[200px]">
                     <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Order Status</label>
-                    <select value={selectedOrder.order_status || 'pending_payment'} onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)} disabled={isPending || readOnly} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
-                      {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
+                    {(() => {
+                      const isPaid = selectedOrder.payment_status === 'paid' || selectedOrder.payment_status === 'Paid';
+                      let currentStatusVal = selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment';
+                      if (isPaid && (currentStatusVal === 'pending_payment' || currentStatusVal === 'new' || currentStatusVal === 'pending')) {
+                        currentStatusVal = 'processing';
+                      }
+                      return (
+                        <select value={currentStatusVal} onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)} disabled={isPending || readOnly} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 pl-3 pr-8 text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none">
+                          {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                      );
+                    })()}
                   </div>
                   <div className="w-full sm:flex-1 sm:min-w-[200px]">
                     <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Payment Status</label>
@@ -490,7 +504,14 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-zinc-400 text-sm">Status</span>
-                        {getStatusBadge(selectedOrder.order_status)}
+                        {(() => {
+                          const isPaid = selectedOrder.payment_status === 'paid' || selectedOrder.payment_status === 'Paid';
+                          let displayStatus = selectedOrder.order_status || selectedOrder.procurement_status || 'pending_payment';
+                          if (isPaid && (displayStatus === 'pending_payment' || displayStatus === 'new' || displayStatus === 'pending')) {
+                            displayStatus = 'processing';
+                          }
+                          return getStatusBadge(displayStatus);
+                        })()}
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-zinc-400 text-sm">Payment</span>
