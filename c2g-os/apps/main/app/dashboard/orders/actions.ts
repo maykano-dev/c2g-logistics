@@ -6,6 +6,7 @@ import { CreateLinkOrderSchema, UpdateLinkOrderSchema } from '@/utils/security-s
 import { uploadImage } from '@/utils/image-service'
 import { deductFromWallet } from '../wallet/actions'
 import { createNotification } from '@/utils/notifications'
+import { revalidatePath } from 'next/cache'
 
 export async function getLinkOrders() {
   const supabase = await createClient()
@@ -219,32 +220,20 @@ export async function payLinkOrder(orderId: string) {
     return { success: false, error: 'Invalid order total' }
   }
 
-  // 2. Deduct from wallet
-  const amount = parseFloat(order.total);
-  const deductRes = await deductFromWallet(amount, 'link_order', `Payment for Link Order ${order.payment_reference}`, `LNK-${order.id}`);
+  // 2. Process payment atomically using the new RPC
+  const { data, error } = await supabase.rpc('pay_link_order_atomic', {
+    p_customer_id: user.id,
+    p_order_id: order.id,
+    p_amount: Math.abs(parseFloat(order.total)),
+    p_reference_id: order.payment_reference
+  });
 
-  if (!deductRes.success) {
-    return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
-  }
-
-  // 3. Update order status securely using admin client to bypass RLS
-  const adminClient = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const { error: updateError } = await adminClient
-    .from('orders')
-    .update({
-      payment_status: 'paid',
-      updated_at: new Date().toISOString(),
-      order_status: 'processing'
-    })
-    .eq('id', order.id);
-
-  if (updateError) {
-    console.error('Error updating order after wallet payment:', updateError);
-    return { success: false, error: 'Failed to update order status, but wallet was deducted. Please contact support.' };
+  if (error || !data || data.success === false) {
+    console.error('Error in atomic link order payment:', error || data?.error);
+    if (error?.message?.includes('unique constraint') || data?.error?.includes('unique constraint')) {
+      return { success: false, error: 'This transaction is already being processed. Please refresh.' };
+    }
+    return { success: false, error: data?.error || error?.message || 'Failed to process payment' };
   }
 
   const shortId = String(order.id).split('-').pop()?.substring(0, 8) || order.id;
@@ -252,12 +241,13 @@ export async function payLinkOrder(orderId: string) {
   createNotification({
     userId: user.id,
     title: 'Link Order Paid',
-    message: `Your payment of ₵${amount.toFixed(2)} for Link Order #${shortId} was successful. We will begin processing it shortly.`,
+    message: `Your payment of ₵${Math.abs(parseFloat(order.total)).toFixed(2)} for Link Order #${shortId} was successful. We will begin processing it shortly.`,
     type: 'link_order_paid',
     priority: 'important',
     link: `/dashboard/orders/${order.id}`
   }).catch(e => console.warn('Failed to dispatch notification:', e));
 
+  revalidatePath('/dashboard', 'layout');
   return { success: true };
 }
 

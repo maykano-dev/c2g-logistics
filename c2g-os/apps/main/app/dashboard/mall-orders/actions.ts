@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { revalidatePath } from 'next/cache';
 
 export async function getMallOrders() {
   const supabase = await createClient();
@@ -105,42 +106,31 @@ export async function payMallOrder(orderId: string) {
     return { success: false, error: 'Invalid order total' };
   }
 
-  // 2. Deduct from wallet
-  const amount = parseFloat(order.total_amount);
-  const deductRes = await deductFromWallet(amount, 'mall_order', `Payment for Mall Order #${order.order_id}`, `MALL-${order.id}`);
+  // 2. Process payment atomically using the new RPC
+  const { data, error } = await supabase.rpc('pay_mall_order_atomic', {
+    p_customer_id: user.id,
+    p_order_id: order.id,
+    p_amount: Math.abs(parseFloat(order.total_amount)),
+    p_reference_id: order.order_id
+  });
 
-  if (!deductRes.success) {
-    return { success: false, error: deductRes.error || 'Failed to deduct from wallet' };
-  }
-
-  // 3. Update order status securely using admin client to bypass RLS
-  const adminClient = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const { error: updateError } = await adminClient
-    .from('ecom_orders')
-    .update({
-      payment_status: 'paid',
-      updated_at: new Date().toISOString(),
-      order_status: 'processing'
-    })
-    .eq('id', order.id);
-
-  if (updateError) {
-    console.error('Error updating mall order after wallet payment:', updateError);
-    return { success: false, error: 'Failed to update order status, but wallet was deducted. Please contact support.' };
+  if (error || !data || data.success === false) {
+    console.error('Error in atomic mall order payment:', error || data?.error);
+    if (error?.message?.includes('unique constraint') || data?.error?.includes('unique constraint')) {
+      return { success: false, error: 'This transaction is already being processed. Please refresh.' };
+    }
+    return { success: false, error: data?.error || error?.message || 'Failed to process payment' };
   }
 
   createNotification({
     userId: user.id,
     title: 'Mall Order Paid',
-    message: `Your payment of ₵${amount.toFixed(2)} for Mall Order #${order.order_id} was successful. We will begin processing it shortly.`,
+    message: `Your payment of ₵${Math.abs(parseFloat(order.total_amount)).toFixed(2)} for Mall Order #${order.order_id} was successful. We will begin processing it shortly.`,
     type: 'mall_order_paid',
     priority: 'important',
     link: `/dashboard/mall-orders/${order.id}`
   }).catch(e => console.warn('Failed to dispatch notification:', e));
 
+  revalidatePath('/dashboard', 'layout');
   return { success: true };
 }
