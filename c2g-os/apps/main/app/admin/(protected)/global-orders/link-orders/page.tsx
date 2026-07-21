@@ -288,7 +288,13 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
               ) : filteredOrders.length === 0 ? (
                 <tr><td colSpan={6} className="p-8 text-center text-zinc-500">No orders found.</td></tr>
               ) : (
-                filteredOrders.map(order => (
+                filteredOrders.map(order => {
+                  const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
+                  let displayStatus = order.order_status || order.procurement_status || 'pending_payment';
+                  if (isPaid && (displayStatus === 'pending_payment' || displayStatus === 'new' || displayStatus === 'pending')) {
+                    displayStatus = 'processing';
+                  }
+                  return (
                   <tr key={order.id} className="hover:bg-zinc-800/50 transition-colors group">
                     <td className="p-4">
                       <p className="text-sm text-white font-mono font-medium">#{order.id}</p>
@@ -321,10 +327,10 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                     <td className="p-4">
                       <div className="relative inline-block w-fit">
                         <select
-                          value={order.order_status || 'pending_payment'}
+                          value={displayStatus}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           disabled={isPending || readOnly}
-                          className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider uppercase border outline-none cursor-pointer transition-all disabled:opacity-50 ${STATUS_OPTIONS.find(s => s.value === (order.order_status || 'pending_payment'))?.color || 'bg-zinc-900 text-zinc-400'}`}
+                          className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider uppercase border outline-none cursor-pointer transition-all disabled:opacity-50 ${STATUS_OPTIONS.find(s => s.value === displayStatus)?.color || 'bg-zinc-900 text-zinc-400'}`}
                           style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                         >
                           {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value} className="bg-zinc-900 text-white">{s.label}</option>)}
@@ -343,7 +349,8 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -356,7 +363,13 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
           ) : filteredOrders.length === 0 ? (
             <div className="p-8 text-center text-zinc-500">No orders found.</div>
           ) : (
-            filteredOrders.map(order => (
+            filteredOrders.map(order => {
+              const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
+              let displayStatus = order.order_status || order.procurement_status || 'pending_payment';
+              if (isPaid && (displayStatus === 'pending_payment' || displayStatus === 'new' || displayStatus === 'pending')) {
+                displayStatus = 'processing';
+              }
+              return (
               <div key={order.id} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col gap-1">
@@ -365,10 +378,10 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                   </div>
                   <div className="relative">
                     <select
-                      value={order.order_status || 'pending_payment'}
+                      value={displayStatus}
                       onChange={(e) => handleStatusChange(order.id, e.target.value)}
                       disabled={isPending || readOnly}
-                      className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider uppercase border outline-none cursor-pointer transition-all disabled:opacity-50 ${STATUS_OPTIONS.find(s => s.value === (order.order_status || 'pending_payment'))?.color || 'bg-zinc-900 text-zinc-400'}`}
+                      className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider uppercase border outline-none cursor-pointer transition-all disabled:opacity-50 ${STATUS_OPTIONS.find(s => s.value === displayStatus)?.color || 'bg-zinc-900 text-zinc-400'}`}
                       style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                     >
                       {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value} className="bg-zinc-900 text-white">{s.label}</option>)}
@@ -416,7 +429,8 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
