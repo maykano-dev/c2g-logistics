@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { adminHandleGalleryStatus } from '@/app/admin/gallery-actions';
 import { adminBulkUpdateHeroImages, getHeroImages } from '@/app/admin/hero-actions';
 import { useModal } from "@/components/providers/modal-provider";
+import { CreateMarketingModal } from './CreateMarketingModal';
 
 type TabType = 'hero' | 'announcements' | 'broadcasts' | 'ads' | 'gallery' | 'searchLogs';
 
@@ -17,6 +18,7 @@ export default function AdminMarketingView() {
   const [uploadingHero, setUploadingHero] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDraggingHero, setIsDraggingHero] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
@@ -169,7 +171,10 @@ export default function AdminMarketingView() {
           <p className="text-zinc-400">Manage promotions, banners, and broadcasts.</p>
         </div>
         {activeTab !== 'searchLogs' && (
-          <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors w-fit">
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors w-fit"
+          >
             <Plus className="w-4 h-4" /> Create New
           </button>
         )}
@@ -470,6 +475,16 @@ export default function AdminMarketingView() {
           </>
         )}
       </div>
+
+      <CreateMarketingModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        activeTab={activeTab} 
+        onSuccess={() => {
+          fetchData();
+          showAlert({ title: 'Success', message: 'Item created successfully!', type: 'success' });
+        }} 
+      />
     </div>
   );
 }
