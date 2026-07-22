@@ -40,13 +40,7 @@ export default async function WarehouseAddressPage() {
     console.error("Error fetching warehouse addresses:", error);
   }
 
-  const activeAddresses = addresses && addresses.length > 0 ? addresses.filter(addr => addr.is_default) : [{
-    id: 'default',
-    is_default: true,
-    name: "Guangzhou Warehouse",
-    phone: "+86 17835112914",
-    address: "Address Line 1: 迎泽大街79号理工大学迎西校区内太原理工大学(清泽田径场)\nCity: 太原市\nProvince: 山西省\nDistrict: 万柏林区\nPostal Code: 030024\nCountry: China"
-  }];
+  const activeAddresses = addresses ? addresses.filter(addr => addr.is_default) : [];
 
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
