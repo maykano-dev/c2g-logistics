@@ -7,5 +7,5 @@ curl -s -X PATCH "${NEXT_PUBLIC_SUPABASE_URL}/rest/v1/warehouse_addresses?name=e
 -H "Content-Type: application/json" \
 -H "Prefer: return=representation" \
 -d '{
-  "address": "Address Line 1: 迎泽大街79号理工大学迎西校区内太原理工大学(迎西校区)清泽田径场\nCity: 太原市\nProvince: 山西省\nDistrict: 万柏林区\nCountry: China"
+  "address": "okyere 17835112914 山西省太原市万柏林区 山西省太原市万柏林区 迎泽大街79号理工大学迎西校区内太原理工大学(迎西校区)清泽田径场"
 }'

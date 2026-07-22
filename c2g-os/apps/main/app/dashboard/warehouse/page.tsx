@@ -79,7 +79,7 @@ export default async function WarehouseAddressPage() {
                 copyText = processedAddress;
             } else {
                 // Legacy english format
-                displayText = `Name: ${customerName} [${customerId}]\n${processedAddress?.trim()}\nPhone: ${settings?.public_phone || warehouse.phone}`;
+                displayText = `Name: ${customerName} [${customerId}]\n${processedAddress?.trim()}`;
                 copyText = displayText;
             }
 
