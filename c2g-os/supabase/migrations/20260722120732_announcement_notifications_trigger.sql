@@ -27,7 +27,7 @@ BEGIN
     false,
     '/dashboard',
     jsonb_build_object('announcement_id', NEW.id)
-  FROM customers;
+  FROM auth.users;
   
   RETURN NEW;
 END;
