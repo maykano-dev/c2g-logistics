@@ -73,14 +73,19 @@ export default async function WarehouseAddressPage() {
             let displayText = '';
 
             if (isChineseFormat) {
-                // If it's the new template format, just replace CODE
+                // If it's the new template format, just replace CODE and PHONE
                 const actualCode = warehouseCode || customerId; // fallback
                 processedAddress = processedAddress.replace(/{CODE}/g, actualCode);
+                
+                if (processedAddress.includes('{PHONE}')) {
+                    processedAddress = processedAddress.replace(/{PHONE}/g, settings?.public_phone || warehouse.phone || '');
+                }
+                
                 displayText = processedAddress;
                 copyText = processedAddress;
             } else {
                 // Legacy english format
-                displayText = `Name: ${customerName} [${customerId}]\n${processedAddress?.trim()}\nPhone: ${warehouse.phone}`;
+                displayText = `Name: ${customerName} [${customerId}]\n${processedAddress?.trim()}\nPhone: ${settings?.public_phone || warehouse.phone}`;
                 copyText = displayText;
             }
 
