@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION trigger_announcement_notifications()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER SECURITY DEFINER AS $$
 BEGIN
   -- 1. Remove previous notifications for this specific announcement for all users
   -- This prevents duplicate spam if an announcement is edited quickly
