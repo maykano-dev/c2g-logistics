@@ -3,11 +3,11 @@ export const dynamic = 'force-dynamic';
 import { Copy, MapPin, Building2, Phone, User, CheckCircle2 } from "lucide-react";
 import { createClient } from '@/utils/supabase/server';
 import { CopyAddressButton } from './copy-button';
-import { getCachedSettings } from '@/utils/cache';
+import { globalSupabase } from '@/utils/cache';
 
 export default async function WarehouseAddressPage() {
   const supabase = await createClient();
-  const { data: settings } = await supabase.from('settings').select('public_phone, support_number').eq('id', 1).single();
+  const { data: settings } = await globalSupabase.from('settings').select('public_phone, support_number').eq('id', 1).single();
   const { data: { user } } = await supabase.auth.getUser();
   
   let customerId = 'C2G-CUST-XXXX';
