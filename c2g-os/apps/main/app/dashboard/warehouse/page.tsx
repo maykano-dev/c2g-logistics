@@ -7,7 +7,7 @@ import { getCachedSettings } from '@/utils/cache';
 
 export default async function WarehouseAddressPage() {
   const supabase = await createClient();
-  const settings = await getCachedSettings();
+  const { data: settings } = await supabase.from('settings').select('public_phone, support_number').eq('id', 1).single();
   const { data: { user } } = await supabase.auth.getUser();
   
   let customerId = 'C2G-CUST-XXXX';
