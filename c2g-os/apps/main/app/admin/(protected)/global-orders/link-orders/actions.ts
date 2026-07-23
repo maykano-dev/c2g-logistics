@@ -107,7 +107,7 @@ export async function updateLinkOrderItemTracking(orderId: number, itemIndex: nu
   // 1. Fetch the order
   const { data: order, error: fetchError } = await supabase
     .from('orders')
-    .select('items, notes, item_tracking_numbers')
+    .select('items, notes, item_tracking_numbers, customer_name')
     .eq('id', orderId)
     .single();
 
@@ -119,13 +119,32 @@ export async function updateLinkOrderItemTracking(orderId: number, itemIndex: nu
   // Retroactive Match Check
   let isWarehouseMatch = false;
   if (newTracking) {
+    // Extract the numeric portion (at least 6 digits) for a fuzzy match
+    const numericMatch = newTracking.match(/\d{6,}/);
+    const trackingDigits = numericMatch ? numericMatch[0] : newTracking;
+
     const { data: scanMatch } = await supabase
       .from('scan_logs')
-      .select('id')
-      .eq('scanned_tracking', newTracking)
+      .select('id, scan_result')
+      .ilike('scanned_tracking', `%${trackingDigits}%`)
       .limit(1)
       .single();
-    if (scanMatch) isWarehouseMatch = true;
+
+    if (scanMatch) {
+      isWarehouseMatch = true;
+      if (scanMatch.scan_result === 'not_found' || scanMatch.scan_result === 'error') {
+        await supabase
+          .from('scan_logs')
+          .update({
+            scan_result: 'updated',
+            package_type: 'order',
+            package_id: orderId.toString(),
+            customer_name: order.customer_name,
+            current_status: 'in_warehouse'
+          })
+          .eq('id', scanMatch.id);
+      }
+    }
   }
 
   let itemsInWarehouseCount = 0;

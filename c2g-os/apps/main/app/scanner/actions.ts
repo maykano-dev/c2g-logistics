@@ -60,17 +60,26 @@ export async function processScannedPackage(candidates: string[]) {
         break;
       }
       
-      // Check Regular Orders
-      const { data: order } = await supabase
+      // Check Regular Orders (Link Orders use item_tracking_numbers JSON array)
+      const { data: orders } = await supabase
         .from('orders')
-        .select('id, tracking_number, status, customer_name, items_description')
-        .eq('tracking_number', tracking)
-        .maybeSingle();
+        .select('id, item_tracking_numbers, order_status, customer_name')
+        .not('item_tracking_numbers', 'is', null);
 
-      if (order) {
-        match = order;
-        rpcData = { type: 'order', ...order };
-        break;
+      if (orders) {
+        for (const order of orders) {
+          try {
+            const trackingNumbers = typeof order.item_tracking_numbers === 'string' 
+              ? JSON.parse(order.item_tracking_numbers) 
+              : order.item_tracking_numbers;
+            if (Array.isArray(trackingNumbers) && trackingNumbers.includes(tracking)) {
+              match = { ...order, tracking_number: tracking, status: order.order_status };
+              rpcData = { type: 'order', ...match };
+              break;
+            }
+          } catch (e) { /* skip malformed JSON */ }
+        }
+        if (match) break;
       }
     }
 
@@ -88,25 +97,30 @@ export async function processScannedPackage(candidates: string[]) {
         const tableName = rpcData.type === 'shipment' ? 'shipments' : 
                           rpcData.type === 'incoming' ? 'incoming_packages' : 
                           rpcData.type === 'ecom_order' ? 'ecom_orders' : 'orders';
+        
+        // orders table uses 'order_status', all others use 'status'
+        const statusColumn = tableName === 'orders' ? 'order_status' : 'status';
                           
         await supabase
           .from(tableName)
-          .update({ status: 'in_warehouse' })
+          .update({ [statusColumn]: 'in_warehouse' })
           .eq('id', match.id);
       }
 
       // Best effort insert to scan logs
       await supabase.from('scan_logs').insert({
-        tracking_number: trackingNumberMatched,
-        status: finalStatus,
+        scanned_tracking: trackingNumberMatched,
+        scan_result: finalStatus,
         customer_name: customerName,
-        message: `Package type: ${rpcData.type || 'unknown'}, ID: ${match.id || 'none'}`
+        package_type: rpcData.type || 'unknown',
+        package_id: match.id || null,
+        current_status: currentStatus
       });
     } else {
       // Not found
       await supabase.from('scan_logs').insert({
-        tracking_number: candidates[0],
-        status: 'not_found'
+        scanned_tracking: candidates[0],
+        scan_result: 'not_found'
       });
     }
 
