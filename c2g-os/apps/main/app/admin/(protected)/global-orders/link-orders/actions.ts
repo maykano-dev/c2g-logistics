@@ -123,10 +123,16 @@ export async function updateLinkOrderItemTracking(orderId: number, itemIndex: nu
     const numericMatch = newTracking.match(/\d{6,}/);
     const trackingDigits = numericMatch ? numericMatch[0] : newTracking;
 
+    // Calculate 30-day cutoff
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoISO = thirtyDaysAgo.toISOString();
+
     const { data: scanMatch } = await supabase
       .from('scan_logs')
       .select('id, scan_result')
       .ilike('scanned_tracking', `%${trackingDigits}%`)
+      .gte('scanned_at', thirtyDaysAgoISO)
       .limit(1)
       .single();
 

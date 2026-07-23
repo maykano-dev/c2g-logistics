@@ -19,6 +19,11 @@ export async function processScannedPackage(candidates: string[]) {
     let rpcData: any = {};
     let match: any = null;
 
+    // Calculate 30-day cutoff for tracking number recycling
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoISO = thirtyDaysAgo.toISOString();
+
     // 1. Search across tables for any matching tracking number
     for (const tracking of candidates) {
       // Check Shipments
@@ -26,6 +31,7 @@ export async function processScannedPackage(candidates: string[]) {
         .from('shipments')
         .select('id, tracking_number, status, customer_name, items_description')
         .eq('tracking_number', tracking)
+        .gte('created_at', thirtyDaysAgoISO)
         .maybeSingle();
       
       if (shipment) {
@@ -39,6 +45,7 @@ export async function processScannedPackage(candidates: string[]) {
         .from('incoming_packages')
         .select('id, tracking_number, status, customer_name, items_description')
         .eq('tracking_number', tracking)
+        .gte('created_at', thirtyDaysAgoISO)
         .maybeSingle();
 
       if (incoming) {
@@ -52,6 +59,7 @@ export async function processScannedPackage(candidates: string[]) {
         .from('ecom_orders')
         .select('id, tracking_number, status, customer_name, items_description')
         .eq('tracking_number', tracking)
+        .gte('created_at', thirtyDaysAgoISO)
         .maybeSingle();
 
       if (ecom) {
@@ -64,7 +72,8 @@ export async function processScannedPackage(candidates: string[]) {
       const { data: orders } = await supabase
         .from('orders')
         .select('id, item_tracking_numbers, order_status, customer_name')
-        .not('item_tracking_numbers', 'is', null);
+        .not('item_tracking_numbers', 'is', null)
+        .gte('created_at', thirtyDaysAgoISO);
 
       if (orders) {
         for (const order of orders) {
