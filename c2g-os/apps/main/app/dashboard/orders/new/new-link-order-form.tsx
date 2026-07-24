@@ -28,7 +28,7 @@ export function NewLinkOrderForm({
   
   // Multi-item State
   const [items, setItems] = useState([
-    { id: 'item_1', product_link: '', cny_price: 0, quantity: 1, notes: '' }
+    { id: 'item_1', product_link: '', cny_price: '' as string | number, quantity: 1 as string | number, notes: '' }
   ]);
   
   const [itemFileNames, setItemFileNames] = useState<Record<string, string>>({});
@@ -73,7 +73,7 @@ export function NewLinkOrderForm({
 
 
   // Calculations
-  const itemCostCny = items.reduce((sum, item) => sum + (item.cny_price * item.quantity), 0);
+  const itemCostCny = items.reduce((sum, item) => sum + ((parseFloat(item.cny_price as string) || 0) * (parseInt(item.quantity as string) || 0)), 0);
   const itemCostGhs = itemCostCny / exchangeRate;
   
   const calculatedServiceFee = itemCostGhs * (serviceFeePercentage / 100);
@@ -104,8 +104,8 @@ export function NewLinkOrderForm({
           hasError = true;
         }
       }
-      if (!item.cny_price || item.cny_price <= 0) { newErrors[`price_${item.id}`] = "Price must be greater than 0"; hasError = true; }
-      if (!item.quantity || item.quantity <= 0) { newErrors[`qty_${item.id}`] = "Quantity must be at least 1"; hasError = true; }
+      if (!item.cny_price || parseFloat(item.cny_price as string) <= 0) { newErrors[`price_${item.id}`] = "Price must be greater than 0"; hasError = true; }
+      if (!item.quantity || parseInt(item.quantity as string) <= 0) { newErrors[`qty_${item.id}`] = "Quantity must be at least 1"; hasError = true; }
       if (!itemFileNames[item.id]) { newErrors[`screenshot_${item.id}`] = "Image is required for this item"; hasError = true; }
     });
 
@@ -152,7 +152,7 @@ export function NewLinkOrderForm({
 
   const handleAddItem = () => {
     if (items.length >= 10) return; // max 10 items per order
-    setItems([...items, { id: Date.now().toString(), product_link: '', cny_price: 0, quantity: 1, notes: '' }]);
+    setItems([...items, { id: Date.now().toString(), product_link: '', cny_price: '', quantity: 1, notes: '' }]);
   };
 
   const handleRemoveItem = async (idToRemove: string) => {
@@ -279,7 +279,8 @@ export function NewLinkOrderForm({
                         }}
                         onChange={(e) => {
                           const val = e.target.value.replace(/[^0-9.]/g, '');
-                          updateItem(item.id, 'cny_price', parseFloat(val) || 0);
+                          if (val.split('.').length > 2) return; // prevent multiple dots
+                          updateItem(item.id, 'cny_price', val);
                           if (errors[`price_${item.id}`]) {
                             setErrors(prev => {
                               const newErrors = { ...prev };
@@ -312,7 +313,7 @@ export function NewLinkOrderForm({
                       }}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, '');
-                        updateItem(item.id, 'quantity', parseInt(val) || 1);
+                        updateItem(item.id, 'quantity', val);
                         if (errors[`qty_${item.id}`]) {
                           setErrors(prev => {
                             const newErrors = { ...prev };
