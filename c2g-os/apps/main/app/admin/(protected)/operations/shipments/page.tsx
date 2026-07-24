@@ -506,7 +506,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4" onClick={() => setShowCreateModal(false)}>
           <div 
-            className="bg-zinc-950 md:border md:border-zinc-800 md:rounded-3xl w-full h-full md:h-auto max-w-lg overflow-hidden flex flex-col md:max-h-[90vh] max-h-[100dvh] animate-in zoom-in-95 duration-200"
+            className="bg-zinc-950 md:border md:border-zinc-800 md:rounded-3xl w-full h-full md:h-auto max-w-2xl overflow-hidden flex flex-col md:max-h-[90vh] max-h-[100dvh] animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
@@ -575,7 +575,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
       {showEditModal && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4" onClick={() => setShowEditModal(null)}>
           <div 
-            className="bg-zinc-950 md:border md:border-zinc-800 md:rounded-3xl w-full h-full md:h-auto max-w-lg overflow-hidden flex flex-col md:max-h-[90vh] max-h-[100dvh] animate-in zoom-in-95 duration-200"
+            className="bg-zinc-950 md:border md:border-zinc-800 md:rounded-3xl w-full h-full md:h-auto max-w-2xl overflow-hidden flex flex-col md:max-h-[90vh] max-h-[100dvh] animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
@@ -624,6 +624,27 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                     <input type="number" step="0.01" value={showEditModal.shipping_cost || ''} onChange={e => setShowEditModal({...showEditModal, shipping_cost: parseFloat(e.target.value)})} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500" />
                   </div>
                 </div>
+                
+                {/* Package Details Section */}
+                {(showEditModal.items_description || showEditModal.image_url) && (
+                  <div className="mt-4 pt-4 border-t border-zinc-800/50">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Package Details (From User)</label>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {showEditModal.image_url && (
+                        <div className="shrink-0">
+                          <a href={showEditModal.image_url} target="_blank" rel="noreferrer" className="block w-full sm:w-32 h-32 rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-500 transition-colors">
+                            <img src={showEditModal.image_url} alt="Package" className="w-full h-full object-cover" />
+                          </a>
+                        </div>
+                      )}
+                      {showEditModal.items_description && (
+                        <div className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl p-3">
+                          <p className="text-sm text-zinc-300 whitespace-pre-wrap">{showEditModal.items_description}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={() => setShowEditModal(null)} className="px-5 py-2.5 rounded-xl font-bold text-white bg-zinc-800 hover:bg-zinc-700 transition-colors">Cancel</button>
