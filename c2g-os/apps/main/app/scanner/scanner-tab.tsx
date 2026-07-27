@@ -137,7 +137,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       onScanLog(errLog);
     } finally {
       isProcessingRef.current = false;
-      setTimeout(() => setIsProcessing(false), 2000);
+      setIsProcessing(false);
       setTimeout(() => setScanLog(null), 4000); // Hide toast after 4s
     }
   }, [supabase, onScanLog, playBeep]);
@@ -227,9 +227,10 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       if (!barcodeDetectorRef.current) {
         try {
           if (!(window as any).ZXingWASM) {
+            // Bypass Next.js bundler by injecting the script locally from public folder
+            const script = document.createElement('script');
+            script.src = "/zxing-wasm/iife/reader/index.js";
             await new Promise<void>((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = "https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.2/dist/iife/reader/index.js";
               script.onload = () => resolve();
               script.onerror = () => reject(new Error("Failed to load script"));
               document.head.appendChild(script);
