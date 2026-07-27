@@ -2,6 +2,7 @@
 
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { createNotification } from '@/utils/notifications';
 
 export async function processScannedPackage(candidates: string[]) {
   const supabase = createAdminClient(
@@ -29,7 +30,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Shipments
       const { data: shipment } = await supabase
         .from('shipments')
-        .select('id, tracking_number, status, customer_name, items_description')
+        .select('id, tracking_number, status, customer_name, items_description, user_id')
         .eq('tracking_number', tracking)
         .gte('created_at', thirtyDaysAgoISO)
         .maybeSingle();
@@ -57,7 +58,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Ecom Orders
       const { data: ecom } = await supabase
         .from('ecom_orders')
-        .select('id, tracking_number, status, customer_name, items_description')
+        .select('id, tracking_number, status, customer_name, items_description, user_id')
         .eq('tracking_number', tracking)
         .gte('created_at', thirtyDaysAgoISO)
         .maybeSingle();
@@ -71,7 +72,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Regular Orders (Link Orders use item_tracking_numbers JSON array)
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, item_tracking_numbers, order_status, customer_name')
+        .select('id, item_tracking_numbers, order_status, customer_name, user_id')
         .not('item_tracking_numbers', 'is', null)
         .gte('created_at', thirtyDaysAgoISO);
 
@@ -114,6 +115,17 @@ export async function processScannedPackage(candidates: string[]) {
           .from(tableName)
           .update({ [statusColumn]: 'in_warehouse' })
           .eq('id', match.id);
+          
+        if (match.user_id) {
+          createNotification({
+            userId: match.user_id,
+            title: 'Package Arrived at Warehouse',
+            message: `Your package with tracking number ${trackingNumberMatched} has safely arrived at our warehouse and is being processed.`,
+            type: 'system',
+            priority: 'important',
+            link: '/dashboard'
+          }).catch(e => console.warn('Failed to dispatch notification:', e));
+        }
       }
 
       // Best effort insert to scan logs
