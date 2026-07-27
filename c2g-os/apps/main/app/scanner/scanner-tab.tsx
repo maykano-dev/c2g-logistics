@@ -211,6 +211,12 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
         if ((capabilities as any).focusMode?.includes('continuous')) advConstraints.focusMode = 'continuous';
         if ((capabilities as any).exposureMode?.includes('continuous')) advConstraints.exposureMode = 'continuous';
         if ((capabilities as any).whiteBalanceMode?.includes('continuous')) advConstraints.whiteBalanceMode = 'continuous';
+        if ((capabilities as any).zoom) {
+          const minZoom = (capabilities as any).zoom.min || 1;
+          const maxZoom = (capabilities as any).zoom.max || 1;
+          // Apply a 2.0x zoom, or max available if less than 2.0x
+          advConstraints.zoom = Math.max(minZoom, Math.min(2.0, maxZoom));
+        }
         if (Object.keys(advConstraints).length > 0) {
           try { await track.applyConstraints({ advanced: [advConstraints] }); } catch (e) {}
         }
