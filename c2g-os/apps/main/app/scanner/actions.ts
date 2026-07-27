@@ -27,7 +27,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Shipments
       const { data: shipment } = await supabase
         .from('shipments')
-        .select('id, tracking_number, status, customer_name, items_description, user_id')
+        .select('id, tracking_number, status, customer_name, items_description, customer_id')
         .eq('tracking_number', tracking)
         .maybeSingle();
       
@@ -53,7 +53,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Ecom Orders
       const { data: ecom } = await supabase
         .from('ecom_orders')
-        .select('id, tracking_number, status, customer_name, items_description, user_id')
+        .select('id, tracking_number, status, customer_name, items_description, customer_id')
         .eq('tracking_number', tracking)
         .maybeSingle();
 
@@ -66,7 +66,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Regular Orders (Link Orders use item_tracking_numbers JSON array)
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, item_tracking_numbers, order_status, customer_name, user_id')
+        .select('id, item_tracking_numbers, order_status, customer_name, customer_id')
         .not('item_tracking_numbers', 'is', null);
 
       if (orders) {
@@ -109,9 +109,9 @@ export async function processScannedPackage(candidates: string[]) {
           .update({ [statusColumn]: 'in_warehouse' })
           .eq('id', match.id);
           
-        if (match.user_id) {
+        if (match.customer_id) {
           createNotification({
-            userId: match.user_id,
+            userId: match.customer_id,
             title: 'Package Arrived at Warehouse',
             message: `Your package with tracking number ${trackingNumberMatched} has safely arrived at our warehouse and is being processed.`,
             type: 'system',
