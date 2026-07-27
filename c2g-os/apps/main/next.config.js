@@ -23,10 +23,10 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
       "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co https://res.cloudinary.com https://i.ibb.co https://placehold.co https://*.tile.openstreetmap.org https://unpkg.com https://*.basemaps.cartocdn.com https://*.aliexpress-media.com https://*.alicdn.com",
-      "connect-src 'self' https://*.supabase.co https://payproxyapi.hubtel.com https://api.imgbb.com",
+      "connect-src 'self' https://*.supabase.co https://payproxyapi.hubtel.com https://api.imgbb.com https://cdn.jsdelivr.net https://fastly.jsdelivr.net",
       "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
       "frame-ancestors 'none'"
     ].join('; ')

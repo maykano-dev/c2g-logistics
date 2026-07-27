@@ -140,6 +140,36 @@ export async function createAdminShipment(data: {
     });
   }
 
+  // Retroactive Scan Log Matching: check if this tracking was previously scanned as not_found
+  if (data.tracking_number && newRecord) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const numericMatch = data.tracking_number.match(/\d{6,}/);
+    const trackingDigits = numericMatch ? numericMatch[0] : data.tracking_number;
+
+    const { data: scanMatch } = await supabase
+      .from('scan_logs')
+      .select('id, scan_result')
+      .or(`scanned_tracking.eq.${data.tracking_number},scanned_tracking.ilike.%${trackingDigits}%`)
+      .in('scan_result', ['not_found', 'error'])
+      .gte('scanned_at', thirtyDaysAgo.toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (scanMatch) {
+      await supabase.from('scan_logs').update({
+        scan_result: 'updated',
+        package_type: 'shipment',
+        package_id: newRecord.id,
+        customer_name: data.customer_name,
+        current_status: 'in_warehouse'
+      }).eq('id', scanMatch.id);
+
+      // Also update the shipment status to in_warehouse since it was already scanned
+      await supabase.from('shipments').update({ status: 'in_warehouse' }).eq('id', newRecord.id);
+    }
+  }
+
   revalidatePath('/admin/operations/shipments');
   return { success: true };
 }
@@ -154,6 +184,41 @@ export async function updateAdminShipment(id: string, data: any) {
 
   if (error) {
     return { success: false, error: error.message };
+  }
+
+  // Retroactive Scan Log Matching when tracking number is updated
+  if (data.tracking_number) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const numericMatch = data.tracking_number.match(/\d{6,}/);
+    const trackingDigits = numericMatch ? numericMatch[0] : data.tracking_number;
+
+    const { data: scanMatch } = await supabase
+      .from('scan_logs')
+      .select('id, scan_result')
+      .or(`scanned_tracking.eq.${data.tracking_number},scanned_tracking.ilike.%${trackingDigits}%`)
+      .in('scan_result', ['not_found', 'error'])
+      .gte('scanned_at', thirtyDaysAgo.toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (scanMatch) {
+      // Fetch customer name for the log
+      const { data: shipment } = await supabase.from('shipments').select('customer_name').eq('id', id).single();
+      
+      await supabase.from('scan_logs').update({
+        scan_result: 'updated',
+        package_type: 'shipment',
+        package_id: id,
+        customer_name: shipment?.customer_name || data.customer_name || 'Unknown',
+        current_status: 'in_warehouse'
+      }).eq('id', scanMatch.id);
+
+      // Auto-update shipment status to in_warehouse
+      if (!data.status) {
+        await supabase.from('shipments').update({ status: 'in_warehouse' }).eq('id', id);
+      }
+    }
   }
 
   revalidatePath('/admin/operations/shipments');

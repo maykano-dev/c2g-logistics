@@ -30,7 +30,8 @@
     "sharp": "^0.35.1",
     "speakeasy": "^2.0.0",
     "web-push": "^3.6.7",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zxing-wasm": "^3.1.2"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

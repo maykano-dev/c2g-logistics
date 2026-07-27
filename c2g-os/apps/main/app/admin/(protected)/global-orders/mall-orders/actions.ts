@@ -28,7 +28,7 @@ export async function updateMallOrderStatus(orderId: string, newStatus: string) 
   
   const { data: order, error: fetchError } = await supabase
     .from('ecom_orders')
-    .select('customer_id, order_id')
+    .select('customer_id, order_id, customer_name, alibaba_tracking_number')
     .eq('id', orderId)
     .single();
 
@@ -41,6 +41,34 @@ export async function updateMallOrderStatus(orderId: string, newStatus: string) 
     .eq('id', orderId);
 
   if (error) return { success: false, error: error.message };
+
+  // Retroactive Scan Log Matching when status changes to in_warehouse
+  if (newStatus === 'in_warehouse' && order.alibaba_tracking_number) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const tracking = order.alibaba_tracking_number;
+    const numericMatch = tracking.match(/\d{6,}/);
+    const trackingDigits = numericMatch ? numericMatch[0] : tracking;
+
+    const { data: scanMatch } = await supabase
+      .from('scan_logs')
+      .select('id, scan_result')
+      .or(`scanned_tracking.eq.${tracking},scanned_tracking.ilike.%${trackingDigits}%`)
+      .in('scan_result', ['not_found', 'error'])
+      .gte('scanned_at', thirtyDaysAgo.toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (scanMatch) {
+      await supabase.from('scan_logs').update({
+        scan_result: 'updated',
+        package_type: 'ecom_order',
+        package_id: orderId,
+        customer_name: order.customer_name || 'Unknown',
+        current_status: 'in_warehouse'
+      }).eq('id', scanMatch.id);
+    }
+  }
 
   // Notify User
   await createNotification({

@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
 import { createClient } from '@/utils/supabase/client';
 import { Loader2, Camera, CheckCircle2, XCircle, AlertCircle, ScanLine, Keyboard, LogOut } from 'lucide-react';
-
 import { ScanLog } from './scanner-client';
 import { processScannedPackage } from './actions';
 
@@ -15,11 +13,20 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
   const [manualInput, setManualInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scanLoopRef = useRef<number | null>(null);
+  const barcodeDetectorRef = useRef<any>(null);
+  const zxReaderRef = useRef<any>(null);
+  const isScanningRef = useRef(false);
+
   const isProcessingRef = useRef(false);
   const lastScannedCodeRef = useRef<string>('');
   const lastScannedTimeRef = useRef<number>(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const isInitializingRef = useRef(false);
+  const supabase = createClient();
 
   const playBeep = useCallback((type: 'success' | 'info' | 'error') => {
     try {
@@ -65,8 +72,6 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       console.warn("Audio play failed:", err);
     }
   }, []);
-  const isInitializingRef = useRef(false);
-  const supabase = createClient();
 
   const handleScan = useCallback(async (decodedText: string) => {
     const now = Date.now();
@@ -135,69 +140,208 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
       setTimeout(() => setIsProcessing(false), 2000);
       setTimeout(() => setScanLog(null), 4000); // Hide toast after 4s
     }
-  }, [supabase]);
+  }, [supabase, onScanLog, playBeep]);
 
   const startScanner = async (isManualClick = false) => {
-    if (isInitializingRef.current || isScanning) return;
+    if (isScanning || isInitializingRef.current) return;
     
     try {
       isInitializingRef.current = true;
-      if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode("reader", {
-          useBarCodeDetectorIfSupported: true,
-          verbose: false
-        });
+      
+      // 1. Init AudioContext on User Interaction (iOS Safari fix)
+      if (isManualClick) {
+        try {
+          if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+          if (audioCtxRef.current.state === 'suspended') await audioCtxRef.current.resume();
+        } catch (e) {}
       }
 
-      await scannerRef.current.start(
-        { facingMode: "environment" },
-        { 
-          fps: 30, 
-          aspectRatio: 1.0,
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1920 }, 
-            height: { ideal: 1080 }
+      // 2. Get Camera Stream with 4-tier fallback
+      let stream: MediaStream | null = null;
+      try {
+        // Attempt 1: 1080p Environment Camera
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false
+        });
+      } catch (err1) {
+        try {
+          // Attempt 2: 720p Environment Camera
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+          });
+        } catch (err2) {
+          try {
+            // Attempt 3: Any Environment Camera
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'environment' },
+              audio: false
+            });
+          } catch (err3) {
+            try {
+              // Attempt 4: Any Camera (e.g. laptop webcam)
+              stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+              });
+            } catch (err4: any) {
+              // Store the final error to be thrown
+              throw err4;
+            }
           }
-        },
-        (decodedText) => handleScan(decodedText),
-        () => {} // ignore scan failures (happens every frame when no code is found)
-      );
-      
-      setIsScanning(true);
-      setHasCameraPermission(true);
-    } catch (err: any) {
-      console.error("Error starting scanner, error =", err);
-      // Only set to false if it's explicitly a NotAllowedError (permission denied)
-      // Otherwise it might be a hardware issue or "already in use" error
-      if (err?.name === 'NotAllowedError' || err?.message?.includes('permission')) {
-        setHasCameraPermission(false);
+        }
       }
       
+      if (!stream) throw new Error("Could not access camera");
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      setHasCameraPermission(true);
+
+      // 3. Apply Continuous Autofocus Constraints
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        const advConstraints: any = {};
+        if ((capabilities as any).focusMode?.includes('continuous')) advConstraints.focusMode = 'continuous';
+        if ((capabilities as any).exposureMode?.includes('continuous')) advConstraints.exposureMode = 'continuous';
+        if ((capabilities as any).whiteBalanceMode?.includes('continuous')) advConstraints.whiteBalanceMode = 'continuous';
+        if (Object.keys(advConstraints).length > 0) {
+          try { await track.applyConstraints({ advanced: [advConstraints] }); } catch (e) {}
+        }
+      }
+
+      // 4. Initialize Engines
+      if ('BarcodeDetector' in window) {
+        try {
+          const formats = (window as any).BarcodeDetector.getSupportedFormats ? await (window as any).BarcodeDetector.getSupportedFormats() : ['code_128', 'code_39', 'ean_13', 'ean_8', 'qr_code', 'data_matrix', 'upc_a', 'upc_e', 'itf', 'code_93', 'pdf417', 'aztec', 'codabar'];
+          barcodeDetectorRef.current = new (window as any).BarcodeDetector({ formats });
+        } catch (e) {}
+      }
+
+      if (!barcodeDetectorRef.current) {
+        try {
+          if (!(window as any).ZXingWASM) {
+            await new Promise<void>((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = "https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.2/dist/iife/reader/index.js";
+              script.onload = () => resolve();
+              script.onerror = () => reject(new Error("Failed to load script"));
+              document.head.appendChild(script);
+            });
+          }
+          if ((window as any).ZXingWASM && typeof (window as any).ZXingWASM.readBarcodes === 'function') {
+            zxReaderRef.current = (window as any).ZXingWASM;
+          }
+        } catch (e) {
+          console.warn("Could not load zxing-wasm from CDN script tag", e);
+        }
+      }
+
+      // 5. Start Decode Loop
+      setIsScanning(true);
+      isScanningRef.current = true;
+      
+      let lastDecodeTime = 0;
+      let isDecoding = false;
+
+      const scanLoop = async () => {
+        if (!isScanningRef.current) return;
+        const now = Date.now();
+        
+        // Target 100 FPS max (every 10ms)
+        if (now - lastDecodeTime > 10 && !isDecoding && videoRef.current && canvasRef.current) {
+          isDecoding = true;
+          lastDecodeTime = now;
+          
+          try {
+            let text = null;
+            
+            // Strategy 1: Native
+            if (barcodeDetectorRef.current) {
+              const barcodes = await barcodeDetectorRef.current.detect(videoRef.current);
+              if (barcodes && barcodes.length > 0) {
+                text = barcodes[0].rawValue || barcodes[0].text;
+              }
+            } 
+            // Strategy 2: Wasm
+            else if (zxReaderRef.current) {
+              const vw = videoRef.current.videoWidth;
+              const vh = videoRef.current.videoHeight;
+              if (vw && vh) {
+                const ctx = canvasRef.current.getContext('2d', { willReadFrequently: true });
+                canvasRef.current.width = vw;
+                canvasRef.current.height = vh;
+                if (ctx) {
+                  ctx.drawImage(videoRef.current, 0, 0, vw, vh);
+                  const blob = await new Promise<Blob | null>(resolve => canvasRef.current!.toBlob(resolve, 'image/jpeg', 0.85));
+                  if (blob) {
+                    const results = await zxReaderRef.current.readBarcodes(blob);
+                    if (results && results.length > 0) text = results[0].text;
+                  }
+                }
+              }
+            }
+            
+            if (text) {
+              const raw = String(text).replace(/\s+/g, '').toUpperCase();
+              if (raw.length >= 4) {
+                // We handle the scan asynchronously and let the loop continue
+                handleScan(raw);
+              }
+            }
+          } catch (e) {
+            // Ignore errors (usually "not found")
+          } finally {
+            isDecoding = false;
+          }
+        }
+        scanLoopRef.current = requestAnimationFrame(scanLoop);
+      };
+      
+      scanLoopRef.current = requestAnimationFrame(scanLoop);
+
+    } catch (err: any) {
+      console.error("Error starting scanner, error =", err);
+      if (err?.name === 'NotAllowedError' || err?.message?.includes('permission')) {
+        setHasCameraPermission(false);
+      } else if (err?.name === 'NotReadableError' || err?.message?.includes('Could not start video source')) {
+        // This means the camera is physically locked by another app or hardware switch
+        setHasCameraPermission(false);
+      }
       if (isManualClick) {
-        alert("Camera Error: " + (err?.message || err));
+        if (err?.name === 'NotReadableError' || err?.message?.includes('Could not start video source')) {
+          alert("Camera Error: Your camera is currently in use by another application (like Zoom/Teams) or blocked by a hardware switch. Please close other apps and try again.");
+        } else {
+          alert("Camera Error: " + (err?.message || err));
+        }
       }
     } finally {
       isInitializingRef.current = false;
     }
   };
 
-  const stopScanner = async () => {
-    if (scannerRef.current && isScanning && !isInitializingRef.current) {
-      try {
-        await scannerRef.current.stop();
-        setIsScanning(false);
-      } catch (err) {
-        console.error(err);
-      }
+  const stopScanner = () => {
+    isScanningRef.current = false;
+    setIsScanning(false);
+    if (scanLoopRef.current) cancelAnimationFrame(scanLoopRef.current);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   };
 
   useEffect(() => {
     startScanner(false);
-    return () => {
-      stopScanner();
-    };
+    return () => stopScanner();
   }, []);
 
   const handleManualSubmit = (e: React.FormEvent) => {
@@ -245,19 +389,27 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
 
       {/* Camera Viewfinder */}
       <div className="absolute inset-0 z-0">
-        <div id="reader" className="w-full h-full object-cover [&>video]:object-cover [&>video]:w-full [&>video]:h-full border-none"></div>
+        <video 
+          ref={videoRef} 
+          className="w-full h-full object-cover border-none"
+          autoPlay 
+          playsInline 
+          muted 
+        />
+        <canvas ref={canvasRef} className="hidden" />
         
-        {/* Viewfinder Target Box overlay */}
+        {/* Viewfinder Target Box overlay (Visual guide only, camera scans entire frame) */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="w-[300px] h-[180px] border-2 border-white/50 rounded-2xl relative shadow-[0_0_0_4000px_rgba(0,0,0,0.6)]">
-            <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-blue-500 rounded-tl-2xl"></div>
-            <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-blue-500 rounded-tr-2xl"></div>
-            <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-blue-500 rounded-bl-2xl"></div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-blue-500 rounded-br-2xl"></div>
+          <div className="w-[380px] h-[240px] max-w-[85vw] border-2 border-white/20 rounded-3xl relative">
+            {/* Corner Accents */}
+            <div className="absolute -top-1 -left-1 w-10 h-10 border-t-[5px] border-l-[5px] border-blue-500 rounded-tl-3xl opacity-90 transition-all"></div>
+            <div className="absolute -top-1 -right-1 w-10 h-10 border-t-[5px] border-r-[5px] border-blue-500 rounded-tr-3xl opacity-90 transition-all"></div>
+            <div className="absolute -bottom-1 -left-1 w-10 h-10 border-b-[5px] border-l-[5px] border-blue-500 rounded-bl-3xl opacity-90 transition-all"></div>
+            <div className="absolute -bottom-1 -right-1 w-10 h-10 border-b-[5px] border-r-[5px] border-blue-500 rounded-br-3xl opacity-90 transition-all"></div>
             
             {isProcessing && (
-              <div className="absolute inset-0 flex items-center justify-center bg-blue-500/20 backdrop-blur-sm rounded-xl">
-                <Loader2 className="w-10 h-10 animate-spin text-white" />
+              <div className="absolute inset-0 flex items-center justify-center bg-blue-500/20 backdrop-blur-md rounded-2xl shadow-2xl">
+                <Loader2 className="w-12 h-12 animate-spin text-white" />
               </div>
             )}
           </div>
@@ -277,32 +429,6 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
               >
                 Request Permission
               </button>
-              <div className="relative w-full">
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  capture="environment"
-                  onChange={async (e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      setIsProcessing(true);
-                      try {
-                        const html5QrCode = new Html5Qrcode("reader");
-                        const decodedText = await html5QrCode.scanFile(e.target.files[0]!, true);
-                        await handleScan(decodedText);
-                      } catch (err) {
-                        alert("Could not find a barcode in this image. Please try again.");
-                      } finally {
-                        setIsProcessing(false);
-                        e.target.value = '';
-                      }
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                />
-                <button className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-colors border border-zinc-700 w-full">
-                  Upload Barcode Image
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -321,12 +447,12 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
                scanLog.status === 'already_processed' ? <AlertCircle className="w-8 h-8 text-blue-400 shrink-0 mt-0.5" /> :
                <XCircle className="w-8 h-8 text-red-400 shrink-0 mt-0.5" />}
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-xl leading-tight text-white truncate">{scanLog.trackingNumber}</h3>
                 {scanLog.customerName !== 'Unknown' && (
-                  <div className="text-xs font-bold text-white mt-1 bg-white/20 inline-block px-2 py-0.5 rounded shadow-sm">
+                  <h3 className="font-black text-2xl leading-tight text-white truncate">
                     {scanLog.customerName}
-                  </div>
+                  </h3>
                 )}
+                <p className="font-mono text-sm text-white/70 mt-0.5 truncate">{scanLog.trackingNumber}</p>
                 <p className={`text-sm mt-1.5 font-medium ${
                   scanLog.status === 'updated' ? "text-green-300" : 
                   scanLog.status === 'already_processed' ? "text-blue-300" :
@@ -350,14 +476,12 @@ function extractAllDigitSequences(text: string): string[] {
   if (!text) return [];
   const results: string[] = [];
 
-  // Keep the raw original text (without hyphens, spaces, custom symbols)
   const rawTrimmed = text.trim();
   if (rawTrimmed.length >= 4) {
       results.push(rawTrimmed);
       results.push(rawTrimmed.toUpperCase());
   }
 
-  // Jingdong/JDL multi-package suffix slicer (e.g., JDVC36161125581-1-1- -> JDVC36161125581)
   const segments = text.split(/[-_ ]+/);
   if (segments.length > 0 && segments[0]) {
       const firstSegment = segments[0].trim();
@@ -367,7 +491,6 @@ function extractAllDigitSequences(text: string): string[] {
       }
   }
 
-  // QR tracking URL path segment parser
   try {
       if (text.includes('/') || text.includes('?')) {
           const urlObj = new URL(text.includes('://') ? text : 'https://' + text);
@@ -382,14 +505,12 @@ function extractAllDigitSequences(text: string): string[] {
       }
   } catch (e) { }
 
-  // Extract digits sequence fallback
   const clean = text.replace(/\s+/g, '');
   const match = clean.match(/\d{4,30}/g) || [];
   for (const m of match) {
       results.push(m);
   }
 
-  // Alphanumeric variations (Strip ALL special characters including hyphens for direct matches)
   const finalCandidates: string[] = [];
   for (const cand of results) {
       finalCandidates.push(cand);
@@ -399,7 +520,6 @@ function extractAllDigitSequences(text: string): string[] {
       }
   }
 
-  // Dynamic Prefix Stripping (Handles ANY unknown carrier letters)
   const primaryTarget = finalCandidates.length > 0 ? (finalCandidates[0]?.toUpperCase() || '') : '';
   if (primaryTarget) {
       const strippedLeadingLetters = primaryTarget.replace(/^[A-Z]+/i, '');
