@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ArrowLeft, Download, ShieldAlert, Wallet, Settings2, Plus, Minus, CheckCircle2, Lock, Unlock, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { freezeWalletAction } from "./actions";
+import { freezeWalletAction, manualWalletAdjustment } from "./actions";
 import { downloadCSV } from "@/utils/export";
 
 export default function WalletLedgerClient({ wallet, transactions }: { wallet: any, transactions: any[] }) {
@@ -12,6 +12,10 @@ export default function WalletLedgerClient({ wallet, transactions }: { wallet: a
   const [loading, setLoading] = useState(false);
   const [isFrozen, setIsFrozen] = useState(wallet.status === 'frozen');
   const [error, setError] = useState("");
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const [adjustType, setAdjustType] = useState<'top_up'|'withdrawal'>('top_up');
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustReason, setAdjustReason] = useState("");
 
   const totalBalance = parseFloat(wallet.available_balance || 0) + parseFloat(wallet.held_balance || 0);
 
@@ -28,6 +32,33 @@ export default function WalletLedgerClient({ wallet, transactions }: { wallet: a
       router.refresh();
     } else {
       setError(res.error || "Failed to update wallet status");
+    }
+    setLoading(false);
+  };
+
+  const handleAdjustSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountNum = parseFloat(adjustAmount);
+    if (!amountNum || amountNum <= 0) {
+      setError("Invalid amount");
+      return;
+    }
+    if (!adjustReason) {
+      setError("Reason is required");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    const res = await manualWalletAdjustment(wallet.id, amountNum, adjustType, adjustReason);
+    if (res.success) {
+      setIsAdjusting(false);
+      setAdjustAmount("");
+      setAdjustReason("");
+      router.refresh();
+    } else {
+      setError(res.error || "Adjustment failed");
     }
     setLoading(false);
   };
@@ -56,6 +87,12 @@ export default function WalletLedgerClient({ wallet, transactions }: { wallet: a
         </div>
 
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsAdjusting(true)}
+            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
+          >
+            <Settings2 className="w-4 h-4" /> Adjust Balance
+          </button>
           <button 
             onClick={handleToggleFreeze}
             disabled={loading}
@@ -174,6 +211,38 @@ export default function WalletLedgerClient({ wallet, transactions }: { wallet: a
           </table>
         </div>
       </div>
+      
+      {isAdjusting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Manual Adjustment</h3>
+            <form onSubmit={handleAdjustSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm text-zinc-400 mb-1 block">Adjustment Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setAdjustType('top_up')} className={`py-2 rounded-lg text-sm font-bold border transition-colors flex justify-center items-center gap-2 ${adjustType === 'top_up' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700'}`}><Plus className="w-4 h-4"/> Add Funds</button>
+                  <button type="button" onClick={() => setAdjustType('withdrawal')} className={`py-2 rounded-lg text-sm font-bold border transition-colors flex justify-center items-center gap-2 ${adjustType === 'withdrawal' ? 'bg-rose-500/20 border-rose-500/50 text-rose-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700'}`}><Minus className="w-4 h-4"/> Deduct Funds</button>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm text-zinc-400 mb-1 block">Amount (₵)</label>
+                <input type="number" step="0.01" min="0" required value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500" placeholder="0.00" />
+              </div>
+
+              <div>
+                <label className="text-sm text-zinc-400 mb-1 block">Reason / Description</label>
+                <input type="text" required value={adjustReason} onChange={e => setAdjustReason(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500" placeholder="e.g. Order discrepancy correction" />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setIsAdjusting(false)} className="flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg font-bold transition-colors">Cancel</button>
+                <button type="submit" disabled={loading} className={`flex-1 px-4 py-3 text-white rounded-lg font-bold transition-colors ${adjustType === 'top_up' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-rose-600 hover:bg-rose-500'} disabled:opacity-50`}>{loading ? 'Processing...' : 'Confirm'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

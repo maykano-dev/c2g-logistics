@@ -31,6 +31,8 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All Statuses');
+  const [filterPayment, setFilterPayment] = useState('All Payments');
+  const [filterMode, setFilterMode] = useState('All Modes');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [shippingFeeInput, setShippingFeeInput] = useState<string>('');
@@ -221,6 +223,14 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
     const matchesStatus = filterStatus === 'All Statuses' || statusVal === filterStatus || (!statusVal && filterStatus === 'pending_payment');
     if (!matchesStatus) return false;
     
+    const payStatus = (o.payment_status || 'pending').toLowerCase();
+    const matchesPayment = filterPayment === 'All Payments' || payStatus === filterPayment;
+    if (!matchesPayment) return false;
+
+    const shipMode = (o.shipping_mode || '').toLowerCase();
+    const matchesMode = filterMode === 'All Modes' || shipMode === filterMode;
+    if (!matchesMode) return false;
+
     // STRICTLY filter for Link Orders
     return o.type === 'link_order';
   });
@@ -265,6 +275,31 @@ export function LinkOrdersView({ readOnly = false }: { readOnly?: boolean }) {
           >
             <option value="All Statuses">All Statuses</option>
             {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+          
+          <select 
+            value={filterPayment}
+            onChange={(e) => setFilterPayment(e.target.value)}
+            className="h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none pr-8 relative"
+            style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a1a1aa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
+          >
+            <option value="All Payments">All Payments</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+            <option value="refunded">Refunded</option>
+          </select>
+
+          <select 
+            value={filterMode}
+            onChange={(e) => setFilterMode(e.target.value)}
+            className="h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none pr-8 relative"
+            style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a1a1aa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
+          >
+            <option value="All Modes">All Modes</option>
+            <option value="air">Air Freight</option>
+            <option value="sea">Sea Freight</option>
+            <option value="express">Express</option>
           </select>
         </div>
       </div>

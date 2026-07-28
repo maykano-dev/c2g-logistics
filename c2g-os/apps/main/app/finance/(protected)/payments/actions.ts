@@ -86,12 +86,12 @@ export async function getPayments() {
   const { data: walletTx, error: e4 } = await supabase
     .from('wallet_transactions')
     .select(`
-      id, amount, reference_id, created_at, status,
+      id, amount, reference_id, created_at, status, transaction_type,
       wallets (
         customers ( name, phone )
       )
     `)
-    .eq('transaction_type', 'top_up')
+    .in('transaction_type', ['top_up', 'withdrawal'])
     .order('created_at', { ascending: false })
     .limit(100);
     
@@ -103,14 +103,14 @@ export async function getPayments() {
       const c = Array.isArray(cust) ? cust[0] : cust;
       return {
         id: p.id,
-        order_id: 'WALLET-TOPUP',
+        order_id: p.transaction_type === 'withdrawal' ? 'WALLET-DEDUCT' : 'WALLET-TOPUP',
         customer_name: c?.name || 'Customer',
         customer_phone: c?.phone || 'N/A',
-        total_amount: p.amount,
+        total_amount: Math.abs(p.amount),
         payment_gateway: 'Hubtel/Admin',
         payment_reference: p.reference_id,
         created_at: p.created_at,
-        type: 'Wallet Top-Up',
+        type: p.transaction_type === 'withdrawal' ? 'Wallet Deduction' : 'Wallet Top-Up',
         status: p.status
       };
     })];
