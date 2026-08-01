@@ -7,10 +7,11 @@ import { Plane, Ship, ArrowRight, AlertTriangle, CheckCircle, RefreshCw } from "
 
 // Shipping rates matching CB
 const AIR_RATES = {
-  express: { rate: 85, days: "3–7 Days", label: "Air Express" },
-  normal: { rate: 55, days: "12–16 Days", label: "Air Normal" },
+  express: { rateUsd: 44, days: "3–7 Days", label: "Air Express" },
+  normal: { rateUsd: 25, days: "12–16 Days", label: "Air Normal" },
 };
-const SEA_RATE_PER_CBM = 1800; // GHS per CBM
+const SEA_RATE_USD_PER_CBM = 260; // USD per CBM
+const EXCHANGE_RATE = 12.5; // USD to GHS
 
 // Metadata is moved out since this is a client component
 
@@ -27,46 +28,40 @@ export default function GetQuotePage() {
   const [seaWidth, setSeaWidth] = useState("");
   const [seaHeight, setSeaHeight] = useState("");
 
-  // Result
-  const [result, setResult] = useState<{ cost: string; time: string } | null>(null);
-  const [error, setError] = useState("");
+  // Derived state for live calculation
+  let result: { cost: string; time: string } | null = null;
+  let error = "";
 
-  const calculate = () => {
-    setError("");
-    setResult(null);
-
-    if (tab === "air") {
-      const weight = parseFloat(airWeight);
-      if (!airWeight || isNaN(weight) || weight <= 0) {
-        setError("Please enter a valid weight.");
-        return;
-      }
+  if (tab === "air") {
+    const weight = parseFloat(airWeight);
+    if (airWeight && (isNaN(weight) || weight <= 0)) {
+      error = "Please enter a valid weight.";
+    } else if (weight > 0) {
       const mode = isElectronic ? "express" : airMode;
-      const { rate, days, label } = AIR_RATES[mode];
-      const cost = (weight * rate).toLocaleString("en-GH", { style: "currency", currency: "GHS", maximumFractionDigits: 2 });
-      setResult({ cost, time: `${label} — ${days}` });
-    } else {
-      const l = parseFloat(seaLength);
-      const w = parseFloat(seaWidth);
-      const h = parseFloat(seaHeight);
-      if (!seaLength || !seaWidth || !seaHeight || isNaN(l) || isNaN(w) || isNaN(h) || l <= 0 || w <= 0 || h <= 0) {
-        setError("Please enter valid dimensions (L × W × H).");
-        return;
-      }
-      const cbm = (l * w * h) / 1_000_000;
-      const cost = (cbm * SEA_RATE_PER_CBM).toLocaleString("en-GH", { style: "currency", currency: "GHS", maximumFractionDigits: 2 });
-      setResult({ cost, time: `Sea Freight — 50–60 Days (CBM: ${cbm.toFixed(4)})` });
+      const { rateUsd, days, label } = AIR_RATES[mode];
+      const costUsd = weight * rateUsd;
+      const costGhs = costUsd * EXCHANGE_RATE;
+      const cost = costGhs.toLocaleString("en-GH", { style: "currency", currency: "GHS", maximumFractionDigits: 2 });
+      const costUsdStr = costUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+      result = { cost, time: `${label} — ${days} (USD: ${costUsdStr})` };
     }
-  };
-
-  const reset = () => {
-    setResult(null);
-    setError("");
-    setAirWeight("");
-    setSeaLength("");
-    setSeaWidth("");
-    setSeaHeight("");
-  };
+  } else {
+    const l = parseFloat(seaLength);
+    const w = parseFloat(seaWidth);
+    const h = parseFloat(seaHeight);
+    if ((seaLength || seaWidth || seaHeight) && (isNaN(l) || isNaN(w) || isNaN(h) || l <= 0 || w <= 0 || h <= 0)) {
+      if (seaLength && seaWidth && seaHeight) {
+        error = "Please enter valid dimensions (L × W × H).";
+      }
+    } else if (l > 0 && w > 0 && h > 0) {
+      const cbm = (l * w * h) / 1_000_000;
+      const costUsd = cbm * SEA_RATE_USD_PER_CBM;
+      const costGhs = costUsd * EXCHANGE_RATE;
+      const cost = costGhs.toLocaleString("en-GH", { style: "currency", currency: "GHS", maximumFractionDigits: 2 });
+      const costUsdStr = costUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+      result = { cost, time: `Sea Freight — 50–60 Days (CBM: ${cbm.toFixed(4)} | USD: ${costUsdStr})` };
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background font-sans">
@@ -113,7 +108,7 @@ export default function GetQuotePage() {
               {(["air", "sea"] as const).map((t) => (
                 <button
                   key={t}
-                  onClick={() => { setTab(t); reset(); }}
+                  onClick={() => { setTab(t); setAirWeight(""); setSeaLength(""); setSeaWidth(""); setSeaHeight(""); }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                     tab === t
                       ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
@@ -182,7 +177,7 @@ export default function GetQuotePage() {
                     }`}>
                       <div className="font-semibold text-foreground">{val.label}</div>
                       <div className="text-muted-foreground text-xs mt-0.5">{val.days}</div>
-                      <div className="text-primary font-bold mt-1">GHS {val.rate}/kg</div>
+                      <div className="text-primary font-bold mt-1">${val.rateUsd}/kg (≈ GHS {val.rateUsd * EXCHANGE_RATE})</div>
                     </div>
                   ))}
                 </div>
@@ -225,7 +220,7 @@ export default function GetQuotePage() {
                     <div>
                       <div className="font-semibold text-foreground">Sea Freight Rate</div>
                       <div className="text-xs text-muted-foreground">50–60 days · Accra, Ghana</div>
-                      <div className="text-primary font-bold mt-0.5">GHS {SEA_RATE_PER_CBM.toLocaleString()}/CBM</div>
+                      <div className="text-primary font-bold mt-0.5">${SEA_RATE_USD_PER_CBM}/CBM (≈ GHS {SEA_RATE_USD_PER_CBM * EXCHANGE_RATE})</div>
                     </div>
                   </div>
                 </div>
@@ -254,21 +249,10 @@ export default function GetQuotePage() {
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   This is only an estimate. Final cost depends on actual weight, dimensions, and any applicable duties.
                 </div>
-                <button onClick={reset} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <RefreshCw className="w-3.5 h-3.5" /> Calculate again
-                </button>
               </div>
             )}
 
-            {/* CTA Button */}
-            {!result && (
-              <button
-                onClick={calculate}
-                className="w-full mt-6 h-13 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 hover:scale-[1.01] transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2 py-4 text-base"
-              >
-                Calculate Estimate <ArrowRight className="w-4 h-4" />
-              </button>
-            )}
+
           </div>
 
           {/* How it works cards */}
