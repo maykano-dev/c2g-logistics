@@ -22,7 +22,7 @@ export default function HistoryTab({ sessionHistory }: { sessionHistory: ScanLog
         .from('scan_logs')
         .select('id, scanned_tracking, scan_result, customer_name, current_status, scanned_at')
         .order('scanned_at', { ascending: false })
-        .limit(100);
+        .limit(1000);
 
       const { data, error } = await queryBuilder;
 
@@ -30,7 +30,7 @@ export default function HistoryTab({ sessionHistory }: { sessionHistory: ScanLog
 
       const formatted = (data || []).map((s: any) => {
         let message = '';
-        if (s.scan_result === 'updated') message = 'Package marked as IN WAREHOUSE';
+        if (s.scan_result === 'updated') message = 'Package marked as CHINA WAREHOUSE';
         else if (s.scan_result === 'already_processed') message = `Already processed (${s.current_status || 'in_warehouse'})`;
         else message = 'Package not found in database';
 

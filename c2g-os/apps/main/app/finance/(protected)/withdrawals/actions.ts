@@ -17,11 +17,11 @@ export async function getWithdrawals() {
       created_at,
       required_tier,
       notes,
-      importers (
+      customers (
         id,
-        business_name,
+        name,
         email,
-        whatsapp
+        phone
       )
     `)
     .order('created_at', { ascending: false });
@@ -31,13 +31,13 @@ export async function getWithdrawals() {
     return { success: false, error: error.message };
   }
 
-  // Normalize importer data to match what the client expects
+  // Normalize customer data to match what the client expects
   const normalized = (data || []).map((w: any) => ({
     ...w,
-    importers: w.importers ? {
-      ...w.importers,
-      name: w.importers.business_name,
-      phone: w.importers.whatsapp
+    importers: w.customers ? {
+      ...w.customers,
+      name: w.customers.name,
+      phone: w.customers.phone
     } : null
   }));
 

@@ -82,7 +82,7 @@ export async function getPayments() {
     }))];
   }
 
-  // 4. Wallet Top-ups
+  // 4. All Wallet Transactions (Top-ups, Deductions, Reservation Deposits, Invoices, Refunds)
   const { data: walletTx, error: e4 } = await supabase
     .from('wallet_transactions')
     .select(`
@@ -91,9 +91,8 @@ export async function getPayments() {
         customers ( name, phone )
       )
     `)
-    .in('transaction_type', ['top_up', 'withdrawal'])
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(200);
     
   if (e4) console.error("Wallet Tx error:", e4);
 
@@ -101,16 +100,27 @@ export async function getPayments() {
     allPayments = [...allPayments, ...walletTx.map(p => {
       const cust = Array.isArray(p.wallets) ? p.wallets[0]?.customers : (p.wallets as any)?.customers;
       const c = Array.isArray(cust) ? cust[0] : cust;
+      
+      let typeLabel = 'Wallet Top-Up';
+      let orderId = 'WALLET-TOPUP';
+      let gateway = p.transaction_type === 'top_up' ? 'Hubtel/Admin' : 'Wallet';
+      
+      if (p.transaction_type === 'withdrawal') { typeLabel = 'Wallet Deduction'; orderId = 'WALLET-DEDUCT'; gateway = 'Admin'; }
+      else if (p.transaction_type === 'shipping_deposit_hold') { typeLabel = 'Reservation Deposit'; orderId = p.reference_id || 'RESERVATION'; }
+      else if (p.transaction_type === 'invoice') { typeLabel = 'Shipping Invoice'; orderId = p.reference_id || 'INVOICE'; }
+      else if (p.transaction_type === 'shipping_deficit_payment') { typeLabel = 'Shipping Deficit'; orderId = p.reference_id || 'DEFICIT'; }
+      else if (p.transaction_type === 'shipping_deposit_refund') { typeLabel = 'Deposit Refund'; orderId = p.reference_id || 'REFUND'; gateway = 'System'; }
+      
       return {
         id: p.id,
-        order_id: p.transaction_type === 'withdrawal' ? 'WALLET-DEDUCT' : 'WALLET-TOPUP',
+        order_id: orderId,
         customer_name: c?.name || 'Customer',
         customer_phone: c?.phone || 'N/A',
         total_amount: Math.abs(p.amount),
-        payment_gateway: 'Hubtel/Admin',
-        payment_reference: p.reference_id,
+        payment_gateway: gateway,
+        payment_reference: p.reference_id || 'N/A',
         created_at: p.created_at,
-        type: p.transaction_type === 'withdrawal' ? 'Wallet Deduction' : 'Wallet Top-Up',
+        type: typeLabel,
         status: p.status
       };
     })];

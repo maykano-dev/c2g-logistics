@@ -32,7 +32,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
       return { label: 'Awaiting Arrival', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20' };
     }
     if (status === 'in_warehouse') {
-      return { label: 'In Warehouse', className: 'bg-purple-500/10 text-purple-500 border-purple-500/20' };
+      return { label: 'China Warehouse', className: 'bg-purple-500/10 text-purple-500 border-purple-500/20' };
     }
     if (status === 'clearing_customs') {
       return { label: 'Clearing Customs', className: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' };
@@ -128,7 +128,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
             <Filter className="w-4 h-4" />
             {statusFilter === 'all' ? 'All Packages' :
               statusFilter === 'pending_payment' ? 'Pending Payment' :
-                statusFilter === 'awaiting_arrival' ? 'Awaiting Arrival' : 'In Warehouse'}
+                statusFilter === 'awaiting_arrival' ? 'Awaiting Arrival' : 'China Warehouse'}
           </button>
 
           {showFilterMenu && (
@@ -155,7 +155,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
                 onClick={() => { setStatusFilter('in_warehouse'); setShowFilterMenu(false); }}
                 className={`relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${statusFilter === 'in_warehouse' ? 'bg-accent text-accent-foreground' : ''}`}
               >
-                In Warehouse
+                China Warehouse
               </button>
             </div>
           )}
@@ -232,7 +232,7 @@ export default function PackagesClient({ packages, walletBalance, registrationFe
                         {isDeleting === pkg.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     )}
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusDisplay.className}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${statusDisplay.className}`}>
                       {statusDisplay.label}
                     </span>
                   </div>

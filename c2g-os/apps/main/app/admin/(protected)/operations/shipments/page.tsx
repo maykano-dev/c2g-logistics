@@ -11,7 +11,7 @@ import { useModal } from '@/components/providers/modal-provider';
 const STATUS_OPTIONS = [
   { value: 'Pending', label: 'Pending' },
   { value: 'Awaiting Arrival (China)', label: 'Awaiting Arrival (China)' },
-  { value: 'In Warehouse', label: 'In Warehouse' },
+  { value: 'In Warehouse', label: 'China Warehouse' },
   { value: 'In Transit', label: 'In Transit' },
   { value: 'Clearance', label: 'Clearance' },
   { value: 'Available for pickup', label: 'Available for pickup' },

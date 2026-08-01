@@ -164,7 +164,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
                   if (totalItems > 1 || (totalItems === 1 && inWarehouseCount > 0)) {
                     return (
                       <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded w-fit ${inWarehouseCount === totalItems ? 'bg-green-500/10 text-green-500' : inWarehouseCount > 0 ? 'bg-blue-500/10 text-blue-500' : 'bg-zinc-500/10 text-zinc-500'}`}>
-                        {inWarehouseCount}/{totalItems} In Warehouse
+                        {inWarehouseCount}/{totalItems} China Warehouse
                       </span>
                     );
                   }

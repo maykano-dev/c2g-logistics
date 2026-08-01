@@ -27,7 +27,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Shipments
       const { data: shipment } = await supabase
         .from('shipments')
-        .select('id, tracking_number, status, customer_name, items_description, customer_id')
+        .select('id, tracking_number, status, customer_name, items_description, customer_id, reservation_id')
         .eq('tracking_number', tracking)
         .maybeSingle();
       
@@ -53,7 +53,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Ecom Orders
       const { data: ecom } = await supabase
         .from('ecom_orders')
-        .select('id, tracking_number, status, customer_name, items_description, customer_id')
+        .select('id, tracking_number, order_status, customer_name, items_description, customer_id, reservation_id')
         .eq('tracking_number', tracking)
         .maybeSingle();
 
@@ -66,7 +66,7 @@ export async function processScannedPackage(candidates: string[]) {
       // Check Regular Orders (Link Orders use item_tracking_numbers JSON array)
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, item_tracking_numbers, order_status, customer_name, customer_id')
+        .select('id, item_tracking_numbers, order_status, customer_name, customer_id, reservation_id')
         .not('item_tracking_numbers', 'is', null);
 
       if (orders) {
@@ -101,19 +101,31 @@ export async function processScannedPackage(candidates: string[]) {
                           rpcData.type === 'incoming' ? 'incoming_packages' : 
                           rpcData.type === 'ecom_order' ? 'ecom_orders' : 'orders';
         
-        // orders table uses 'order_status', all others use 'status'
-        const statusColumn = tableName === 'orders' ? 'order_status' : 'status';
+        const statusColumn = ['orders', 'ecom_orders'].includes(tableName) ? 'order_status' : 'status';
                           
         await supabase
           .from(tableName)
           .update({ [statusColumn]: 'in_warehouse' })
           .eq('id', match.id);
           
+        // SAFEGUARD: Automatically delete legacy reservation if it falsely claims to be in transit
+        if (match.reservation_id) {
+           const { data: res } = await supabase
+             .from('shipment_reservations')
+             .select('id, status')
+             .eq('id', match.reservation_id)
+             .single();
+             
+           if (res && res.id.startsWith('RES-LEGACY-') && res.status === 'in_transit') {
+               await supabase.from('shipment_reservations').delete().eq('id', res.id);
+           }
+        }
+          
         if (match.customer_id) {
           createNotification({
             userId: match.customer_id,
-            title: 'Package Arrived at Warehouse',
-            message: `Your package with tracking number ${trackingNumberMatched} has safely arrived at our warehouse and is being processed.`,
+            title: 'Package Arrived at China Warehouse',
+            message: `Your package with tracking number ${trackingNumberMatched} has safely arrived at our China warehouse and is being processed.`,
             type: 'system',
             priority: 'important',
             link: '/dashboard'

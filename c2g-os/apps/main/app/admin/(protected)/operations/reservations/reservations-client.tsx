@@ -290,7 +290,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                           className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-xs font-bold tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-50 ${getStatusColorClass(normalizedStatus)}`}
                           style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                         >
-                          {STATUS_OPTIONS.map(s => <option key={s} value={s} className="bg-zinc-900 text-white">{s}</option>)}
+                          {STATUS_OPTIONS.map(s => <option key={s} value={s} className="bg-zinc-900 text-white">{s === 'In Warehouse' ? 'China Warehouse' : s}</option>)}
                         </select>
                       </div>
                     </td>
@@ -388,7 +388,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                           className={`appearance-none w-full px-3 py-1.5 pr-8 rounded-lg text-[10px] font-bold tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-50 ${getStatusColorClass(normalizedStatus)}`}
                           style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
                         >
-                          {STATUS_OPTIONS.map(s => <option key={s} value={s} className="bg-zinc-900 text-white">{s}</option>)}
+                          {STATUS_OPTIONS.map(s => <option key={s} value={s} className="bg-zinc-900 text-white">{s === 'In Warehouse' ? 'China Warehouse' : s}</option>)}
                         </select>
                       </div>
                       <span className="px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-[10px] font-bold text-zinc-300 capitalize flex items-center gap-1">
@@ -472,7 +472,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                 style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a1a1aa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
               >
                 <option value="">Choose...</option>
-                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s === 'In Warehouse' ? 'China Warehouse' : s}</option>)}
               </select>
             </div>
             <button onClick={() => setSelectedIds(new Set())} className="hidden md:block p-2 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-xl transition-colors" title="Clear Selection">
@@ -514,7 +514,7 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Status</label>
                     <select value={STATUS_OPTIONS.find(s => s.toLowerCase().replace(/ /g, '_') === showEditModal.status?.toLowerCase()) || 'In Warehouse'} onChange={e => setShowEditModal({...showEditModal, status: e.target.value.toLowerCase().replace(/ /g, '_')})} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500">
-                      {STATUS_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {STATUS_OPTIONS.map(m => <option key={m} value={m}>{m === 'In Warehouse' ? 'China Warehouse' : m}</option>)}
                     </select>
                   </div>
                 </div>
@@ -563,8 +563,11 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
                 </h2>
                 <div className="flex items-center gap-3 mt-2">
                   <p className="text-sm text-zinc-400 font-mono">{showItemsModal.id}</p>
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase border ${getStatusColorClass(showItemsModal.status || 'in_warehouse')}`}>
-                    {STATUS_OPTIONS.find(s => s.toLowerCase().replace(/ /g, '_') === (showItemsModal.status || 'in_warehouse').toLowerCase()) || 'In Warehouse'}
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap ${getStatusColorClass(showItemsModal.status || 'in_warehouse')}`}>
+                    {(() => {
+                      const found = STATUS_OPTIONS.find(s => s.toLowerCase().replace(/ /g, '_') === (showItemsModal.status || 'in_warehouse').toLowerCase()) || 'In Warehouse';
+                      return found === 'In Warehouse' ? 'China Warehouse' : found;
+                    })()}
                   </span>
                 </div>
               </div>

@@ -263,7 +263,7 @@ export default function CustomerProfileClient({ customer, linkOrders, mallOrders
           {activeTab === 'packages' && (
             <div className="space-y-3">
               {packages.length === 0 ? (
-                <div className="text-center py-8 text-xs text-zinc-500">No Packages in warehouse.</div>
+                <div className="text-center py-8 text-xs text-zinc-500">No Packages in China warehouse.</div>
               ) : packages.map((p) => (
                 <div 
                   key={p.id} 
@@ -272,7 +272,7 @@ export default function CustomerProfileClient({ customer, linkOrders, mallOrders
                 >
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-bold text-white">{p.tracking_number}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold uppercase">{p.status || 'In Warehouse'}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded whitespace-nowrap bg-purple-500/10 text-purple-400 font-bold uppercase">{p.status === 'in_warehouse' ? 'China Warehouse' : (p.status || 'China Warehouse')}</span>
                   </div>
                   <p className="text-xs text-zinc-400 truncate">{p.items_description || 'Package'}</p>
                 </div>

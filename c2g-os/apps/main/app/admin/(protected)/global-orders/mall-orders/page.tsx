@@ -11,7 +11,7 @@ const STATUS_OPTIONS = [
   { value: 'pending_payment', label: 'Pending Payment', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' },
   { value: 'processing', label: 'Processing', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
   { value: 'purchased', label: 'Purchased', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' },
-  { value: 'in_warehouse', label: 'In Warehouse', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' },
+  { value: 'in_warehouse', label: 'China Warehouse', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' },
   { value: 'in_transit', label: 'In Transit', color: 'bg-purple-500/10 text-purple-400 border-purple-500/30' },
   { value: 'clearing_customs', label: 'Clearance', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
   { value: 'ready_for_pickup', label: 'Available for pickup', color: 'bg-teal-500/10 text-teal-400 border-teal-500/30' },

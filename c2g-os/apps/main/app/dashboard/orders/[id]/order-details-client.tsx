@@ -16,7 +16,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
     { key: "new", label: "Awaiting Payment", icon: CreditCard },
     { key: "processing", label: "Processing", icon: Settings },
     { key: "purchased", label: "Purchased", icon: ShoppingCart },
-    { key: "in_warehouse", label: "In Warehouse", icon: Building },
+    { key: "in_warehouse", label: "China Warehouse", icon: Building },
     { key: "in_transit", label: "In Transit", icon: Plane },
     { key: "clearance", label: "Clearance", icon: ShieldCheck },
     { key: "available_for_pickup", label: "Available for pickup", icon: MapPin },
@@ -125,7 +125,7 @@ export function OrderDetailsClient({ order, initialTrack }: { order: any, initia
           <div className="glass-panel p-6 relative overflow-hidden">
              {/* Absolute Payment Status Badge */}
              <div className="absolute top-6 right-6">
-               <span className={`px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${
+               <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap capitalize ${
                   isPaid 
                     ? 'bg-green-500/10 text-green-500 border-green-500/20' 
                     : 'bg-destructive/10 text-destructive border-destructive/20 animate-pulse'

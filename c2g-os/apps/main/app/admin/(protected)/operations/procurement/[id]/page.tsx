@@ -94,7 +94,7 @@ export default function OrderProcurementDetail({ params }: { params: Promise<{ i
   const steps = [
     { id: 'pending', label: 'Pending' },
     { id: 'purchased', label: 'Purchased' },
-    { id: 'arrived_warehouse', label: 'In Warehouse' },
+    { id: 'arrived_warehouse', label: 'China Warehouse' },
     { id: 'shipped', label: 'Shipped' },
     { id: 'delivered', label: 'Delivered' }
   ];

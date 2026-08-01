@@ -102,7 +102,7 @@ export default async function DashboardOverview() {
             { label: "Total Mall Orders", value: stats.mallOrdersCount, icon: FileText, color: "text-purple-500", bg: "bg-purple-500/10" },
             { label: "Pending Payments", value: stats.pendingPaymentsCount, icon: CreditCard, color: "text-red-500", bg: "bg-red-500/10" },
             { label: "Active Shipments", value: stats.activeShipmentsCount, icon: PlaneTakeoff, color: "text-blue-500", bg: "bg-blue-500/10" },
-            { label: "In Warehouse", value: stats.inWarehouseCount, icon: MapPin, color: "text-purple-500", bg: "bg-purple-500/10" },
+            { label: "China Warehouse", value: stats.inWarehouseCount, icon: MapPin, color: "text-purple-500", bg: "bg-purple-500/10" },
             { label: "Incoming Packages", value: stats.incomingPackagesCount, icon: Package, color: "text-orange-500", bg: "bg-orange-500/10" },
             { label: "Link Orders", value: stats.linkOrdersCount, icon: LinkIcon, color: "text-primary", bg: "bg-primary/10" },
           ].map((card, idx) => (

@@ -103,7 +103,7 @@ export default function ScannerTab({ onScanLog, sessionCount }: { onScanLog: (lo
         trackingNumber: data.tracking_number || decodedText,
         customerName: data.customer_name || 'Unknown',
         status: data.status as 'updated' | 'already_processed' | 'not_found' | 'error',
-        message: data.status === 'updated' ? 'Package marked as IN WAREHOUSE' : 
+        message: data.status === 'updated' ? 'Package marked as CHINA WAREHOUSE' : 
                  data.status === 'already_processed' ? `Already processed (${data.current_status})` : 
                  'Package not found in database',
         timestamp: new Date(),

@@ -140,7 +140,7 @@ export default function AgentDashboardClient({ stats }: { stats: DashboardStats 
               <Package className="w-6 h-6 text-indigo-500" />
             </div>
             <div>
-              <p className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Packages in Warehouse</p>
+              <p className="text-sm text-zinc-500 font-bold uppercase tracking-wider">Packages in China Warehouse</p>
               <p className="text-2xl font-bold text-white">{stats.packagesInWarehouse}</p>
             </div>
           </div>
