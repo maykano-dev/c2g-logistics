@@ -116,7 +116,8 @@ export async function getDashboardStats() {
 
     // Add variants
     (lowStockVariants || []).forEach(v => {
-      const parentName = Array.isArray(v.products) ? v.products[0]?.name : v.products?.name;
+      const productsData: any = v.products;
+      const parentName = Array.isArray(productsData) ? productsData[0]?.name : productsData?.name;
       lowStockProducts.push({
         id: v.product_id || v.id,
         name: `${parentName || 'Product'} (${Object.values(v.variant_options || {}).join(' / ')})`,
