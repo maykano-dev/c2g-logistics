@@ -7,7 +7,7 @@ export async function getDashboardStats() {
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
   
   try {
-    // 1. Basic Counts
+    // BATCH 1: Lightweight counts (head: true)
     const [
       { count: newOrdersCount },
       { count: warehouseCount },
@@ -34,7 +34,7 @@ export async function getDashboardStats() {
       supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'paid').eq('order_status', 'pending')
     ]);
 
-    // 2. Revenue Calculation
+    // BATCH 2: Financial Data
     const [
       { data: linkOrders },
       { data: mallOrders },
@@ -50,39 +50,7 @@ export async function getDashboardStats() {
     const shipmentPaymentsRevenue = (shipmentPayments || []).reduce((sum, s) => sum + parseFloat(s.shipping_cost || 0), 0);
     const totalRevenue = linkOrdersRevenue + mallOrdersRevenue + shipmentPaymentsRevenue;
 
-    // 3. Recent Orders
-    const { data: recentOrders } = await supabase
-      .from('orders')
-      .select('id, customer_name, total, order_status, payment_status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    // 4. Low Stock Alerts
-    const { data: productsData } = await supabase
-      .from('products')
-      .select('id, name, sku, stock, product_variants(id, sku, stock, variant_options)');
-
-    const lowStockProducts: any[] = [];
-    (productsData || []).forEach(p => {
-      if (p.product_variants && p.product_variants.length > 0) {
-        p.product_variants.forEach((v: any) => {
-          if (v.stock > 0 && v.stock <= 10) {
-            lowStockProducts.push({
-              id: p.id,
-              name: `${p.name} (${Object.values(v.variant_options || {}).join(' / ')})`,
-              sku: v.sku,
-              stock: v.stock
-            });
-          }
-        });
-      } else {
-        if (p.stock > 0 && p.stock <= 10) {
-          lowStockProducts.push(p);
-        }
-      }
-    });
-
-    // 5. Weekly Chart Data
+    // BATCH 3: Recent Orders & Chart Data
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const today = new Date();
     const chartData = [];
@@ -91,7 +59,12 @@ export async function getDashboardStats() {
     weekStart.setDate(today.getDate() - 6);
     weekStart.setHours(0, 0, 0, 0);
 
-    const [{ data: weekLinkOrders }, { data: weekMallOrders }] = await Promise.all([
+    const [
+      { data: recentOrders },
+      { data: weekLinkOrders },
+      { data: weekMallOrders }
+    ] = await Promise.all([
+      supabase.from('orders').select('id, customer_name, total, order_status, payment_status, created_at').order('created_at', { ascending: false }).limit(5),
       supabase.from('orders').select('created_at').gte('created_at', weekStart.toISOString()),
       supabase.from('ecom_orders').select('created_at').gte('created_at', weekStart.toISOString())
     ]);
@@ -120,6 +93,38 @@ export async function getDashboardStats() {
       });
     }
 
+    // BATCH 4: Highly Optimized Low Stock Alerts (Avoids fetching entire products table)
+    const [
+      { data: lowStockBaseProducts },
+      { data: lowStockVariants }
+    ] = await Promise.all([
+      supabase.from('products').select('id, name, sku, stock').gt('stock', 0).lte('stock', 10),
+      supabase.from('product_variants').select('id, sku, stock, variant_options, product_id, products(name)').gt('stock', 0).lte('stock', 10)
+    ]);
+
+    const lowStockProducts: any[] = [];
+    
+    // Add base products
+    (lowStockBaseProducts || []).forEach(p => {
+      lowStockProducts.push({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        stock: p.stock
+      });
+    });
+
+    // Add variants
+    (lowStockVariants || []).forEach(v => {
+      const parentName = Array.isArray(v.products) ? v.products[0]?.name : v.products?.name;
+      lowStockProducts.push({
+        id: v.product_id || v.id,
+        name: `${parentName || 'Product'} (${Object.values(v.variant_options || {}).join(' / ')})`,
+        sku: v.sku,
+        stock: v.stock
+      });
+    });
+
     return {
       success: true,
       data: {
@@ -142,6 +147,6 @@ export async function getDashboardStats() {
     };
   } catch (error: any) {
     console.error('Error fetching dashboard stats:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'Failed to load stats' };
   }
 }

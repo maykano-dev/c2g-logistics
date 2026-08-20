@@ -278,6 +278,7 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                   </button>
                 </th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider w-[200px]">Tracking #</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider w-20 text-center">Image</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider w-full">Customer</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Date Booked</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Method</th>
@@ -305,6 +306,17 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                     </td>
                     <td className="p-4 max-w-[250px]">
                       <p className="text-sm text-white font-mono font-medium truncate" title={shipment.tracking_number}>{shipment.tracking_number}</p>
+                    </td>
+                    <td className="p-4">
+                      {shipment.image_url ? (
+                        <a href={shipment.image_url} target="_blank" rel="noreferrer" className="block w-10 h-10 rounded-lg overflow-hidden border border-zinc-800 hover:border-indigo-500 transition-colors mx-auto shrink-0" onClick={e => e.stopPropagation()}>
+                          <img src={shipment.image_url} alt="Item" className="w-full h-full object-cover" />
+                        </a>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto shrink-0">
+                          <span className="text-[10px] text-zinc-600 font-medium">N/A</span>
+                        </div>
+                      )}
                     </td>
                     <td className="p-4">
                       <p className="text-sm text-zinc-200">{shipment.customer_name || 'N/A'}</p>
@@ -370,6 +382,15 @@ export function ShipmentsView({ readOnly = false }: { readOnly?: boolean }) {
                       <button onClick={() => toggleSelection(shipment.id)} className={`mt-0.5 ${selectedIds.has(shipment.id) ? 'text-indigo-500' : 'text-zinc-600'}`}>
                         {selectedIds.has(shipment.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                       </button>
+                      {shipment.image_url ? (
+                        <a href={shipment.image_url} target="_blank" rel="noreferrer" className="shrink-0" onClick={e => e.stopPropagation()}>
+                          <img src={shipment.image_url} className="w-10 h-10 rounded-lg object-cover border border-zinc-800" alt="Item"/>
+                        </a>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
+                          <span className="text-[10px] text-zinc-600 font-medium">N/A</span>
+                        </div>
+                      )}
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-white font-mono font-medium truncate max-w-[200px]" title={shipment.tracking_number}>{shipment.tracking_number}</p>
