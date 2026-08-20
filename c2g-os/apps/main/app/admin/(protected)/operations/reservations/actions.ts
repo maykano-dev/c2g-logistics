@@ -1,7 +1,28 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
+
+export async function getAdminReservations() {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('shipment_reservations')
+    .select(`
+      *,
+      customers (
+        name,
+        email,
+        phone
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  return { success: true, data };
+}
 
 export async function updateReservationStatus(id: string, status: string) {
   const supabase = await createClient();

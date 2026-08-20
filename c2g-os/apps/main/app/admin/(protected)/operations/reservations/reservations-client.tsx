@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { Search, Plus, Filter, Edit, Save, Plane, Ship, Zap, ChevronDown, CheckSquare, Square, Copy, X, Eye, Package, Link as LinkIcon, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
-import { updateReservationStatus, bulkUpdateReservationStatus, updateAdminReservation, getReservationItems } from './actions';
+import { updateReservationStatus, bulkUpdateReservationStatus, updateAdminReservation, getReservationItems, getAdminReservations } from './actions';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useModal } from '@/components/providers/modal-provider';
@@ -60,24 +60,12 @@ export default function ReservationsClient({ readOnly = false }: { readOnly?: bo
 
   const fetchReservations = async () => {
     setLoading(true);
-    const supabase = createClient();
+    const result = await getAdminReservations();
     
-    const { data, error } = await supabase
-      .from('shipment_reservations')
-      .select(`
-        *,
-        customers (
-          name,
-          email,
-          phone
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching admin reservations:', error);
-    } else if (data) {
-      setInitialReservations(data);
+    if (result.success && result.data) {
+      setInitialReservations(result.data);
+    } else {
+      console.error('Error fetching admin reservations:', result.error);
     }
     
     setLoading(false);
