@@ -77,6 +77,30 @@ export default function AdminMarketingView() {
     }
   };
 
+  const handleDeleteItem = async (id: string) => {
+    const confirmed = await showConfirm({
+      title: 'Delete Item',
+      message: 'Are you sure you want to delete this item? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete'
+    });
+
+    if (!confirmed) return;
+
+    const { deleteMarketingItem } = await import('./actions');
+    let tableName: 'announcements' | 'shop_ads' | 'telegram_broadcasts' = 'announcements';
+    if (activeTab === 'ads') tableName = 'shop_ads';
+    if (activeTab === 'broadcasts') tableName = 'telegram_broadcasts';
+
+    const res = await deleteMarketingItem(id, tableName);
+    if (res.success) {
+      setData(prev => prev.filter(item => item.id !== id));
+      showAlert({ title: 'Success', message: 'Item deleted successfully.', type: 'success' });
+    } else {
+      showAlert({ title: 'Error', message: 'Failed to delete item: ' + res.error, type: 'danger' });
+    }
+  };
+
   const processHeroFiles = async (files: FileList | null, resetInput?: () => void) => {
     if (!files || files.length !== 15) {
       showAlert({ title: 'Error', message: 'Please select exactly 15 images to upload.', type: 'danger' });
@@ -403,7 +427,7 @@ export default function AdminMarketingView() {
                             <button className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg transition-colors">
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors">
+                            <button onClick={() => handleDeleteItem(item.id)} className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -462,7 +486,7 @@ export default function AdminMarketingView() {
                         <button className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl transition-colors">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl transition-colors">
+                        <button onClick={() => handleDeleteItem(item.id)} className="p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>

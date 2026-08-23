@@ -74,3 +74,17 @@ export async function createTelegramBroadcast(messageText: string, audience: str
     return { success: false, error: err.message || 'Failed to create broadcast' };
   }
 }
+
+export async function deleteMarketingItem(id: string, table: 'announcements' | 'shop_ads' | 'telegram_broadcasts') {
+  const supabase = createAdminClient();
+  
+  try {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) throw error;
+    
+    revalidatePath('/admin/commerce/marketing');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to delete item' };
+  }
+}
