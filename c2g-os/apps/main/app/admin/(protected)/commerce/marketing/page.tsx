@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Megaphone, Plus, Image as ImageIcon, Send, Edit, Trash2, Search, Video, ImagePlus, CheckCircle, XCircle, Copy } from 'lucide-react';
+import { Megaphone, Plus, Image as ImageIcon, Send, Edit, Trash2, Search, Video, ImagePlus, CheckCircle, XCircle, Copy, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { adminHandleGalleryStatus } from '@/app/admin/gallery-actions';
 import { adminBulkUpdateHeroImages, getHeroImages } from '@/app/admin/hero-actions';
@@ -19,9 +19,11 @@ export default function AdminMarketingView() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDraggingHero, setIsDraggingHero] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const { showConfirm, showAlert } = useModal();
 
   useEffect(() => {
+    setSelectedIds([]);
     fetchData();
   }, [activeTab]);
 
@@ -98,6 +100,68 @@ export default function AdminMarketingView() {
       showAlert({ title: 'Success', message: 'Item deleted successfully.', type: 'success' });
     } else {
       showAlert({ title: 'Error', message: 'Failed to delete item: ' + res.error, type: 'danger' });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    const confirmed = await showConfirm({
+      title: 'Bulk Delete',
+      message: `Are you sure you want to delete ${selectedIds.length} item(s)? This action cannot be undone.`,
+      type: 'danger',
+      confirmText: 'Delete All'
+    });
+
+    if (!confirmed) return;
+
+    const { bulkDeleteMarketingItems } = await import('./actions');
+    let tableName: 'announcements' | 'shop_ads' | 'telegram_broadcasts' = 'announcements';
+    if (activeTab === 'ads') tableName = 'shop_ads';
+    if (activeTab === 'broadcasts') tableName = 'telegram_broadcasts';
+
+    const res = await bulkDeleteMarketingItems(selectedIds, tableName);
+    if (res.success) {
+      setData(prev => prev.filter(item => !selectedIds.includes(item.id)));
+      setSelectedIds([]);
+      showAlert({ title: 'Success', message: 'Items deleted successfully.', type: 'success' });
+    } else {
+      showAlert({ title: 'Error', message: 'Failed to delete items: ' + res.error, type: 'danger' });
+    }
+  };
+
+  const handleResend = async (id: string) => {
+    const confirmed = await showConfirm({
+      title: 'Resend Item',
+      message: 'This will reset the creation date and broadcast this item as if it were new. Continue?',
+      type: 'warning',
+      confirmText: 'Resend'
+    });
+
+    if (!confirmed) return;
+
+    const { resendMarketingItem } = await import('./actions');
+    let tableName: 'announcements' | 'telegram_broadcasts' = 'announcements';
+    if (activeTab === 'broadcasts') tableName = 'telegram_broadcasts';
+
+    const res = await resendMarketingItem(id, tableName);
+    if (res.success) {
+      showAlert({ title: 'Success', message: 'Item resent successfully.', type: 'success' });
+      fetchData();
+    } else {
+      showAlert({ title: 'Error', message: 'Failed to resend item: ' + res.error, type: 'danger' });
+    }
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === data.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(data.map(item => item.id));
     }
   };
 
@@ -370,10 +434,28 @@ export default function AdminMarketingView() {
           </div>
         ) : (
           <>
+            {selectedIds.length > 0 && activeTab !== 'searchLogs' && (
+              <div className="bg-zinc-800/50 p-4 border-b border-zinc-800 flex items-center justify-between animate-in fade-in slide-in-from-top-4">
+                <span className="text-sm font-medium text-white">{selectedIds.length} item(s) selected</span>
+                <button onClick={handleBulkDelete} className="bg-red-500/20 hover:bg-red-500/40 text-red-400 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors">
+                  <Trash2 className="w-4 h-4" /> Delete Selected
+                </button>
+              </div>
+            )}
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/50">
+                  {activeTab !== 'searchLogs' && (
+                    <th className="p-4 w-12 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.length > 0 && selectedIds.length === data.length}
+                        onChange={toggleSelectAll}
+                        className="rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50 focus:ring-offset-0 cursor-pointer" 
+                      />
+                    </th>
+                  )}
                   <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Content</th>
                   <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status</th>
                   <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Date Created</th>
@@ -388,6 +470,16 @@ export default function AdminMarketingView() {
                 ) : (
                   data.map(item => (
                     <tr key={item.id} className="hover:bg-zinc-800/50 transition-colors group">
+                      {activeTab !== 'searchLogs' && (
+                        <td className="p-4 text-center">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedIds.includes(item.id)}
+                            onChange={() => toggleSelection(item.id)}
+                            className="rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50 focus:ring-offset-0 cursor-pointer" 
+                          />
+                        </td>
+                      )}
                       <td className="p-4">
                         {activeTab === 'searchLogs' ? (
                           <div>
@@ -424,10 +516,15 @@ export default function AdminMarketingView() {
                           <span className="text-zinc-600 text-sm">Log Entry</span>
                         ) : (
                           <div className="flex items-center justify-end gap-2">
-                            <button className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg transition-colors">
+                            {(activeTab === 'announcements' || activeTab === 'broadcasts') && (
+                              <button onClick={() => handleResend(item.id)} className="p-2 text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded-lg transition-colors" title="Resend">
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg transition-colors" title="Edit">
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleDeleteItem(item.id)} className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors">
+                            <button onClick={() => handleDeleteItem(item.id)} className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors" title="Delete">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -449,7 +546,17 @@ export default function AdminMarketingView() {
             ) : (
               data.map(item => (
                 <div key={item.id} className="p-4 flex flex-col gap-4 hover:bg-zinc-800/20 transition-colors">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-3">
+                    {activeTab !== 'searchLogs' && (
+                      <div className="pt-1">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedIds.includes(item.id)}
+                          onChange={() => toggleSelection(item.id)}
+                          className="rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50 focus:ring-offset-0 cursor-pointer" 
+                        />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0 pr-4">
                       {activeTab === 'searchLogs' ? (
                         <>
@@ -483,10 +590,15 @@ export default function AdminMarketingView() {
                       <span className="text-zinc-600 text-[10px] uppercase font-bold tracking-wider">Log Entry</span>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <button className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl transition-colors">
+                        {(activeTab === 'announcements' || activeTab === 'broadcasts') && (
+                          <button onClick={() => handleResend(item.id)} className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl transition-colors" title="Resend">
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl transition-colors" title="Edit">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDeleteItem(item.id)} className="p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl transition-colors">
+                        <button onClick={() => handleDeleteItem(item.id)} className="p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl transition-colors" title="Delete">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
