@@ -37,18 +37,11 @@ export function CreateMarketingModal({
     setLoading(true);
     setError('');
     
-    const supabase = createClient();
-    
     try {
       if (activeTab === 'announcements') {
-        const { error: err } = await supabase.from('announcements').insert({
-          title,
-          message,
-          type,
-          icon: 'megaphone',
-          is_active: true
-        });
-        if (err) throw err;
+        const { createMarketingAnnouncement } = await import('./actions');
+        const res = await createMarketingAnnouncement(title, message, type);
+        if (!res.success) throw new Error(res.error);
       } 
       else if (activeTab === 'ads') {
         if (!file) throw new Error('Please select an image for the ad');
@@ -67,21 +60,14 @@ export function CreateMarketingModal({
           throw new Error(uploadData.error || 'Failed to upload image');
         }
         
-        const { error: err } = await supabase.from('shop_ads').insert({
-          image_url: uploadData.url,
-          link,
-          is_active: true
-        });
-        if (err) throw err;
+        const { createShopAd } = await import('./actions');
+        const res = await createShopAd(uploadData.url, link);
+        if (!res.success) throw new Error(res.error);
       }
       else if (activeTab === 'broadcasts') {
-        const { error: err } = await supabase.from('telegram_broadcasts').insert({
-          message_text: message,
-          audience,
-          channel,
-          status: 'pending'
-        });
-        if (err) throw err;
+        const { createTelegramBroadcast } = await import('./actions');
+        const res = await createTelegramBroadcast(message, audience, channel);
+        if (!res.success) throw new Error(res.error);
       }
       
       onSuccess();
