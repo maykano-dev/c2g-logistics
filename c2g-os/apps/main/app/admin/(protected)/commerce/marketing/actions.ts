@@ -147,3 +147,50 @@ export async function resendMarketingItem(id: string, table: 'announcements' | '
     return { success: false, error: err.message || 'Failed to resend item' };
   }
 }
+
+export async function updateMarketingAnnouncement(id: string, title: string, message: string, type: string) {
+  const supabase = createAdminClient();
+  try {
+    const { error } = await supabase.from('announcements').update({
+      title,
+      message,
+      type
+    }).eq('id', id);
+    if (error) throw error;
+    revalidatePath('/admin/commerce/marketing');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to update announcement' };
+  }
+}
+
+export async function updateShopAd(id: string, imageUrl: string | null, link: string) {
+  const supabase = createAdminClient();
+  try {
+    const payload: any = { link };
+    if (imageUrl) payload.image_url = imageUrl;
+    
+    const { error } = await supabase.from('shop_ads').update(payload).eq('id', id);
+    if (error) throw error;
+    revalidatePath('/admin/commerce/marketing');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to update ad' };
+  }
+}
+
+export async function updateTelegramBroadcast(id: string, messageText: string, audience: string, channel: string) {
+  const supabase = createAdminClient();
+  try {
+    const { error } = await supabase.from('telegram_broadcasts').update({
+      message_text: messageText,
+      audience,
+      channel
+    }).eq('id', id);
+    if (error) throw error;
+    revalidatePath('/admin/commerce/marketing');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to update broadcast' };
+  }
+}

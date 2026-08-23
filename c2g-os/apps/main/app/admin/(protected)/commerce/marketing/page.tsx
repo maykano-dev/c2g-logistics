@@ -19,6 +19,7 @@ export default function AdminMarketingView() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDraggingHero, setIsDraggingHero] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const { showConfirm, showAlert } = useModal();
 
@@ -260,7 +261,10 @@ export default function AdminMarketingView() {
         </div>
         {activeTab !== 'searchLogs' && (
           <button 
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => {
+              setEditItem(null);
+              setIsCreateModalOpen(true);
+            }}
             className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors w-fit"
           >
             <Plus className="w-4 h-4" /> Create New
@@ -521,7 +525,7 @@ export default function AdminMarketingView() {
                                 <RefreshCw className="w-4 h-4" />
                               </button>
                             )}
-                            <button className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg transition-colors" title="Edit">
+                            <button onClick={() => { setEditItem(item); setIsCreateModalOpen(true); }} className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg transition-colors" title="Edit">
                               <Edit className="w-4 h-4" />
                             </button>
                             <button onClick={() => handleDeleteItem(item.id)} className="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors" title="Delete">
@@ -595,7 +599,7 @@ export default function AdminMarketingView() {
                             <RefreshCw className="w-4 h-4" />
                           </button>
                         )}
-                        <button className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl transition-colors" title="Edit">
+                        <button onClick={() => { setEditItem(item); setIsCreateModalOpen(true); }} className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl transition-colors" title="Edit">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button onClick={() => handleDeleteItem(item.id)} className="p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl transition-colors" title="Delete">
@@ -614,12 +618,17 @@ export default function AdminMarketingView() {
 
       <CreateMarketingModal 
         isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setEditItem(null);
+        }} 
         activeTab={activeTab} 
         onSuccess={() => {
           fetchData();
-          showAlert({ title: 'Success', message: 'Item created successfully!', type: 'success' });
+          setEditItem(null);
+          showAlert({ title: 'Success', message: `Item ${editItem ? 'updated' : 'created'} successfully!`, type: 'success' });
         }} 
+        editItem={editItem}
       />
     </div>
   );
