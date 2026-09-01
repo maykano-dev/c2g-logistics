@@ -26,7 +26,7 @@ export async function procureOrder(jobId: string) {
   // We expect order.items to be the JSONB array we saved during checkout
   const productList = (order.items || []).map((item: any) => ({
     product_id: item.product_id,
-    sku_id: item.variant_id || undefined,
+    sku_id: item.spec_id || (item.variant_id && item.variant_id !== 0 ? item.variant_id : undefined),
     quantity: item.quantity
   }));
 

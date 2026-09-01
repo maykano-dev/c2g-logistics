@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import CheckoutClient from "../../components/shop/checkout-client";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import CustomShopHeader from "../../components/shop/shop-header";
 
 export const metadata = {
   title: "Secure Checkout | C2G Mall",
@@ -22,6 +23,17 @@ export default async function CheckoutPage() {
     .select("id, name, phone, email")
     .eq("id", userData.user.id)
     .single();
+
+  const { data: addressData } = await supabase
+    .from("customer_addresses")
+    .select("street_address, city, region")
+    .eq("customer_id", profile?.id)
+    .eq("is_primary", true)
+    .single();
+
+  if (profile && addressData) {
+    (profile as any).address = `${addressData.street_address}, ${addressData.city}, ${addressData.region}`;
+  }
 
   let walletBalance = 0;
   if (profile) {
@@ -53,7 +65,8 @@ export default async function CheckoutPage() {
   const minLocalDeliveryFee = settingsData?.minimum_local_delivery_fee != null ? parseFloat(settingsData.minimum_local_delivery_fee) : 0;
 
   return (
-    <div className="bg-background min-h-screen pb-24">
+    <div className="bg-background min-h-screen pb-24 pt-14 md:pt-16">
+      <CustomShopHeader walletBalance={walletBalance} />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
           <Link href="/cart" className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors">

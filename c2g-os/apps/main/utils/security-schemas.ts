@@ -77,6 +77,7 @@ export const CheckoutSchema = z.object({
   items: z.array(z.object({
     productId: z.string(),
     variantId: z.string().optional().nullable(),
+    name: z.string().optional(),
     quantity: z.number().int().positive(),
     priceGhs: z.number().optional(),
     priceCny: z.number().optional(),

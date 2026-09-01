@@ -13,6 +13,8 @@ import ProductSection from "../../components/shop/product-section";
 import MobileBottomNav from "../../components/shop/mobile-bottom-nav";
 import FloatingCart from "../../components/shop/floating-cart";
 import ShopLayoutWrapper from "../../components/shop/shop-layout-wrapper";
+import { PromoSection } from "../../components/shop/promo-section";
+import { AnnouncementBanner } from "../../components/shop/announcement-banner";
 import { Search, ShoppingBag, ArrowRight, ArrowLeft, Flame, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { getSecureWalletBalance } from "../dashboard/wallet/shared-actions";
@@ -35,11 +37,14 @@ export default async function ShopPage({
   const walletRes = await getSecureWalletBalance();
 
   return (
-    <div className="bg-background min-h-screen pb-20 md:pb-8 pt-14 md:pt-16">
-      {/* Fixed Shop Header (Search + Category Chips) */}
-      <Suspense fallback={<div className="h-28 bg-background" />}>
-        <ShopHeader walletBalance={walletRes.available_balance} />
-      </Suspense>
+    <div className="bg-background min-h-screen pb-20 md:pb-8 pt-20 md:pt-24">
+      {/* Fixed Shop Header + Announcement Banner */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <AnnouncementBanner />
+        <Suspense fallback={<div className="h-20 bg-background border-b border-border/50" />}>
+          <ShopHeader walletBalance={walletRes.available_balance} />
+        </Suspense>
+      </div>
 
       <ShopLayoutWrapper>
         {/* Suspense boundary with a key tied to search parameters.
@@ -101,6 +106,9 @@ async function ShopContent({
         <div className="space-y-8 md:space-y-12">
           {showHeroAndSections && (
             <>
+              {/* Promotional Bento Box Grid */}
+              <PromoSection />
+
               {/* Hero Banner Carousel */}
               {topPurchasedProducts.length > 0 && (
                 <section className="w-full">

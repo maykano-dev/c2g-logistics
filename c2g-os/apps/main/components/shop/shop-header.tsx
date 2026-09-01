@@ -37,14 +37,25 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(() => {
-      router.push("/shop?" + createQueryString("query", query));
+      const params = new URLSearchParams(searchParams.toString());
+      if (query) {
+        params.set("query", query);
+      } else {
+        params.delete("query");
+      }
+      // Clear visual search when performing a text search
+      params.delete("searchId");
+      router.push("/shop?" + params.toString());
     });
   };
 
   const clearSearch = () => {
     setQuery("");
     startTransition(() => {
-      router.push("/shop");
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("query");
+      params.delete("searchId");
+      router.push("/shop?" + params.toString());
     });
   };
 

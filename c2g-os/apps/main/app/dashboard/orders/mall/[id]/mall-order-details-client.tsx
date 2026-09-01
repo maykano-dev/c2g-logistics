@@ -1,16 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Map, Plane, Ship, CreditCard, Settings, ShoppingCart, Building, ShieldCheck, MapPin, ExternalLink } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Map, Plane, Ship, CreditCard, Settings, ShoppingCart, Building, ShieldCheck, MapPin, ExternalLink, Package, Truck, Loader2 } from "lucide-react";
 
 import { useModal } from "@/components/providers/modal-provider";
-import { payMallOrder } from "../../../mall-orders/actions";
+import { payMallOrder, fetchOrderTrackingTimeline } from "../../../mall-orders/actions";
 
 export function MallOrderDetailsClient({ order, initialTrack }: { order: any, initialTrack: boolean }) {
   const router = useRouter();
-
   const { showAlert } = useModal();
+  
+  const [trackingData, setTrackingData] = useState<any>(null);
+  const [isLoadingTracking, setIsLoadingTracking] = useState(true);
+
+  useEffect(() => {
+    async function loadTracking() {
+      try {
+        const res = await fetchOrderTrackingTimeline(order.id);
+        if (res.success) {
+          setTrackingData(res);
+        }
+      } catch (err) {
+        console.error("Failed to load tracking:", err);
+      } finally {
+        setIsLoadingTracking(false);
+      }
+    }
+    loadTracking();
+  }, [order.id]);
 
   const timelineSteps = [
     { key: "new", label: "Awaiting Payment", icon: CreditCard },
@@ -115,15 +133,22 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6">
-              <div className="w-24 h-24 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-border overflow-hidden relative">
-                {primaryItem.imageUrl ? (
-                  <img src={primaryItem.imageUrl} alt="Item" className="w-full h-full object-cover" />
+              <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border overflow-hidden relative shadow-md">
+                {items.length > 1 ? (
+                  <div className="w-full h-full bg-gradient-to-tr from-blue-700 via-blue-600 to-red-500 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
+                    <span className="text-5xl font-black text-white leading-none tracking-tighter drop-shadow-md z-10 -mt-1">{items.length}</span>
+                    <span className="text-[9px] font-extrabold text-white/90 uppercase tracking-[0.2em] mt-1 z-10">Items</span>
+                  </div>
+                ) : primaryItem.imageUrl || primaryItem.image_url ? (
+                  <img src={primaryItem.imageUrl || primaryItem.image_url} alt="Item" className="w-full h-full object-cover" />
                 ) : (
                   <ShoppingCart className="w-8 h-8 text-muted-foreground" />
                 )}
               </div>
               <div className="pt-2">
-                <h2 className="text-xl font-bold pr-20 truncate" title={primaryItem.name}>{primaryItem.name || 'Mall Order Item'}</h2>
+                <h2 className="text-xl font-bold pr-20 truncate" title={items.length > 1 ? 'Mall Order Bundle' : primaryItem.name}>
+                  {items.length > 1 ? 'Mall Order Bundle' : (primaryItem.name || 'Mall Order Item')}
+                </h2>
                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                   <span>Qty: {totalQuantity}</span>
                   <span className="w-1 h-1 rounded-full bg-border" />
@@ -192,57 +217,86 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
               <div className="py-4 border-b border-border/50 space-y-3">
                 <span className="text-muted-foreground block mb-2">Order Items</span>
                 {items.map((item: any, idx: number) => (
-                  <div key={item.id || idx} className="bg-secondary/20 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-border/50">
-                    <div className="flex flex-col max-w-[50%]">
-                      <span className="font-medium text-sm truncate" title={item.name}>{item.name || `Item ${idx + 1}`}</span>
-                      {item.selectedOptions && (
-                         <span className="text-xs text-muted-foreground mt-1">
-                           {Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ')}
-                         </span>
-                      )}
+                  <div key={item.id || idx} className="bg-secondary/20 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-border/50">
+                    <div className="flex items-center gap-3 w-full sm:max-w-[60%]">
+                      <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border overflow-hidden relative shadow-sm">
+                        {item.imageUrl || item.image_url ? (
+                          <img src={item.imageUrl || item.image_url} alt="Item" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          <Package className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex flex-col overflow-hidden w-full">
+                        <span className="font-medium text-sm truncate" title={item.name}>{item.name || `Item ${idx + 1}`}</span>
+                        {item.selectedOptions && (
+                           <span className="text-xs text-muted-foreground mt-1 truncate" title={Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ')}>
+                             {Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                           </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-4 text-sm mt-3 sm:mt-0 shrink-0">
                       <span className="text-muted-foreground">Qty: <span className="text-foreground font-medium">{item.quantity}</span></span>
-                      <span className="text-muted-foreground">Price: <span className="text-foreground font-medium">₵{item.price}</span></span>
+                      <span className="text-muted-foreground">Price: <span className="text-foreground font-medium">{formatCurrency(item.price)}</span></span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Items Subtotal</span>
-              <span className="font-medium">₵{order.subtotal || 0}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Service Fee</span>
-              <span className="font-medium">₵{order.service_fee || 0}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Local Delivery</span>
-              <span className="font-medium">₵{order.shipping_cost || 0}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Total Cost (GHS)</span>
-              <span className="font-bold text-primary">{formatCurrency(order.total_amount || 0)}</span>
-            </div>
-
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Shipping Mode</span>
-              <span className="font-medium capitalize flex items-center gap-1.5">
-                {order.shipping_method === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
-                {order.shipping_method || 'Air Express'}
-              </span>
+            {/* Payment Summary Receipt */}
+            <div className="bg-secondary/10 p-5 rounded-xl border border-border/50 mt-4 space-y-3 shadow-inner">
+              <h4 className="text-sm font-bold flex items-center gap-2 mb-2 text-foreground/80">
+                <CreditCard className="w-4 h-4" /> Payment Summary
+              </h4>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground text-sm">Items Subtotal</span>
+                <span className="font-medium text-sm">₵{order.subtotal || 0}</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground text-sm">Service Fee</span>
+                <span className="font-medium text-sm">₵{order.service_fee || 0}</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground text-sm">Local Delivery</span>
+                <span className="font-medium text-sm">₵{order.shipping_cost || 0}</span>
+              </div>
+              <div className="flex justify-between items-center pt-3 mt-1 border-t border-border/50">
+                <span className="text-foreground font-semibold">Total Cost</span>
+                <span className="font-black text-primary text-lg tracking-tight">{formatCurrency(order.total_amount || 0)}</span>
+              </div>
             </div>
 
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Order Status</span>
-              <span className="font-medium capitalize">{order.order_status?.replace(/_/g, ' ') || 'Pending Payment'}</span>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 mt-2">
+              <div className="flex justify-between items-center p-3 rounded-lg border border-border/50 bg-background/50">
+                <span className="text-muted-foreground text-sm flex items-center gap-2">
+                   {order.shipping_method === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
+                   Shipping Mode
+                </span>
+                <span className="font-semibold text-sm capitalize">
+                  {order.shipping_method || 'Air Express'}
+                </span>
+              </div>
 
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Payment Status</span>
-              <span className="font-medium capitalize">{order.payment_status?.replace(/_/g, ' ') || 'Pending'}</span>
+              <div className="flex justify-between items-center p-3 rounded-lg border border-border/50 bg-background/50">
+                <span className="text-muted-foreground text-sm flex items-center gap-2">
+                  {order.payment_status === 'paid' ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Settings className="w-4 h-4 text-orange-500" />}
+                  Payment Status
+                </span>
+                <span className={`font-semibold text-sm capitalize ${order.payment_status === 'paid' ? 'text-green-500' : 'text-orange-500'}`}>
+                  {order.payment_status?.replace(/_/g, ' ') || 'Pending'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center p-3 rounded-lg border border-border/50 bg-background/50 sm:col-span-2">
+                <span className="text-muted-foreground text-sm flex items-center gap-2">
+                  <Package className="w-4 h-4 text-primary" />
+                  Order Status
+                </span>
+                <span className="font-bold text-sm capitalize text-primary">
+                  {order.order_status?.replace(/_/g, ' ') || 'Pending Payment'}
+                </span>
+              </div>
             </div>
 
             {order.shipping_address && (
@@ -253,6 +307,73 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
               </div>
             )}
             
+          </div>
+        </div>
+
+        {/* Tracking Timeline */}
+        <div className="w-full">
+          <div className="glass-panel p-6 space-y-4 relative overflow-hidden">
+             <h3 className="font-bold border-b border-border/50 pb-2 mb-4 flex items-center gap-2">
+               <Map className="w-5 h-5 text-primary" /> Live Tracking Timeline
+             </h3>
+             
+             {isLoadingTracking ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <p className="text-sm text-muted-foreground font-medium animate-pulse">Connecting to China Logistics Network...</p>
+                </div>
+             ) : (
+                <div className="relative border-l-2 border-border ml-3 mt-6 space-y-8 pb-4">
+                  {/* Phase 1: Hiobuy/Domestic Trace */}
+                  {trackingData?.hiobuyTrace?.logistics_nodes || trackingData?.hiobuyTrace?.data?.logistics_nodes ? (
+                     ((trackingData.hiobuyTrace.logistics_nodes || trackingData.hiobuyTrace.data.logistics_nodes) as any[]).map((node, idx) => (
+                        <div key={`hiobuy-${idx}`} className="relative pl-6">
+                          <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary/20 border-2 border-primary shadow-[0_0_10px_rgba(var(--primary),0.3)] z-10" />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-muted-foreground mb-1">{node.time}</span>
+                            <span className="text-sm font-medium text-foreground">{node.description}</span>
+                          </div>
+                        </div>
+                     ))
+                  ) : (
+                     <div className="relative pl-6">
+                        <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-secondary border-2 border-border z-10" />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-muted-foreground">Domestic logistics trace not yet available.</span>
+                        </div>
+                     </div>
+                  )}
+
+                  {/* C2G System Order History */}
+                  {(trackingData?.localHistory || []).map((history: any, idx: number) => (
+                    <div key={`hist-${idx}`} className="relative pl-6 opacity-80">
+                      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-secondary border-2 border-border z-10" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-muted-foreground mb-1">
+                          {new Date(history.changed_at).toLocaleString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <span className="text-sm font-medium text-foreground capitalize">
+                           System Status Updated: {history.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Order Placed */}
+                  <div className="relative pl-6 opacity-60">
+                     <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-secondary border-2 border-border z-10" />
+                     <div className="flex flex-col">
+                       <span className="text-xs font-bold text-muted-foreground mb-1">
+                          {order.created_at && !isNaN(new Date(order.created_at).getTime()) ? new Date(order.created_at).toLocaleString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown'}
+                       </span>
+                       <span className="text-sm font-medium text-foreground">
+                          Order Placed
+                       </span>
+                     </div>
+                  </div>
+
+                </div>
+             )}
           </div>
         </div>
       </div>

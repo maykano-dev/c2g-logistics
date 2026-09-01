@@ -4,10 +4,33 @@ import { useCart } from "./cart-context";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Trash, CreditCard, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { getCartFreightEstimate } from "../../app/checkout/actions";
 
 export default function CartClient() {
   const { items, removeFromCart, updateQuantity, cartTotalGhs, cartCount, clearCart } = useCart();
   const router = useRouter();
+
+  const [estimatedFreightGhs, setEstimatedFreightGhs] = useState<number | null>(null);
+  const [isEstimating, setIsEstimating] = useState(false);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setEstimatedFreightGhs(0);
+      return;
+    }
+    
+    setIsEstimating(true);
+    const debounceTimer = setTimeout(async () => {
+      const res = await getCartFreightEstimate(items);
+      if (res.success && res.freightGhs !== undefined) {
+        setEstimatedFreightGhs(res.freightGhs);
+      }
+      setIsEstimating(false);
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [items]);
 
   if (items.length === 0) {
     return (
@@ -61,15 +84,18 @@ export default function CartClient() {
                   </div>
 
                   {/* Combination Options */}
-                  {item.combination && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {Object.entries(item.combination).map(([key, val]) => (
-                        <span key={key} className="px-2 py-1 bg-secondary text-secondary-foreground rounded-md text-xs font-medium border border-border">
-                          {key}: {val}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex flex-wrap gap-2 mb-4 items-center">
+                    {(item.moq || 1) > 1 && (
+                      <span className="px-2 py-1 bg-amber-500/10 text-amber-600 rounded-md text-xs font-bold border border-amber-500/20">
+                        MOQ: {item.moq}+
+                      </span>
+                    )}
+                    {item.combination && Object.entries(item.combination).map(([key, val]) => (
+                      <span key={key} className="px-2 py-1 bg-secondary text-secondary-foreground rounded-md text-xs font-medium border border-border">
+                        {key}: {val}
+                      </span>
+                    ))}
+                  </div>
 
                   {/* Controls */}
                   <div className="mt-auto flex items-center justify-between">
@@ -115,8 +141,16 @@ export default function CartClient() {
               <span className="text-foreground font-medium">₵{cartTotalGhs.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Shipping Fee</span>
-              <span className="text-sm">Calculated at checkout</span>
+              <span>China Delivery Fee</span>
+              <span className="text-sm">
+                {isEstimating ? (
+                  <span className="animate-pulse">Calculating...</span>
+                ) : estimatedFreightGhs !== null ? (
+                  `~₵${estimatedFreightGhs.toFixed(2)}`
+                ) : (
+                  "Calculated at checkout"
+                )}
+              </span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>C2G Processing Fee</span>
@@ -124,7 +158,9 @@ export default function CartClient() {
             </div>
             <div className="pt-4 border-t border-border/50 flex justify-between items-center">
               <span className="font-bold text-base">Estimated Total</span>
-              <span className="font-extrabold text-2xl text-primary">₵{cartTotalGhs.toFixed(2)}</span>
+              <span className="font-extrabold text-2xl text-primary">
+                ₵{(cartTotalGhs + (estimatedFreightGhs || 0)).toFixed(2)}
+              </span>
             </div>
           </div>
 

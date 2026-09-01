@@ -17,8 +17,9 @@ import { createClient } from "../../../../utils/supabase/server";
 import ProductImages from "../../../../components/shop/product-images";
 import ProductOptions from "../../../../components/shop/product-options";
 import ProductCard from "../../../../components/shop/product-card";
-import MobileBottomNav from "../../../../components/shop/mobile-bottom-nav";
-import ProductReviews from "../../../../components/shop/product-reviews";
+import ShopHeader from "../../../../components/shop/shop-header";
+import { Suspense } from "react";
+import { getSecureWalletBalance } from "../../../dashboard/wallet/shared-actions";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -63,6 +64,9 @@ export default async function ProductPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
+
+  // Fast local DB fetch, won't noticeably block navigation
+  const walletRes = await getSecureWalletBalance();
 
   if (error || !product) {
     return (
@@ -151,7 +155,12 @@ export default async function ProductPage({
     await getSimilarProducts(String(product.id), product.category);
 
   return (
-    <div className="bg-background min-h-screen pb-24 md:pb-8">
+    <div className="bg-background min-h-screen pb-24 md:pb-8 pt-14 md:pt-16">
+      {/* Fixed Shop Header */}
+      <Suspense fallback={<div className="h-28 bg-background" />}>
+        <ShopHeader walletBalance={walletRes.available_balance} />
+      </Suspense>
+
       <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6 overflow-hidden">
@@ -183,33 +192,10 @@ export default async function ProductPage({
               {product.name}
             </h1>
 
-            {/* Trust Score & Badges */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <div className={`px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 border ${
-                product.trustScore >= 80 ? "bg-green-500/10 text-green-600 border-green-500/20" :
-                product.trustScore >= 60 ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
-                "bg-amber-500/10 text-amber-600 border-amber-500/20"
-              }`}>
-                <ShieldCheck className="w-4 h-4" />
-                C2G Quality Score: {product.trustScore}/100
-              </div>
-              
-              {product.trustBadges?.map((badge: string, idx: number) => (
-                <span key={idx} className="px-2 py-1 bg-secondary text-secondary-foreground text-[10px] font-semibold rounded-md border border-border/50">
-                  {badge} Verified
-                </span>
-              ))}
-            </div>
+
 
             {/* Rating + Stock */}
             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/50 flex-wrap">
-              <ProductReviews productId={product.id.toString()} reviews={product.reviews || []} isLoggedIn={isLoggedIn} />
-              
-              <div className="w-px h-4 bg-border" />
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                {product.wholesale_volume || product.sales_count || 0} wholesale orders
-              </span>
-              <div className="w-px h-4 bg-border" />
               <span
                 className={`text-xs font-semibold flex items-center gap-1 ${
                   product.stock > 0 || hasVariants
@@ -274,7 +260,7 @@ export default async function ProductPage({
                 <div>
                   <h4 className="font-bold text-xs">Secure Payment</h4>
                   <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                    Encrypted payment via Hubtel/Paystack.
+                    Encrypted payment via Hubtel.
                   </p>
                 </div>
               </div>
@@ -350,9 +336,6 @@ export default async function ProductPage({
           </div>
         )}
       </div>
-
-      {/* Mobile Bottom Nav */}
-      <MobileBottomNav />
     </div>
   );
 }

@@ -1,31 +1,43 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { aliexpressRequest } from "@/lib/aliexpress/client";
+import { createClient as createAnonClient } from "@supabase/supabase-js";
+import { searchProducts, getProductDetail, searchProductsByImage } from "@/lib/hiobuy";
+import type { ProductChannel } from "@/lib/hiobuy";
 import { normalizeProductTitle } from "@/lib/alibaba/text-cleaner";
 import crypto from 'crypto';
+import { unstable_cache } from 'next/cache';
 
 // ═══════════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════════
 async function getExchangeRate(supabase: any): Promise<number> {
-  const { data: settingsData } = await supabase
-    .from("settings")
-    .select("rate_shop_products")
-    .eq("id", 1)
-    .single();
-  if (settingsData?.rate_shop_products) {
-    return parseFloat(settingsData.rate_shop_products);
-  }
+  // HioBuy returns prices in CNY. Fetch the specific CNY to GHS exchange rate.
   const { data: sysData } = await supabase
     .from("system_settings")
     .select("value")
     .eq("key", "exchange_rate_cny_ghs")
     .single();
+    
   if (sysData?.value) {
     return parseFloat(sysData.value);
   }
-  return 0.52; // Fallback
+  
+  // Fallback to general shop rate if CNY rate is missing
+  const { data: settingsData } = await supabase
+    .from("settings")
+    .select("rate_shop_products")
+    .eq("id", 1)
+    .single();
+    
+  if (settingsData?.rate_shop_products) {
+    return parseFloat(settingsData.rate_shop_products);
+  }
+
+  if (sysData?.value) {
+    return parseFloat(sysData.value);
+  }
+  return 15.0; // Fallback USD to GHS
 }
 
 // Helper to hash query strings for caching
@@ -33,46 +45,37 @@ function hashQuery(query: string): string {
   return crypto.createHash('sha256').update(query.trim().toLowerCase()).digest('hex');
 }
 
-// Map AliExpress DS search results to our C2G Product UI shape
-// Field names from aliexpress.ds.text.search response docs:
-//   - product_id             → numeric product ID
-//   - product_title          → display name
-//   - product_main_image_url → main image URL
-//   - target_sale_price      → price in requested currency (USD)
-//   - evaluate_score         → rating
-function mapAliExpressToC2g(aeProduct: any, exchangeRate: number) {
-  let usdPrice = parseFloat(
-    aeProduct.targetSalePrice ||
-    aeProduct.target_sale_price ||
-    "0"
-  );
+// Map HioBuy results to our C2G Product UI shape
+function mapHiobuyToC2g(hbProduct: any, exchangeRate: number) {
+  const cnyPrice = hbProduct.price?.display_amount || hbProduct.price?.original_amount || 0;
+  
+  // Calculate pricing based on rate: CNY / rate = GHS
+  const actualPriceGhs = cnyPrice / exchangeRate;
+  // Apply 35% markup to final selling price
+  const sellingPriceGhs = actualPriceGhs * 1.35;
+  // Approximate USD for internal snapshot tracking
+  const usdPrice = cnyPrice / 7.2;
 
-  // Fallback: If targetSalePrice is completely missing, use salePrice but divide by CNY->USD rate (approx 7.2)
-  if (usdPrice === 0) {
-    const rawSalePrice = parseFloat(aeProduct.salePrice || "0");
-    usdPrice = rawSalePrice / 7.2;
-  }
-
-  let imageUrl =
-    aeProduct.itemMainPic ||
-    aeProduct.product_main_image_url ||
-    aeProduct.image_url ||
-    "https://placehold.co/300";
-
+  let imageUrl = hbProduct.image || hbProduct.images?.[0]?.url || "https://placehold.co/300";
   if (imageUrl.startsWith('//')) {
     imageUrl = 'https:' + imageUrl;
   }
+  
+  // Fallback for non-resolving mock test images or invalid relative URLs
+  if (imageUrl.includes('cdn.hiobuy.com/mock') || (!imageUrl.startsWith('http') && !imageUrl.startsWith('/'))) {
+    imageUrl = "https://placehold.co/600x600/1e293b/94a3b8?text=Mock+Product";
+  }
 
   return {
-    id:                String(aeProduct.id || aeProduct.itemId || aeProduct.product_id),
-    name:              normalizeProductTitle(aeProduct.name || aeProduct.title || aeProduct.product_title || "Unknown Product"),
+    id:                String(hbProduct.id || hbProduct.source_product_id),
+    name:              normalizeProductTitle(typeof hbProduct.title === 'string' ? hbProduct.title : (hbProduct.title?.translated || hbProduct.title?.original || "Unknown Product")),
     price:             usdPrice,
-    selling_price_ghs: usdPrice * exchangeRate,
+    selling_price_ghs: sellingPriceGhs,
     image_url:         imageUrl,
-    rating:            aeProduct.score || aeProduct.evaluate_score || aeProduct.evaluate_rate || "0",
-    orders:            aeProduct.orders || aeProduct.lastest_volume || 0,
-    is_aliexpress:     true, // Flag so frontend knows it's an API product
-    // NOTE: product_detail_url intentionally NOT included — white-labeling requirement
+    rating:            "5.0",
+    orders:            hbProduct.sales_count || hbProduct.orders || 0,
+    is_aliexpress:     false,
+    channel:           hbProduct.channel || "1688",
   };
 }
 
@@ -114,13 +117,16 @@ export async function getTopPurchasedProducts(limit: number = 5) {
 // ═══════════════════════════════════════════════════════════════════
 // Level 2: Main Search (Hybrid Smart Gateway)
 // ═══════════════════════════════════════════════════════════════════
-export async function getShopProducts(params?: {
+async function fetchShopProductsBase(params?: {
   category?: string;
   query?: string;
   page?: number;
   imageId?: string;
 }) {
-  const supabase = await createClient();
+  const supabase = createAnonClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const exchangeRate = await getExchangeRate(supabase);
   const page = params?.page || 1;
   const limit = 20;
@@ -136,7 +142,7 @@ export async function getShopProducts(params?: {
     if (cacheData && cacheData.result_data?.items) {
        return {
          success: true,
-         products: cacheData.result_data.items.map((p: any) => mapAliExpressToC2g(p, exchangeRate)),
+         products: cacheData.result_data.items.map((p: any) => mapHiobuyToC2g(p, exchangeRate)),
          exchangeRate,
          totalCount: cacheData.result_data.total || cacheData.result_data.items.length,
          totalPages: 1,
@@ -163,22 +169,34 @@ export async function getShopProducts(params?: {
   const { data: localData, count } = await localQuery.range(from, from + limit - 1).order("c2g_trust_score", { ascending: false });
   totalCount += (count || 0);
 
-  localProducts = (localData || []).map((p) => ({
-    id: p.id,
-    name: p.title,
-    price: p.price_snapshot_usd,
-    selling_price_ghs: p.price_snapshot_usd * exchangeRate,
-    image_url: p.thumbnail_url,
-  }));
+  localProducts = (localData || []).map((p) => {
+    let img = p.thumbnail_url || 'https://placehold.co/300';
+    if (img.startsWith('//')) img = 'https:' + img;
+    else if (!img.startsWith('http')) img = 'https://placehold.co/300';
 
-  // 2. We ALWAYS fetch from Alibaba to fill out the shop. 
+    return {
+      id: p.id,
+      name: p.title,
+      price: p.price_snapshot_usd,
+      selling_price_ghs: p.price_snapshot_usd * exchangeRate,
+      image_url: img,
+    };
+  });
+
+  // 2. We ALWAYS fetch from HioBuy to fill out the shop. 
   // If no search or category, we use a rotating keyword based on the page number to populate the generic shop page with a mixture of categories.
   let searchQuery = params?.query || '';
   const searchCategory = params?.category === 'all' ? '' : (params?.category || '');
 
   if (!searchQuery && !searchCategory) {
-    const mixKeywords = ['bestseller', 'home', 'fashion', 'electronics', 'trending', 'sports', 'beauty'];
-    searchQuery = mixKeywords[page % mixKeywords.length] || '';
+    const mixKeywords = [
+      'bestseller', 'home decor', 'sneakers', 'smartwatch', 'kitchen', 'dresses', 
+      'wireless earbuds', 'fitness', 'stationery', 'toys', 'sunglasses', 'backpack', 
+      'jewelry', 'makeup', 'gaming', 'phone accessories', 'outdoor', 'pets', 'vintage', 
+      'streetwear', 'tools', 'party supplies', 'watches', 'handbags'
+    ];
+    // Pick a completely random keyword every time so the feed is always fresh and random!
+    searchQuery = mixKeywords[Math.floor(Math.random() * mixKeywords.length)] || 'trending';
   }
   
   const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}`);
@@ -193,68 +211,29 @@ export async function getShopProducts(params?: {
   if (cacheData && new Date(cacheData.expires_at) > new Date()) {
     // CACHE HIT
     const parsedData = cacheData.result_data;
-    alibabaProducts = parsedData.items.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
+    alibabaProducts = parsedData.items.map((p: any) => mapHiobuyToC2g(p, exchangeRate));
     totalCount += parsedData.total || 0;
   } else {
-    // CACHE MISS → Call AliExpress DS API
+    // CACHE MISS → Call HioBuy API
     try {
-      const aeParams: any = {
-        sort:          'default',
-        pageNo:        String(page),
-        page_no:       String(page),
-        pageSize:      '20',
-        page_size:     '20',
-        currency:      'USD',
-        local:         'en_US',
-        countryCode:   'US',
-        shipToCountry: 'US',
-      };
-
-      if (searchQuery) {
-        aeParams.keyWord = searchQuery;
-        aeParams.search_text = searchQuery;
-      }
-
+      let finalKeyword = searchQuery;
       if (searchCategory) {
         const isNumeric = /^\d+$/.test(searchCategory);
-        if (isNumeric) {
-          aeParams.categoryId = searchCategory;
-          aeParams.category_id = searchCategory;
-        } else {
-          // If it's a string like "electronics", append it to the keyword search
-          if (!aeParams.keyWord) {
-            aeParams.keyWord = searchCategory;
-            aeParams.search_text = searchCategory;
-          } else {
-            aeParams.keyWord = `${searchCategory} ${aeParams.keyWord}`;
-            aeParams.search_text = aeParams.keyWord;
-          }
+        if (!isNumeric) {
+           finalKeyword = finalKeyword ? `${searchCategory} ${finalKeyword}` : searchCategory;
         }
       }
-
-      const res = await aliexpressRequest({
-        apiMethod: 'aliexpress.ds.text.search',
-        params: aeParams
+      
+      const res = await searchProducts({
+        channel: "1688", // Default to 1688 for generic shop search
+        keyword: finalKeyword || "trending",
+        page: page,
+        page_size: 20
       });
 
-      const wrapper = res?.aliexpress_ds_text_search_response || res;
-      let resultList: any[] = [];
-      let aeTotal = 0;
-      
-      if (Array.isArray(wrapper?.data?.products?.selection_search_product)) {
-        resultList = wrapper.data.products.selection_search_product;
-        aeTotal = Number(wrapper.data.totalCount) || 0;
-      } else if (Array.isArray(res?.data?.products?.selection_search_product)) {
-         resultList = res.data.products.selection_search_product;
-         aeTotal = Number(res.data.totalCount) || 0;
-      } else if (Array.isArray(wrapper?.data?.products)) {
-        resultList = wrapper.data.products;
-        aeTotal = Number(wrapper.data.totalCount) || 0;
-      }
-
-      if (resultList.length > 0) {
-        alibabaProducts = resultList.map((p: any) => mapAliExpressToC2g(p, exchangeRate));
-        totalCount += aeTotal;
+      if (res && res.items && res.items.length > 0) {
+        alibabaProducts = res.items.map((p: any) => mapHiobuyToC2g(p, exchangeRate));
+        totalCount += res.total || res.items.length;
 
         // Save to Cache (TTL 12 hours)
         const expiresAt = new Date();
@@ -263,12 +242,12 @@ export async function getShopProducts(params?: {
         await supabase.from("search_query_cache").upsert({
           query_hash:  qHash,
           query_text:  `${searchQuery}_${searchCategory}_${page}`,
-          result_data: { items: resultList, total: aeTotal },
+          result_data: { items: res.items, total: res.total || res.items.length },
           expires_at:  expiresAt.toISOString()
         });
       }
     } catch (e) {
-      console.error("AliExpress Search Failed", e);
+      console.error("HioBuy Search Failed", e);
     }
   }
 
@@ -289,15 +268,42 @@ export async function getShopProducts(params?: {
   };
 }
 
+const getCachedShopProducts = unstable_cache(
+  async (category: string, query: string, page: number, imageId: string) => {
+    return fetchShopProductsBase({
+      category: category !== 'all' ? category : undefined,
+      query: query !== 'none' ? query : undefined,
+      page,
+      imageId: imageId !== 'none' ? imageId : undefined
+    });
+  },
+  ['shop-products-search'],
+  { revalidate: 900 }
+);
+
+export const getShopProducts = async (params?: {
+  category?: string;
+  query?: string;
+  page?: number;
+  imageId?: string;
+}) => {
+  return getCachedShopProducts(
+    params?.category || 'all',
+    params?.query || 'none',
+    params?.page || 1,
+    params?.imageId || 'none'
+  );
+};
+
 // ═══════════════════════════════════════════════════════════════════
-// Live Product Details (AliExpress DS API)
+// Live Product Details (HioBuy API)
 // ═══════════════════════════════════════════════════════════════════
 export async function getProductDetails(id: string) {
   const supabase = await createClient();
   const exchangeRate = await getExchangeRate(supabase);
 
   try {
-    const qHash = `product_detail_${id}`;
+    const qHash = `product_detail_${id}_v2`;
     
     // Check Cache First
     const { data: cacheData } = await supabase
@@ -312,138 +318,98 @@ export async function getProductDetails(id: string) {
       return { success: true, product: cacheData.result_data, exchangeRate };
     }
 
-    // aliexpress.ds.product.get — AE Dropshipper product detail API
-    // Required params: ship_to_country, product_id, target_currency, target_language
-    const res = await aliexpressRequest({
-      apiMethod: 'aliexpress.ds.product.get',
-      params: {
-        product_id:      id,
-        ship_to_country: 'US',
-        target_currency: 'USD',
-        target_language: 'en',
-      }
+    // CACHE MISS → Call HioBuy API
+    // We try 1688 first, but in a real scenario we'd know the channel from the ID
+    const res = await getProductDetail({
+      channel: "1688",
+      id: id,
+    }).catch(() => getProductDetail({ channel: "taobao", id })); // fallback to taobao if 1688 fails
+
+    const raw = res?.product;
+    if (!raw) throw new Error("Product not found on HioBuy");
+
+    let mainImages = raw.images?.map(i => i.url) || [];
+    if (mainImages.length === 0) {
+      mainImages.push('https://placehold.co/600');
+    }
+    mainImages = mainImages.map(img => {
+      if (img.includes('cdn.hiobuy.com/mock')) return "https://placehold.co/600x600/1e293b/94a3b8?text=Mock+Product";
+      if (img.startsWith('//')) return 'https:' + img;
+      return img;
     });
 
-    // Response shape: aliexpress_ds_product_get_response.result
-    const raw = res?.aliexpress_ds_product_get_response?.result;
-    if (!raw) throw new Error("Product not found on AliExpress");
+    const variants = (raw.variants || []).map((sku: any) => {
+      const cnyPrice = sku.price?.display_amount || raw.price?.display_amount || 0;
+      
+      const actualPriceGhs = cnyPrice / exchangeRate;
+      const sellingPriceGhs = actualPriceGhs * 1.35;
+      const usdPrice = cnyPrice / 7.2;
 
-    // Images: ae_item_sku_info_dtos or ae_multimedia_info_dto
-    let imageStr = raw.ae_multimedia_info_dto?.image_urls;
-    let mainImages: string[] = [];
-    const parseImage = (u: any) => {
-       if (typeof u !== 'string') return null;
-       if (u.startsWith('//')) return 'https:' + u;
-       if (u.startsWith('http')) return u;
-       return null;
-    };
-    if (typeof imageStr === 'string') {
-        mainImages = imageStr.split(';').map(parseImage).filter(Boolean) as string[];
-    } else if (imageStr && Array.isArray(imageStr.string)) {
-        mainImages = imageStr.string.map(parseImage).filter(Boolean) as string[];
-    }
-    
-    // Fallback if no images found
-    if (mainImages.length === 0) {
-      mainImages = [raw.ae_item_base_info_dto?.subject_trans, raw.ae_item_base_info_dto?.detail]
-        .filter(Boolean)
-        .filter((u: any) => typeof u === 'string' && u.startsWith('http'));
-    }
-
-    // SKU variants from ae_item_sku_info_dtos.ae_item_sku_info_d_t_o[]
-    const skuDefs: any[] = raw.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o || [];
-    const variants = skuDefs.map((sku: any) => {
-      const priceUsd = parseFloat(
-        sku.sku_price || sku.offer_sale_price || '0'
-      );
-
-      // ae_sku_property_dtos → readable combination label like "Color: Black / Size: XL"
-      const propParts: string[] = (sku.ae_sku_property_dtos?.ae_sku_property_d_t_o || []).map(
-        (prop: any) => {
-          let val = prop.property_value_definition_name || prop.sku_property_value;
-          // Simple Pinyin color translation
-          const colorMap: Record<string, string> = {
-            'heise': 'Black', 'baise': 'White', 'hongse': 'Red', 'lanse': 'Blue', 'lvse': 'Green',
-            'huangse': 'Yellow', 'zise': 'Purple', 'fense': 'Pink', 'huise': 'Grey', 'zongse': 'Brown',
-            'kafei': 'Coffee', 'chengse': 'Orange', 'jiuhong': 'Wine Red', 'baolan': 'Sapphire Blue',
-            'kaki': 'Khaki', 'zangqing': 'Navy', 'mima': 'Beige'
-          };
-          const lowerVal = String(val).toLowerCase().trim();
-          if (colorMap[lowerVal]) {
-            val = colorMap[lowerVal];
-          }
-          return `${prop.sku_property_name}: ${val}`;
-        }
-      );
+      const propParts = (sku.attributes || []).map((attr: any) => `${attr.name}: ${attr.value}`);
       const combination = propParts.length > 0 ? propParts.join(' / ') : 'Standard';
 
-      let skuImageUrl = sku.sku_image || mainImages[0] || '';
-      if (skuImageUrl.startsWith('//')) {
-        skuImageUrl = 'https:' + skuImageUrl;
-      }
+      let variantImage = sku.image || mainImages[0] || '';
+      if (variantImage.includes('cdn.hiobuy.com/mock')) variantImage = "https://placehold.co/600x600/1e293b/94a3b8?text=Mock+Product";
 
       return {
         id:                String(sku.sku_id || 'default'),
-        sku_attr:          sku.id,                            // Used when placing DS orders
+        sku_attr:          sku.sku_id,
         combination,
-        price:             priceUsd,
-        selling_price_ghs: priceUsd * exchangeRate,
-        image_url:         skuImageUrl,
-        stock:             sku.sk_quantity ?? 999,
+        price:             usdPrice,
+        selling_price_ghs: sellingPriceGhs,
+        image_url:         variantImage,
+        stock:             sku.stock ?? 999,
+        min_order_quantity: sku.min_order_quantity || raw.min_order_quantity || 1,
       };
     });
 
-    // Fallback: one standard variant if no SKUs
     if (variants.length === 0) {
-      const priceUsd = parseFloat(
-        raw.ae_item_base_info_dto?.product_price ||
-        raw.ae_item_base_info_dto?.app_sale_price ||
-        '0'
-      );
+      const cnyPrice = raw.price?.display_amount || 0;
+      const actualPriceGhs = cnyPrice / exchangeRate;
+      const sellingPriceGhs = actualPriceGhs * 1.35;
+      const usdPrice = cnyPrice / 7.2;
+
       variants.push({
         id:                'default',
         sku_attr:          undefined,
         combination:       'Standard',
-        price:             priceUsd,
-        selling_price_ghs: priceUsd * exchangeRate,
+        price:             usdPrice,
+        selling_price_ghs: sellingPriceGhs,
         image_url:         mainImages[0] || '',
         stock:             999,
+        min_order_quantity: raw.min_order_quantity || 1,
       });
     }
-
-    const baseInfo = raw.ae_item_base_info_dto || {};
     
     // Construct text specifications from item properties
     let specsHtml = "";
-    if (Array.isArray(raw.ae_item_properties?.ae_item_property)) {
+    if (raw.attributes && raw.attributes.length > 0) {
       specsHtml = `<ul class="c2g-specs">`;
-      raw.ae_item_properties.ae_item_property.forEach((prop: any) => {
-         if (prop.attr_name && prop.attr_value) {
-            specsHtml += `<li><strong>${prop.attr_name}:</strong> ${prop.attr_value}</li>`;
-         }
+      raw.attributes.forEach((prop: any) => {
+         specsHtml += `<li><strong>${prop.name}:</strong> ${prop.value}</li>`;
       });
       specsHtml += `</ul>`;
     }
-    const finalDescription = specsHtml + (baseInfo.detail || '');
+    const finalDescription = specsHtml + (raw.description?.translated || raw.description?.original || '');
 
     const mappedProduct = {
-      id:          String(baseInfo.product_id || id),
-      name:        normalizeProductTitle(baseInfo.subject || baseInfo.title || 'Unknown Product'),
+      id:          String(raw.id || id),
+      name:        normalizeProductTitle(typeof raw.title === 'string' ? raw.title : (raw.title?.translated || raw.title?.original || 'Unknown Product')),
       description: finalDescription,
-      images:      mainImages.length > 0 ? mainImages : ['https://placehold.co/600'],
+      images:      mainImages,
       variants,
-      category:    baseInfo.category_id,
-      rating:      baseInfo.avg_evaluation_rating,
-      orders:      baseInfo.lastest_volume,
-      trustScore:  90, // AliExpress platform handles seller trust
-      trustBadges: ['AliExpress Verified'] as string[],
+      category:    "General",
+      rating:      "5.0",
+      orders:      0,
+      channel:     raw.channel || "1688",
+      min_order_quantity: raw.min_order_quantity || 1,
     };
 
     // Save to Cache (24 hours TTL)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
     await supabase.from("search_query_cache").upsert({
-      query_hash:  `product_detail_${id}`,
+      query_hash:  `product_detail_${id}_v2`,
       query_text:  `product_detail_fetch`,
       result_data: mappedProduct,
       expires_at:  expiresAt.toISOString()
@@ -459,13 +425,13 @@ export async function getProductDetails(id: string) {
     return { success: true, product: mappedProduct, exchangeRate };
 
   } catch (error: any) {
-    console.error("Error fetching AliExpress product details:", error);
+    console.error("Error fetching HioBuy product details:", error);
     return { success: false, error: error.message };
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Visual Image Search (AliExpress Dropshipping API)
+// Visual Image Search (HioBuy API)
 // ═══════════════════════════════════════════════════════════════════
 export async function processImageSearch(base64Data: string) {
   const supabase = await createClient();
@@ -473,7 +439,6 @@ export async function processImageSearch(base64Data: string) {
   const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, "");
   
   // Generate a hash ID for caching
-  const crypto = require("crypto");
   const queryHash = crypto.createHash("md5").update(base64Clean).digest("hex");
 
   // Check if we already searched this exact image recently
@@ -488,60 +453,24 @@ export async function processImageSearch(base64Data: string) {
   }
 
   try {
-    const APP_KEY = process.env.ALIEXPRESS_APP_KEY || "538994";
-    const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET || "F6hz1FFs8FlXmEGuigr9r7HXMLQ5sRuQ";
-    const SESSION = process.env.ALIEXPRESS_SESSION || "50000700a01Ok1c2f26cavAgAp0RvfZYo2FlTcTpEXBjTgMuzHokum4iRt3SHOds7YY2";
-    const GATEWAY = "https://api-sg.aliexpress.com/sync";
-
-    const params: any = {
-      app_key: APP_KEY,
-      session: SESSION,
-      method: "aliexpress.ds.image.search",
-      sign_method: "md5",
-      timestamp: Date.now().toString(),
-      shpt_to: "GH",
-      target_currency: "USD",
-      target_language: "EN",
-      sort: "default"
-    };
-
-    const sortedKeys = Object.keys(params).sort();
-    let signString = "";
-    for (const key of sortedKeys) {
-      if (params[key] !== "") signString += key + params[key];
-    }
-    const fullString = APP_SECRET + signString + APP_SECRET;
-    const signature = crypto.createHash('md5').update(fullString, 'utf8').digest('hex').toUpperCase();
-    params.sign = signature;
-
-    const url = new URL(GATEWAY);
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== "") url.searchParams.append(k, v as string);
+    const res = await searchProductsByImage({
+      channel: "1688",
+      image_base64: base64Clean,
+      page: 1,
+      page_size: 20
     });
 
-    const formData = new FormData();
-    const buffer = Buffer.from(base64Clean, "base64");
-    // Uploading as a generic jpeg Blob
-    const blob = new Blob([buffer], { type: 'image/jpeg' });
-    formData.append("image_file_bytes", blob, "upload.jpg");
-
-    const res = await fetch(url.toString(), {
-      method: 'POST',
-      body: formData
-    });
-
-    const data = await res.json();
-    const products = data?.aliexpress_ds_image_search_response?.data?.products?.traffic_image_product_d_t_o || [];
+    const products = res?.items || [];
     
     if (products.length > 0) {
-      // Save raw products to Cache so getShopProducts can map them via mapAliExpressToC2g
+      // Save raw products to Cache so getShopProducts can map them via mapHiobuyToC2g
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 12);
 
       await supabase.from("search_query_cache").upsert({
         query_hash:  queryHash,
         query_text:  `image_search_${queryHash}`,
-        result_data: { items: products, total: products.length },
+        result_data: { items: products, total: res.total || products.length },
         expires_at:  expiresAt.toISOString()
       });
 

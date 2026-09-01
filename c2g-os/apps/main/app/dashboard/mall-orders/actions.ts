@@ -134,3 +134,49 @@ export async function payMallOrder(orderId: string) {
   revalidatePath('/dashboard', 'layout');
   return { success: true };
 }
+
+import { getLogisticsTrace } from "@/lib/hiobuy/procurement";
+
+export async function fetchOrderTrackingTimeline(orderId: string) {
+  const supabase = await createClient();
+  
+  const { data: order, error } = await supabase
+    .from("ecom_orders")
+    .select("order_status, history, items, created_at, payment_status")
+    .eq("id", orderId)
+    .single();
+    
+  if (error || !order) return { success: false, error: "Order not found" };
+
+  const { data: job } = await supabase
+    .from("procurement_jobs")
+    .select("outer_purchase_id")
+    .eq("ecom_order_id", orderId)
+    .single();
+
+  let hiobuyTrace = null;
+  
+  if (job?.outer_purchase_id) {
+    try {
+      const items = Array.isArray(order.items) ? order.items : [];
+      const channel = items[0]?.channel || "1688";
+      
+      const traceRes = await getLogisticsTrace({
+        channel: channel as any,
+        order_id: job.outer_purchase_id
+      });
+      hiobuyTrace = traceRes;
+    } catch (e) {
+      console.error("Failed to fetch hiobuy trace", e);
+    }
+  }
+
+  return { 
+    success: true, 
+    localHistory: order.history || [], 
+    hiobuyTrace,
+    order_status: order.order_status,
+    payment_status: order.payment_status,
+    created_at: order.created_at
+  };
+}

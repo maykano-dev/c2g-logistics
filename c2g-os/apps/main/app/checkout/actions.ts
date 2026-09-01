@@ -4,7 +4,8 @@ import { createClient } from "@/utils/supabase/server";
 import { CheckoutSchema } from "@/utils/security-schemas";
 import { secureLog } from "@/utils/logger";
 import { deductFromWallet } from "../dashboard/wallet/actions";
-import { alibabaRequest } from "@/lib/alibaba/client";
+import { getProductDetail } from "@/lib/hiobuy";
+import { createOrder } from "@/lib/hiobuy/procurement";
 
 export async function verifyCartInventory(items: any[]) {
   // Check live inventory on Alibaba for each item in parallel
@@ -12,20 +13,19 @@ export async function verifyCartInventory(items: any[]) {
     const checks = items.map(async (item) => {
       if (!item.productId) return { item, inStock: false };
       
-      // alibaba.icbu.product.get — required: language, product_id
-      const res = await alibabaRequest({
-        apiMethod: 'alibaba.icbu.product.get',
-        params: { language: 'ENGLISH', product_id: item.productId }
-      });
+      const res = await getProductDetail({
+        channel: "1688",
+        id: item.productId
+      }).catch(() => null);
       
-      const rawProduct = res?.alibaba_icbu_product_get_response?.product;
+      const rawProduct = res?.product;
       if (!rawProduct) return { item, inStock: false };
 
       // If variant was selected, check variant stock via SKU list
-      if (item.variantId) {
-        const skus = rawProduct.product_sku?.skus || [];
+      if (item.variantId && item.variantId !== "default") {
+        const skus = rawProduct.variants || [];
         const sku = skus.find((s: any) => String(s.sku_id) === String(item.variantId));
-        return { item, inStock: !!sku };
+        return { item, inStock: !!sku && (sku.stock === undefined || sku.stock > 0) };
       }
       
       return { item, inStock: true };
@@ -42,6 +42,58 @@ export async function verifyCartInventory(items: any[]) {
   } catch (error: any) {
     console.error("Live inventory check failed:", error);
     return { success: false, error: "Failed to verify live inventory. Please try again." };
+  }
+}
+
+export async function getCartFreightEstimate(items: any[]) {
+  try {
+    const supabase = await createClient();
+    const { data: warehouseData } = await supabase
+      .from('warehouse_addresses')
+      .select('name, phone, address, province, city, district')
+      .eq('is_default', true)
+      .single();
+
+    // Fetch exchange rate to convert CNY to GHS for the frontend
+    const { data: settings } = await supabase
+      .from('settings')
+      .select('exchange_rate')
+      .single();
+    const exchangeRate = settings?.exchange_rate || 1;
+
+    const lines = items.map(i => ({
+      id: i.productId,
+      quantity: i.quantity,
+      ...(i.variantId && i.variantId !== 'default' ? { spec_id: String(i.variantId) } : {})
+    }));
+
+    if (lines.length === 0) return { success: true, freightCny: 0 };
+
+    const { estimateFreight } = await import('@/lib/hiobuy');
+    const res = await estimateFreight({
+      channel: "1688",
+      receiver: {
+        name: warehouseData?.name || "C2G Warehouse",
+        mobile: warehouseData?.phone || "13800138000",
+        address: warehouseData?.address || "Guangzhou Baiyun",
+        province: warehouseData?.province || "Guangdong",
+        city: warehouseData?.city || "Guangzhou",
+        district: warehouseData?.district || "Baiyun District"
+      },
+      lines
+    });
+
+    if (res.success && res.total?.shipping?.amount !== undefined) {
+      // Apply the 5% buffer as requested
+      const bufferedFreightCny = res.total.shipping.amount * 1.05;
+      const freightGhs = bufferedFreightCny * exchangeRate;
+      return { success: true, freightCny: bufferedFreightCny, freightGhs };
+    }
+
+    return { success: false, error: "Failed to fetch freight estimate from HioBuy" };
+  } catch (error: any) {
+    console.error("Freight estimate error:", error);
+    return { success: false, error: "Error calculating freight estimate" };
   }
 }
 
@@ -75,19 +127,26 @@ export async function createEcomOrder(orderData: any) {
     totalCostUsd += (item.priceCny * item.quantity); // priceCny stores the USD price for Alibaba items
 
     return {
-      ...item,
+      name: item.name,        // Snapshot the product name permanently
       price: item.priceGhs,
       price_cny: item.priceCny,
       cost_price_ghs: item.priceCny * exchangeRate,
-      variant_id: item.variantId,
+      variant_id: 0, // Passed as integer to satisfy legacy database triggers on ecom_orders
+      spec_id: item.variantId, // Actual MD5 hash or string variant ID stored here
       product_id: item.productId,
-      image_url: item.imageUrl,
+      image_url: item.imageUrl,  // Snapshot the image permanently
       selectedOptions: item.combination,
+      quantity: item.quantity,
     };
   });
 
   const totalCostGhs = totalCostUsd * exchangeRate;
-  const totalProfitGhs = subtotal - totalCostGhs;
+  
+  console.log("=== CREATING ECOM ORDER ===");
+  console.log("Items payload:", JSON.stringify(items, null, 2));
+  
+  const totalProfitGhs = (subtotal - totalCostGhs) + (validatedData.serviceFee || 0);
+
 
   const totalAmount = subtotal + (validatedData.shippingCost || 0) + (validatedData.serviceFee || 0);
 
@@ -159,6 +218,55 @@ export async function createEcomOrder(orderData: any) {
     if (!deductRes.success) {
       await supabase.from("ecom_orders").delete().eq("id", createdOrderId);
       return { success: false, error: deductRes.error || "Wallet deduction failed" };
+    }
+
+    // 5. Automated Hiobuy Order Creation (Awaiting Payment state on 1688)
+    try {
+      const { data: warehouseData } = await supabase
+        .from('warehouse_addresses')
+        .select('name, address, phone')
+        .eq('is_default', true)
+        .single();
+
+      const lines = items.map((i: any) => {
+        const line: any = {
+          id: i.product_id,
+          quantity: i.quantity
+        };
+        if (i.spec_id && i.spec_id !== 'default' && i.spec_id !== 0) {
+          line.spec_id = String(i.spec_id);
+        }
+        return line;
+      });
+
+      const hiobuyOrderRes = await createOrder({
+        channel: (items[0] as any)?.channel || "1688",
+        external_order_id: orderIdFormatted,
+        receiver: {
+          name: warehouseData?.name || "C2G Warehouse",
+          mobile: warehouseData?.phone || "13800138000",
+          province: "Guangdong",
+          city: "Guangzhou",
+          district: "Baiyun District", // Added: Required by HioBuy API when address_id is omitted
+          address: warehouseData?.address || "Guangzhou Baiyun"
+        },
+        lines: lines
+      });
+      
+      secureLog("Hiobuy order created via API", hiobuyOrderRes);
+      
+      // Update procurement job with outer_purchase_id if available
+      if (hiobuyOrderRes?.order_id) {
+        await supabase.from('procurement_jobs')
+          .update({
+            outer_purchase_id: hiobuyOrderRes.order_id,
+            status: 'pending_payment' // Automatically moves it past 'pending_approval' if API succeeded
+          })
+          .eq('ecom_order_id', createdOrderId);
+      }
+    } catch (err) {
+      console.error("Failed to automatically create Hiobuy order:", err);
+      // Safe failure: The order is still in C2G DB and admin can retry from dashboard
     }
   }
 

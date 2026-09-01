@@ -2,6 +2,7 @@ import CartClient from "../../components/shop/cart-client";
 import MobileBottomNav from "../../components/shop/mobile-bottom-nav";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import CustomShopHeader from "../../components/shop/shop-header";
 
 export const metadata = {
   title: "Shopping Cart | C2G Mall",
@@ -10,7 +11,8 @@ export const metadata = {
 
 export default function CartPage() {
   return (
-    <div className="bg-background min-h-screen pb-24">
+    <div className="bg-background min-h-screen pb-24 pt-14 md:pt-16">
+      <CustomShopHeader />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Link href="/shop" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6 font-medium">
           <ChevronLeft className="w-5 h-5" /> Back to Shop

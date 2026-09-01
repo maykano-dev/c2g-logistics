@@ -2,7 +2,7 @@
 
 import { ShoppingCart, Plane, Ship, Map, Eye, Trash2, Loader2, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+
 import { useState, useTransition } from "react";
 import { useModal } from "@/components/providers/modal-provider";
 import { deleteMallOrder } from "../mall-orders/actions";
@@ -29,6 +29,8 @@ export function MallOrderCard({ order }: { order: any }) {
   if ((!displayStatus || displayStatus === 'new' || displayStatus === 'pending_payment') && isPaid) {
     displayStatus = 'processing';
   }
+
+  const hasArrivedInWarehouse = ['in_warehouse', 'in_transit', 'clearance', 'available_for_pickup', 'delivered'].includes(displayStatus?.toLowerCase());
 
   const getStatusBadgeClass = (status: string) => {
     switch(status?.toLowerCase()) {
@@ -58,7 +60,7 @@ export function MallOrderCard({ order }: { order: any }) {
   const items = Array.isArray(order.items) ? order.items : [];
   const primaryItem = items[0] || {};
   const totalQuantity = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
-  const imageUrl = primaryItem.imageUrl || "https://placehold.co/100x100";
+  const imageUrl = primaryItem.image_url || primaryItem.imageUrl || "https://placehold.co/100x100";
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -119,16 +121,42 @@ export function MallOrderCard({ order }: { order: any }) {
       
       {/* Order Content */}
       <div className="flex flex-col md:flex-row gap-6 mb-2">
-        <div className="flex gap-4 md:w-[40%]">
-          <div className="w-20 h-20 rounded-lg bg-secondary/50 flex items-center justify-center shrink-0 border border-border overflow-hidden relative">
-            <Image src={imageUrl} alt="Product" fill className="object-cover" />
-          </div>
+        <div className="flex gap-4 md:w-[40%] items-center">
+          {items.length > 1 ? (
+            <div className="flex items-center">
+              {items.slice(0, 3).map((item: any, idx: number) => {
+                const imgUrl = item.image_url || item.imageUrl || "https://placehold.co/100x100/1a1a2e/6c757d?text=No+Image";
+                return (
+                  <div 
+                    key={idx} 
+                    className={`w-16 h-16 rounded-full bg-secondary flex items-center justify-center shrink-0 border-2 border-background overflow-hidden relative shadow-md ${idx > 0 ? '-ml-6' : ''} z-[${10 - idx}]`}
+                    style={{ zIndex: 10 - idx }}
+                  >
+                    <img src={imgUrl} alt="Product" className="w-full h-full object-cover" />
+                  </div>
+                );
+              })}
+              {items.length > 3 && (
+                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0 border-2 border-background -ml-5 z-0 shadow-sm">
+                  <span className="text-xs font-bold text-foreground">+{items.length - 3}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center shrink-0 border-2 border-background overflow-hidden relative shadow-md">
+              <img src={imageUrl} alt="Product" className="w-full h-full object-cover" />
+            </div>
+          )}
+          
           <div className="flex flex-col justify-center overflow-hidden">
             <h3 className="font-bold text-base leading-tight mb-1 pr-16 truncate" title={primaryItem.name || 'Mall Order'}>
               {primaryItem.name || 'Mall Order'}
-              {items.length > 1 && ` (+${items.length - 1} more)`}
             </h3>
-            <p className="text-xs text-muted-foreground mb-1">Items: {totalQuantity}</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+                {totalQuantity} {totalQuantity === 1 ? 'Item' : 'Items'}
+              </span>
+            </div>
             <p className="text-sm font-black text-primary">
               {formatCurrency(order.total_amount || 0)}
             </p>
@@ -197,7 +225,7 @@ export function MallOrderCard({ order }: { order: any }) {
                 <CreditCard className="w-4 h-4" /> {isPaying ? 'Redirecting...' : 'Pay Now'}
               </button>
             </>
-          ) : (
+          ) : hasArrivedInWarehouse ? (
             <button 
               onClick={(e) => { 
                 e.stopPropagation(); 
@@ -208,6 +236,16 @@ export function MallOrderCard({ order }: { order: any }) {
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1 disabled:opacity-50"
             >
               {isTrackLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Map className="w-4 h-4" />} Track Reservation
+            </button>
+          ) : (
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                router.push(`/dashboard/orders/mall/${order.id}`); 
+              }}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1 shadow-sm"
+            >
+              <Eye className="w-4 h-4" /> View Details
             </button>
           )}
         </div>

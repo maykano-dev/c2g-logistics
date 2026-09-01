@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ProductImages({ images }: { images: any[] }) {
   const displayImages = images?.length > 0 
@@ -9,6 +9,18 @@ export default function ProductImages({ images }: { images: any[] }) {
     
   const primaryIndex = displayImages.findIndex(img => img.is_primary);
   const [activeIndex, setActiveIndex] = useState(primaryIndex >= 0 ? primaryIndex : 0);
+
+  useEffect(() => {
+    const handleVariantImage = (e: CustomEvent) => {
+      const imageUrl = e.detail;
+      const index = displayImages.findIndex(img => img.image_url === imageUrl);
+      if (index !== -1) {
+        setActiveIndex(index);
+      }
+    };
+    window.addEventListener('update-product-image', handleVariantImage as EventListener);
+    return () => window.removeEventListener('update-product-image', handleVariantImage as EventListener);
+  }, [displayImages]);
 
   return (
     <div className="flex flex-col gap-4 sticky top-24">

@@ -98,15 +98,36 @@ export default async function MallOrdersPage() {
               
               <div className="p-4 sm:p-5 sm:flex justify-between items-center bg-background/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Package className="w-6 h-6 text-primary" />
+                  {/* Show saved product images from order snapshot */}
+                  <div className="flex -space-x-2 flex-shrink-0">
+                    {(order.items as any[])?.slice(0, 3).map((item: any, idx: number) => (
+                      item.image_url ? (
+                        <img
+                          key={idx}
+                          src={item.image_url}
+                          alt={item.name || "Product"}
+                          className="w-12 h-12 rounded-xl object-cover border-2 border-background"
+                        />
+                      ) : (
+                        <div key={idx} className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border-2 border-background flex-shrink-0">
+                          <Package className="w-6 h-6 text-primary" />
+                        </div>
+                      )
+                    ))}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">
-                      {order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}
+                    <p className="font-medium text-sm line-clamp-1">
+                      {(order.items as any[])?.[0]?.name
+                        || (order.items as any[])?.[0]?.product_id
+                        || `${order.items?.length || 0} item${(order.items?.length || 0) !== 1 ? 's' : ''}`}
                     </p>
+                    {(order.items?.length || 0) > 1 && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        +{(order.items?.length || 0) - 1} more item{(order.items?.length || 0) - 1 !== 1 ? 's' : ''}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Shipping to: {order.shipping_address_id ? 'Saved Address' : 'Default'}
+                      Shipping to: {order.shipping_address || 'Default'}
                     </p>
                   </div>
                 </div>

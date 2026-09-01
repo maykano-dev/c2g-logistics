@@ -13,6 +13,7 @@ export type CartItem = {
   quantity: number;
   combination?: Record<string, string>;
   stock: number;
+  moq?: number;
 };
 
 type CartContextType = {
@@ -23,6 +24,7 @@ type CartContextType = {
   clearCart: () => void;
   cartCount: number;
   cartTotalGhs: number;
+  isLoaded: boolean;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -114,12 +116,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = (id: string, quantity: number) => {
-    setItems(prev => prev.map(i => {
-      if (i.id === id) {
-        return { ...i, quantity: Math.max(1, Math.min(quantity, i.stock)) };
-      }
-      return i;
-    }));
+    setItems(prev => {
+      return prev.map(i => {
+        if (i.id === id) {
+          const moq = i.moq || 1;
+          let nextQty = quantity;
+          
+          if (nextQty > 0 && nextQty < moq) {
+            if (i.quantity === moq && quantity < i.quantity) {
+              nextQty = 0; // Drop to 0 if decreasing from MOQ
+            } else {
+              nextQty = moq; // Snap to MOQ
+            }
+          }
+          
+          return { ...i, quantity: Math.max(0, Math.min(nextQty, i.stock)) };
+        }
+        return i;
+      }).filter(i => i.quantity > 0);
+    });
   };
 
   const clearCart = () => setItems([]);
@@ -128,7 +143,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartTotalGhs = items.reduce((acc, item) => acc + (item.priceGhs * item.quantity), 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotalGhs }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotalGhs, isLoaded }}>
       {children}
     </CartContext.Provider>
   );

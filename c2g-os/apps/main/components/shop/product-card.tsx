@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Heart, ShoppingCart, Eye, Flame, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./cart-context";
@@ -10,20 +10,22 @@ import { useWishlist } from "./wishlist-context";
 function DemandBadge({ label }: { label: string }) {
   if (label === "high") {
     return (
-      <span className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 bg-red-500/90 text-white text-[10px] font-bold rounded-md backdrop-blur-sm z-10 shadow-lg">
+      <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/90 text-white text-[10px] font-bold rounded-md backdrop-blur-sm shadow-lg">
         <Flame className="w-3 h-3" /> Hot
       </span>
     );
   }
   if (label === "medium") {
     return (
-      <span className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 bg-amber-500/90 text-white text-[10px] font-bold rounded-md backdrop-blur-sm z-10 shadow-lg">
+      <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/90 text-white text-[10px] font-bold rounded-md backdrop-blur-sm shadow-lg">
         <TrendingUp className="w-3 h-3" /> Trending
       </span>
     );
   }
   return null;
 }
+
+
 
 export default function ProductCard({
   product,
@@ -41,8 +43,12 @@ export default function ProductCard({
   // New Smart Gateway Shape directly provides image_url and selling_price_ghs
   const imageUrl = product.image_url || "https://placehold.co/400x400/1a1a2e/6c757d?text=No+Image";
 
-  // Alibaba search API doesn't return variants in the list view, only in details
-  const hasVariants = false; 
+  // Alibaba search API doesn't return variants in the list view, so we force users to "View Options" for 1688/taobao
+  const hasVariants = 
+    product.channel === "1688" || 
+    product.channel === "taobao" || 
+    (product.variants && product.variants.length > 1) || 
+    (product.product_variants && product.product_variants.length > 1);
 
   const priceGhs = product.selling_price_ghs || 0;
   const priceUsd = product.price || 0; 
@@ -60,12 +66,15 @@ export default function ProductCard({
       imageUrl,
       priceGhs,
       priceCny: priceUsd, // We use priceCny field in cart to store USD for now until cart is refactored
-      quantity: 1,
+      quantity: product.min_order_quantity || 1,
       stock: 999, // Dropshipping assumption
+      moq: product.min_order_quantity || 1,
     });
   };
 
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const moqTarget = searchParams.get("moqTarget");
   const productUrl = `/shop/product/${product.id}`;
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -169,7 +178,7 @@ export default function ProductCard({
           <div className="flex items-baseline gap-1.5 mb-2.5">
             <span className="font-extrabold text-base sm:text-lg text-primary leading-none font-sans tracking-tight">
               {(() => {
-                if (hasVariants && product.product_variants.length > 0) {
+                if (hasVariants && product.product_variants?.length > 0) {
                   const prices = product.product_variants
                     .map((v: any) => parseFloat(v.selling_price_ghs || v.price))
                     .filter((p: number) => !isNaN(p) && p > 0);

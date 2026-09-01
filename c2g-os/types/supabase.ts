@@ -580,6 +580,7 @@ export type Database = {
           procurement_status: string | null
           rate_at_purchase: number | null
           service_fee: number
+          service_fee_applicable: boolean | null
           shipment_start_date: string | null
           shipping_address: string
           shipping_cost: number | null
@@ -613,7 +614,8 @@ export type Database = {
           procurement_cycle_id?: string | null
           procurement_status?: string | null
           rate_at_purchase?: number | null
-          service_fee?: number
+          service_fee: number
+          service_fee_applicable?: boolean | null
           shipment_start_date?: string | null
           shipping_address: string
           shipping_cost?: number | null
