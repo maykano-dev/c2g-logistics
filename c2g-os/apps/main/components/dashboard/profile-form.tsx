@@ -91,24 +91,15 @@ export default function ProfileForm({ profile }: ProfileProps) {
         </div>
 
         <div className="pt-6 border-t border-border/50">
-          <h3 className="text-lg font-bold mb-4">Telegram Notifications</h3>
-          <p className="text-sm text-muted-foreground mb-4">Get instant updates on your orders and shipments via Telegram.</p>
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Send className="w-5 h-5 text-primary" /> Push Notifications</h3>
+          <p className="text-sm text-muted-foreground mb-4">Get instant updates on your orders, shipments, and wallet activity directly to your device.</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Telegram Chat ID</label>
-              <div className="relative">
-                <Send className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input type="text" name="telegram_chat_id" defaultValue={profile.telegram_chat_id} placeholder="e.g. 123456789" className="flex h-11 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors" />
-              </div>
-            </div>
-            
-            <div className="space-y-2 pt-8">
-              <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/40 cursor-pointer transition-colors bg-background/50">
-                <input type="checkbox" name="telegram_notifications_enabled" defaultChecked={profile.telegram_notifications_enabled} className="w-4 h-4 rounded accent-primary" />
-                <span className="text-sm font-medium">Enable Notifications</span>
-              </label>
-            </div>
+          <div className="space-y-2 max-w-sm">
+            <label className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary/40 cursor-pointer transition-colors bg-background/50">
+              <span className="text-sm font-medium">Enable Browser/Device Push Notifications</span>
+              <input type="checkbox" name="push_notifications_enabled" defaultChecked={true} className="w-5 h-5 rounded accent-primary" />
+            </label>
+            <p className="text-xs text-muted-foreground mt-2 px-1">We will ask for your browser's permission to send notifications.</p>
           </div>
         </div>
 

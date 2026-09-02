@@ -16,10 +16,14 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
   const currentQuery = searchParams.get("query") || "";
   const [query, setQuery] = useState(currentQuery);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
   const { showAlert } = useModal();
+
+  useEffect(() => {
+    setQuery(searchParams.get("query") || "");
+  }, [searchParams]);
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -36,27 +40,28 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    startTransition(() => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (query) {
-        params.set("query", query);
-      } else {
-        params.delete("query");
-      }
-      // Clear visual search when performing a text search
-      params.delete("searchId");
-      router.push("/shop?" + params.toString());
-    });
+    setIsPending(true);
+    const params = new URLSearchParams(searchParams.toString());
+    if (query) {
+      params.set("query", query);
+    } else {
+      params.delete("query");
+    }
+    // Clear visual search when performing a text search
+    params.delete("searchId");
+    router.push("/shop?" + params.toString());
+    // Reset pending after a short delay since navigation will unmount or resolve
+    setTimeout(() => setIsPending(false), 1000);
   };
 
   const clearSearch = () => {
     setQuery("");
-    startTransition(() => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("query");
-      params.delete("searchId");
-      router.push("/shop?" + params.toString());
-    });
+    setIsPending(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("query");
+    params.delete("searchId");
+    router.push("/shop?" + params.toString());
+    setTimeout(() => setIsPending(false), 1000);
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);

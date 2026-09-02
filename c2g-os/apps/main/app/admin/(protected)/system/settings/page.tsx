@@ -38,6 +38,7 @@ export default function AdminSettingsView() {
       setSettings({
         id: settingsRes.data.id,
         exchange_rate_cny_to_ghs: settingsRes.data.exchange_rate_cny_to_ghs || 14.5,
+        markup_percentage: settingsRes.data.markup_percentage || 5,
         service_fee_percentage: settingsRes.data.service_fee_percentage || 5,
         maintenance_mode: settingsRes.data.maintenance_mode || false,
         maintenance_pages: typeof settingsRes.data.maintenance_pages === 'string' ? JSON.parse(settingsRes.data.maintenance_pages) : (settingsRes.data.maintenance_pages || {}),
@@ -62,6 +63,7 @@ export default function AdminSettingsView() {
     } else {
       setSettings({
         exchange_rate_cny_to_ghs: 14.5,
+        markup_percentage: 5,
         service_fee_percentage: 5,
         maintenance_mode: false,
         maintenance_pages: {},
@@ -120,6 +122,9 @@ export default function AdminSettingsView() {
       name: wh.name,
       phone: wh.phone,
       address: wh.address,
+      province: wh.province,
+      city: wh.city,
+      district: wh.district,
       is_default: wh.is_default
     });
       
@@ -180,6 +185,10 @@ export default function AdminSettingsView() {
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-1">Exchange Rate (CNY to GHS)</label>
                 <input type="number" step="0.01" value={settings?.exchange_rate_cny_to_ghs || 0} onChange={e => setSettings({...settings, exchange_rate_cny_to_ghs: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Product Markup (%)</label>
+                <input type="number" step="0.1" value={settings?.markup_percentage || 0} onChange={e => setSettings({...settings, markup_percentage: parseFloat(e.target.value)})} className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-1">Exchange Rate (USD to GHS)</label>
@@ -288,6 +297,39 @@ export default function AdminSettingsView() {
                     onChange={e => updateWarehouseState(wh.id, 'phone', e.target.value)}
                     className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
                   />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1">Province (省)</label>
+                    <input 
+                      type="text" 
+                      value={wh.province || ''}
+                      onChange={e => updateWarehouseState(wh.id, 'province', e.target.value)}
+                      className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                      placeholder="e.g. 广东省"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1">City (市)</label>
+                    <input 
+                      type="text" 
+                      value={wh.city || ''}
+                      onChange={e => updateWarehouseState(wh.id, 'city', e.target.value)}
+                      className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                      placeholder="e.g. 广州市"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1">District (区)</label>
+                    <input 
+                      type="text" 
+                      value={wh.district || ''}
+                      onChange={e => updateWarehouseState(wh.id, 'district', e.target.value)}
+                      className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                      placeholder="e.g. 白云区"
+                    />
+                  </div>
                 </div>
 
                 <div>

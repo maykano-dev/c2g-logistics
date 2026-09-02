@@ -23,6 +23,7 @@ export async function adminUpdateSettings(settingsData: any) {
       .from('settings')
       .update({
         exchange_rate_cny_to_ghs: settingsData.exchange_rate_cny_to_ghs,
+        markup_percentage: settingsData.markup_percentage,
         maintenance_mode: settingsData.maintenance_mode,
         maintenance_pages: settingsData.maintenance_pages ? JSON.stringify(settingsData.maintenance_pages) : undefined,
         store_name: settingsData.store_name,

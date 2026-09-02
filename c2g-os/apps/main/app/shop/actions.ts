@@ -11,33 +11,18 @@ import { unstable_cache } from 'next/cache';
 // ═══════════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════════
-async function getExchangeRate(supabase: any): Promise<number> {
-  // HioBuy returns prices in CNY. Fetch the specific CNY to GHS exchange rate.
-  const { data: sysData } = await supabase
-    .from("system_settings")
-    .select("value")
-    .eq("key", "exchange_rate_cny_ghs")
-    .single();
-    
-  if (sysData?.value) {
-    return parseFloat(sysData.value);
-  }
-  
-  // Fallback to general shop rate if CNY rate is missing
+async function getPricingConfig(supabase: any): Promise<{ rate: number, markup: number }> {
+  // Fetch exchange_rate_ghs_to_cny and markup_percentage from settings
   const { data: settingsData } = await supabase
     .from("settings")
-    .select("rate_shop_products")
+    .select("exchange_rate_ghs_to_cny, markup_percentage")
     .eq("id", 1)
     .single();
     
-  if (settingsData?.rate_shop_products) {
-    return parseFloat(settingsData.rate_shop_products);
-  }
-
-  if (sysData?.value) {
-    return parseFloat(sysData.value);
-  }
-  return 15.0; // Fallback USD to GHS
+  return {
+    rate: settingsData?.exchange_rate_ghs_to_cny || 0.52,
+    markup: settingsData?.markup_percentage || 5
+  };
 }
 
 // Helper to hash query strings for caching
@@ -45,15 +30,16 @@ function hashQuery(query: string): string {
   return crypto.createHash('sha256').update(query.trim().toLowerCase()).digest('hex');
 }
 
-// Map HioBuy results to our C2G Product UI shape
-function mapHiobuyToC2g(hbProduct: any, exchangeRate: number) {
+function mapHiobuyToC2g(hbProduct: any, pricing: { rate: number, markup: number }) {
   const cnyPrice = hbProduct.price?.display_amount || hbProduct.price?.original_amount || 0;
   
-  // Calculate pricing based on rate: CNY / rate = GHS
-  const actualPriceGhs = cnyPrice / exchangeRate;
-  // Apply 35% markup to final selling price
-  const sellingPriceGhs = actualPriceGhs * 1.35;
-  // Approximate USD for internal snapshot tracking
+  // Math Step 1: Exact Price (GHS) = HioBuy Price (CNY) / exchange_rate_ghs_to_cny
+  const exactPriceGhs = cnyPrice / pricing.rate;
+  
+  // Math Step 2: True Display Price (GHS) = exactPrice + markup
+  const sellingPriceGhs = exactPriceGhs + (exactPriceGhs * (pricing.markup / 100));
+  
+  // Approximate USD for internal tracking only
   const usdPrice = cnyPrice / 7.2;
 
   let imageUrl = hbProduct.image || hbProduct.images?.[0]?.url || "https://placehold.co/300";
@@ -94,19 +80,28 @@ export async function getTopPurchasedProducts(limit: number = 5) {
       .limit(limit);
 
     if (error) throw error;
-    const exchangeRate = await getExchangeRate(supabase);
+    const pricing = await getPricingConfig(supabase);
     
     return {
       success: true,
-      products: data?.map((p) => ({
-        id: p.id,
-        name: p.title,
-        price: p.price_snapshot_usd,
-        selling_price_ghs: p.price_snapshot_usd * exchangeRate,
-        image_url: p.thumbnail_url,
-        demandLabel: p.purchase_count > 50 ? "high" : "medium"
-      })) || [],
-      exchangeRate
+      products: data?.map((p) => {
+        // Here we just apply markup to existing price logic if needed, 
+        // but top purchased products come from local DB.
+        // Assuming p.price_snapshot_usd was saved... wait, for local products we'll use the same formula.
+        // But local products are saved in USD. We should probably just return them, 
+        // but for consistency with the new math, let's keep it simple.
+        const cnyPrice = p.price_snapshot_usd * 7.2;
+        const exactPrice = cnyPrice / pricing.rate;
+        return {
+          id: p.id,
+          name: p.title,
+          price: p.price_snapshot_usd,
+          selling_price_ghs: exactPrice + (exactPrice * (pricing.markup / 100)),
+          image_url: p.thumbnail_url,
+          demandLabel: p.purchase_count > 50 ? "high" : "medium"
+        };
+      }) || [],
+      exchangeRate: pricing.rate // Returning rate for fallback UI compat
     };
   } catch (error: any) {
     console.error("Failed to fetch top purchased products:", error);
@@ -122,12 +117,14 @@ async function fetchShopProductsBase(params?: {
   query?: string;
   page?: number;
   imageId?: string;
+  minPrice?: string;
+  maxPrice?: string;
 }) {
   const supabase = createAnonClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
-  const exchangeRate = await getExchangeRate(supabase);
+  const pricing = await getPricingConfig(supabase);
   const page = params?.page || 1;
   const limit = 20;
 
@@ -142,8 +139,8 @@ async function fetchShopProductsBase(params?: {
     if (cacheData && cacheData.result_data?.items) {
        return {
          success: true,
-         products: cacheData.result_data.items.map((p: any) => mapHiobuyToC2g(p, exchangeRate)),
-         exchangeRate,
+         products: cacheData.result_data.items.map((p: any) => mapHiobuyToC2g(p, pricing)),
+         exchangeRate: pricing.rate,
          totalCount: cacheData.result_data.total || cacheData.result_data.items.length,
          totalPages: 1,
          currentPage: 1
@@ -165,6 +162,20 @@ async function fetchShopProductsBase(params?: {
     localQuery = localQuery.ilike("title", `%${params.query}%`);
   }
   
+  let cnyMinPrice: number | undefined;
+  let cnyMaxPrice: number | undefined;
+
+  if (params?.minPrice) {
+    cnyMinPrice = (Number(params.minPrice) / (1 + pricing.markup / 100)) * pricing.rate;
+    const usdMinPrice = cnyMinPrice / 7.2;
+    localQuery = localQuery.gte("price_snapshot_usd", usdMinPrice);
+  }
+  if (params?.maxPrice) {
+    cnyMaxPrice = (Number(params.maxPrice) / (1 + pricing.markup / 100)) * pricing.rate;
+    const usdMaxPrice = cnyMaxPrice / 7.2;
+    localQuery = localQuery.lte("price_snapshot_usd", usdMaxPrice);
+  }
+  
   const from = (page - 1) * limit;
   const { data: localData, count } = await localQuery.range(from, from + limit - 1).order("c2g_trust_score", { ascending: false });
   totalCount += (count || 0);
@@ -174,11 +185,14 @@ async function fetchShopProductsBase(params?: {
     if (img.startsWith('//')) img = 'https:' + img;
     else if (!img.startsWith('http')) img = 'https://placehold.co/300';
 
+    const cnyPrice = p.price_snapshot_usd * 7.2;
+    const exactPrice = cnyPrice / pricing.rate;
+
     return {
       id: p.id,
       name: p.title,
       price: p.price_snapshot_usd,
-      selling_price_ghs: p.price_snapshot_usd * exchangeRate,
+      selling_price_ghs: exactPrice + (exactPrice * (pricing.markup / 100)),
       image_url: img,
     };
   });
@@ -199,7 +213,7 @@ async function fetchShopProductsBase(params?: {
     searchQuery = mixKeywords[Math.floor(Math.random() * mixKeywords.length)] || 'trending';
   }
   
-  const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}`);
+  const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`);
   
   // Check Search Query Cache first
   const { data: cacheData } = await supabase
@@ -211,7 +225,7 @@ async function fetchShopProductsBase(params?: {
   if (cacheData && new Date(cacheData.expires_at) > new Date()) {
     // CACHE HIT
     const parsedData = cacheData.result_data;
-    alibabaProducts = parsedData.items.map((p: any) => mapHiobuyToC2g(p, exchangeRate));
+    alibabaProducts = parsedData.items.map((p: any) => mapHiobuyToC2g(p, pricing));
     totalCount += parsedData.total || 0;
   } else {
     // CACHE MISS → Call HioBuy API
@@ -228,11 +242,13 @@ async function fetchShopProductsBase(params?: {
         channel: "1688", // Default to 1688 for generic shop search
         keyword: finalKeyword || "trending",
         page: page,
-        page_size: 20
+        page_size: 20,
+        price_start: cnyMinPrice,
+        price_end: cnyMaxPrice
       });
 
       if (res && res.items && res.items.length > 0) {
-        alibabaProducts = res.items.map((p: any) => mapHiobuyToC2g(p, exchangeRate));
+        alibabaProducts = res.items.map((p: any) => mapHiobuyToC2g(p, pricing));
         totalCount += res.total || res.items.length;
 
         // Save to Cache (TTL 12 hours)
@@ -241,7 +257,7 @@ async function fetchShopProductsBase(params?: {
 
         await supabase.from("search_query_cache").upsert({
           query_hash:  qHash,
-          query_text:  `${searchQuery}_${searchCategory}_${page}`,
+          query_text:  `${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`,
           result_data: { items: res.items, total: res.total || res.items.length },
           expires_at:  expiresAt.toISOString()
         });
@@ -261,7 +277,7 @@ async function fetchShopProductsBase(params?: {
   return { 
     success: true, 
     products: finalProducts, 
-    exchangeRate,
+    exchangeRate: pricing.rate,
     totalCount: totalCount,
     totalPages: Math.ceil(totalCount / limit) || 1,
     currentPage: page
@@ -269,12 +285,14 @@ async function fetchShopProductsBase(params?: {
 }
 
 const getCachedShopProducts = unstable_cache(
-  async (category: string, query: string, page: number, imageId: string) => {
+  async (category: string, query: string, page: number, imageId: string, minPrice: string, maxPrice: string) => {
     return fetchShopProductsBase({
       category: category !== 'all' ? category : undefined,
       query: query !== 'none' ? query : undefined,
       page,
-      imageId: imageId !== 'none' ? imageId : undefined
+      imageId: imageId !== 'none' ? imageId : undefined,
+      minPrice: minPrice !== 'none' ? minPrice : undefined,
+      maxPrice: maxPrice !== 'none' ? maxPrice : undefined
     });
   },
   ['shop-products-search'],
@@ -286,12 +304,16 @@ export const getShopProducts = async (params?: {
   query?: string;
   page?: number;
   imageId?: string;
+  minPrice?: string;
+  maxPrice?: string;
 }) => {
   return getCachedShopProducts(
     params?.category || 'all',
     params?.query || 'none',
     params?.page || 1,
-    params?.imageId || 'none'
+    params?.imageId || 'none',
+    params?.minPrice || 'none',
+    params?.maxPrice || 'none'
   );
 };
 
@@ -300,7 +322,7 @@ export const getShopProducts = async (params?: {
 // ═══════════════════════════════════════════════════════════════════
 export async function getProductDetails(id: string) {
   const supabase = await createClient();
-  const exchangeRate = await getExchangeRate(supabase);
+  const pricing = await getPricingConfig(supabase);
 
   try {
     const qHash = `product_detail_${id}_v2`;
@@ -315,7 +337,7 @@ export async function getProductDetails(id: string) {
     if (cacheData && new Date(cacheData.expires_at) > new Date()) {
       // Track View Count (For Auto-Promotion Engine) in background
       supabase.rpc('increment_view_count', { p_id: id }).then(null, () => {});
-      return { success: true, product: cacheData.result_data, exchangeRate };
+      return { success: true, product: cacheData.result_data, exchangeRate: pricing.rate };
     }
 
     // CACHE MISS → Call HioBuy API
@@ -341,8 +363,8 @@ export async function getProductDetails(id: string) {
     const variants = (raw.variants || []).map((sku: any) => {
       const cnyPrice = sku.price?.display_amount || raw.price?.display_amount || 0;
       
-      const actualPriceGhs = cnyPrice / exchangeRate;
-      const sellingPriceGhs = actualPriceGhs * 1.35;
+      const exactPriceGhs = cnyPrice / pricing.rate;
+      const sellingPriceGhs = exactPriceGhs + (exactPriceGhs * (pricing.markup / 100));
       const usdPrice = cnyPrice / 7.2;
 
       const propParts = (sku.attributes || []).map((attr: any) => `${attr.name}: ${attr.value}`);
@@ -365,8 +387,8 @@ export async function getProductDetails(id: string) {
 
     if (variants.length === 0) {
       const cnyPrice = raw.price?.display_amount || 0;
-      const actualPriceGhs = cnyPrice / exchangeRate;
-      const sellingPriceGhs = actualPriceGhs * 1.35;
+      const exactPriceGhs = cnyPrice / pricing.rate;
+      const sellingPriceGhs = exactPriceGhs + (exactPriceGhs * (pricing.markup / 100));
       const usdPrice = cnyPrice / 7.2;
 
       variants.push({
@@ -422,7 +444,7 @@ export async function getProductDetails(id: string) {
       // Ignore
     }
 
-    return { success: true, product: mappedProduct, exchangeRate };
+    return { success: true, product: mappedProduct, exchangeRate: pricing.rate };
 
   } catch (error: any) {
     console.error("Error fetching HioBuy product details:", error);
@@ -493,7 +515,7 @@ export async function getTrendingProducts() {
 
 export async function getNewArrivals() {
   const supabase = await createClient();
-  const exchangeRate = await getExchangeRate(supabase);
+  const pricing = await getPricingConfig(supabase);
 
   const { data } = await supabase
     .from("products")
@@ -501,15 +523,19 @@ export async function getNewArrivals() {
     .order("created_at", { ascending: false })
     .limit(12);
 
-  const products = (data || []).map(p => ({
-    id: p.id,
-    name: p.title,
-    price: p.price_snapshot_usd,
-    selling_price_ghs: p.price_snapshot_usd * exchangeRate,
-    image_url: p.thumbnail_url
-  }));
+  const products = (data || []).map(p => {
+    const cnyPrice = p.price_snapshot_usd * 7.2;
+    const exactPrice = cnyPrice / pricing.rate;
+    return {
+      id: p.id,
+      name: p.title,
+      price: p.price_snapshot_usd,
+      selling_price_ghs: exactPrice + (exactPrice * (pricing.markup / 100)),
+      image_url: p.thumbnail_url
+    };
+  });
 
-  return { products, exchangeRate };
+  return { products, exchangeRate: pricing.rate };
 }
 
 export async function getBestSellers() {
@@ -597,17 +623,22 @@ export async function getDbWishlist() {
     .eq("customer_id", user.id);
 
   if (error || !data) return { success: false, items: [] };
-  const exchangeRate = await getExchangeRate(supabase);
+  const pricing = await getPricingConfig(supabase);
 
   const items = data.map((row: any) => {
     const p = row.products;
     if (!p) return null;
+    
+    const cnyPrice = p.price_snapshot_usd * 7.2;
+    const exactPrice = cnyPrice / pricing.rate;
+    const sellingPriceGhs = exactPrice + (exactPrice * (pricing.markup / 100));
+
     return {
       id: String(p.id),
       name: p.title,
       imageUrl: p.thumbnail_url,
-      priceGhs: p.price_snapshot_usd * exchangeRate,
-      priceCny: 0 
+      priceGhs: sellingPriceGhs,
+      priceCny: cnyPrice 
     };
   }).filter(Boolean);
 

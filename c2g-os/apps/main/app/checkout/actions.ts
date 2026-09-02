@@ -57,9 +57,9 @@ export async function getCartFreightEstimate(items: any[]) {
     // Fetch exchange rate to convert CNY to GHS for the frontend
     const { data: settings } = await supabase
       .from('settings')
-      .select('exchange_rate')
+      .select('exchange_rate_ghs_to_cny')
       .single();
-    const exchangeRate = settings?.exchange_rate || 1;
+    const exchangeRate = settings?.exchange_rate_ghs_to_cny || 0.52;
 
     const lines = items.map(i => ({
       id: i.productId,
@@ -86,7 +86,7 @@ export async function getCartFreightEstimate(items: any[]) {
     if (res.success && res.total?.shipping?.amount !== undefined) {
       // Apply the 5% buffer as requested
       const bufferedFreightCny = res.total.shipping.amount * 1.05;
-      const freightGhs = bufferedFreightCny * exchangeRate;
+      const freightGhs = bufferedFreightCny / exchangeRate;
       return { success: true, freightCny: bufferedFreightCny, freightGhs };
     }
 
@@ -289,4 +289,110 @@ export async function createEcomOrder(orderData: any) {
   }
 
   return { success: true, orderId: orderIdFormatted, id: createdOrderId };
+}
+
+export async function saveCheckoutAddress(addressData: { street_address: string; city: string; region: string; phone?: string; name?: string }) {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData?.user) return { success: false, error: "Unauthorized" };
+
+  const customerId = userData.user.id;
+
+  // Check how many addresses exist
+  const { data: existing, error: fetchError } = await supabase
+    .from("customer_addresses")
+    .select("id, is_primary")
+    .eq("customer_id", customerId);
+
+  if (fetchError) return { success: false, error: "Database error" };
+
+  if (existing && existing.length >= 3) {
+    return { success: false, error: "You can only save up to 3 addresses. Please delete one first." };
+  }
+
+  // Fetch customer details for required name/phone
+  const { data: profile } = await supabase
+    .from("customers")
+    .select("name, phone, email")
+    .eq("id", customerId)
+    .single();
+
+  const isFirst = !existing || existing.length === 0;
+
+  // Insert new address
+  const { error } = await supabase.from("customer_addresses").insert({
+    customer_id: customerId,
+    street_address: addressData.street_address,
+    city: addressData.city,
+    region: addressData.region,
+    is_primary: isFirst, // Auto-primary if it's the first one
+    name: addressData.name || profile?.name || userData.user.user_metadata?.full_name || "Customer",
+    phone: addressData.phone || profile?.phone || userData.user.phone || "0000000000",
+    email: profile?.email || userData.user.email
+  });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function updateCheckoutAddress(id: string, addressData: { street_address: string; city: string; region: string; phone?: string; name?: string }) {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData?.user) return { success: false, error: "Unauthorized" };
+
+  const customerId = userData.user.id;
+
+  const { error } = await supabase
+    .from("customer_addresses")
+    .update({
+      street_address: addressData.street_address,
+      city: addressData.city,
+      region: addressData.region,
+      name: addressData.name,
+      phone: addressData.phone,
+    })
+    .eq("id", id)
+    .eq("customer_id", customerId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function setPrimaryAddress(addressId: string) {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData?.user) return { success: false, error: "Unauthorized" };
+
+  const customerId = userData.user.id;
+
+  // Set all to false first
+  await supabase
+    .from("customer_addresses")
+    .update({ is_primary: false })
+    .eq("customer_id", customerId);
+
+  // Set target to true
+  const { error } = await supabase
+    .from("customer_addresses")
+    .update({ is_primary: true })
+    .eq("id", addressId)
+    .eq("customer_id", customerId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function deleteAddress(addressId: string) {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData?.user) return { success: false, error: "Unauthorized" };
+
+  const { error } = await supabase
+    .from("customer_addresses")
+    .delete()
+    .eq("id", addressId)
+    .eq("customer_id", userData.user.id);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }

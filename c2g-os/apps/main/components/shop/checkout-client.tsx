@@ -3,14 +3,15 @@
 import { useState, useEffect } from "react";
 import { useCart } from "./cart-context";
 import { useRouter } from "next/navigation";
-import { createEcomOrder, verifyCartInventory, getCartFreightEstimate } from "../../app/checkout/actions";
-import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck, Calculator, Info, Plane, Zap, Loader2 } from "lucide-react";
+import { createEcomOrder, verifyCartInventory, getCartFreightEstimate, saveCheckoutAddress, setPrimaryAddress, deleteAddress } from "../../app/checkout/actions";
+import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck, Calculator, Info, Plane, Zap, Loader2, Plus, Trash2, Star } from "lucide-react";
 import { useModal } from "@/components/providers/modal-provider";
 import Link from "next/link";
 import WalletPaymentModal from "@/components/wallet/wallet-payment-modal";
 
 export default function CheckoutClient({ 
   initialProfile, 
+  savedAddresses,
   exchangeRate,
   serviceFeePercentage,
   minServiceFee,
@@ -19,6 +20,7 @@ export default function CheckoutClient({
   walletBalance
 }: { 
   initialProfile: any, 
+  savedAddresses: any[],
   exchangeRate: number,
   serviceFeePercentage: number,
   minServiceFee: number,
@@ -31,12 +33,24 @@ export default function CheckoutClient({
   const { showAlert } = useModal();
 
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [addressLoading, setAddressLoading] = useState(false);
+  
+  // Track selected address ID
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    savedAddresses?.find(a => a.is_primary)?.id || savedAddresses?.[0]?.id || null
+  );
+  
+  // Form state for adding new address
+  const [showAddressForm, setShowAddressForm] = useState(savedAddresses?.length === 0);
+  const [newAddress, setNewAddress] = useState({
     name: initialProfile?.name || "",
     phone: initialProfile?.phone || "",
-    address: initialProfile?.address || "",
-    notes: ""
+    street_address: "",
+    city: "",
+    region: ""
   });
+  
+  const [notes, setNotes] = useState("");
 
   const [exactFreightGhs, setExactFreightGhs] = useState<number | null>(null);
   const [isFetchingFreight, setIsFetchingFreight] = useState(true);
@@ -72,6 +86,10 @@ export default function CheckoutClient({
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) return;
+    if (!selectedAddressId) {
+      showAlert({ title: "Address Required", message: "Please select a delivery address.", type: "warning" });
+      return;
+    }
     
     setLoading(true);
     
@@ -95,16 +113,51 @@ export default function CheckoutClient({
     setIsModalOpen(true);
   };
 
+  const handleSaveNewAddress = async () => {
+    setAddressLoading(true);
+    const res = await saveCheckoutAddress(newAddress);
+    setAddressLoading(false);
+    if (res.success) {
+      // Reload page to fetch new addresses
+      router.refresh();
+      setShowAddressForm(false);
+    } else {
+      showAlert({ title: 'Error', message: res.error || "Failed to save address", type: 'danger' });
+    }
+  };
+
+  const handleSetPrimary = async (id: string) => {
+    setAddressLoading(true);
+    await setPrimaryAddress(id);
+    setAddressLoading(false);
+    router.refresh();
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this address?")) return;
+    setAddressLoading(true);
+    await deleteAddress(id);
+    if (selectedAddressId === id) setSelectedAddressId(null);
+    setAddressLoading(false);
+    router.refresh();
+  };
+
   const processPayment = async () => {
     setLoading(true);
 
     const reference = `C2G_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    
+    const selectedAddress = savedAddresses?.find(a => a.id === selectedAddressId);
+    if (!selectedAddress) {
+      setLoading(false);
+      return;
+    }
 
     const payload = {
-      shippingName: formData.name,
-      shippingPhone: formData.phone,
-      shippingAddress: formData.address,
-      shippingNotes: formData.notes,
+      shippingName: selectedAddress.name,
+      shippingPhone: selectedAddress.phone,
+      shippingAddress: `${selectedAddress.street_address}, ${selectedAddress.city}, ${selectedAddress.region}`,
+      shippingNotes: notes,
       shippingMethod: "pending",
       items,
       subtotal: cartTotalGhs,
@@ -175,26 +228,128 @@ export default function CheckoutClient({
 
             {/* Delivery Information */}
             <div className="glass-panel p-6">
-              <h2 className="text-xl font-bold mb-6 flex items-center gap-2 border-b border-border/50 pb-4">
-                <MapPin className="w-5 h-5 text-primary" /> Delivery Information
-              </h2>
+              <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-primary" /> Delivery Addresses
+                </h2>
+                {savedAddresses.length > 0 && savedAddresses.length < 3 && !showAddressForm && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowAddressForm(true)}
+                    className="text-sm font-medium text-primary flex items-center gap-1 hover:underline"
+                  >
+                    <Plus className="w-4 h-4" /> Add New
+                  </button>
+                )}
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4 mb-6">
+                {savedAddresses.map(address => (
+                  <div 
+                    key={address.id} 
+                    onClick={() => setSelectedAddressId(address.id)}
+                    className={`relative p-4 rounded-xl border transition-all cursor-pointer ${
+                      selectedAddressId === address.id 
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                        : 'border-border/50 bg-card hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                          selectedAddressId === address.id ? 'border-primary bg-primary' : 'border-muted-foreground'
+                        }`}>
+                          {selectedAddressId === address.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground" />}
+                        </div>
+                        <div>
+                          <div className="font-bold flex items-center gap-2">
+                            {address.name} 
+                            {address.is_primary && (
+                              <span className="text-[10px] uppercase font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-sm">Default</span>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-0.5">{address.phone}</div>
+                          <div className="text-sm mt-1">{address.street_address}</div>
+                          <div className="text-sm">{address.city}, {address.region}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteAddress(address.id); }}
+                          disabled={addressLoading}
+                          className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
+                          title="Delete Address"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        {!address.is_primary && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleSetPrimary(address.id); }}
+                            disabled={addressLoading}
+                            className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                          >
+                            <Star className="w-3 h-3" /> Set Default
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {savedAddresses.length === 0 && !showAddressForm && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    You have no saved addresses. Please add one.
+                  </div>
+                )}
+              </div>
+
+              {showAddressForm && (
+                <div className="bg-secondary/30 rounded-xl p-5 border border-border/50 animate-in fade-in slide-in-from-top-4">
+                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" /> Add New Address
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Full Name <span className="text-red-600">*</span></label>
+                      <input required type="text" value={newAddress.name} onChange={(e) => setNewAddress(p => ({ ...p, name: e.target.value }))} className="flex h-11 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone Number <span className="text-red-600">*</span></label>
+                      <input required type="tel" value={newAddress.phone} onChange={(e) => setNewAddress(p => ({ ...p, phone: e.target.value }))} className="flex h-11 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-sm font-medium">Street Address <span className="text-red-600">*</span></label>
+                      <input required type="text" value={newAddress.street_address} onChange={(e) => setNewAddress(p => ({ ...p, street_address: e.target.value }))} placeholder="House No., Street Name..." className="flex h-11 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">City <span className="text-red-600">*</span></label>
+                      <input required type="text" value={newAddress.city} onChange={(e) => setNewAddress(p => ({ ...p, city: e.target.value }))} placeholder="e.g. Accra" className="flex h-11 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Region <span className="text-red-600">*</span></label>
+                      <input required type="text" value={newAddress.region} onChange={(e) => setNewAddress(p => ({ ...p, region: e.target.value }))} placeholder="e.g. Greater Accra" className="flex h-11 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3 mt-6">
+                    {savedAddresses.length > 0 && (
+                      <button type="button" onClick={() => setShowAddressForm(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
+                        Cancel
+                      </button>
+                    )}
+                    <button type="button" onClick={handleSaveNewAddress} disabled={addressLoading || !newAddress.street_address || !newAddress.city} className="px-6 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold shadow-md hover:bg-primary/90 disabled:opacity-50">
+                      {addressLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Address"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 border-t border-border/50 pt-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name <span className="text-red-600">*</span></label>
-                  <input required type="text" value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} className="flex h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number <span className="text-red-600">*</span></label>
-                  <input required type="tel" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} className="flex h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium">Delivery Address (Ghana) <span className="text-red-600">*</span></label>
-                  <textarea required rows={3} value={formData.address} onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))} placeholder="Street, Neighborhood, City..." className="flex w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium">Additional Notes (Optional)</label>
-                  <input type="text" value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} className="flex h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+                  <label className="text-sm font-medium">Order Notes (Optional)</label>
+                  <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any special instructions..." className="flex h-11 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
                 </div>
               </div>
             </div>

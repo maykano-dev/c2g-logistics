@@ -6,9 +6,24 @@ import ProfileForm from "../../../components/dashboard/profile-form";
 import ChangePasswordForm from "./change-password-form";
 import DeleteAccountForm from "./delete-account-form";
 import SettingsTabs from "../../../components/dashboard/settings-tabs";
+import AddressManager from "../../../components/dashboard/address-manager";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function SettingsPage() {
   const { profile, error } = await getCustomerProfile();
+  
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  let addresses = [];
+  if (session?.user) {
+    const { data } = await supabase
+      .from('customer_addresses')
+      .select('*')
+      .eq('customer_id', session.user.id)
+      .order('is_primary', { ascending: false });
+    addresses = data || [];
+  }
 
   return (
     <div className="space-y-8 animate-fade-in max-w-4xl mx-auto pb-24 md:pb-10">
@@ -27,6 +42,7 @@ export default async function SettingsPage() {
         profileForm={profile ? <ProfileForm profile={profile} /> : null}
         passwordForm={<ChangePasswordForm />}
         deleteForm={<DeleteAccountForm />}
+        addressForm={<AddressManager initialAddresses={addresses} />}
       />
 
       {/* Mobile Logout Button */}

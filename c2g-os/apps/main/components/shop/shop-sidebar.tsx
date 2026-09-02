@@ -52,6 +52,8 @@ export default function ShopSidebar() {
       } else {
         params.delete(name);
       }
+      // Always clear visual search when applying any sidebar filter
+      params.delete("searchId");
       return params.toString();
     },
     [searchParams]
@@ -71,6 +73,9 @@ export default function ShopSidebar() {
     if (maxPrice) params.set("maxPrice", maxPrice);
     else params.delete("maxPrice");
 
+    // Clear visual search when applying price filter
+    params.delete("searchId");
+
     router.push("/shop?" + params.toString());
   };
 
@@ -80,6 +85,7 @@ export default function ShopSidebar() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("minPrice");
     params.delete("maxPrice");
+    params.delete("searchId");
     router.push("/shop?" + params.toString());
   };
 
@@ -115,7 +121,7 @@ export default function ShopSidebar() {
 
       {/* Price Filter */}
       <div className="space-y-3 border-t border-border/50 pt-6">
-        <h3 className="font-semibold text-sm text-foreground uppercase tracking-wider">Price Range (¥)</h3>
+        <h3 className="font-semibold text-sm text-foreground uppercase tracking-wider">Price Range (₵)</h3>
         <form onSubmit={applyPriceFilter} className="space-y-3">
           <div className="flex items-center gap-2">
             <input

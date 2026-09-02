@@ -216,9 +216,6 @@ export default function DashboardClientLayout({
                 <Wallet className="w-4 h-4 text-primary shrink-0" />
                 <span className="text-sm font-bold tracking-tight truncate">₵{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(walletBalance)}</span>
               </Link>
-              <Link href="/dashboard/settings" className="shrink-0">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent border-2 border-background shadow-sm hover:scale-105 transition-transform" />
-              </Link>
             </div>
           </div>
         </header>

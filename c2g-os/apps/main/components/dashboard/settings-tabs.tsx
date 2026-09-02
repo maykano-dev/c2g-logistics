@@ -7,13 +7,15 @@ import Link from "next/link";
 export default function SettingsTabs({ 
   profileForm, 
   passwordForm, 
-  deleteForm 
+  deleteForm,
+  addressForm
 }: { 
   profileForm: React.ReactNode;
   passwordForm: React.ReactNode;
   deleteForm: React.ReactNode;
+  addressForm?: React.ReactNode;
 }) {
-  const [activeTab, setActiveTab] = useState<"menu" | "profile" | "password" | "delete">("menu");
+  const [activeTab, setActiveTab] = useState<"menu" | "profile" | "password" | "address" | "delete">("menu");
 
   // On desktop, we always show profile by default and layout is side-by-side.
   // We'll use CSS media queries to handle the responsive behavior.
@@ -38,6 +40,16 @@ export default function SettingsTabs({
         >
           <div className="flex items-center gap-3">
             <Lock className="w-5 h-5 md:w-4 md:h-4" /> Change Password
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground md:hidden" />
+        </button>
+
+        <button 
+          onClick={() => setActiveTab("address")}
+          className={`flex items-center justify-between md:justify-start gap-3 px-4 py-4 md:py-3 rounded-lg md:rounded-xl border md:border-transparent transition-all text-left font-medium ${activeTab === "address" ? "md:bg-primary/10 md:text-primary bg-secondary/30" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+        >
+          <div className="flex items-center gap-3">
+            <MapPin className="w-5 h-5 md:w-4 md:h-4" /> Saved Addresses
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground md:hidden" />
         </button>
@@ -81,6 +93,10 @@ export default function SettingsTabs({
         
         <div className={activeTab === "password" ? "block animate-in fade-in slide-in-from-bottom-4 duration-300" : "hidden"}>
           {passwordForm}
+        </div>
+        
+        <div className={activeTab === "address" ? "block animate-in fade-in slide-in-from-bottom-4 duration-300" : "hidden"}>
+          {addressForm}
         </div>
         
         <div className={activeTab === "delete" ? "block animate-in fade-in slide-in-from-bottom-4 duration-300" : "hidden"}>

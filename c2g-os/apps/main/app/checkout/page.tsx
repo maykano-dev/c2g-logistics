@@ -24,15 +24,16 @@ export default async function CheckoutPage() {
     .eq("id", userData.user.id)
     .single();
 
-  const { data: addressData } = await supabase
+  const { data: addresses } = await supabase
     .from("customer_addresses")
-    .select("street_address, city, region")
+    .select("id, street_address, city, region, is_primary, name, phone")
     .eq("customer_id", profile?.id)
-    .eq("is_primary", true)
-    .single();
+    .order("is_primary", { ascending: false });
 
-  if (profile && addressData) {
-    (profile as any).address = `${addressData.street_address}, ${addressData.city}, ${addressData.region}`;
+  // Optional: We can still inject the primary address into profile for backwards compatibility
+  const primaryAddress = addresses?.find((a) => a.is_primary) || addresses?.[0];
+  if (profile && primaryAddress) {
+    (profile as any).address = `${primaryAddress.street_address}, ${primaryAddress.city}, ${primaryAddress.region}`;
   }
 
   let walletBalance = 0;
@@ -80,6 +81,7 @@ export default async function CheckoutPage() {
 
         <CheckoutClient 
           initialProfile={profile} 
+          savedAddresses={addresses || []}
           exchangeRate={exchangeRate} 
           serviceFeePercentage={serviceFeePercentage}
           minServiceFee={minServiceFee}
