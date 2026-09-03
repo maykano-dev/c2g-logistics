@@ -123,60 +123,35 @@ export async function getDashboardStats() {
   }
 }
 
-export async function getRecentActivity() {
+export async function getRecentTransactions() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return []
 
-  // Fetch recent updates from the 3 primary tables
-  const [orders, shipments, ecomOrders] = await Promise.all([
-    supabase.from('orders').select('id, product_name, order_status, updated_at, created_at').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(3),
-    supabase.from('shipments').select('id, tracking_number, status, updated_at, created_at').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(3),
-    supabase.from('ecom_orders').select('id, order_number, order_status, updated_at, created_at').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(3)
-  ]);
+  const { data: wallet } = await supabase
+    .from('wallets')
+    .select('id')
+    .eq('customer_id', user.id)
+    .single();
 
-  const activities: any[] = [];
+  if (!wallet) return [];
 
-  if (orders.data) {
-    orders.data.forEach(o => {
-      activities.push({
-        id: `order-${o.id}`,
-        type: 'order',
-        title: `Link Order Updated`,
-        message: `${o.product_name || 'Items'} is now ${o.order_status?.replace(/_/g, ' ') || 'Pending'}`,
-        created_at: o.updated_at || o.created_at
-      });
-    });
-  }
+  const { data: transactions } = await supabase
+    .from('wallet_transactions')
+    .select('id, amount, transaction_type, status, description, created_at')
+    .eq('wallet_id', wallet.id)
+    .order('created_at', { ascending: false })
+    .limit(5);
 
-  if (shipments.data) {
-    shipments.data.forEach(s => {
-      activities.push({
-        id: `shipment-${s.id}`,
-        type: 'package',
-        title: `Package Status Changed`,
-        message: `Tracking ${s.tracking_number} is now ${s.status?.replace(/_/g, ' ') || 'Pending'}`,
-        created_at: s.updated_at || s.created_at
-      });
-    });
-  }
+  if (!transactions) return [];
 
-  if (ecomOrders.data) {
-    ecomOrders.data.forEach(e => {
-      activities.push({
-        id: `ecom-${e.id}`,
-        type: 'mall',
-        title: `Mall Order Update`,
-        message: `Order #${e.order_number} is now ${e.order_status?.replace(/_/g, ' ') || 'Pending'}`,
-        created_at: e.updated_at || e.created_at
-      });
-    });
-  }
-
-  // Sort combined activities by timestamp descending
-  activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-  // Return the top 5 most recent
-  return activities.slice(0, 5);
+  return transactions.map(t => ({
+    id: t.id,
+    type: t.transaction_type,
+    amount: t.amount,
+    status: t.status,
+    description: t.description,
+    created_at: t.created_at
+  }));
 }

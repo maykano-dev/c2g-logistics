@@ -10,10 +10,11 @@ import {
   Activity,
   Bell,
   ShoppingCart,
-  ArrowRight
+  ArrowRight,
+  ArrowDownToLine
 } from "lucide-react";
 import Link from "next/link";
-import { getDashboardStats, getRecentActivity } from "./actions";
+import { getDashboardStats, getRecentTransactions } from "./actions";
 
 // Format relative time (e.g., "2 hours ago")
 function getRelativeTime(dateString: string) {
@@ -33,7 +34,7 @@ function getRelativeTime(dateString: string) {
 
 export default async function DashboardOverview() {
   const stats = await getDashboardStats();
-  const recentActivities = await getRecentActivity();
+  const recentTransactions = await getRecentTransactions();
 
   // If user is not authenticated or there was an error
   if (!stats) {
@@ -175,43 +176,61 @@ export default async function DashboardOverview() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Transactions */}
         <div className="lg:col-span-2 glass-panel p-6 lg:order-none relative overflow-hidden">
           <div className="flex items-center justify-between mb-8 relative z-10">
             <h2 className="text-xl font-bold flex items-center gap-2">
-              <Activity className="w-5 h-5 text-primary" />
-              Recent Activity
+              <CreditCard className="w-5 h-5 text-primary" />
+              Recent Transactions
             </h2>
-            <Link href="/dashboard/notifications" className="text-sm text-primary hover:underline font-semibold bg-primary/10 px-3 py-1.5 rounded-full transition-colors hover:bg-primary/20">
+            <Link href="/dashboard/wallet" className="text-sm text-primary hover:underline font-semibold bg-primary/10 px-3 py-1.5 rounded-full transition-colors hover:bg-primary/20">
               View All
             </Link>
           </div>
-          <div className="space-y-6 relative z-10">
-            {recentActivities && recentActivities.length > 0 ? (
-              recentActivities.map((activity, idx) => (
-                <div key={activity.id} className="flex gap-5 group">
-                  <div className="relative mt-0.5">
-                    <div className="w-10 h-10 rounded-full bg-secondary border border-border/50 flex items-center justify-center z-10 relative group-hover:scale-110 group-hover:bg-primary/10 group-hover:border-primary/30 group-hover:text-primary transition-all shadow-sm">
-                      <Bell className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <div className="space-y-3 relative z-10">
+            {recentTransactions && recentTransactions.length > 0 ? (
+              recentTransactions.map((tx, idx) => {
+                let TxIcon = CreditCard;
+                if (tx.type === 'top_up') TxIcon = ArrowDownToLine;
+                if (tx.type === 'mall_order') TxIcon = ShoppingCart;
+                if (tx.type === 'link_order') TxIcon = LinkIcon;
+                if (tx.type === 'package_fee') TxIcon = Package;
+
+                return (
+                  <div key={tx.id} className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-secondary/20 hover:bg-secondary/60 hover:border-border/80 transition-all group">
+                    <div className="relative shrink-0">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-sm ${
+                        tx.amount > 0 ? 'bg-green-500/10 text-green-500 border border-green-500/20 group-hover:bg-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20 group-hover:bg-red-500/20'
+                      }`}>
+                        <TxIcon className="w-5 h-5" />
+                      </div>
                     </div>
-                    {idx !== recentActivities.length - 1 && <div className="absolute top-10 bottom-[-24px] left-1/2 w-[2px] bg-border/50 -translate-x-1/2 group-hover:bg-primary/30 transition-colors" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-foreground text-sm sm:text-base capitalize truncate">{tx.type.replace(/_/g, ' ')}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">{tx.description || 'Wallet transaction'}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`font-black text-base sm:text-lg tracking-tight ${tx.amount > 0 ? 'text-green-500' : 'text-foreground'}`}>
+                        {tx.amount > 0 ? '+' : ''}₵{Math.abs(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className={`text-[10px] sm:text-xs font-bold mt-1 px-2 py-0.5 rounded-md inline-block uppercase tracking-wider ${
+                        tx.status === 'completed' ? 'bg-green-500/10 text-green-500' :
+                        tx.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500' :
+                        'bg-red-500/10 text-red-500'
+                      }`}>
+                        {tx.status}
+                      </p>
+                    </div>
                   </div>
-                  <div className="pb-2">
-                    <p className="font-bold text-foreground text-sm">{activity.title || activity.type}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">{activity.message}</p>
-                    <p className="text-[11px] font-semibold text-muted-foreground/70 mt-2 flex items-center gap-1.5 uppercase tracking-wider">
-                      <Clock className="w-3 h-3" /> {getRelativeTime(activity.created_at)}
-                    </p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-12 text-muted-foreground bg-secondary/20 rounded-2xl border border-dashed border-border/50">
                 <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-border/50">
-                  <Activity className="w-6 h-6 opacity-40" />
+                  <CreditCard className="w-6 h-6 opacity-40" />
                 </div>
-                <p className="font-medium text-foreground">No recent activity yet.</p>
-                <p className="text-sm mt-1">When your packages move, you'll see it here.</p>
+                <p className="font-medium text-foreground">No recent transactions yet.</p>
+                <p className="text-sm mt-1">When you top up or pay for orders, they will appear here.</p>
               </div>
             )}
           </div>
