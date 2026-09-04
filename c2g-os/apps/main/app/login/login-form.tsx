@@ -6,6 +6,8 @@ import { login, loginWithGoogle } from "../auth/actions";
 import { Loader2, Eye, EyeOff, Mail, Lock, ArrowRight, ShieldAlert } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
+import { createBrowserClient } from '@supabase/ssr';
+
 export function LoginForm() {
   const [state, action, isPending] = useActionState(login, null);
   const [showPassword, setShowPassword] = useState(false);
@@ -13,9 +15,22 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified");
   
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     startGoogleTransition(async () => {
-      await loginWithGoogle(window.location.origin);
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            prompt: 'select_account',
+          }
+        },
+      });
     });
   };
 

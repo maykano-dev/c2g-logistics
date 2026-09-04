@@ -6,6 +6,8 @@ import { PhoneInput } from "../../components/phone-input";
 import { Loader2, Eye, EyeOff, User, Mail, Lock, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { createBrowserClient } from '@supabase/ssr';
+
 export function SignupForm() {
   const router = useRouter();
   const [state, action, isPending] = useActionState(signup, null);
@@ -143,9 +145,22 @@ export function SignupForm() {
     );
   }
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     startGoogleTransition(async () => {
-      await loginWithGoogle(window.location.origin);
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            prompt: 'select_account',
+          }
+        },
+      });
     });
   };
 
