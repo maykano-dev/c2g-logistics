@@ -14,7 +14,7 @@ export function AuthRightPanel() {
         </h2>
 
         {/* 2x3 Feature Grid — grows to fill space */}
-        <div className="grid grid-cols-2 gap-2 xl:gap-3 flex-1 content-start">
+        <div className="grid grid-cols-2 gap-3 xl:gap-4 flex-1 content-start xl:content-center">
           {[
             { Icon: Globe, color: "blue", title: "Access Your Warehouse", desc: "Get your personal China address and shop with any Chinese seller." },
             { Icon: PackageCheck, color: "green", title: "Track Shipments", desc: "Real-time updates from our warehouse to your doorstep in Ghana." },
@@ -23,26 +23,26 @@ export function AuthRightPanel() {
             { Icon: ShieldCheck, color: "teal", title: "Secure & Reliable", desc: "Your packages are safe with us. Encrypted, insured and handled with care." },
             { Icon: Headset, color: "pink", title: "24/7 Support", desc: "Our support team is available anytime to help you succeed." },
           ].map(({ Icon, color, title, desc }) => (
-            <div key={title} className="flex flex-col p-2.5 xl:p-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group">
-              <div className={`w-7 h-7 xl:w-8 xl:h-8 rounded-full bg-${color}-500/10 flex items-center justify-center mb-1.5 xl:mb-2 group-hover:scale-110 transition-transform shrink-0`}>
-                <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 text-${color}-500`} />
+            <div key={title} className="flex flex-col p-3 xl:p-5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group">
+              <div className={`w-8 h-8 xl:w-10 xl:h-10 rounded-full bg-${color}-500/10 flex items-center justify-center mb-2 xl:mb-3 group-hover:scale-110 transition-transform shrink-0`}>
+                <Icon className={`w-4 h-4 xl:w-5 xl:h-5 text-${color}-500`} />
               </div>
-              <h4 className="font-bold text-white mb-0.5 text-[11px] xl:text-xs">{title}</h4>
-              <p className="text-[9px] xl:text-[10px] text-muted-foreground leading-snug">{desc}</p>
+              <h4 className="font-bold text-white mb-1 text-xs xl:text-sm">{title}</h4>
+              <p className="text-[10px] xl:text-xs text-muted-foreground leading-snug">{desc}</p>
             </div>
           ))}
         </div>
 
         {/* Action Banner */}
-        <div className="shrink-0 bg-gradient-to-r from-slate-900 to-slate-800 p-3 xl:p-4 rounded-xl border border-white/10 flex items-center gap-3 xl:gap-4 group hover:border-primary/50 transition-colors relative overflow-hidden">
-          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-primary/10 to-transparent pointer-events-none" />
-          <div className="w-9 h-9 xl:w-10 xl:h-10 shrink-0 bg-primary/20 rounded-xl flex items-center justify-center">
-            <ShoppingCart className="w-4 h-4 xl:w-5 xl:h-5 text-primary group-hover:scale-110 transition-transform" />
+        <div className="shrink-0 bg-gradient-to-r from-slate-900 to-slate-800 p-4 xl:p-5 rounded-xl border border-white/10 flex items-center gap-4 group hover:border-primary/50 transition-colors relative overflow-hidden">
+          <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-primary/10 to-transparent pointer-events-none" />
+          <div className="w-10 h-10 xl:w-12 xl:h-12 shrink-0 bg-primary/20 rounded-xl flex items-center justify-center">
+            <ShoppingCart className="w-5 h-5 xl:w-6 xl:h-6 text-primary group-hover:scale-110 transition-transform" />
           </div>
           <div>
-            <h3 className="text-xs xl:text-sm font-bold text-white">Shop More. Ship Smarter.</h3>
-            <p className="text-[9px] xl:text-[10px] text-muted-foreground mt-0.5 mb-1 leading-snug">From electronics to fashion, beauty to home essentials C2G Mall brings China closer to you.</p>
-            <Link href="/shop" className="text-[10px] xl:text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 group-hover:gap-2 transition-all">
+            <h3 className="text-sm xl:text-base font-bold text-white">Shop More. Ship Smarter.</h3>
+            <p className="text-[10px] xl:text-xs text-muted-foreground mt-0.5 mb-1.5 leading-snug">From electronics to fashion, beauty to home essentials C2G Mall brings China closer to you.</p>
+            <Link href="/shop" className="text-xs xl:text-sm font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 group-hover:gap-2 transition-all">
               Start Shopping Now <span aria-hidden="true">&rarr;</span>
             </Link>
           </div>
