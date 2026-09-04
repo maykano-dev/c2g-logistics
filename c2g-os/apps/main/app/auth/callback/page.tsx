@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
-export default function AuthCallback() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +76,33 @@ export default function AuthCallback() {
   }, [router, searchParams]);
 
   return (
+    <div className="z-10 flex flex-col items-center justify-center p-8 sm:p-12 bg-background/80 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl animate-fade-in max-w-md w-full text-center">
+      <div className="w-20 h-20 sm:w-24 sm:h-24 relative flex items-center justify-center mb-6">
+        <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
+      </div>
+      
+      {error ? (
+        <div className="space-y-4 animate-scale-in">
+          <div className="p-4 bg-destructive/10 text-destructive rounded-xl border border-destructive/20 font-medium">
+            {error}
+          </div>
+          <p className="text-muted-foreground text-sm">Redirecting back to login...</p>
+        </div>
+      ) : (
+        <div className="space-y-6 flex flex-col items-center animate-fade-in">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black tracking-tight">Authenticating</h2>
+            <p className="text-muted-foreground">Securing your session, please wait...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -83,28 +110,13 @@ export default function AuthCallback() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[150px] rounded-full animate-drift-slow" />
       </div>
       
-      <div className="z-10 flex flex-col items-center justify-center p-8 sm:p-12 bg-background/80 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl animate-fade-in max-w-md w-full text-center">
-        <div className="w-20 h-20 sm:w-24 sm:h-24 relative flex items-center justify-center mb-6">
-          <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
+      <Suspense fallback={
+        <div className="z-10 flex flex-col items-center justify-center p-8 sm:p-12 bg-background/80 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl animate-fade-in max-w-md w-full text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
         </div>
-        
-        {error ? (
-          <div className="space-y-4 animate-scale-in">
-            <div className="p-4 bg-destructive/10 text-destructive rounded-xl border border-destructive/20 font-medium">
-              {error}
-            </div>
-            <p className="text-muted-foreground text-sm">Redirecting back to login...</p>
-          </div>
-        ) : (
-          <div className="space-y-6 flex flex-col items-center animate-fade-in">
-            <Loader2 className="w-10 h-10 animate-spin text-primary" />
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black tracking-tight">Authenticating</h2>
-              <p className="text-muted-foreground">Securing your session, please wait...</p>
-            </div>
-          </div>
-        )}
-      </div>
+      }>
+        <AuthCallbackContent />
+      </Suspense>
     </div>
   );
 }
