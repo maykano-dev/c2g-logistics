@@ -17,10 +17,16 @@ async function getClientContext() {
 
 export async function loginWithGoogle() {
   const supabase = await createClient();
+  const headersList = await headers();
+  const host = headersList.get('host');
+  const protocol = headersList.get('x-forwarded-proto') || 'https';
+  // Fallback to env var if headers are somehow missing
+  const origin = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL;
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      redirectTo: `${origin}/auth/callback`,
       queryParams: {
         prompt: 'select_account',
       }
