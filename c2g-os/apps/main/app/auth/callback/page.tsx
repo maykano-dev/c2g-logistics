@@ -20,56 +20,68 @@ function AuthCallbackContent() {
     let mounted = true;
 
     const handleAuth = async () => {
-      const code = searchParams.get("code");
-      const next = searchParams.get("next") || "/dashboard";
+      try {
+        const code = searchParams.get("code");
+        const next = searchParams.get("next") || "/dashboard";
 
-      if (!code) {
-        if (mounted) setError("No authentication code found.");
-        return;
-      }
-
-      const supabase = createClient();
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (exchangeError) {
-        if (mounted) {
-          setError(exchangeError.message);
-          setTimeout(() => {
-            router.push(`/login?error=${encodeURIComponent(exchangeError.message)}`);
-          }, 3000);
+        if (!code) {
+          if (mounted) setError("No authentication code found.");
+          return;
         }
-        return;
-      }
 
-      // Sync customer record
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from("customers").insert({
-          id: user.id,
-          email: user.email,
-          name: user.user_metadata?.full_name || "Customer",
-          phone: user.user_metadata?.phone || null,
-          status: "active"
-        }).select("id").maybeSingle();
+        const supabase = createClient();
+        const { data: authData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (exchangeError) {
+          if (mounted) {
+            setError(exchangeError.message);
+            setTimeout(() => {
+              window.location.href = `/login?error=${encodeURIComponent(exchangeError.message)}`;
+            }, 3000);
+          }
+          return;
+        }
+
+        const user = authData?.user;
+        
+        if (!user) {
+          if (mounted) setError("User session could not be established.");
+          return;
+        }
 
         let hasPhone = !!user.user_metadata?.phone || !!user.phone;
 
-        if (!hasPhone) {
-          const { data: customer } = await supabase
-            .from("customers")
-            .select("phone")
-            .eq("id", user.id)
-            .single();
+        try {
+          // Sync customer record safely
+          await supabase.from("customers").insert({
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || "Customer",
+            phone: user.user_metadata?.phone || null,
+            status: "active"
+          }).select("id").maybeSingle();
 
-          if (customer?.phone) {
-            hasPhone = true;
-            await supabase.auth.updateUser({ data: { phone: customer.phone } });
+          if (!hasPhone) {
+            const { data: customer } = await supabase
+              .from("customers")
+              .select("phone")
+              .eq("id", user.id)
+              .maybeSingle();
+
+            if (customer?.phone) {
+              hasPhone = true;
+              await supabase.auth.updateUser({ data: { phone: customer.phone } });
+            }
           }
+        } catch (dbError) {
+          console.error("Non-critical DB sync error:", dbError);
         }
 
         if (mounted) {
           window.location.href = hasPhone ? next : "/auth/complete-profile";
         }
+      } catch (err: any) {
+        if (mounted) setError(err.message || "An unexpected error occurred.");
       }
     };
 
