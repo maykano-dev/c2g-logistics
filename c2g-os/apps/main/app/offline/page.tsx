@@ -128,7 +128,18 @@ export default function OfflinePage() {
           C2G Logistics requires an active internet connection to browse products and track shipments. Please check your network and try again.
         </p>
 
-        <button onClick={() => window.location.reload()} className="retry-btn border-none cursor-pointer">
+        <button
+          onClick={() => {
+            // Try to go back to where the user was before going offline.
+            // If there's no history (e.g. they opened a fresh tab), go to dashboard.
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.location.href = '/dashboard';
+            }
+          }}
+          className="retry-btn border-none cursor-pointer"
+        >
           <RefreshCw className="retry-svg" />
           Try Again
         </button>
