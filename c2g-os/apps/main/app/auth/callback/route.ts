@@ -25,7 +25,24 @@ export async function GET(request: Request) {
         }).select('id').maybeSingle() // Use maybeSingle to not throw if conflicting
 
         // Check for phone number to ensure interceptor flow
-        const hasPhone = !!user.user_metadata?.phone || !!user.phone;
+        let hasPhone = !!user.user_metadata?.phone || !!user.phone;
+        
+        if (!hasPhone) {
+          // Google OAuth can wipe custom user_metadata. 
+          // Check if we actually have the phone number in our database.
+          const { data: customer } = await supabase
+            .from('customers')
+            .select('phone')
+            .eq('id', user.id)
+            .single();
+            
+          if (customer?.phone) {
+            hasPhone = true;
+            // Restore it back into the auth session so middleware can see it
+            await supabase.auth.updateUser({ data: { phone: customer.phone } });
+          }
+        }
+
         const redirectTarget = hasPhone ? next : '/auth/complete-profile';
 
         return NextResponse.redirect(`${origin}${redirectTarget}`)
