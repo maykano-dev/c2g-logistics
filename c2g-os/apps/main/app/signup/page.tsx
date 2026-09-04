@@ -42,17 +42,17 @@ export default async function SignupPage(
       <div className="w-full flex z-10 max-w-6xl mx-auto h-auto lg:h-[92vh] sm:rounded-2xl sm:shadow-2xl sm:border border-border/50 bg-background/80 backdrop-blur-xl overflow-hidden">
         
         {/* Left Column: Form — scrollable so it never clips */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-start lg:justify-center px-5 py-8 sm:px-8 xl:px-10 overflow-y-auto">
-          <div className="max-w-[400px] mx-auto w-full space-y-3 lg:space-y-4 xl:space-y-5">
+        <div className="w-full lg:w-1/2 flex flex-col justify-start lg:justify-center px-5 py-8 sm:px-8 xl:px-10 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="max-w-[400px] mx-auto w-full space-y-3 sm:space-y-4">
             {/* Logo & Header */}
             <div className="flex flex-col animate-fade-in text-center sm:text-left">
-              <div className="w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 relative flex items-center justify-center sm:justify-start mb-2 mx-auto sm:mx-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center sm:justify-start mb-2 sm:mb-3 mx-auto sm:mx-0">
                 <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
               </div>
-              <h1 className="text-2xl lg:text-3xl xl:text-4xl font-black tracking-tight text-foreground mb-1">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground mb-1 sm:mb-2">
                 Join the C2G Family Today
               </h1>
-              <p className="hidden sm:block text-muted-foreground text-sm">
+              <p className="hidden sm:block text-muted-foreground text-sm sm:text-base">
                 Join 450+ customers using C2G to source, ship, and grow.
               </p>
               <p className="block sm:hidden text-muted-foreground text-sm font-medium mt-1">
