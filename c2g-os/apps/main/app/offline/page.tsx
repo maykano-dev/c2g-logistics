@@ -1,9 +1,17 @@
 "use client";
 
-import { WifiOff, RefreshCw } from "lucide-react";
+import { WifiOff, Loader2 } from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
 
 export default function OfflinePage() {
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  const handleRetry = () => {
+    setIsRetrying(true);
+    window.location.reload();
+  };
+
   return (
     <>
       <title>No Internet Connection | C2G Mall</title>
@@ -108,7 +116,7 @@ export default function OfflinePage() {
           height: 1.25rem; 
         }
         
-        .retry-btn:hover .retry-svg {
+        .retry-svg.is-spinning {
           animation: spin 1s linear infinite;
         }
         
@@ -128,8 +136,8 @@ export default function OfflinePage() {
           C2G Logistics requires an active internet connection to browse products and track shipments. Please check your network and try again.
         </p>
 
-        <button onClick={() => window.location.reload()} className="retry-btn border-none cursor-pointer">
-          <RefreshCw className="retry-svg" />
+        <button onClick={handleRetry} className="retry-btn border-none cursor-pointer">
+          <Loader2 className={`retry-svg ${isRetrying ? 'is-spinning' : ''}`} />
           Try Again
         </button>
       </div>

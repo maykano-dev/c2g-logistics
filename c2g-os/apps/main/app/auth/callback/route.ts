@@ -17,9 +17,12 @@ export async function GET(request: Request) {
   const allCookies = cookieStore.getAll();
   console.log('[auth/callback] Incoming cookies:', allCookies.map(c => c.name));
 
-  // Use a plain createServerClient with NO custom cookie options.
-  // This ensures it reads the PKCE verifier using the default key
-  // (sb-[project-ref]-auth-token-code-verifier) that was set by the browser client.
+  // We will collect any cookies that Supabase wants to set or remove during the exchange
+  // and manually apply them to the NextResponse to avoid Next.js 14 cookie-drop bugs on redirects.
+  const cookieJar: { name: string, value: string, options: any }[] = [];
+
+  const isLocal = process.env.NODE_ENV === 'development';
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -29,33 +32,38 @@ export async function GET(request: Request) {
           return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options)
-            })
-          } catch {
-            // setAll is called from a Server Component - safe to ignore
-          }
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieJar.push({ name, value, options: { ...options, secure: !isLocal } })
+          })
         }
       },
-      cookieOptions: { name: 'sb-c2g-auth-token' }
+      cookieOptions: { 
+        name: 'sb-c2g-auth-token',
+        secure: !isLocal
+      }
     }
   )
+
+  const buildRedirect = (url: string) => {
+    const response = NextResponse.redirect(url)
+    cookieJar.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options)
+    })
+    return response
+  }
 
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
     console.error('[auth/callback] exchangeCodeForSession error:', error.message)
-    return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(error.message)}`
-    )
+    return buildRedirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
   }
 
   // Exchange succeeded — check if user has a phone number
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.redirect(`${origin}/login?error=Session+could+not+be+established`)
+    return buildRedirect(`${origin}/login?error=Session+could+not+be+established`)
   }
 
   // Try to upsert the customer record (non-blocking)
@@ -90,5 +98,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}${hasPhone ? next : '/auth/complete-profile'}`)
+  return buildRedirect(`${origin}${hasPhone ? next : '/auth/complete-profile'}`)
 }

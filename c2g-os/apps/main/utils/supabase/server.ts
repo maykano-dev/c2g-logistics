@@ -17,6 +17,8 @@ export async function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
 
+  const isLocal = process.env.NODE_ENV === 'development';
+
   return createServerClient(
     supabaseUrl,
     supabaseKey,
@@ -28,7 +30,7 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, { ...options, secure: !isLocal })
             })
           } catch (error) {
             // The `set` method was called from a Server Component.
@@ -37,7 +39,12 @@ export async function createClient() {
           }
         },
       },
-      cookieOptions: cookieName ? { name: cookieName } : undefined
+      cookieOptions: cookieName ? { 
+        name: cookieName,
+        secure: !isLocal
+      } : {
+        secure: !isLocal
+      }
     }
   )
 }

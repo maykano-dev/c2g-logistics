@@ -2,7 +2,7 @@
 
 import { useState, useActionState, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { login, loginWithGoogle } from "../auth/actions";
+import { login } from "../auth/actions";
 import { Loader2, Eye, EyeOff, Mail, Lock, ArrowRight, ShieldAlert } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from '@/utils/supabase/client';
@@ -14,14 +14,8 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified");
   
-  const handleGoogleLogin = async () => {
-    startGoogleTransition(async () => {
-      const origin = window.location.origin;
-      const res = await loginWithGoogle(origin);
-      if (res?.url) {
-        window.location.href = res.url;
-      }
-    });
+  const handleGoogleLogin = () => {
+    window.location.href = '/api/auth/google';
   };
 
   return (

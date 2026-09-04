@@ -102,6 +102,13 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          
+          // CRITICAL: Next.js Server Components read from the 'cookie' header, NOT request.cookies!
+          // We must serialize the updated cookies back into the request headers so downstream Server Components
+          // see the refreshed tokens and don't trigger a refresh token race condition.
+          const updatedCookieHeader = request.cookies.getAll().map(c => `${c.name}=${c.value}`).join('; ')
+          request.headers.set('cookie', updatedCookieHeader)
+
           // Recreate response to update headers safely
           supabaseResponse = NextResponse.next({
             request: {
@@ -120,14 +127,19 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Debug: log all cookies
+  console.log(`[Middleware] Incoming cookies for ${path}:`, request.cookies.getAll().map(c => c.name));
+
   // Refresh session if expired - required for Server Components
   // https://supabase.com/docs/guides/auth/server-side/nextjs
   const { data: { user }, error } = await supabase.auth.getUser()
 
   // Requirement: "middleware never redirects". We pass the auth status via headers.
   if (!user || error) {
+    console.log(`[Middleware] Auth Failed for path ${path}:`, error?.message || 'No user');
     request.headers.set('x-auth-status', 'unauthenticated')
   } else {
+    console.log(`[Middleware] Auth Success for path ${path}. User ID:`, user.id);
     request.headers.set('x-auth-status', 'authenticated')
     request.headers.set('x-user-id', user.id)
     

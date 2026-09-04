@@ -15,38 +15,7 @@ async function getClientContext() {
   return { ip, ua };
 }
 
-export async function loginWithGoogle(clientOrigin?: string) {
-  const supabase = await createClient();
-  let origin = clientOrigin;
 
-  if (!origin) {
-    const headersList = await headers();
-    const host = headersList.get('host');
-    const protocol = headersList.get('x-forwarded-proto') || 'https';
-    origin = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL;
-  }
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${origin}/auth/callback`,
-      queryParams: {
-        prompt: 'select_account',
-      }
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  if (data?.url) {
-    // Return the URL to the client instead of redirecting here.
-    // Next.js redirect() throws an error which can strip Set-Cookie headers in some environments (like Netlify).
-    // By returning the URL, we ensure the browser receives the PKCE cookie before navigating.
-    return { url: data.url };
-  }
-}
 
 export async function completeProfile(prevState: any, formData: FormData) {
   const supabase = await createClient();

@@ -15,11 +15,18 @@ export function createClient() {
     }
   }
 
+  const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
   return createBrowserClient(
     supabaseUrl,
     supabaseKey,
     {
-      cookieOptions: cookieName ? { name: cookieName } : undefined
+      cookieOptions: cookieName ? { 
+        name: cookieName,
+        secure: !isLocal
+      } : {
+        secure: !isLocal
+      }
     }
   )
 }

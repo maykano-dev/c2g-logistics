@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useActionState, useRef, useEffect, useTransition } from "react";
-import { signup, verifySignupOtp, resendSignupOtp, loginWithGoogle } from "../auth/actions";
+import { signup, verifySignupOtp, resendSignupOtp } from "../auth/actions";
 import { PhoneInput } from "../../components/phone-input";
 import { Loader2, Eye, EyeOff, User, Mail, Lock, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -145,14 +145,8 @@ export function SignupForm() {
     );
   }
 
-  const handleGoogleLogin = async () => {
-    startGoogleTransition(async () => {
-      const origin = window.location.origin;
-      const res = await loginWithGoogle(origin);
-      if (res?.url) {
-        window.location.href = res.url;
-      }
-    });
+  const handleGoogleLogin = () => {
+    window.location.href = '/api/auth/google';
   };
 
   return (

@@ -26,17 +26,15 @@ export default async function DashboardLayout({
   const headersList = await headers();
   
   if (headersList.get('x-auth-status') !== 'authenticated') {
+    console.log('[Dashboard Layout] Redirecting because x-auth-status is not authenticated. Value:', headersList.get('x-auth-status'));
     redirect("/login");
-  }
-
-  if (headersList.get('x-needs-profile') === 'true') {
-    redirect("/auth/complete-profile");
   }
 
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (!user || error) {
+    console.log('[Dashboard Layout] Redirecting because getUser failed:', error?.message || 'No user');
     redirect("/login");
   }
 
