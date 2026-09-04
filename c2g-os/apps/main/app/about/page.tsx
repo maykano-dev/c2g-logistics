@@ -69,7 +69,7 @@ export default function AboutPage() {
             <div className="relative">
               <div className="rounded-3xl overflow-hidden border border-border bg-gradient-to-br from-secondary to-background h-80 lg:h-[420px] flex items-center justify-center shadow-2xl">
                 <div className="text-center p-8 space-y-4 flex flex-col items-center">
-                  <div className="w-48 h-20 relative mx-auto mb-2">
+                  <div className="w-64 h-32 relative mx-auto mb-2">
                     <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain drop-shadow-2xl" />
                   </div>
                   <p className="text-2xl font-bold text-foreground">China → Ghana</p>
