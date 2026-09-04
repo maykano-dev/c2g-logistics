@@ -6,7 +6,7 @@ import { PhoneInput } from "../../components/phone-input";
 import { Loader2, Eye, EyeOff, User, Mail, Lock, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/utils/supabase/client';
 
 export function SignupForm() {
   const router = useRouter();
@@ -147,10 +147,7 @@ export function SignupForm() {
 
   const handleGoogleLogin = async () => {
     startGoogleTransition(async () => {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const supabase = createClient();
       
       await supabase.auth.signInWithOAuth({
         provider: 'google',

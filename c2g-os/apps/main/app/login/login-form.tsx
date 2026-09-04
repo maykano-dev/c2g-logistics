@@ -5,8 +5,7 @@ import Link from "next/link";
 import { login, loginWithGoogle } from "../auth/actions";
 import { Loader2, Eye, EyeOff, Mail, Lock, ArrowRight, ShieldAlert } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/utils/supabase/client';
 
 export function LoginForm() {
   const [state, action, isPending] = useActionState(login, null);
@@ -17,10 +16,7 @@ export function LoginForm() {
   
   const handleGoogleLogin = async () => {
     startGoogleTransition(async () => {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const supabase = createClient();
       
       await supabase.auth.signInWithOAuth({
         provider: 'google',
