@@ -531,6 +531,7 @@ export default async function LandingPage(
         </section>
 
         {/* CTA */}
+        {!isLoggedIn && (
         <section className="glass-panel p-12 text-center relative overflow-hidden border-primary/30">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent" />
           <div className="relative z-10 space-y-6 max-w-2xl mx-auto">
@@ -539,15 +540,9 @@ export default async function LandingPage(
               Join thousands of customers, importers, and businesses using C2G to access products from China and manage their imports with confidence.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              {isLoggedIn ? (
-                <Link href="/dashboard" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:scale-[1.02]">
-                  Go To Dashboard
-                </Link>
-              ) : (
-                <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:scale-[1.02]">
-                  Create Free Account
-                </Link>
-              )}
+              <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:scale-[1.02]">
+                Create Free Account
+              </Link>
               <Link href="/get-quote" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input glass hover:bg-accent hover:text-accent-foreground h-12 px-8">
                 Get Shipping Quote
               </Link>
@@ -557,6 +552,7 @@ export default async function LandingPage(
             </Link>
           </div>
         </section>
+        )}
 
       </main>
     </div>
