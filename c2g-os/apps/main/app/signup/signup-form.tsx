@@ -145,7 +145,7 @@ export function SignupForm() {
 
   const handleGoogleLogin = () => {
     startGoogleTransition(async () => {
-      await loginWithGoogle();
+      await loginWithGoogle(window.location.origin);
     });
   };
 

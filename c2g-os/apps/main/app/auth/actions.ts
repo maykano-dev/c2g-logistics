@@ -15,13 +15,16 @@ async function getClientContext() {
   return { ip, ua };
 }
 
-export async function loginWithGoogle() {
+export async function loginWithGoogle(clientOrigin?: string) {
   const supabase = await createClient();
-  const headersList = await headers();
-  const host = headersList.get('host');
-  const protocol = headersList.get('x-forwarded-proto') || 'https';
-  // Fallback to env var if headers are somehow missing
-  const origin = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL;
+  let origin = clientOrigin;
+
+  if (!origin) {
+    const headersList = await headers();
+    const host = headersList.get('host');
+    const protocol = headersList.get('x-forwarded-proto') || 'https';
+    origin = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL;
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
