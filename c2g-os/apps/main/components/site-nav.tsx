@@ -5,11 +5,32 @@ import Image from "next/image";
 import { useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 export function SiteNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navLinks = [
     { href: "/shop", label: "C2G Mall" },
@@ -59,10 +80,20 @@ export function SiteNav() {
 
           {/* Desktop auth */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Login</Link>
-            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-semibold h-9 px-5 shadow-lg shadow-primary/25 hover:bg-primary/90 hover:scale-[1.02] transition-all">
-              Sign Up
-            </Link>
+            {isLoading ? (
+              <div className="w-24 h-9 bg-secondary animate-pulse rounded-lg" />
+            ) : user ? (
+              <Link href="/dashboard" className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-semibold h-9 px-5 shadow-lg shadow-primary/25 hover:bg-primary/90 hover:scale-[1.02] transition-all">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Login</Link>
+                <Link href="/signup" className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-semibold h-9 px-5 shadow-lg shadow-primary/25 hover:bg-primary/90 hover:scale-[1.02] transition-all">
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -83,8 +114,16 @@ export function SiteNav() {
             <Link href="/about" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>About</Link>
             <Link href="/contact" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Contact</Link>
             <div className="flex gap-3 px-3 pt-2">
-              <Link href="/login" className="flex-1 text-center text-sm font-medium border border-border rounded-lg py-2.5 hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Login</Link>
-              <Link href="/signup" className="flex-1 text-center text-sm font-semibold bg-primary text-primary-foreground rounded-lg py-2.5 hover:bg-primary/90 transition-colors" onClick={() => setMobileOpen(false)}>Sign Up</Link>
+              {isLoading ? (
+                <div className="w-full h-10 bg-secondary animate-pulse rounded-lg" />
+              ) : user ? (
+                <Link href="/dashboard" className="flex-1 text-center text-sm font-semibold bg-primary text-primary-foreground rounded-lg py-2.5 hover:bg-primary/90 transition-colors" onClick={() => setMobileOpen(false)}>Go to Dashboard</Link>
+              ) : (
+                <>
+                  <Link href="/login" className="flex-1 text-center text-sm font-medium border border-border rounded-lg py-2.5 hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Login</Link>
+                  <Link href="/signup" className="flex-1 text-center text-sm font-semibold bg-primary text-primary-foreground rounded-lg py-2.5 hover:bg-primary/90 transition-colors" onClick={() => setMobileOpen(false)}>Sign Up</Link>
+                </>
+              )}
             </div>
           </div>
         )}

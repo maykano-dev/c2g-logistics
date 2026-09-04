@@ -29,12 +29,16 @@ const DEFAULT_IMAGES = [
 
 import { redirect } from "next/navigation";
 
+import { headers } from "next/headers";
+
 export default async function LandingPage(
   props: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
   }
 ) {
   const searchParams = await props.searchParams;
+  const headersList = await headers();
+  const isLoggedIn = headersList.get('x-auth-status') === 'authenticated';
   
   if (searchParams?.code) {
     redirect(`/auth/callback?code=${searchParams.code}`);
@@ -98,9 +102,15 @@ export default async function LandingPage(
               <Link href="/shop" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-13 px-8 shadow-lg shadow-primary/30 hover:scale-[1.02] transition-all">
                 <ShoppingCart className="w-5 h-5" /> Shop on C2G Mall
               </Link>
-              <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full text-base font-semibold border border-input glass hover:bg-secondary h-13 px-8 transition-all">
-                Start Importing <ArrowRight className="w-4 h-4" />
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full text-base font-semibold border border-input glass hover:bg-secondary h-13 px-8 transition-all">
+                  Go To Dashboard <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full text-base font-semibold border border-input glass hover:bg-secondary h-13 px-8 transition-all">
+                  Start Importing <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
             <p className="text-sm text-muted-foreground flex items-center justify-center lg:justify-start gap-2">
               <ShieldCheck className="w-4 h-4 text-green-500" /> Trusted by importers across Ghana.
@@ -316,9 +326,15 @@ export default async function LandingPage(
               </div>
             </div>
             <div className="pt-4">
-              <Link href="/signup" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-bold transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-lg shadow-primary/25 hover:scale-[1.02]">
-                Get My Address <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-bold transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-lg shadow-primary/25 hover:scale-[1.02]">
+                  Go To Dashboard <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              ) : (
+                <Link href="/signup" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-bold transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-lg shadow-primary/25 hover:scale-[1.02]">
+                  Get My Address <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              )}
             </div>
           </div>
           <div className="flex-1 w-full bg-gradient-to-br from-secondary to-background border border-border rounded-2xl h-[500px] p-8 relative overflow-hidden shadow-2xl flex items-center justify-center">
@@ -523,9 +539,15 @@ export default async function LandingPage(
               Join thousands of customers, importers, and businesses using C2G to access products from China and manage their imports with confidence.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:scale-[1.02]">
-                Create Free Account
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:scale-[1.02]">
+                  Go To Dashboard
+                </Link>
+              ) : (
+                <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:scale-[1.02]">
+                  Create Free Account
+                </Link>
+              )}
               <Link href="/get-quote" className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input glass hover:bg-accent hover:text-accent-foreground h-12 px-8">
                 Get Shipping Quote
               </Link>
