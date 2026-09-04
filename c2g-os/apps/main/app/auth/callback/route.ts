@@ -51,5 +51,6 @@ export async function GET(request: Request) {
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/login?error=Could not verify your session`)
+  const errorMessage = error?.message || 'Could not verify your session';
+  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(errorMessage)}`)
 }
