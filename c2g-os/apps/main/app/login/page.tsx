@@ -13,7 +13,19 @@ export const metadata: Metadata = {
   description: "Sign in to your C2G Logistics dashboard",
 };
 
-export default async function LoginPage() {
+export default async function LoginPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  }
+) {
+  const searchParams = await props.searchParams;
+  
+  // Fallback: If Supabase misconfigures the redirect and drops the user here with a code, 
+  // immediately forward them to the correct callback route to finish logging in.
+  if (searchParams?.code) {
+    redirect(`/auth/callback?code=${searchParams.code}`);
+  }
+
   const headersList = await headers();
   const authStatus = headersList.get('x-auth-status');
   

@@ -27,7 +27,19 @@ const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1553413077-190dd305871c?w=400&q=80'
 ];
 
-export default async function LandingPage() {
+import { redirect } from "next/navigation";
+
+export default async function LandingPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  }
+) {
+  const searchParams = await props.searchParams;
+  
+  if (searchParams?.code) {
+    redirect(`/auth/callback?code=${searchParams.code}`);
+  }
+
   const { products: featuredProducts, exchangeRate } = await getTopPurchasedProducts(8);
   
   // Fetch dynamic hero images

@@ -12,7 +12,17 @@ export const metadata: Metadata = {
   description: "Create your C2G Logistics account",
 };
 
-export default async function SignupPage() {
+export default async function SignupPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  }
+) {
+  const searchParams = await props.searchParams;
+  
+  if (searchParams?.code) {
+    redirect(`/auth/callback?code=${searchParams.code}`);
+  }
+
   const headersList = await headers();
   const authStatus = headersList.get('x-auth-status');
   
