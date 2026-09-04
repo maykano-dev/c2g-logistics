@@ -41,7 +41,10 @@ export async function loginWithGoogle(clientOrigin?: string) {
   }
 
   if (data?.url) {
-    redirect(data.url);
+    // Return the URL to the client instead of redirecting here.
+    // Next.js redirect() throws an error which can strip Set-Cookie headers in some environments (like Netlify).
+    // By returning the URL, we ensure the browser receives the PKCE cookie before navigating.
+    return { url: data.url };
   }
 }
 

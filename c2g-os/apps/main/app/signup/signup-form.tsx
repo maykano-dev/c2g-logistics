@@ -147,9 +147,11 @@ export function SignupForm() {
 
   const handleGoogleLogin = async () => {
     startGoogleTransition(async () => {
-      // Call the server action directly to ensure PKCE cookies are set by the server
       const origin = window.location.origin;
-      await loginWithGoogle(origin);
+      const res = await loginWithGoogle(origin);
+      if (res?.url) {
+        window.location.href = res.url;
+      }
     });
   };
 
