@@ -19,6 +19,10 @@ export function createClient() {
     supabaseUrl,
     supabaseKey,
     {
+      auth: {
+        detectSessionInUrl: false,
+        flowType: 'pkce'
+      },
       cookieOptions: cookieName ? { name: cookieName } : undefined
     }
   )
