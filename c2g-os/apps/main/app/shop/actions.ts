@@ -30,6 +30,16 @@ function hashQuery(query: string): string {
   return crypto.createHash('sha256').update(query.trim().toLowerCase()).digest('hex');
 }
 
+function deduplicateProducts(products: any[]) {
+  const seen = new Set();
+  return products.filter(p => {
+    const idStr = String(p.id);
+    if (seen.has(idStr)) return false;
+    seen.add(idStr);
+    return true;
+  });
+}
+
 function mapHiobuyToC2g(hbProduct: any, pricing: { rate: number, markup: number }) {
   const cnyPrice = hbProduct.price?.display_amount || hbProduct.price?.original_amount || 0;
   
@@ -82,25 +92,22 @@ export async function getTopPurchasedProducts(limit: number = 5) {
     if (error) throw error;
     const pricing = await getPricingConfig(supabase);
     
-    return {
-      success: true,
-      products: data?.map((p) => {
-        // Here we just apply markup to existing price logic if needed, 
-        // but top purchased products come from local DB.
-        // Assuming p.price_snapshot_usd was saved... wait, for local products we'll use the same formula.
-        // But local products are saved in USD. We should probably just return them, 
-        // but for consistency with the new math, let's keep it simple.
+    const mapped = data?.map((p) => {
         const cnyPrice = p.price_snapshot_usd * 7.2;
         const exactPrice = cnyPrice / pricing.rate;
         return {
-          id: p.id,
+          id: String(p.id),
           name: p.title,
           price: p.price_snapshot_usd,
           selling_price_ghs: exactPrice + (exactPrice * (pricing.markup / 100)),
           image_url: p.thumbnail_url,
           demandLabel: p.purchase_count > 50 ? "high" : "medium"
         };
-      }) || [],
+      }) || [];
+      
+    return {
+      success: true,
+      products: deduplicateProducts(mapped),
       exchangeRate: pricing.rate // Returning rate for fallback UI compat
     };
   } catch (error: any) {
@@ -126,7 +133,7 @@ async function fetchShopProductsBase(params?: {
   );
   const pricing = await getPricingConfig(supabase);
   const page = params?.page || 1;
-  const limit = 20;
+  const limit = 21;
 
   // Intercept for Image Search
   if (params?.imageId) {
@@ -202,15 +209,21 @@ async function fetchShopProductsBase(params?: {
   let searchQuery = params?.query || '';
   const searchCategory = params?.category === 'all' ? '' : (params?.category || '');
 
+  let isHeterogeneousHomepage = false;
+  let homepageKeywords: string[] = [];
+
   if (!searchQuery && !searchCategory) {
+    isHeterogeneousHomepage = true;
     const mixKeywords = [
-      'bestseller', 'home decor', 'sneakers', 'smartwatch', 'kitchen', 'dresses', 
-      'wireless earbuds', 'fitness', 'stationery', 'toys', 'sunglasses', 'backpack', 
-      'jewelry', 'makeup', 'gaming', 'phone accessories', 'outdoor', 'pets', 'vintage', 
-      'streetwear', 'tools', 'party supplies', 'watches', 'handbags'
+      'shoes', 'decor', 'sneakers', 'smartwatch', 'kitchenware', 'dresses', 
+      'earbuds', 'fitness', 'stationery', 'toys', 'sunglasses', 'backpack', 
+      'jewelry', 'makeup', 'gaming', 'accessories', 'outdoor', 'pets', 'vintage', 
+      'streetwear', 'tools', 'party', 'handbags'
     ];
-    // Pick a completely random keyword every time so the feed is always fresh and random!
-    searchQuery = mixKeywords[Math.floor(Math.random() * mixKeywords.length)] || 'trending';
+    // Pick 4 completely random keywords to fetch for a heterogeneous mix
+    const shuffled = [...mixKeywords].sort(() => 0.5 - Math.random());
+    homepageKeywords = shuffled.slice(0, 4);
+    searchQuery = 'homepage_mixed';
   }
   
   const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`);
@@ -230,37 +243,93 @@ async function fetchShopProductsBase(params?: {
   } else {
     // CACHE MISS → Call HioBuy API
     try {
-      let finalKeyword = searchQuery;
-      if (searchCategory) {
-        const isNumeric = /^\d+$/.test(searchCategory);
-        if (!isNumeric) {
-           finalKeyword = finalKeyword ? `${searchCategory} ${finalKeyword}` : searchCategory;
-        }
-      }
-      
-      const res = await searchProducts({
-        channel: "1688", // Default to 1688 for generic shop search
-        keyword: finalKeyword || "trending",
-        page: page,
-        page_size: 20,
-        price_start: cnyMinPrice,
-        price_end: cnyMaxPrice
-      });
+      if (isHeterogeneousHomepage) {
+        // Fetch 4 different keywords simultaneously, 5 items each
+        const searchPromises = homepageKeywords.map(kw => 
+          searchProducts({
+            channel: "1688",
+            keyword: kw,
+            page: page,
+            page_size: 6,
+            price_start: cnyMinPrice,
+            price_end: cnyMaxPrice
+          }).catch(e => { console.warn('HioBuy multi-search error:', e); return null; })
+        );
 
-      if (res && res.items && res.items.length > 0) {
-        alibabaProducts = res.items.map((p: any) => mapHiobuyToC2g(p, pricing));
-        totalCount += res.total || res.items.length;
-
-        // Save to Cache (TTL 12 hours)
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 12);
-
-        await supabase.from("search_query_cache").upsert({
-          query_hash:  qHash,
-          query_text:  `${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`,
-          result_data: { items: res.items, total: res.total || res.items.length },
-          expires_at:  expiresAt.toISOString()
+        const results = await Promise.all(searchPromises);
+        let combinedItems: any[] = [];
+        let combinedTotal = 0;
+        
+        results.forEach(res => {
+          if (res && res.items) {
+            combinedItems = [...combinedItems, ...res.items];
+            combinedTotal += (res.total || res.items.length);
+          }
         });
+
+        // Deduplicate items by ID to prevent React key collisions
+        const seenIds = new Set();
+        const deduplicatedItems: any[] = [];
+        
+        for (const item of combinedItems) {
+          const id = item.id || item.num_iid;
+          if (!seenIds.has(id)) {
+            seenIds.add(id);
+            deduplicatedItems.push(item);
+          }
+        }
+
+        // Interleave/shuffle the combined items so they are truly mixed
+        deduplicatedItems.sort(() => 0.5 - Math.random());
+
+        if (deduplicatedItems.length > 0) {
+          alibabaProducts = deduplicatedItems.map((p: any) => mapHiobuyToC2g(p, pricing));
+          totalCount += combinedTotal;
+
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + 12);
+
+          await supabase.from("search_query_cache").upsert({
+            query_hash:  qHash,
+            query_text:  `${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`,
+            result_data: { items: combinedItems, total: combinedTotal },
+            expires_at:  expiresAt.toISOString()
+          });
+        }
+      } else {
+        // Specific Keyword Search
+        let finalKeyword = searchQuery;
+        if (searchCategory) {
+          const isNumeric = /^\d+$/.test(searchCategory);
+          if (!isNumeric) {
+             finalKeyword = finalKeyword ? `${searchCategory} ${finalKeyword}` : searchCategory;
+          }
+        }
+        
+        const res = await searchProducts({
+          channel: "1688", // Default to 1688 for generic shop search
+          keyword: finalKeyword || "trending",
+          page: page,
+          page_size: limit,
+          price_start: cnyMinPrice,
+          price_end: cnyMaxPrice
+        });
+
+        if (res && res.items && res.items.length > 0) {
+          alibabaProducts = res.items.map((p: any) => mapHiobuyToC2g(p, pricing));
+          totalCount += res.total || res.items.length;
+
+          // Save to Cache (TTL 12 hours)
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + 12);
+
+          await supabase.from("search_query_cache").upsert({
+            query_hash:  qHash,
+            query_text:  `${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`,
+            result_data: { items: res.items, total: res.total || res.items.length },
+            expires_at:  expiresAt.toISOString()
+          });
+        }
       }
     } catch (e) {
       console.error("HioBuy Search Failed", e);
@@ -268,11 +337,21 @@ async function fetchShopProductsBase(params?: {
   }
 
   // Merge (Local first, then Alibaba)
-  // Ensure no duplicates if a product was promoted to local DB but also returned in Alibaba search
-  const localIds = new Set(localProducts.map(p => p.id));
-  const uniqueAlibaba = alibabaProducts.filter(p => !localIds.has(p.id));
+  // Ensure no duplicates if a product was promoted to local DB but also returned in Alibaba search,
+  // and ensure no internal duplicates from cached Alibaba results.
+  const localIds = new Set(localProducts.map(p => String(p.id)));
+  const uniqueAlibaba: any[] = [];
+  const seenAlibabaIds = new Set();
   
-  const finalProducts = [...localProducts, ...uniqueAlibaba];
+  for (const p of alibabaProducts) {
+    const idStr = String(p.id);
+    if (!localIds.has(idStr) && !seenAlibabaIds.has(idStr)) {
+      seenAlibabaIds.add(idStr);
+      uniqueAlibaba.push(p);
+    }
+  }
+  
+  const finalProducts = [...localProducts, ...uniqueAlibaba].slice(0, limit);
 
   return { 
     success: true, 
@@ -527,7 +606,7 @@ export async function getNewArrivals() {
     const cnyPrice = p.price_snapshot_usd * 7.2;
     const exactPrice = cnyPrice / pricing.rate;
     return {
-      id: p.id,
+      id: String(p.id),
       name: p.title,
       price: p.price_snapshot_usd,
       selling_price_ghs: exactPrice + (exactPrice * (pricing.markup / 100)),
@@ -535,7 +614,7 @@ export async function getNewArrivals() {
     };
   });
 
-  return { products, exchangeRate: pricing.rate };
+  return { products: deduplicateProducts(products), exchangeRate: pricing.rate };
 }
 
 export async function getBestSellers() {

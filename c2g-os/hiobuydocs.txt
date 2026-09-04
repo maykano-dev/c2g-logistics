@@ -1,0 +1,4735 @@
+HioBuyHioBuy API
+Language
+Back to site
+GitHub ↗
+Getting started
+
+    Introduction
+    Authentication
+    Response format
+    Languages
+    Errors
+    Rate limits
+    Sandbox
+
+Products
+
+    Overview
+    Product detail
+    Keyword search
+    Upload image
+    Image search
+    Parse URL
+    Response models
+    1688 categories
+    Advanced endpoints
+
+Procurement orders
+
+    Overview
+    Preview
+    Create order
+    Pay order
+    Detail & list
+    Domestic trace
+    Cancel
+    Response models
+
+Fulfillment (warehouse)
+
+    Warehouse authorization
+    Overview
+    WH-DEV testing guide
+    Inbound notice
+    Packages
+    Package returns
+    Locations
+    Value-added services
+    Service requests
+    Shipping quotes
+    Shipments
+    International tracking
+    Wallet balance
+    Finance
+    Support tickets
+    Response models
+    Webhooks
+
+Supplier inquiry
+
+    Overview
+    Create inquiry
+    Question types
+    Read inquiries
+
+Integrations
+
+    Agent API & MCP
+
+Examples
+
+    🚀 Starter
+
+HIOBuy Open Platform
+
+HIOBuy is an official authorized technology partner of Taobao, 1688, and Weidian. We connect Chinese supply sources to your platform with a unified API — not just product data, but the full path from catalog sync to automated purchasing and (optionally) international delivery.
+What HIOBuy provides
+
+Unlike generic marketplace scrapers or read-only data feeds, HIOBuy is built around end-to-end fulfillment. Your integration should drive real transactions on your storefront and through our procurement APIs.
+
+    Diagram (HIOBuy connects Chinese sources to your platform: product sync, order receiving, auto purchasing, and status sync)
+
+    HIOBuy sits between Chinese marketplaces and your business — syncing products, receiving orders, auto-purchasing, and pushing status back to your dashboard.
+
+Capability	What it means for you
+Product sync	Search, detail, image search, SKU/stock/price from 1688, Taobao, Weidian via /v1/products/*
+Order receiving	Your backend sends customer orders to HIOBuy when a sale happens on your site
+Auto purchasing	HIOBuy places the corresponding order on the source marketplace via /v1/orders/*
+Status sync	Purchase progress, domestic logistics, and (in warehouse mode) international tracking flow back to your systems — see Webhooks
+International fulfillment	Optional: inbound warehouse parcels shipped overseas via /v1/fulfillment/* (warehouse mode only)
+How we differ from other APIs
+
+    Official channel access — authorized partner integrations, not unofficial scraping.
+    Transaction-oriented — product APIs exist to support sourcing and checkout; procurement APIs complete the purchase loop.
+    Unified standard responses — one schema across 1688, Taobao, and Weidian; see Response format.
+    Optional full-stack fulfillment — self mode for buyers who manage their own logistics; warehouse mode when HIOBuy should store and ship internationally.
+
+Acceptable use & quotas {#acceptable-use}
+
+API access is not unlimited. Quotas and rate limits are tied to your commercial agreement and expected transaction volume (GMV) through the platform.
+
+HIOBuy is intended for integrations where product discovery leads to real orders — customers buy on your site, and your backend calls /v1/orders/* to procure. Applications that only consume product search/detail without meaningful purchase activity, or that bypass HIOBuy for procurement while using our catalog APIs, are not supported and may be suspended after review.
+
+Technical rate-limit headers and error codes are documented under Rate limits. Commercial terms are agreed during onboarding — not repeated in individual endpoint pages.
+Integration flows {#integration-flows}
+
+Choose a fulfillment mode in the developer portal when you authorize your app. The product API path is similar; procurement and international shipping differ.
+Self fulfillment — you operate procurement
+
+Best when you already have marketplace accounts and handle warehousing yourself.
+
+Product sync
+
+Display products
+
+Places order
+
+POST /v1/orders/*
+
+Auto-purchase with your OAuth
+
+Purchase & domestic logistics
+
+Status sync
+
+1688 / Taobao / Weidian
+
+HIOBuy Gateway
+
+Your storefront
+
+Your customer
+
+Your backend
+
+Marketplace
+
+Your dashboard
+
+    Product sync — 1688 / Taobao / Weidian → HIOBuy Gateway: search, detail, images, SKU, stock
+    Display — HIOBuy Gateway → Your storefront
+    Customer order — Your customer → Your website
+    Procurement — Your backend → HIOBuy Gateway: POST /v1/orders/preview → create → pay
+    Auto-purchase — HIOBuy Gateway → Marketplace (your OAuth)
+    Status return — Marketplace → HIOBuy Gateway: purchase & domestic logistics
+    Dashboard sync — HIOBuy Gateway → Your dashboard
+
+International shipping (/v1/fulfillment/*) is not available in self mode. You handle overseas delivery yourself.
+HIOBuy warehouse fulfillment — end-to-end
+
+One warehouse code binds all channels; HIOBuy procures, stores, and ships internationally.
+
+Product APIs direct
+
+POST /v1/orders/*
+
+Auto-purchase
+
+Inbound parcels
+
+POST /v1/fulfillment/*
+
+International ship
+
+1688 / Taobao / Weidian
+
+HIOBuy Gateway
+
+Your storefront
+
+Customer
+
+Your backend
+
+HIOBuy warehouse
+
+Marketplace
+
+Overseas recipient
+
+    Product APIs — still call marketplaces directly (low latency)
+    Product sync — to your customer-facing site
+    Customer order — on your website
+    Procurement — POST /v1/orders/* (forwarded to HIOBuy warehouse)
+    Auto-purchase — HIOBuy warehouse → Marketplace with managed tokens
+    Inbound — goods arrive; tracking_number in order detail
+    International — shipping/quotes → preview → create → pay
+    Delivery — track via /v1/fulfillment/shipments/{id}/tracking
+
+Procurement and international APIs route through HIOBuy. Product APIs stay direct to platforms for speed.
+Mode comparison
+	Self fulfillment	HIOBuy warehouse
+Channel tokens	You manage OAuth per channel	One warehouse code binds all channels
+/v1/products/*	Gateway → marketplace	Gateway → marketplace (direct, low latency)
+/v1/orders/*	Gateway → marketplace (your tokens)	Gateway → HIOBuy warehouse API
+/v1/fulfillment/*	Not available	International shipping + balance
+Plans & support {#plans-support}
+
+Free plans include self-service documentation and Sandbox access. Dedicated integration and fulfillment support are available on paid plans.
+
+Upgrade and billing are managed in the developer portal 
+.
+How to become a developer {#become-a-developer}
+
+    Register 
+    with your company, website, and use case (e.g. purchasing agent, cross-border store).
+    Verify your email address.
+    Sign in and create an App in the developer portal — describe your integration and expected traffic.
+    Wait for HIOBuy review. We approve apps that align with transaction-based sourcing; you will receive quota and channel access accordingly.
+    After approval: authorize channels (self OAuth or warehouse code), then create an API key under API Keys 
+    .
+    Integrate: product detail → customer checkout → procurement preview/create → pay → status webhooks. In warehouse mode, add international shipment flow.
+
+Need a warehouse developer code? Contact HIOBuy operations after your app is approved for warehouse fulfillment.
+API reference map
+
+Base URL: https://api.hiobuy.com/v1
+Area	Prefix	Docs
+Products	/v1/products/*	Products
+Procurement	/v1/orders/*	Procurement orders
+Fulfillment	/v1/fulfillment/*	Shipments & balance
+
+Two order types — do not mix: procurement (/v1/orders/*) buys from Chinese sellers into a domestic warehouse; international shipment (/v1/fulfillment/shipments/*) sends inbound parcels overseas.
+Recommended reading order {#reading-order}
+
+    Become a developer — register, app approval, API key
+    Authentication + Portal authorization
+    Products → Procurement orders
+    Optional: Fulfillment (warehouse mode)
+    Errors & Rate limits when hardening production
+
+Public API scope {#public-api-scope}
+
+This documentation describes the supported Public API surface. Some paths may appear in openapi.json 
+for internal or deprecated use (e.g. legacy /v1/shipments, refund routes) — if an endpoint is not listed here, treat it as unavailable.
+Technical conventions {#technical-conventions}
+
+    Auth: Authorization: Bearer YOUR_API_KEY — Authentication
+    Product language in JSON body — Languages
+    Prices: CNY yuan on products, fen on orders and shipments
+    response_format: "standard" (default) or "upstream" — Response format
+
+OpenAPI spec: api.hiobuy.com/openapi.json 
+
+Published documentation: hiobuy.com/api-docs 
+Get Support
+
+Need integration help? Contact Developer Support at support@hiobuy.com · Response within 1–2 business days
+Email support
+
+Powered by HioBuy Core Engine
+Privacy Policy
+Service Status
+Developer Support
+HioBuyHioBuy API
+Language
+Back to site
+GitHub ↗
+Getting started
+
+    Introduction
+    Authentication
+    Response format
+    Languages
+    Errors
+    Rate limits
+    Sandbox
+
+Products
+
+    Overview
+    Product detail
+    Keyword search
+    Upload image
+    Image search
+    Parse URL
+    Response models
+    1688 categories
+    Advanced endpoints
+
+Procurement orders
+
+    Overview
+    Preview
+    Create order
+    Pay order
+    Detail & list
+    Domestic trace
+    Cancel
+    Response models
+
+Fulfillment (warehouse)
+
+    Warehouse authorization
+    Overview
+    WH-DEV testing guide
+    Inbound notice
+    Packages
+    Package returns
+    Locations
+    Value-added services
+    Service requests
+    Shipping quotes
+    Shipments
+    International tracking
+    Wallet balance
+    Finance
+    Support tickets
+    Response models
+    Webhooks
+
+Supplier inquiry
+
+    Overview
+    Create inquiry
+    Question types
+    Read inquiries
+
+Integrations
+
+    Agent API & MCP
+
+Examples
+
+    🚀 Starter
+
+Authentication
+
+All Public API requests require a Bearer token. Channel credentials and warehouse codes are managed in the developer portal — never embed them in your client apps.
+API keys {#api-keys}
+
+Create keys under Developer Portal → API Keys 
+after your app is approved.
+Item	Description
+Format	Authorization: Bearer hio_live_… (production) or test keys as issued by portal
+Scope	One key per app. Quotas and channel access follow the app’s subscription plan.
+Rotation	Revoke compromised keys immediately; create a replacement before revoking in production.
+Storage	Server-side only. Do not expose keys in mobile apps, browser JS, or public repos.
+Example request
+
+curl https://api.hiobuy.com/v1/products/detail \
+  -H "Authorization: Bearer hio_live_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channel": "1688",
+    "product_id": "554456348334",
+    "language": "en"
+  }'
+
+Channel authorization (prerequisite) {#channel-authorization}
+
+An API key alone is not enough. Each app must complete channel authorization before calling product or order APIs for that marketplace.
+Mode	What you configure	What Gateway uses
+Self fulfillment	Per-channel OAuth or token JSON in portal	Stored tokens per app + channel
+HIOBuy warehouse	One warehouse developer code	Code + managed tokens server-side; procurement/fulfillment forwarded to HIOBuy
+
+See Portal authorization. If a channel is not authorized, calls return 401 CHANNEL_NOT_AUTHORIZED (Errors).
+What you never send {#what-not-to-send}
+
+    Taobao / 1688 / Weidian access tokens or refresh tokens
+    Warehouse developer code (Gateway attaches it for fulfillment routes)
+    Portal session JWT on Public API calls
+
+Request tracing {#tracing}
+
+Every response includes:
+
+    x-request-id header — correlate with request_id in the JSON body
+    Optional quota headers on billable routes — see Rate limits
+
+Include x-request-id when contacting HIOBuy support.
+Common auth errors {#auth-errors}
+HTTP	Code	Meaning
+401	INVALID_API_KEY	Missing, revoked, or malformed Bearer token
+401	CHANNEL_NOT_AUTHORIZED	App has not authorized the requested channel in portal
+403	INSUFFICIENT_SCOPE	Key or app lacks permission for the operation
+403	FULFILLMENT_MODE_NOT_SUPPORTED	Fulfillment API called while app is in self-fulfillment mode
+Get Support
+
+Need integration help? Contact Developer Support at support@hiobuy.com · Response within 1–2 business days
+Email support
+
+Powered by HioBuy Core Engine
+Privacy Policy
+Service Status
+Developer Support
+Authentication | HioBuy APIHioBuyHioBuy API
+Language
+Back to site
+GitHub ↗
+Getting started
+
+    Introduction
+    Authentication
+    Response format
+    Languages
+    Errors
+    Rate limits
+    Sandbox
+
+Products
+
+    Overview
+    Product detail
+    Keyword search
+    Upload image
+    Image search
+    Parse URL
+    Response models
+    1688 categories
+    Advanced endpoints
+
+Procurement orders
+
+    Overview
+    Preview
+    Create order
+    Pay order
+    Detail & list
+    Domestic trace
+    Cancel
+    Response models
+
+Fulfillment (warehouse)
+
+    Warehouse authorization
+    Overview
+    WH-DEV testing guide
+    Inbound notice
+    Packages
+    Package returns
+    Locations
+    Value-added services
+    Service requests
+    Shipping quotes
+    Shipments
+    International tracking
+    Wallet balance
+    Finance
+    Support tickets
+    Response models
+    Webhooks
+
+Supplier inquiry
+
+    Overview
+    Create inquiry
+    Question types
+    Read inquiries
+
+Integrations
+
+    Agent API & MCP
+
+Examples
+
+    🚀 Starter
+
+Response format
+
+HIOBuy Public API supports two response shapes on selected POST routes. Pass optional response_format in the JSON body.
+At a glance
+
+    Default is standard. Omit response_format or set "response_format": "standard".
+
+	standard (recommended)	upstream
+What you get	HIOBuy unified models — same JSON shape across channels	Raw JSON from the upstream provider (1688 Open API, Taobao IOP, …)
+Field mapping	Done by HIOBuy Gateway (names, nesting, units)	None — fields match the vendor’s official docs
+1688 vs Taobao	One interface → one structure; switch channel without rewriting parsers	Each channel returns different vendor JSON
+When to use	Production integrations, multi-channel apps	Debug against vendor docs, legacy migration
+How to request	Default — no extra field needed	"response_format": "upstream"
+
+Recommendation: Integrate against standard. HIOBuy maintains cross-channel compatibility in unified models. Use upstream only when you intentionally need the vendor’s native payload.
+
+Auth, channel OAuth, quotas, and rate limits are the same for both modes.
+Modes
+Value	Description
+standard (default)	Normalized HIOBuy types — same request, same response shape whether channel is 1688 or taobao.
+upstream	Provider passthrough — official 1688 / Taobao JSON returned in upstream without HIOBuy field mapping.
+Upstream envelope
+
+When response_format is upstream:
+
+{
+  "channel": "1688",
+  "response_format": "upstream",
+  "upstream_api": "com.alibaba.fenxiao.crossborder/product.search.keywordQuery",
+  "upstream": {
+    "result": {
+      "success": true
+    }
+  },
+  "upstream_steps": [],
+  "request_id": "req_abc123"
+}
+
+    upstream_api — primary vendor API identifier (1688 path or Taobao IOP route)
+    upstream — raw HTTP JSON body from that call
+    upstream_steps — optional prior calls (e.g. image upload before image search)
+
+Standard preview response {#standard-preview}
+
+POST /v1/orders/preview (1688 and Taobao) returns StandardOrderPreviewResult in standard mode. Amounts are in fen (CNY cents). Field reference: Procurement orders.
+
+{
+  "channel": "taobao",
+  "success": true,
+  "total": {
+    "payment": {
+      "amount": 12900,
+      "currency": "CNY"
+    },
+    "shipping": {
+      "amount": 0,
+      "currency": "CNY"
+    }
+  },
+  "unavailable_lines": [],
+  "sellers": [
+    {
+      "seller_id": "...",
+      "lines": [
+        {
+          "offer_id": "...",
+          "spec_id": "...",
+          "quantity": 5
+        }
+      ]
+    }
+  ],
+  "request_id": "req_..."
+}
+
+1688 adds trade_types, pay_channels, and promotions. With response_format: "upstream", preview returns raw vendor JSON instead.
+Product routes
+Endpoint	Channels	Upstream API (examples)
+POST /v1/products/detail	1688, taobao	queryProductDetail / /traffic/item/get
+POST /v1/products/search	1688, taobao	keywordQuery / /traffic/item/search
+POST /v1/products/search-by-image	1688, taobao	upload + imageQuery / upload + /traffic/item/imgsearch
+
+POST /v1/products/parse always returns standard only. POST /v1/products/freight/estimate uses the same body as order preview and returns shipping only.
+Order routes (1688 & Taobao)
+Endpoint	Standard	Upstream API (examples)
+POST /v1/orders/list	✓	alibaba.trade.getBuyerOrderList
+POST /v1/orders/1688/preview	✓	alibaba.createOrder.preview
+POST /v1/orders/1688/create	✓	alibaba.trade.createCrossOrder
+POST /v1/orders/preview	✓	Dispatches by channel (1688 / taobao)
+POST /v1/orders/create	✓	Dispatches by channel
+POST /v1/orders/taobao/preview	✓	/purchase/order/render
+POST /v1/orders/taobao/create	✓	/purchase/order/create
+POST /v1/orders/cancel	✓	alibaba.trade.cancel
+POST /v1/orders/pay	✓	Dispatches by channel
+POST /v1/orders/detail	✓	Order detail by order_id
+POST /v1/orders/logistics/trace	✓	Domestic logistics trace
+POST /v1/orders/purchase/query	✓	Taobao purchase list
+Example — upstream search
+
+curl https://api.hiobuy.com/v1/products/search \
+  -H "Authorization: Bearer hio_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "response_format": "upstream",
+    "channel": "1688",
+    "keyword": "phone case",
+    "page": 1,
+    "page_size": 10,
+    "language": "en"
+  }'
+
+Validation
+
+Invalid values (e.g. vendor_raw) return HTTP 400 with VALIDATION_ERROR. See Errors.
+OpenAPI
+
+Machine-readable spec: openapi.json 
+(schemas UpstreamApiResponse, UpstreamStep).
+Get Support
+
+Need integration help? Contact Developer Support at support@hiobuy.com · Response within 1–2 business days
+Email support
+
+Powered by HioBuy Core Engine
+Privacy Policy
+Service Status
+Developer Support
+Response format | HioBuy APILanguages
+
+Product text language is set with language in the API JSON body — not via Portal URL locale (/en vs /zh).
+Prices are always CNY
+
+The API does not accept currency and does not convert FX. Standard responses use original_currency and display_currency of CNY with the same amount in yuan. Convert on your side if needed.
+Request field
+Field	Required	Default	Description
+language	No	en	Translation locale for titles, attributes, search results.
+Example
+
+POST /v1/products/search
+
+{
+  "channel": "1688",
+  "keyword": "phone case",
+  "language": "ja",
+  "page": 1,
+  "page_size": 10
+}
+
+Channel mappings
+
+Full locale tables are in data/language-mappings.json. Summary:
+1688 mapping
+
+Official 1688 language enums (country). Simplified Chinese (zh / zh-CN / cn) is no longer supported upstream — Gateway falls back to en.
+You send	1688 code	Note
+en	en	English
+ja	ja	Japanese
+ko	ko	Korean
+ru	ru	Russian
+vi	vi	Vietnamese
+fr	fr	French
+pt	pt	Portuguese
+zh-tw / zh_TW	zh-tw	Traditional Chinese
+es	es	Spanish
+id	id	Indonesian
+th	th	Thai
+Taobao mapping
+You send	IOP code	Note
+en	en	English
+vi	vi	Vietnamese
+ru	ru	Russian
+ko	ko	Korean
+ja	ja	Japanese
+zh / zh-CN / cn	cn	Chinese
+
+See Product search and Product detail for examples with language.Errors
+
+HIOBuy uses two error shapes: protocol errors (non-2xx HTTP with an error object) and business outcomes (HTTP 200 with success: false on some order routes).
+Protocol errors (HTTP 4xx / 5xx) {#protocol-errors}
+
+{
+  "error": {
+    "code": "INBOUND_VALIDATION_FAILED",
+    "message": "Some inbound information is missing or invalid.",
+    "request_id": "req_abc123",
+    "category": "VALIDATION_ERROR",
+    "field": "tracking_number",
+    "details": {
+      "fields": [
+        {
+          "field": "items[0].name",
+          "code": "REQUIRED",
+          "message": "Product name is required."
+        }
+      ]
+    }
+  }
+}
+
+Field	Description
+error.code	Machine-readable enum — use for branching logic
+error.message	Human-readable explanation (English)
+error.request_id	Same as x-request-id response header
+error.category	Coarse grouping: AUTH_ERROR, RATE_LIMIT_ERROR, VALIDATION_ERROR, CHANNEL_ERROR, INTERNAL_ERROR
+error.field	Optional primary field path related to this error
+error.details	Optional object; validation may include details.fields: [{ field, code, message }]
+error.upstream	Optional vendor error summary on CHANNEL_UPSTREAM_ERROR (sanitized)
+
+Field-level details.fields[].code values: REQUIRED | INVALID_VALUE | INVALID_FORMAT | OUT_OF_RANGE.
+HTTP status principles
+HTTP	When
+400	Unparseable JSON / generic validation
+401	Invalid API key
+403	Authenticated but not allowed (including fulfillment mode gate)
+404	Missing or inaccessible resource
+409	State / uniqueness conflict
+422	Parsed body fails business validation
+429	Rate limit / quota
+500 / 502 / 503	Internal or upstream failure
+Error code reference {#error-codes}
+
+The canonical machine-readable catalog is data/errors.catalog.json. Summary:
+Code	HTTP	Category	When
+INVALID_API_KEY	401	AUTH_ERROR	Invalid or missing Bearer token
+UNAUTHORIZED	401	AUTH_ERROR	Missing or invalid API key (alias of INVALID_API_KEY)
+CHANNEL_NOT_AUTHORIZED	401	AUTH_ERROR	Channel not authorized for this app
+FORBIDDEN	403	AUTH_ERROR	Key valid but not permitted (e.g. channel not enabled)
+INSUFFICIENT_SCOPE	403	AUTH_ERROR	API key missing required scope for this route
+CHANNEL_NOT_ENABLED	403	AUTH_ERROR	Channel not enabled for this app
+CHANNEL_AUTH_REQUIRED	403	AUTH_ERROR	Channel authorization not completed
+CHANNEL_AUTH_EXPIRED	403	AUTH_ERROR	Channel authorization expired — re-authorize in Portal
+CHANNEL_AUTH_REVOKED	403	AUTH_ERROR	Channel authorization revoked
+FULFILLMENT_MODE_NOT_SUPPORTED	403	AUTH_ERROR	/v1/fulfillment/* on self-fulfillment app (maps draft FULFILLMENT_NOT_ENABLED)
+FULFILLMENT_ACCESS_REQUIRED	403	AUTH_ERROR	Reserved — fulfillment access not granted
+FULFILLMENT_ACCESS_SUSPENDED	403	AUTH_ERROR	Reserved — fulfillment access suspended
+WAREHOUSE_AUTH_REQUIRED	403	AUTH_ERROR	Warehouse fulfillment without warehouse authorization
+WAREHOUSE_AUTH_EXPIRED	403	AUTH_ERROR	Warehouse authorization expired
+WAREHOUSE_AUTH_INVALID	403	AUTH_ERROR	Warehouse rejected developer authentication
+VALIDATION_ERROR	400	VALIDATION_ERROR	Missing/invalid body fields, unsupported currency
+UNSUPPORTED_CHANNEL	400	VALIDATION_ERROR	Unknown channel value
+UNSUPPORTED_FIELD	400	VALIDATION_ERROR	Field not allowed on this route (e.g. currency on product)
+NOT_FOUND	404	VALIDATION_ERROR	Route or resource does not exist
+CHANNEL_CAPABILITY_NOT_SUPPORTED	400	CHANNEL_ERROR	Operation not available on this channel
+CHANNEL_UPSTREAM_ERROR	502	CHANNEL_ERROR	Marketplace rejected the call (sanitized)
+WAREHOUSE_UPSTREAM_ERROR	502	CHANNEL_ERROR	Warehouse / fulfillment upstream failed (sanitized)
+INTERNAL_ERROR	500	INTERNAL_ERROR	Unexpected Gateway failure — retry with backoff
+RATE_LIMIT_EXCEEDED	429	RATE_LIMIT_ERROR	Per-minute / burst rate limit
+QUOTA_EXCEEDED	429	RATE_LIMIT_ERROR	Daily channel quota exhausted
+PLATFORM_QUOTA_EXCEEDED	429	RATE_LIMIT_ERROR	Platform-wide channel capacity limit
+IP_BLOCKED	403	AUTH_ERROR	Client IP is on the access blocklist
+APP_BLOCKED	403	AUTH_ERROR	Application is on the access blocklist
+PAYMENT_DECLINED	402	VALIDATION_ERROR	Payment declined (sandbox: sb_ord_pay_declined)
+PAYMENT_INSUFFICIENT_FUNDS	402	VALIDATION_ERROR	Insufficient funds (sandbox: sb_ord_pay_insufficient)
+ORDER_ALREADY_PAID	409	VALIDATION_ERROR	Procurement order already paid
+SHIPMENT_ALREADY_PAID	409	VALIDATION_ERROR	International shipment already paid
+SHIPMENT_NOT_READY_FOR_PAYMENT	409	VALIDATION_ERROR	Shipment not ready for payment (packing / final weight not done — read message)
+SHIPMENT_NOT_FOUND	404	VALIDATION_ERROR	Shipment missing or not owned (intercept)
+SHIPMENT_NOT_INTERCEPTABLE	409	VALIDATION_ERROR	Current shipment state cannot request intercept
+SHIPMENT_INTERCEPTION_ALREADY_REQUESTED	409	VALIDATION_ERROR	Intercept already requested
+INVALID_INTERCEPTION_REASON	422	VALIDATION_ERROR	Intercept reason CODE is invalid
+INTERCEPTION_REMARK_REQUIRED	422	VALIDATION_ERROR	remark required when reason is OTHER
+ORDER_CANCELLED	409	VALIDATION_ERROR	Order already cancelled
+PRODUCT_UNAVAILABLE	422	VALIDATION_ERROR	Product unavailable / delisted
+IDEMPOTENCY_CONFLICT	409	VALIDATION_ERROR	Duplicate idempotency key (message-only warehouse duplicate external_shipment_id may land here)
+EXTERNAL_ORDER_ID_ALREADY_EXISTS	409	VALIDATION_ERROR	Duplicate inbound external_order_id or shipment external_shipment_id
+SHIPMENT_CREATE_EXCEPTION	400	VALIDATION_ERROR	Create refused (missing item attributes, parcel not inbound, etc. — read message)
+SHIPMENT_CREATE_FAILED	400	VALIDATION_ERROR	Shipment create failed (warehouse business refusal — read message)
+SHIPMENT_NOT_CANCELLABLE	409	VALIDATION_ERROR	Shipment cannot be cancelled in current status
+SHIPMENT_ALREADY_CANCELLED	409	VALIDATION_ERROR	Shipment already cancelled
+PACKAGE_ALREADY_CONSOLIDATED	409	VALIDATION_ERROR	Parcel already in another shipment
+PARCEL_NOT_FOUND	404	VALIDATION_ERROR	Invalid or not yet inbound parcel (SHIPMENT_PACKAGE_NOT_FOUND)
+INVALID_SHIPPING_CHANNEL	400	VALIDATION_ERROR	Bad shipping_channel_code
+INSUFFICIENT_BALANCE	402	VALIDATION_ERROR	Fulfillment wallet too low (shipment pay / return confirm / etc.)
+INBOUND_TRACKING_ALREADY_SHIPPED	409	VALIDATION_ERROR	Tracking already linked to a shipped package
+INBOUND_TRACKING_ALREADY_EXISTS	409	VALIDATION_ERROR	Tracking already registered
+INBOUND_VALIDATION_FAILED	422	VALIDATION_ERROR	Inbound field errors in details.fields
+INBOUND_NOT_FOUND	404	VALIDATION_ERROR	Inbound missing or not owned
+PACKAGE_NOT_FOUND	404	VALIDATION_ERROR	Package missing or not owned
+INBOUND_NOT_EDITABLE	409	VALIDATION_ERROR	Inbound not editable in current state
+INBOUND_ALREADY_RECEIVED	409	VALIDATION_ERROR	Already received at warehouse
+INBOUND_PACKAGE_MISMATCH	409	VALIDATION_ERROR	Cannot link resource to given inbound/package
+INVALID_TRACKING_NUMBER	422	VALIDATION_ERROR	Tracking number format invalid
+PACKAGE_COUNT_INVALID	422	VALIDATION_ERROR	Invalid package_count
+TOTAL_VALUE_INVALID	422	VALIDATION_ERROR	Invalid total_value
+UNSUPPORTED_CURRENCY	422	VALIDATION_ERROR	Unsupported currency (inbound: CNY/USD/KRW)
+UNCLAIMED_PACKAGE_NOT_FOUND	404	VALIDATION_ERROR	No unclaimed package for this tracking number
+PACKAGE_ALREADY_CLAIMED	409	VALIDATION_ERROR	Package already claimed
+PACKAGE_NOT_CLAIMABLE	409	VALIDATION_ERROR	Not claimable in current state
+RETURN_NOT_FOUND	404	VALIDATION_ERROR	Return missing or not owned
+RETURN_NOT_CONFIRMABLE	409	VALIDATION_ERROR	Return cannot be confirmed in current status
+RETURN_NOT_CANCELLABLE	409	VALIDATION_ERROR	Return cannot be cancelled in current status
+RETURN_ALREADY_RETURNED	409	VALIDATION_ERROR	Already returned
+RETURN_ALREADY_CANCELLED	409	VALIDATION_ERROR	Already cancelled / voided
+RETURN_FEE_NOT_READY	409	VALIDATION_ERROR	Return fee not calculated yet
+RETURN_FEE_CHANGED	409	VALIDATION_ERROR	Confirm amount ≠ current fee.total
+PACKAGE_NOT_RETURNABLE	409	VALIDATION_ERROR	Package status blocks return
+INVALID_RETURN_REASON	422	VALIDATION_ERROR	Unknown return reason code
+INVALID_RETURN_ADDRESS	422	VALIDATION_ERROR	Invalid seller_return address
+RETURN_VALIDATION_FAILED	422	VALIDATION_ERROR	Return field validation failed
+VALUE_ADDED_SERVICE_NOT_FOUND	422	VALIDATION_ERROR	Unknown VAS service_code
+VALUE_ADDED_SERVICE_UNAVAILABLE	422	VALIDATION_ERROR	VAS exists but currently unavailable
+VALUE_ADDED_SERVICE_INVALID_STAGE	422	VALIDATION_ERROR	VAS not allowed at this stage
+VALUE_ADDED_SERVICE_QUANTITY_INVALID	422	VALIDATION_ERROR	Invalid VAS quantity
+SERVICE_REQUEST_NOT_FOUND	404	VALIDATION_ERROR	Service request missing
+RESOURCE_NOT_FOUND	404	VALIDATION_ERROR	Related resource missing
+RESOURCE_NOT_ELIGIBLE_FOR_SERVICE	409	VALIDATION_ERROR	Package/shipment not eligible for service
+SERVICE_FEE_NOT_READY	409	VALIDATION_ERROR	Service fee not ready
+SERVICE_FEE_CHANGED	409	VALIDATION_ERROR	Confirm amount ≠ current service fee
+SERVICE_REQUEST_VALIDATION_FAILED	422	VALIDATION_ERROR	Service request field validation failed
+TRANSACTION_NOT_FOUND	404	VALIDATION_ERROR	Transaction missing or not owned
+INVOICE_NOT_FOUND	404	VALIDATION_ERROR	Invoice missing or not owned
+TRANSACTION_NOT_INVOICEABLE	409	VALIDATION_ERROR	Transaction cannot be invoiced
+TRANSACTION_ALREADY_INVOICED	409	VALIDATION_ERROR	Transaction already invoiced
+TRANSACTION_INVOICE_PENDING	409	VALIDATION_ERROR	Invoice already pending for transaction
+INVOICE_NOT_DOWNLOADABLE	409	VALIDATION_ERROR	Invoice not issued yet
+INVOICE_VALIDATION_FAILED	422	VALIDATION_ERROR	Invoice request validation failed
+INVOICE_CURRENCY_MISMATCH	422	VALIDATION_ERROR	Invoice currency mismatch
+INVALID_INVOICE_TITLE	422	VALIDATION_ERROR	Invalid invoice title
+INVALID_TAX_NUMBER	422	VALIDATION_ERROR	Invalid tax number
+INVALID_BILLING_ADDRESS	422	VALIDATION_ERROR	billing_address missing or invalid
+TICKET_NOT_FOUND	404	VALIDATION_ERROR	Ticket missing or not owned by Application
+TICKET_NOT_REPLYABLE	409	VALIDATION_ERROR	Ticket not replyable (e.g. closed)
+TICKET_ALREADY_CLOSED	409	VALIDATION_ERROR	Ticket already closed
+INVALID_TICKET_CATEGORY	422	VALIDATION_ERROR	Invalid ticket category
+INVALID_TICKET_PRIORITY	422	VALIDATION_ERROR	Invalid ticket priority
+INVALID_RELATED_RESOURCE	422	VALIDATION_ERROR	Invalid related_resource type
+TICKET_VALIDATION_FAILED	422	VALIDATION_ERROR	Ticket field validation failed
+RELATED_RESOURCE_NOT_FOUND	404	VALIDATION_ERROR	Related business resource missing or not owned
+MESSAGE_REQUIRED	422	VALIDATION_ERROR	Message body required
+MESSAGE_TOO_LONG	422	VALIDATION_ERROR	Message exceeds 10000 characters
+Business failures (HTTP 200) {#business-failures}
+
+Procurement preview/create/pay may return HTTP 200 with success: false when the marketplace refuses the operation but the Gateway request was valid.
+
+{
+  "channel": "1688",
+  "success": false,
+  "code": "ORDER_CREATE_FAILED",
+  "message": "One or more lines could not be purchased.",
+  "failed_offers": [
+    {
+      "offer_id": "...",
+      "spec_id": "...",
+      "error_code": "STOCK_NOT_ENOUGH",
+      "error_message": "Insufficient stock"
+    }
+  ],
+  "request_id": "req_..."
+}
+
+    Check success before treating the call as completed
+    Inspect unavailable_lines (preview) or failed_offers (create)
+    Partial success: 1688 may return success: true with non-empty failed_offers
+
+Product upstream failures {#upstream-product-errors}
+
+Invalid Taobao口令, missing product, or vendor timeouts on product routes typically return 502 with CHANNEL_UPSTREAM_ERROR — not an empty product shell.
+Recommended handling {#handling}
+
+    Log request_id on every error path.
+    Retry 429 and 500 with exponential backoff; do not retry 400 / 401 without fixing input.
+    On 502 CHANNEL_UPSTREAM_ERROR, surface vendor message to ops; optionally retry once for transient outages.
+    Order create: use external_order_id / Taobao outer_purchase_id for idempotency — see Procurement orders.
+
+Rate limits & quotas
+
+API usage is limited by per-minute rate limits and per-channel daily quotas (billable units). Limits are set during app onboarding based on expected transaction volume — see Acceptable use.
+
+Structured limits and headers: data/rate-limits.json.
+Per-minute rate limit {#rate-limits}
+
+Default: 60 requests/minute per API key (subject to plan). Exceeded → HTTP 429 with RATE_LIMIT_EXCEEDED.
+Daily channel quota (billable units) {#daily-quota}
+
+Many routes consume billable units against a daily cap per channel (1688, Taobao). Examples:
+Route	Typical units
+POST /v1/products/detail	1
+POST /v1/products/search	2
+POST /v1/products/upload-image	2
+POST /v1/orders/preview, create	Higher weight — see plan
+
+When the daily cap is exhausted → HTTP 429 with QUOTA_EXCEEDED. Contact HIOBuy to raise limits as your GMV grows.
+Response headers {#response-headers}
+
+Successful billable calls may include:
+Header	Description
+X-Quota-Billable-Units	Units consumed by this request
+X-Quota-Channel	Channel the units were charged against (e.g. 1688)
+x-request-id	Request correlation id (all routes)
+Platform capacity {#platform-quota}
+
+Rarely, shared upstream capacity may be temporarily unavailable → PLATFORM_QUOTA_EXCEEDED (429). Retry later or contact support.
+Client recommendations {#handling}
+
+    Cache product detail responses where business rules allow.
+    Prefer image_id reuse after upload-image instead of re-uploading.
+    Back off on 429; read error.request_id — see Errors.
+    Monitor usage in the developer portal usage dashboard 
+    .
+Sandbox environment & fixtures
+
+    Audience: integrations that ship against https://api.hiobuy.com (Workers gateway) — same base URL as production.
+
+    Plans: Free plans include self-service documentation and Sandbox access. Dedicated integration and fulfillment support are available on paid plans.
+
+Auth: deterministic fixtures apply only to API keys prefixed with hio_test_* (key_type: test). hio_live_* production keys never read this page’s rules — they always hit upstream marketplaces / warehouses normally.
+
+Related docs: Authentication · Response format · Errors · Rate limits · Products · Orders · Fulfillment · Webhooks
+Important: Warehouse Fulfillment Testing
+
+The Sandbox API (hio_test_*) is intended for mock and fixture-based integration testing.
+
+If HIOBuy has provided your application with a WH-DEV Warehouse Developer Code, do not use the Sandbox API key to test your assigned warehouse configuration.
+
+Use:
+
+Production API Key (hio_live_*) + WH-DEV
+
+WH-DEV is still a test warehouse configuration. Using a Production API key with WH-DEV does not mean that your application is performing live warehouse fulfillment.
+Configuration	Purpose
+hio_test_*	Mock / fixture API testing
+hio_live_* + WH-DEV	Assigned warehouse integration testing with test warehouse data
+hio_live_* + Production warehouse authorization	Live warehouse fulfillment
+
+Sandbox Fulfillment endpoints return predefined or simulated data. For example, sandbox warehouse locations, balances, packages, shipping routes, and package statuses may differ from the WH-DEV configuration assigned to your application.
+
+If you are validating a WH-DEV integration, always use your Production API key.
+Public API coverage (summary)
+Area	Sandbox
+Global	response_format: upstream rejected (standard only). currency body field rejected as in prod. sandbox_trigger allowed for test keys (platform fixtures). Channel OAuth treated as authorized for hio_test_*. Quotas & rate limits skipped for test keys.
+/v1/products/*	Search, detail, parse, upload-image, search-by-image, freight estimate, batch-check, 1688 analytics endpoints mocked as documented below. OpenAPI-only extensions not in this site’s handoff set are not mocked.
+/v1/orders/*	Preview, create, detail, pay, cancel, logistics trace, list, purchase query mocked with magic / dynamic ids.
+/v1/fulfillment/*	Balance, quotes, shipments, inbounds, packages, unclaimed, returns, locations, VAS, service-requests, finance mocked with magic / dynamic ids (see below).
+/v1/support/tickets	List/detail/reply mocked with tkt_* fixtures.
+Webhooks	Sandbox resources do not auto-emit webhooks. Use portal Send test (livemode: false) to verify your receiver and signature.
+Design goals
+Goal	Meaning
+Repeatable	Same request → same response (no randomness in outcomes).
+Documented	Every scenario has a stable id or keyword you can grep in this page.
+Contract aligned	JSON matches standard schema fields from production; values differ.
+Happy path default	Unknown ids fall back to generic success mocks.
+Explicit failure	Use sb_* ids or sandbox_trigger to force errors / edge states.
+Naming: sb_\{domain\}_\{scenario\}
+Segment	Rule	Examples
+Prefix	Always sb_	sb_prod_not_found
+domain	Lowercase noun (prod, search, ord, shp, pkg, plat, …)	—
+scenario	snake_case	not_found, pay_declined
+
+Characters: [a-z0-9_], length ≤ ~48. Do not prefix real upstream ids with sb_ unless you intend the fixture. Some fulfillment resources also use stable non-sb_ ids (ret_*, ucp_*, svc_*, tkt_*, inv_*).
+Two failure layers
+
+Distinguish transport/API errors from HTTP 200 business states:
+
+    API failure → HTTP 4xx/5xx + error.code (e.g. NOT_FOUND, PAYMENT_DECLINED).
+    HTTP 200 with state → e.g. variants[].stock = 0, status: wait_payment.
+
+Product fixtures (high level)
+POST /v1/products/detail
+
+See Product detail. upstream format is unsupported in sandbox.
+
+Trigger when product_id, parsed url, mi_id, or tao_password resolves to a sb_* id.
+Fixture id	Result	HTTP
+(any non-sb_ id)	Standard mock product	200
+sb_prod_not_found	NOT_FOUND	404
+sb_prod_offline	PRODUCT_UNAVAILABLE	422
+sb_prod_no_stock	Detail ok, stock: 0	200
+
+curl https://api.hiobuy.com/v1/products/detail \
+  -H "Authorization: Bearer hio_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{"channel":"1688","product_id":"sb_prod_not_found","language":"en"}'
+
+POST /v1/products/search
+
+channel, keyword, page, page_size, language apply. 1688 filter / sort / price filters are accepted but ignored for mock rows.
+keyword (exact)	Result
+ordinary text	Mock list with hits
+sb_search_empty	items: [], total: 0
+sb_search_not_found	Alias of empty
+Parse / upload-image / search-by-image / freight / analytics
+Endpoint	Sandbox note
+Parse URL	URL query/path containing sb_* mirrors detail behavior.
+Upload image	Always { "image_id": "img_sandbox_mock" } after validations pass.
+Image search	Optional keyword: sb_search_empty yields empty list; pair with upload-image for flow tests.
+Advanced — freight estimate	Default domestic freight mock 800 minor units aligned with preview.
+Advanced — batch-check	Returns upstream-style envelope with mock mpProducts; use sb_prod_not_found in mi_id/item_id to populate exclusion lists.
+Advanced — top keywords/list / daily-sales-trend	Use sb_search_empty on category_id / rank_id where documented to empty lists or 404 detail cases.
+Order & payment fixtures (magic ids)
+POST /v1/orders/detail
+order_id	Typical status	Notes
+sb_ord_unpaid	wait_payment	—
+sb_ord_paid	wait_shipment	—
+sb_ord_shipped	wait_receive	—
+sb_ord_completed	completed	—
+sb_ord_cancelled	cancelled	—
+sb_ord_refunding	wait_shipment (refund_status in progress)	—
+sb_ord_not_found	—	404
+POST /v1/orders/pay
+order_id	Result	HTTP
+sb_ord_unpaid	Pays successfully → logical paid state	200
+sb_ord_pay_declined	PAYMENT_DECLINED	402
+sb_ord_pay_insufficient	PAYMENT_INSUFFICIENT_FUNDS	402
+sb_ord_paid	ORDER_ALREADY_PAID	409
+sb_ord_cancelled	ORDER_CANCELLED	409
+sb_ord_upstream_timeout	CHANNEL_UPSTREAM_ERROR	502
+Preview / create
+
+Preview returns fixed illustrative totals (sample line ~4500 + freight ~800 in minor units). Create emits dynamic order_id values prefixed sbo_* persisted in sandbox storage — lines referencing offer_id: sb_prod_offline / sb_prod_no_stock return 422 like production semantics.
+Cancel / logistics / list / purchase query
+
+Per cancel, trace, detail list: unpaid sb_ord_* and dynamic sbo_* unpaid orders cancel; paid/shipped/etc. fixtures return ORDER_NOT_CANCELLABLE. Logistics returns packages for sb_ord_shipped / completed mocks; unpaid/paid-await-shipment return packages: []. Buyer list respects product_name: sb_ord_list_empty for empty mocks. Purchase query returns upstream envelopes; omit not-found pseudo ids accordingly.
+Fulfillment fixtures
+
+    Note: The fixtures below are for Sandbox API testing only. They do not represent your application’s WH-DEV warehouse configuration. For WH-DEV testing, use a Production API key (hio_live_*).
+
+All endpoints below require a hio_test_* key. Dynamic ids from create (pkg_*, sbs_*, sbi_*, …) are persisted in sandbox storage for the key.
+Balance · quotes · locations · VAS catalog
+Endpoint	Sandbox note
+GET /v1/fulfillment/balance	Mock available balance 500000 CNY minor units.
+POST /v1/fulfillment/shipping/quotes	Needs destination.country_code + weight or dimensions; legacy …/shipments/freight/estimate still works.
+GET /v1/fulfillment/locations	Sandbox: loc_wh_001 (Weihai), loc_sz_001 (Shenzhen, paused), loc_yw_001 (Yiwu). Live uses warehouse numeric id (e.g. "1") and Chinese country.
+GET /v1/fulfillment/value-added-services	Sandbox: PHOTO / WOODEN_FRAME etc. Live uses warehouse numeric code as a string (e.g. "1").
+Shipments
+
+Live warehouse Public id is the numeric PK as a string (e.g. "115"); order_sn is the warehouse order number. Sandbox create returns sbs_*; fixtures below use sb_shp_*.
+Fixture / id	Behavior
+sb_shp_unpaid	List + detail PENDING; intercept → SHIPMENT_NOT_INTERCEPTABLE
+sb_shp_shipped	Shipped detail: split boxes, first/last-mile legs, packing files; plus international tracking events. Intercept → REQUESTED
+sb_shp_not_found	Detail 404
+sb_shp_pay_insufficient	POST …/shipments/sb_shp_pay_insufficient/pay → INSUFFICIENT_BALANCE
+sb_shp_not_cancellable	Cancel → SHIPMENT_NOT_CANCELLABLE; intercept is allowed (WAIT_SHIP)
+sb_shp_signed	Signed; intercept → SHIPMENT_NOT_INTERCEPTABLE
+sb_shp_intercepted	Detail SHIPPED + interception.status: INTERCEPTED; intercept again → SHIPMENT_INTERCEPTION_ALREADY_REQUESTED
+Dynamic sbs_*	Create / pay / list / detail / cancel / intercept against sandbox storage
+sb_parcel_not_found	Create → 422 PARCEL_NOT_FOUND
+
+List path: GET /v1/fulfillment/shipments. Tracking path: GET /v1/fulfillment/shipments/{id}/tracking (language query).
+Inbounds (create / cancel)
+
+Create returns dynamic package_id (pkg_*) — there is no separate inbound_id.
+Trigger value	Field	HTTP	error.code
+sb_inbound_shipped	tracking_number	409	INBOUND_TRACKING_ALREADY_SHIPPED
+sb_inbound_exists	tracking_number	409	INBOUND_TRACKING_ALREADY_EXISTS
+sb_inbound_bad_tracking	tracking_number	422	INVALID_TRACKING_NUMBER
+sb_inbound_external_exists	external_order_id	409	EXTERNAL_ORDER_ID_ALREADY_EXISTS
+sb_vas_missing	services[].service_code	422	VALUE_ADDED_SERVICE_NOT_FOUND
+sb_vas_unavailable	services[].service_code	422	VALUE_ADDED_SERVICE_UNAVAILABLE
+sb_vas_outbound	services[].service_code	422	VALUE_ADDED_SERVICE_INVALID_STAGE
+Cancel id	HTTP	error.code
+Dynamic sbi_* (after create)	200	Cancelled; related package discarded
+Same sbi_* again	409	INBOUND_NOT_EDITABLE
+sb_inb_not_found	404	INBOUND_NOT_FOUND
+sb_inb_received	409	INBOUND_ALREADY_RECEIVED
+sb_inb_shipped / sb_inb_consolidated / sb_inb_cancelled	409	INBOUND_NOT_EDITABLE
+Packages · tracking · list
+package_id	Detail / tracking
+Dynamic pkg_*	PENDING; tracking starts at INBOUND_CREATED
+sb_pkg_pending	PENDING
+sb_pkg_received	RECEIVED + PHOTO timeline
+sb_pkg_exception	RECEIVED + condition.EXCEPTION
+sb_pkg_shipped	SHIPPED full outbound timeline
+sb_pkg_not_found	404 PACKAGE_NOT_FOUND
+Unclaimed packages
+Id / trigger	Behavior
+ucp_01K2ABCDEF1234567890	Claimable; claim with SF123456789012 (list masked)
+ucp_01K2ABCDEF9876543210	Claimable; YT738800001148
+Unknown tracking	404 UNCLAIMED_PACKAGE_NOT_FOUND
+SF000ALREADY01	409 PACKAGE_ALREADY_CLAIMED
+SF000NOTCLAIM1	409 PACKAGE_NOT_CLAIMABLE
+Returns
+Id	Behavior
+ret_pending_001	PENDING; fee=18; confirm succeeds
+ret_pending_002	PENDING; fee=20; confirm with 18 → RETURN_FEE_CHANGED
+ret_returned_001	RETURNED + tracking
+ret_cancelled_001	CANCELLED
+sb_ret_not_found	404 RETURN_NOT_FOUND
+sb_ret_fee_not_ready	Confirm → RETURN_FEE_NOT_READY
+sb_ret_insufficient	Confirm → INSUFFICIENT_BALANCE
+Create on sb_pkg_shipped	409 PACKAGE_NOT_RETURNABLE
+Service requests
+Id	Behavior
+svc_photo_completed	PHOTO COMPLETED + images
+svc_inspection_failed	BASIC_INSPECTION FAILED
+svc_video_processing	VIDEO PROCESSING
+svc_reinforce_pending	PACKAGE_REINFORCEMENT PENDING
+svc_wooden_awaiting	WOODEN_FRAME awaiting confirmation
+sb_svc_not_found	404
+sb_svc_fee_not_ready / sb_svc_insufficient	Confirm edge cases
+Finance (transactions / invoices)
+Fixture	Note
+txn_01K2ABC001…006	TOP_UP / VAS / RETURN / SHIPPING / REFUND / STORAGE
+inv_01K2ABC001	ISSUED (downloadable)
+inv_01K2ABC002	PENDING
+inv_01K2ABC003	REJECTED
+
+See Fulfillment finance.
+Support ticket fixtures
+Fixture id	Scenario
+tkt_01K2ABCDEF1234567890	PACKAGE · NORMAL · WAITING_FOR_HIOBUY
+tkt_01K2ABCDEF9876543210	RETURN · URGENT · WAITING_FOR_CUSTOMER
+tkt_01K2ABCDEFAPIRESOLVED	API · NORMAL · RESOLVED
+tkt_01K2ABCDEFSHIPCLOSED	SHIPMENT · NORMAL · CLOSED (no replies)
+tkt_not_found	404 TICKET_NOT_FOUND
+
+See Support tickets.
+Platform triggers: sandbox_trigger
+
+Allowed only on hio_test_*; production keys ignore the field quietly.
+sandbox_trigger	HTTP	error.code
+sb_plat_quota_exceeded	429	QUOTA_EXCEEDED
+sb_plat_rate_limited	429	RATE_LIMIT_EXCEEDED
+sb_plat_upstream_error	502	CHANNEL_UPSTREAM_ERROR
+
+Combine with benign ids so realistic bodies still validate:
+
+{
+  "channel": "1688",
+  "product_id": "123456",
+  "language": "en",
+  "sandbox_trigger": "sb_plat_quota_exceeded"
+}
+
+Special auth fixture sb_auth_channel_required paired with triggers can produce CHANNEL_AUTH_REQUIRED (403) for UI regressions despite the normal “authorized by default” rule.
+Implementation status snapshot
+Phase	Coverage	Notes
+Shipped	Products, procurement orders, fulfillment (balance/quotes/shipments/inbounds/packages/unclaimed/returns/locations/VAS/service-requests/finance), support tickets	Mirrors Public API subset on this site.
+Not yet	Auto-emitted sandbox webhooks; unpublished OpenAPI-only catalogue extensions	Prefer portal Send test for webhook CI; do not assume all live events are enabled until announced.
+Quick copy cheat sheet
+
+sb_prod_not_found          → 404 product missing
+sb_prod_offline            → 422 unavailable
+sb_prod_no_stock           → 200 detail with zero stock
+
+sb_search_empty            → empty search/items
+sb_ord_list_empty          → empty buyer order list filter
+img_sandbox_mock           → stable upload-image id
+
+sb_ord_unpaid              → detail wait_payment • pay succeeds • cancel ok
+sb_ord_pay_declined        → pay 402 PAYMENT_DECLINED
+sb_ord_paid                → pay 409 ALREADY_PAID • trace maybe empty until shipped fixtures
+sb_ord_shipped             → detail wait_receive • trace populated
+sb_ord_cancelled           → cancelled state • pay conflicts
+
+sb_shp_unpaid / sb_shp_shipped / sb_shp_signed / sb_shp_intercepted → shipment list / detail / intercept
+sb_pkg_received / sb_pkg_shipped → package detail / fulfillment timeline
+sb_inbound_exists          → inbound create 409 tracking exists
+ret_pending_001            → return confirm happy path
+ucp_01K2ABCDEF1234567890   → unclaimed claimable
+svc_photo_completed        → VAS request completed
+tkt_01K2ABCDEF1234567890   → support ticket open
+
+sb_plat_quota_exceeded     → sandbox_trigger → 429 QUOTA_EXCEEDED
+
+When you add fixtures internally, mirror this numbering scheme in regression tests — never mutate standard JSON shapes inside mocks.Products API overview
+
+Unified product API for 1688, Taobao, and Weidian. Pass channel on search/detail, or use URL parse for auto-detection.
+
+Prices are CNY yuan — no currency param, no FX conversion. Set language in the JSON body (Languages). Use response_format: "standard" (default) or "upstream" (Response format).
+Endpoint guide
+Topic	Endpoint	Doc
+Product detail & SKU matrix	POST /v1/products/detail	Product detail
+Keyword search	POST /v1/products/search	Product search
+Similar products (Taobao)	POST /v1/products/similar	Advanced endpoints
+Upload image for reuse	POST /v1/products/upload-image	Upload image
+Search by image	POST /v1/products/search-by-image	Image search
+Parse product URL	POST /v1/products/parse	Parse URL
+Response schemas	—	Product response models
+Channels, freight, analytics	various	Advanced endpoints
+Channel capabilities
+
+Query live flags: GET /v1/products/channels. Summary:
+Capability	1688	Taobao	Weidian
+Detail	✓	✓	✓
+Keyword search	✓	✓	—
+Image search	✓	✓	—
+URL parse	✓	✓	✓
+Taobao口令 (tao_password)	—	✓	—
+Domestic freight estimate	✓	✓	—
+Auto purchase (orders)	✓	✓	Varies
+Procurement mapping {#procurement-mapping}
+
+After variant selection on product detail, map ids to order lines:
+Detail field	Order field
+id (1688 offerId; Taobao mi_id)	lines[].id (compatible: offer_id, Taobao mi_id)
+source_product_id (1688 same as id; Taobao = item_id)	1688 only as a compatible id / offer_id
+variants[].sku_id	lines[].spec_id
+
+See Order preview for the full create flow.
+
+    Taobao id / mi_id rotates periodically. Do not cache it long-term, or detail / similar / order calls will fail. Re-fetch before checkout.
+Product detail API
+
+POST /v1/products/detail — fetch full product detail for checkout integration (SKU matrix, prices, stock).
+
+Related: Product response models · Procurement mapping
+Request body
+Field	Required	Description
+channel	Yes	1688 | taobao | weidian
+product_id	One of	1688 offerId; Taobao legacy item_id
+url	One of	Product page URL
+id	One of	Same as search id. Taobao = mi_id; 1688 = offerId
+mi_id	Taobao	TaoWorld product id (equivalent to id)
+tao_password	Taobao	Taobao share口令 — paste the full share text or口令 string
+language	No	Default en
+response_format	No	standard (default) or upstream
+
+Pass search id back as id. Do not put Taobao id into product_id — that field is the numeric item_id.
+
+    Taobao id / mi_id rotates periodically. Do not cache it long-term. Stale ids break detail, similar products, and order lines[].id. Re-fetch from search or detail before checkout.
+
+Examples
+
+Taobao id (same as search id / mi_id):
+
+POST /v1/products/detail
+{
+  "channel": "taobao",
+  "id": "0000Z-4oyqr-mVcYGcXO2JuqXweqkWsUCCNOt5pXct7_TgY",
+  "language": "en"
+}
+
+Taobao口令:
+
+POST /v1/products/detail
+{
+  "channel": "taobao",
+  "tao_password": "￥abc123￥ 复制这条信息...",
+  "language": "en"
+}
+
+1688 id (same as search id / offerId):
+
+POST /v1/products/detail
+{
+  "channel": "1688",
+  "id": "554456348334",
+  "language": "en"
+}
+
+1688 offer id:
+
+POST /v1/products/detail
+{
+  "channel": "1688",
+  "product_id": "554456348334",
+  "language": "en"
+}
+
+Response
+
+StandardProductDetail wrapped as { "product": { ... }, "request_id": "req_..." } — see Product response models.
+Variant selection
+
+Build checkout UI from product.variants[] — see integration pattern.Product keyword search API
+
+POST /v1/products/search — keyword search returning a paginated product list.
+
+Related: Product detail · Product response models
+Request body
+Field	Required	Description
+channel	Yes	1688 | taobao
+keyword	Yes	Search term
+page / page_size	No	Pagination (Taobao max 20 per page)
+language	No	Default en
+filter / sort	No	1688 filters (see OpenAPI)
+Example
+
+POST /v1/products/search
+{
+  "channel": "1688",
+  "keyword": "phone case",
+  "page": 1,
+  "page_size": 20,
+  "language": "en"
+}
+
+Response
+
+StandardProductList — summary cards in items[]. items[].id is Taobao mi_id or 1688 offerId; pass it to product detail as id.
+
+Taobao id / mi_id rotates periodically. Do not cache listings long-term; stale ids fail on detail, similar, and orders.Product image upload API
+
+POST /v1/products/upload-image — upload an image to the marketplace and receive an image_id for reuse in image search.
+Request body
+Field	Required	Description
+channel	Yes	1688 | taobao
+image_base64	One of	Base64 image (data-URL prefix stripped). Required for Taobao.
+image_url	1688 only	Public URL; server fetches when base64 omitted
+Example
+
+POST /v1/products/upload-image
+{
+  "channel": "1688",
+  "image_base64": "/9j/4AAQSkZJRg..."
+}
+
+Response
+
+{
+  "channel": "1688",
+  "image_id": "img_1234567890",
+  "request_id": "req_..."
+}
+
+See upload-image response fields.Product image search API
+
+POST /v1/products/search-by-image — find similar products by image on 1688 and Taobao.
+
+Pass image_id from upload image, or supply image_base64 / image_url for upload + search in one call.
+Request body
+Field	Required	Description
+channel	Yes	1688 | taobao
+image_id	One of	From upload-image
+image_base64 / image_url	One of	Upload + search in one step
+image_address	1688	Existing alicdn/1688 image URL
+region	No	Crop box, e.g. 266,799,48,581
+keyword	No	Refine within image results
+page / page_size	No	Pagination
+language	No	Default en
+Example
+
+POST /v1/products/search-by-image
+{
+  "channel": "taobao",
+  "image_id": "img_1234567890",
+  "page": 1,
+  "page_size": 20,
+  "language": "en"
+}
+
+Response
+
+Same as keyword search — StandardProductList, plus optional pic_region_info (detected subject region).
+Recommended flow {#image-search-flow}
+
+Option A — two steps (reuse image_id):
+
+POST /v1/products/upload-image      → { image_id }
+POST /v1/products/search-by-image → { items[], total, ... }
+
+Option B — one step:
+
+POST /v1/products/search-by-image
+{ "channel": "1688", "image_base64": "..." }Parse product URL API
+
+POST /v1/products/parse — paste a marketplace product URL; Gateway detects the channel and returns the same StandardProductDetail as product detail.
+Request body
+Field	Required	Description
+url	Yes	1688 / Taobao / Weidian product link (short links supported where upstream allows)
+language	No	Default en
+channel	No	Override auto-detection
+Example
+
+POST /v1/products/parse
+{
+  "url": "https://detail.1688.com/offer/554456348334.html",
+  "language": "en"
+}
+
+Taobao口令
+
+For Taobao share口令 text, use product detail with tao_password — parse expects a URL, not口令 text.
+Response
+
+{ "product": StandardProductDetail, "request_id": "..." }Product API response models
+
+With response_format: "standard" (default), product endpoints return the types below. Canonical TypeScript: packages/shared/src/products.ts.
+
+Endpoints: detail · search · image search · parse
+Monetary units {#monetary-units}
+Scope	monetary_unit	amount meaning
+Catalog (detail, search, parse, …)	CNY_major (yuan) — documented convention; field not yet required on every response	List/display prices in yuan
+POST /v1/products/freight/estimate	CNY_minor on response envelope	Domestic freight in fen, same as order preview
+Response envelope {#envelope}
+Endpoint	Shape
+detail, parse	{ product: StandardProductDetail, request_id }
+search, search-by-image	StandardProductList & { request_id }
+upload-image	{ channel, image_id, request_id }
+StandardProductDetail {#standard-product-detail}
+
+Full product snapshot for product pages and checkout. Map to orders: search/detail id → lines[].id (offer_id / Taobao mi_id still accepted); variants[].sku_id → spec_id (Procurement orders).
+Identity & channel
+Field	Type	Description
+id	string	Taobao = mi_id (pass to order lines[].id; rotates periodically — do not cache long-term). 1688 = offerId. Weidian currently uses prod_weidian_{source_product_id}
+channel	string	1688, taobao, or weidian
+source_product_id	string	1688 = offerId; Taobao = original item_id
+source_url	string	Canonical product page URL
+Localized text (title, description)
+Field	Type	Description
+original	string	Marketplace text (typically Chinese)
+translated	string | null	Translation for requested language
+language	string	Locale of translated
+description	object | null	Long-form detail (often HTML)
+Pricing (price, price_tiers[])
+
+All amounts CNY yuan (not fen). Prefer promotion_amount when set, else display_amount.
+Field	Type	Description
+price.original_amount	number	1-piece list price (1688 retailPrice when set)
+price.display_amount	number	Buyer-facing 1-piece price (CNY)
+price.promotion_amount	number | null	Promotional unit price when applicable
+price.original_currency / display_currency	string	Always CNY
+variants[].price.wholesale_amount	number | null	1688 SKU wholesale (≥2 pcs) when retailPrice exists
+price_tiers[]	array	1688 wholesale breaks (new offers start at ≥2); empty on Taobao
+min_order_quantity	number | null	1688 MOQ from upstream; Taobao defaults to 1 (retail)
+distribution_min_quantity	number | null	1688 dropship minimum
+Media (images[], videos)
+Field	Type	Description
+images[].url	string	Image CDN URL
+images[].type	enum	main, gallery, or variant
+videos.main / videos.detail	string | null	1688 videos; Taobao null
+Attributes vs variants
+
+Only variants[] drives SKU selection and order lines.
+Field	Role
+attributes[]	CPV specs — display only, not for SKU resolution
+variants[]	Purchasable SKU matrix with price, stock, specs
+Variant object (variants[])
+Field	Type	Description
+sku_id	string	Pass as spec_id on order create
+upstream_sku_id	string | null	1688 numeric skuId
+attributes[]	array	Spec dimensions (color, size, …)
+attributes[].name / value	string	Display labels (localized when language is set)
+attributes[].original_name / original_value	string	Stable Chinese keys for grouping / matching
+attributes[].prop_id	string | null	Upstream property id as string (Taobao prop_id; 1688 attributeId). Prefer this over name text when present
+attributes[].value_id	string | null	Upstream value id as string (Taobao value_id). 1688 has no value id → null
+attributes[].image	string | null	Spec swatch / option image
+price	object	SKU-level price in yuan
+stock	number	Available qty; 0 = out of stock
+image	string | null	SKU primary image
+shipping	object | null	1688 SKU package dimensions (table below); Taobao null
+min_order_quantity	number | null	1688 MOQ on each SKU; Taobao defaults to 1
+distribution	object | null	1688 dropship pricing
+SKU package dimensions (variants[].shipping)
+
+Mapped from 1688 upstream productShippingInfo.skuShippingDetails (SkuShippingDetail). Taobao has no equivalent — always null. Empty or 0 size/weight values normalize to null; if a SKU has no dimension data at all, shipping itself is null.
+Field	Type	Description
+width_cm	number | null	Width, cm (merchant-declared)
+length_cm	number | null	Length, cm
+height_cm	number | null	Height, cm
+weight_kg	number | null	Weight, kg
+official_width_cm	number | null	Official measured width, cm
+official_length_cm	number | null	Official measured length, cm
+official_height_cm	number | null	Official measured height, cm
+official_weight_kg	number | null	Official measured weight, kg
+ai_weight_kg	number | null	AI-predicted weight, kg
+ai_weight_accuracy	string | null	AI weight accuracy for the product’s leaf category (e.g. 80%)
+source	string | null	Dimension source (e.g. 商家自填)
+
+For freight estimates, prefer official_*, then merchant-declared size/weight, then ai_weight_kg (with ai_weight_accuracy as a confidence hint).
+Seller, shipping & metadata
+Field	Type	Description
+seller.id / seller.name	string	Shop id and display name
+seller.shop_url	string | null	Storefront link
+shipping.shipping_from	string | null	Domestic dispatch region
+shipping.domestic_shipping_fee	object | null	Estimated domestic fee in yuan
+metadata.raw_category	string | null	Upstream category
+metadata.brand	string | null	Declared brand
+metadata.updated_at	string	ISO 8601 last sync
+trade_score	string | null	1688 quality score
+Example (truncated)
+
+{
+  "product": {
+    "id": "554456348334",
+    "channel": "1688",
+    "source_product_id": "554456348334",
+    "title": {
+      "original": "...",
+      "translated": "...",
+      "language": "en"
+    },
+    "price": {
+      "display_amount": 29.9,
+      "promotion_amount": 24.9
+    },
+    "variants": [
+      {
+        "sku_id": "b266e0...",
+        "upstream_sku_id": "12123313",
+        "stock": 100,
+        "shipping": {
+          "width_cm": 10,
+          "length_cm": 10,
+          "height_cm": 10,
+          "weight_kg": 1.2,
+          "official_width_cm": 5,
+          "official_length_cm": 12,
+          "official_height_cm": 14,
+          "official_weight_kg": 0.001,
+          "ai_weight_kg": 0.001,
+          "ai_weight_accuracy": "80%",
+          "source": "商家自填"
+        }
+      }
+    ]
+  },
+  "request_id": "req_..."
+}
+
+Channel field availability
+Field	1688	Taobao	Weidian
+videos, price_tiers, trade_score	✓	—	Varies
+variants[].shipping, distribution	✓	—	—
+variants[].attributes[].prop_id	✓ (attributeId)	✓ (prop_id)	—
+variants[].attributes[].value_id	— (null)	✓ (value_id)	—
+Order lines[].id	id / offerId	id (mi_id)	Platform id
+StandardProductList {#standard-product-list}
+
+From search and image search. Each items[] entry is a summary — call detail for SKU matrix.
+Field	Type	Description
+channel	string	Marketplace queried
+keyword	string	Echo of keyword (empty for pure image search)
+page / page_size	number	Pagination applied
+total	number	Upstream total (may be approximate)
+items[]	array	StandardProductListItem objects
+pic_region_info	object	Image search: detected crop region
+StandardProductListItem
+Field	Type	Description
+id, channel, source_product_id, source_url	string	Use source_product_id to fetch detail
+title	LocalizedTitle	Listing title
+price	ProductPrice	Summary price in CNY yuan
+image	string	Thumbnail URL
+seller.name	string	Shop name
+Upload-image response {#upload-image-response}
+Field	Type	Description
+channel	string	Marketplace that stored the image
+image_id	string	Reuse in image search
+Variant selection {#variant-selection}
+
+    Load detail → read product.variants.
+    Group by attributes[].original_name for dimension pickers (or by prop_id when present).
+    Filter variants on each user choice; disable out-of-stock options.
+    Pass matching sku_id and source_product_id to order preview.
+
+Matching keys: prefer prop_id + value_id (Taobao) when both are set — they are stable CPV identities and avoid cross-SKU name collisions (e.g. many options sharing Color Classification). Fall back to original_name + original_value for UI grouping. Use name / value for display only. Do not infer semantic types from labels.
+
+{
+  "prop_id": "1627207",
+  "value_id": "43553464153",
+  "name": "Color Classification",
+  "value": "[Special for Bicycle Maintenance] Professional 46-Piece Set",
+  "original_name": "颜色分类",
+  "original_value": "【自行车维修专用】专业46件套",
+  "image": "https://img.alicdn.com/..."
+}
+
+On 1688 the same shape is used with prop_id from attributeId and value_id: null (upstream SkuAttribute has no value id).1688 categories
+
+Use category_ids on 1688 keyword search to filter by category (Taobao ignores this field). Developers only need the category ID and name.
+
+Related: Keyword search · Full category tree JSON
+Node fields
+
+Full tree: data/1688-categories.json (~12k nodes). Upstream noise removed; each node keeps:
+Field	Description
+id	Category ID (string). Pass to search category_ids
+name	English name
+cn	Chinese name (omitted when identical to name)
+children	Child categories; absent on leaf nodes
+Usage
+
+POST /v1/products/search
+{
+  "channel": "1688",
+  "keyword": "phone case",
+  "category_ids": "1033104,1033105"
+}
+
+    Level-1, level-2, or leaf IDs are accepted; separate multiple IDs with commas.
+    Taobao does not support category filters; the field is ignored.
+
+Structure example (truncated)
+
+[
+  {
+    "id": "67",
+    "name": "Office, culture",
+    "cn": "办公、文化",
+    "children": [
+      {
+        "id": "81",
+        "name": "Writing Tools",
+        "cn": "书写工具",
+        "children": [
+          {
+            "id": "1033104",
+            "name": "Other Pens",
+            "cn": "其他笔类"
+          },
+          {
+            "id": "1033105",
+            "name": "Pen Accessories",
+            "cn": "笔配件"
+          },
+          {
+            "id": "1033107",
+            "name": "marker pen",
+            "cn": "记号笔"
+          }
+        ]
+      }
+    ]
+  }
+]
+
+Top-level categories
+
+Download the full three-level tree: 1688-categories.json. Quick reference for level-1:
+ID	Chinese	English
+67	办公、文化	Office, culture
+54	服饰配件、饰品	Clothing accessories, accessories
+18	运动户外	Sports Outdoor
+7	数码、电脑	Digital, Computer
+1813	玩具	Toys
+10166	女装	Women’s Clothing
+201547901	收纳清洁用具	Storage cleaning appliance
+201547801	日用餐厨饮具	Daily food, kitchen and drinking utensils
+122916002	汽车用品	Automotive Supplies
+6	家用电器	Household appliances
+59	五金、工具	Hardware, tools
+96	家纺家饰	Home Textile Home Decoration
+68	包装	Packaging
+58	灯饰照明	Lighting
+1042954	箱包皮具	luggage and leather goods
+312	内衣	Underwear
+1038378	鞋	Shoes
+122916001	宠物及园艺	Pets and Gardening
+13	家装建材	Home improvement building materials
+97	美容护肤/彩妆	Beauty skin care/makeup
+10165	男装	Menswear
+311	童装	Children’s clothing
+15	居家日用品	Home daily necessities
+5	电工电气	Electrician Electrical
+70	安全、防护	Safety, protection
+130822220	个护/家清	A guard/home clear
+130823000	成人用品	Adult Supplies
+130822002	餐饮生鲜	Catering Fresh
+2	食品酒水	Food Drinkers
+10208	仪器仪表	Instrumentation
+123614001	钢铁	Steel
+201346017	建材	Building Materials
+12	交通运输	Transportation
+1426	机床	Machine tools
+55	橡塑	Rubber and Plastic
+57	电子元器件	Electronic components
+4	纺织、皮革	Textile, leather
+65	机械及行业设备	Machinery and industry equipment
+66	医药、保养	Medicine, maintenance
+509	通信产品	Communication Products
+71	汽摩及配件	Auto Parts and Accessories
+72	印刷	Printing
+1	农业	Agriculture
+10	能源	Energy
+9	冶金矿产	metallurgical mineral
+8	化工	Chemical
+64	环保	Environmental protection
+202052814	新能源	new energy
+51	代理	Agent
+2805	加工	Processing
+69	商务服务	Business Services
+2829	二手设备转让	Transfer of used equipment
+53	传媒、广电	Media, Radio and Television
+73	项目合作	Project cooperationAdvanced product endpoints
+
+Additional routes for sourcing workflows (1688-heavy unless noted). Overview: Products.
+Endpoint index
+Method	Path	Purpose
+GET	/v1/products/channels	Per-channel capability flags
+POST	/v1/products/freight/estimate	Domestic shipping — same body as order preview; returns freight in fen
+POST	/v1/products/similar	Taobao similar — pass a fresh search id / mi_id (rotates; do not cache long-term)
+POST	/v1/products/batch-check	Taobao mapping debug (create auto-checks batch)
+POST	/v1/products/top-keywords	1688 category hot keywords
+POST	/v1/products/top-list	1688 ranked product lists
+POST	/v1/products/daily-sales-trend	1688 daily sales trend (max 90 days)
+Upstream response format {#upstream-format}
+
+Add "response_format": "upstream" to return vendor JSON in an upstream envelope instead of standard models. See Response format.  Procurement orders overview
+
+/v1/orders/* covers domestic procurement — orders with 1688/Taobao sellers for delivery into a China inbound address. Not international shipping; use Fulfillment after inbound.
+
+Amounts are CNY fen (分). Set response_format per Response format.
+
+Map product ids from Products: search/detail id → lines[].id (compatible: offer_id, Taobao mi_id); variants[].sku_id → lines[].spec_id.
+
+    Taobao id / mi_id rotates periodically. Do not cache it long-term. Re-fetch from search or detail before preview/create.
+
+Lifecycle {#lifecycle}
+
+    Preview — validate lines, prices, freight
+    Create — place procurement order
+    Pay — settle with marketplace wallet
+    Detail / list — track status
+    Domestic trace — seller → warehouse
+    Cancel — when allowed
+
+Endpoint guide
+Step	Path	Doc
+Preview	POST /v1/orders/preview	Order preview
+Create	POST /v1/orders/create	Create order
+Pay	POST /v1/orders/pay	Pay order
+Detail	POST /v1/orders/detail	Order detail
+List	POST /v1/orders/list	Order detail
+Cancel	POST /v1/orders/cancel	Cancel order
+Domestic trace	POST /v1/orders/logistics/trace	Domestic logistics trace
+Taobao purchases	POST /v1/orders/purchase/query	Order detail
+Response schemas	—	Order response models
+
+Channel shortcuts: /v1/orders/1688/*, /v1/orders/taobao/* (body may omit channel).
+Domestic vs international logistics {#domestic-vs-international}
+Leg	API
+Seller → China warehouse	Domestic trace
+Warehouse → overseas buyer	International tracking
+Order preview API
+
+POST /v1/orders/preview — validate lines, prices, and domestic freight before create. Same receiver + lines body is reused by create and freight estimate.
+
+Related: Create order · Response model
+Request body
+Field	Required	Description
+channel	Yes	1688 | taobao
+receiver	Yes	Domestic inbound address: name, mobile, province, city, address; 1688 without address_id also needs district
+lines[]	Yes	Prefer id + spec_id + quantity. offer_id and mi_id still work
+response_format	No	standard (default) or upstream
+
+Shortcuts: POST /v1/orders/1688/preview and POST /v1/orders/taobao/preview (omit channel).
+Line mapping {#line-mapping}
+
+    Call POST /v1/products/detail (or use a search hit).
+    Copy response id → lines[].id (same field name — not Taobao source_product_id).
+    Copy selected variants[].sku_id → lines[].spec_id.
+    Reuse the same lines[] in create after preview succeeds.
+
+Take ids from product detail — not from a long-lived cache.
+lines[] field	1688	Taobao
+id (preferred)	search/detail id (offerId)	search/detail id (mi_id) — not source_product_id
+offer_id	Compatible alias of id	Compatible alias of id
+mi_id	—	Compatible Taobao alias of id
+spec_id	variants[].sku_id (specId)	variants[].sku_id (traffic sku). Already-resolved mpSkuId is also accepted
+
+If both id and offer_id are sent, offer_id wins. Otherwise id (then mi_id) is copied to offer_id.
+
+Taobao: Gateway auto batch-checks id/mi_id + traffic sku_id → mpId / mpSkuId, then calls upstream /purchase/order/render. You do not need to call /v1/products/batch-check first. If the value is a pure numeric mpId, batch-check is skipped.
+
+    Taobao id / mi_id rotates periodically. Do not cache it long-term. Stale ids fail preview, create, and similar. Re-fetch from search or detail right before checkout.
+
+1688 example
+
+POST /v1/orders/preview
+{
+  "channel": "1688",
+  "receiver": {
+    "name": "张三",
+    "mobile": "15251667788",
+    "province": "浙江省",
+    "city": "杭州市",
+    "district": "滨江区",
+    "address": "网商路699号"
+  },
+  "lines": [
+    {
+      "id": "554456348334",
+      "spec_id": "b266e0726506185beaf205cbae88530d",
+      "quantity": 5
+    }
+  ]
+}
+
+Taobao example
+
+Pass search/detail id as lines[].id. Existing clients may still send offer_id or mi_id.
+
+POST /v1/orders/preview
+{
+  "channel": "taobao",
+  "receiver": {
+    "name": "张三",
+    "mobile": "15251667788",
+    "province": "浙江省",
+    "city": "杭州市",
+    "district": "滨江区",
+    "address": "网商路699号"
+  },
+  "lines": [
+    {
+      "id": "0000iIpSgysC-ca00kbG-Y-LXZu7WojtOJ5cnKTyzoID9UM",
+      "spec_id": "6079564221554",
+      "quantity": 5
+    }
+  ]
+}
+
+Response
+
+StandardOrderPreviewResult — see order response models. JSON example: Response format.
+
+Amounts are CNY fen. Check success and unavailable_lines[] before calling create.Order preview API
+
+POST /v1/orders/preview — validate lines, prices, and domestic freight before create. Same receiver + lines body is reused by create and freight estimate.
+
+Related: Create order · Response model
+Request body
+Field	Required	Description
+channel	Yes	1688 | taobao
+receiver	Yes	Domestic inbound address: name, mobile, province, city, address; 1688 without address_id also needs district
+lines[]	Yes	Prefer id + spec_id + quantity. offer_id and mi_id still work
+response_format	No	standard (default) or upstream
+
+Shortcuts: POST /v1/orders/1688/preview and POST /v1/orders/taobao/preview (omit channel).
+Line mapping {#line-mapping}
+
+    Call POST /v1/products/detail (or use a search hit).
+    Copy response id → lines[].id (same field name — not Taobao source_product_id).
+    Copy selected variants[].sku_id → lines[].spec_id.
+    Reuse the same lines[] in create after preview succeeds.
+
+Take ids from product detail — not from a long-lived cache.
+lines[] field	1688	Taobao
+id (preferred)	search/detail id (offerId)	search/detail id (mi_id) — not source_product_id
+offer_id	Compatible alias of id	Compatible alias of id
+mi_id	—	Compatible Taobao alias of id
+spec_id	variants[].sku_id (specId)	variants[].sku_id (traffic sku). Already-resolved mpSkuId is also accepted
+
+If both id and offer_id are sent, offer_id wins. Otherwise id (then mi_id) is copied to offer_id.
+
+Taobao: Gateway auto batch-checks id/mi_id + traffic sku_id → mpId / mpSkuId, then calls upstream /purchase/order/render. You do not need to call /v1/products/batch-check first. If the value is a pure numeric mpId, batch-check is skipped.
+
+    Taobao id / mi_id rotates periodically. Do not cache it long-term. Stale ids fail preview, create, and similar. Re-fetch from search or detail right before checkout.
+
+1688 example
+
+POST /v1/orders/preview
+{
+  "channel": "1688",
+  "receiver": {
+    "name": "张三",
+    "mobile": "15251667788",
+    "province": "浙江省",
+    "city": "杭州市",
+    "district": "滨江区",
+    "address": "网商路699号"
+  },
+  "lines": [
+    {
+      "id": "554456348334",
+      "spec_id": "b266e0726506185beaf205cbae88530d",
+      "quantity": 5
+    }
+  ]
+}
+
+Taobao example
+
+Pass search/detail id as lines[].id. Existing clients may still send offer_id or mi_id.
+
+POST /v1/orders/preview
+{
+  "channel": "taobao",
+  "receiver": {
+    "name": "张三",
+    "mobile": "15251667788",
+    "province": "浙江省",
+    "city": "杭州市",
+    "district": "滨江区",
+    "address": "网商路699号"
+  },
+  "lines": [
+    {
+      "id": "0000iIpSgysC-ca00kbG-Y-LXZu7WojtOJ5cnKTyzoID9UM",
+      "spec_id": "6079564221554",
+      "quantity": 5
+    }
+  ]
+}
+
+Response
+
+StandardOrderPreviewResult — see order response models. JSON example: Response format.
+
+Amounts are CNY fen. Check success and unavailable_lines[] before calling create.Create procurement order API
+
+POST /v1/orders/create uses the same receiver + lines body as preview. This page adds create-only fields and full request examples.
+
+Related: Order preview · Response model
+Line mapping (same as preview)
+
+Use the same field names as the Product API.
+Step	Product API	Order lines[]
+1	POST /v1/products/detail or search	—
+2	Response id	lines[].id (preferred)
+3	Selected variants[].sku_id	lines[].spec_id
+4	Quantity	lines[].quantity
+
+Full rules: preview line mapping. Do not use Taobao source_product_id.
+Additional fields
+
+    external_order_id — your idempotency key
+    buyer_message — note to seller
+    Taobao: outer_purchase_id auto-generated if omitted
+
+1688 create example
+
+POST /v1/orders/create
+{
+  "channel": "1688",
+  "flow": "general",
+  "receiver": {
+    "name": "张三",
+    "mobile": "15251667788",
+    "province": "浙江省",
+    "city": "杭州市",
+    "district": "滨江区",
+    "address": "网商路699号"
+  },
+  "lines": [
+    {
+      "id": "554456348334",
+      "spec_id": "b266e0726506185beaf205cbae88530d",
+      "quantity": 5
+    }
+  ],
+  "external_order_id": "MY-ORDER-20260101",
+  "buyer_message": "请尽快发货",
+  "trade_type": "assureTrade"
+}
+
+Taobao create example
+
+Use the same id and spec_id as preview:
+
+POST /v1/orders/create
+{
+  "channel": "taobao",
+  "receiver": {
+    "name": "张三",
+    "mobile": "15251667788",
+    "province": "浙江省",
+    "city": "杭州市",
+    "district": "滨江区",
+    "address": "网商路699号"
+  },
+  "lines": [
+    {
+      "id": "0000iIpSgysC-ca00kbG-Y-LXZu7WojtOJ5cnKTyzoID9UM",
+      "spec_id": "6079564221554",
+      "quantity": 1
+    }
+  ],
+  "external_order_id": "MY-TB-ORDER-001",
+  "buyer_message": "请尽快发货"
+}
+
+Response
+
+StandardOrderCreateResult. On success, persist order_id for pay, detail, and trace.
+
+See order response models.Pay procurement order API
+
+POST /v1/orders/pay
+Request body
+Field	Required	Description
+channel	Yes	1688 | taobao
+order_id	Yes	Main order id from create
+pay_channel	1688 optional	e.g. Alipay / kjpayV2
+Response
+
+StandardOrderPayResult — response model.Order detail and list API
+POST /v1/orders/detail {#detail}
+
+{
+  "channel": "1688",
+  "order_id": "3304203601144335680"
+}
+
+Response: StandardOrderDetail. In warehouse mode, may include domestic_parcels[] for fulfillment create.
+
+See order response models.
+POST /v1/orders/list {#list}
+
+Buyer order list (1688-focused). Filters and pagination per OpenAPI.
+POST /v1/orders/purchase/query {#purchase-query}
+
+Taobao post-create purchase list lookup. Body: channel: "taobao" plus filters (purchase_ids, date range, etc.) per OpenAPI.
+Domestic logistics trace API
+
+POST /v1/orders/logistics/trace — domestic leg only (seller → warehouse).
+
+International tracking: Fulfillment tracking (warehouse → overseas).
+Rules
+
+    Pass main order_id only — do not send sub_order_id
+    1688: optional logistics_id; includes cross_border_packages[] when applicable
+    Taobao: Gateway resolves sub-orders from main purchase id
+
+Example
+
+POST /v1/orders/logistics/trace
+{
+  "channel": "taobao",
+  "order_id": "200106932660"
+}
+
+Response
+
+UnifiedLogisticsTrace — response model.Cancel procurement order API
+
+POST /v1/orders/cancel
+Channel behavior
+
+    1688: cancel_reason enum — buyerCancel, sellerGoodsLack, other
+    Taobao: free-form cancel_reason; optional sub_order_ids for partial cancel
+    Taobao may return pending: true (async acceptance)
+
+Response
+
+StandardOrderCancelResult — response model.Order API response models
+
+Types in packages/shared/src/ (order-preview-result.ts, order-create-result.ts, trade.ts, logistics-trace.ts).
+
+Standard responses on preview, create, and detail include top-level monetary_unit: "CNY_minor" — all { amount, currency } values are CNY fen (1 yuan = 100 fen). POST /v1/products/freight/estimate uses the same convention. Product catalog prices use yuan (CNY_major); see Product response models. Upstream format omits monetary_unit.
+StandardOrderPreviewResult {#standard-order-preview-result}
+
+From order preview.
+Field	Type	Description
+success	boolean	false when lines cannot be purchased; check unavailable_lines
+total.payment	Money	Total payable
+total.shipping	Money	Domestic shipping portion
+sellers[]	array	Grouped by seller with lines[], fees
+unavailable_lines[]	array	Failed validation or stock
+trade_types[]	array	1688 only
+promotions	object	1688 promotions when present
+StandardOrderCreateResult {#standard-order-create-result}
+Field	Type	Description
+order_id	string	Use for pay, detail, trace
+total.payment	Money	Amount to pay
+order_list[]	array	Sub-orders / seller splits
+failed_offers[]	array	Partial create possible with success: true
+outer_purchase_id	string	Taobao idempotency key
+payment_url	string	Taobao optional payment URL
+StandardOrderPayResult {#standard-order-pay-result}
+Field	Description
+success	Payment accepted
+pay_channel	1688 payment method
+error_code / error_message	When success: false
+StandardOrderDetail {#standard-order-detail}
+Field	Description
+status	e.g. wait_payment, wait_shipment, shipped
+refund_status	Read-only; refund APIs not public
+amounts	total, product_total, shipping_fee, refund (fen)
+line_items[]	Product rows with sku_specs, status
+times	created_at, paid_at, shipped_at, …
+domestic_parcels[]	Warehouse mode → fulfillment
+UnifiedLogisticsTrace {#unified-logistics-trace}
+
+From domestic trace.
+Field	Description
+packages[]	tracking_number, carrier, steps[]
+cross_border_packages[]	1688 cross-border nodes — not international fulfillment
+StandardOrderCancelResult {#standard-order-cancel-result}
+Field	Description
+success	Cancel accepted (may still process)
+pending	Taobao async cancel
+sub_order_ids	Partial cancel affected idsPortal authorization
+
+After your app is approved, authorize channels in the developer portal 
+before calling procurement or fulfillment APIs.
+
+There are two layers of choice:
+
+    Fulfillment mode — whether HioBuy warehouses and ships internationally
+    Procurement mode (only when warehouse fulfillment is on) — who buys on Taobao / 1688 / Weidian
+
+Fulfillment mode (per app)
+Mode	Who holds warehouse binding	International shipping (/v1/fulfillment/*)
+Self fulfillment (default)	None — you handle logistics yourself	Not available (403)
+HioBuy warehouse	One warehouse developer code	Available — Fulfillment overview
+
+Public API paths stay the same (/v1/products/*, /v1/orders/*, …). The Gateway routes by your app’s modes.
+Procurement under warehouse fulfillment
+
+When you choose HioBuy warehouse, procurement supports two options. International warehousing and shipping work in both; only who places marketplace purchase orders differs.
+Procurement mode	Who buys on the marketplace	Channel tokens	/v1/orders/*	/v1/products/*
+HioBuy procurement (default)	HioBuy buys for you	Issued by warehouse authorize; Gateway stores them	Routed via HioBuy warehouse procurement	Gateway uses stored tokens → marketplace
+Self procurement	You buy with your own accounts	You manage OAuth / credentials in the portal	Gateway → marketplace with your tokens (same as classic self flow)	Same — your tokens
+Capability	HioBuy procurement	Self procurement
+Bind warehouse code once	Yes	Yes
+Warehouse inbound / packages / VAS / returns	Yes	Yes
+International shipments & wallet	Yes	Yes
+Marketplace OAuth managed by you	No	Yes (per channel)
+
+Switching between these two procurement options may clear or re-issue channel tokens; the portal will ask you to confirm.
+Self fulfillment (no HioBuy warehouse)
+
+For each enabled channel (Taobao, 1688, Weidian, …):
+
+    Open Authorizations → select app → Authorize
+    Paste OAuth credentials or complete OAuth when available
+    Portal shows status, account name, expiry — never full tokens
+
+/v1/fulfillment/* is not available in this mode.
+HioBuy warehouse fulfillment (setup)
+
+    Plans: HioBuy warehouse fulfillment and dedicated support require a paid plan (Growth / Enterprise). Free plans include self-service documentation and Sandbox access. Dedicated integration and fulfillment support are available on paid plans.
+
+    Obtain a warehouse developer code from HioBuy ops
+    Portal → Authorizations → choose Use HioBuy fulfillment
+    Pick procurement mode: HioBuy procurement or self procurement
+    Enter the warehouse code once — binding is app-level (not per channel)
+    If HioBuy procurement: portal lists each channel’s status and expires_at (tokens are not visible or editable)
+    If self procurement: complete normal per-channel OAuth / credential entry yourself; warehouse binding only unlocks fulfillment APIs
+
+Switching back to self fulfillment clears the warehouse binding; you will be prompted to confirm.
+What you never send in API calls
+
+    Marketplace access tokens
+    Warehouse developer code (Gateway attaches it server-side)
+
+Only Authorization: Bearer hio_live_… (or hio_test_…) on https://api.hiobuy.com.
+
+Next: Fulfillment overview · Orders
+International fulfillment overview
+
+/v1/fulfillment/* covers international logistics after goods are in the HIOBuy warehouse. Domestic buying: Procurement orders.
+
+Requires warehouse fulfillment on your app (Portal authorization). Self-fulfillment apps get 403 FULFILLMENT_MODE_NOT_SUPPORTED.
+Monetary unit {#monetary-unit}
+
+Standard JSON responses on money-bearing fulfillment routes include top-level monetary_unit: "CNY_minor". All { amount, currency } fields are CNY fen (1 yuan = 100 fen). See Fulfillment response models.
+API availability {#availability}
+Path	Status
+/v1/fulfillment/inbounds/create	Live warehouse simple-store when warehouse mode; mock in sandbox
+/v1/fulfillment/packages	Live warehouse packages/index when warehouse mode; mock in sandbox
+/v1/fulfillment/packages/{package_id}	Live warehouse packages/detail/{id} when warehouse mode; mock in sandbox
+/v1/fulfillment/packages/{package_id}/tracking	Live warehouse packages/logs/{id} when warehouse mode; mock in sandbox
+/v1/fulfillment/unclaimed-packages	Live warehouse list + claim when warehouse mode; mock in sandbox
+/v1/fulfillment/returns	Mock — return-to-seller create/list/confirm/cancel
+/v1/fulfillment/locations	Live warehouse warehouse when warehouse mode; mock in sandbox
+/v1/fulfillment/value-added-services	Live warehouse services when warehouse mode; mock in sandbox
+/v1/fulfillment/service-requests	Mock — create/list/detail/confirm
+/v1/fulfillment/shipments/{id}/intercept	Live warehouse shipments/set-exceptional when warehouse mode; mock in sandbox
+/v1/fulfillment/shipments	Live warehouse shipments/index when warehouse mode; mock in sandbox
+/v1/fulfillment/shipments/*	Available (mock / warehouse HTTP when configured)
+/v1/fulfillment/balance	Available
+/v1/shipments (legacy)	Deprecated
+End-to-end flow {#end-to-end-flow}
+
+    Create procurement order → seller ships to warehouse
+    or Inbound notice for parcels you already control
+    Package detail / tracking → warehouse measurements / exceptions / VAS / fulfillment timeline
+    or Order detail → tracking_numbers[] when inbound from procurement
+    Freight estimate → pick shipping_channel_code
+    Create shipment → id / order_sn (PENDING)
+    Warehouse packing & final measurement → boxes[], final weight / dimensions, final freight
+    Shipment ready for payment (WAIT_PAYMENT) → see detail; paying earlier returns 409 SHIPMENT_NOT_READY_FOR_PAYMENT
+    Pay shipment → deduct wallet
+    List / detail → lightweight rows, or boxes / packing files / timeline / first/last-mile numbers
+    Optional: Intercept if you need to hold a WAIT_SHIP / SHIPPED shipment
+    International tracking → scan events
+
+    New to warehouse fulfillment? Follow the WH-DEV testing guide to test the complete workflow, including warehouse packing and settlement.
+
+    Start WH-DEV testing →
+
+Endpoint guide
+Topic	Path	Doc
+Inbound notice	POST .../inbounds/create	Inbounds
+Package detail / tracking / unclaimed	GET .../packages/* · unclaimed-packages	Packages
+Returns	POST/GET .../returns · confirm/cancel	Returns
+Locations	GET .../locations	Locations
+Value-added services	GET .../value-added-services	VAS
+Service requests	POST/GET .../service-requests · confirm	Service requests
+Quick freight quote	POST .../shipping/quotes	Freight estimate
+Create / pay / cancel / intercept	POST .../shipments/create · {id}/pay · {id}/cancel · {id}/intercept	Shipments
+Shipment list	GET .../shipments	Shipments · list
+Shipment detail	GET .../shipments/{id}	Shipments · detail
+International tracking	GET .../shipments/{id}/tracking	Tracking
+Wallet balance	GET /v1/fulfillment/balance	Balance
+Response fields	—	Fulfillment response models
+Item attributes	GET .../item-attributes	Freight estimate
+Warehouse-mode procurement
+
+/v1/orders/* paths unchanged; Gateway forwards to HIOBuy. Product APIs still call marketplaces directly.
+
+Domestic trace: order logistics trace (proxied in warehouse mode).
+Errors
+
+FULFILLMENT_MODE_NOT_SUPPORTED, SHIPMENT_CREATE_EXCEPTION, SHIPMENT_CREATE_FAILED, PARCEL_NOT_FOUND, EXTERNAL_ORDER_ID_ALREADY_EXISTS, SHIPMENT_NOT_READY_FOR_PAYMENT, SHIPMENT_ALREADY_PAID, INSUFFICIENT_BALANCE, NOT_FOUND (SHIPMENT_NOT_EXISTS), intercept codes (SHIPMENT_NOT_FOUND, SHIPMENT_NOT_INTERCEPTABLE, SHIPMENT_INTERCEPTION_ALREADY_REQUESTED) — see Errors and Shipments.
+
+WH-DEV fulfillment testing guide
+
+Test the complete HIOBuy warehouse fulfillment workflow before going live.
+
+This page is a workflow guide, not an API reference. Each step links to the endpoint documentation you need for that step.
+WH-DEV is a controlled integration testing environment
+
+Some physical warehouse operations — receiving parcels, packing, weighing, dispatching, and tracking progression — may require simulation by the HIOBuy team while you test.
+
+In production these operations run through normal HIOBuy warehouse workflows. You do not need to contact support for each shipment.
+Before you start
+Requirement	How to get it
+Active developer subscription with warehouse fulfillment access	Growth or Enterprise plan — see Warehouse authorization
+WH-DEV warehouse developer code	Provided by HIOBuy after approval
+App configured for HIOBuy warehouse fulfillment	Portal → Authorizations 
+Production API key (hio_live_*)	Authentication
+Test wallet balance	Wallet balance — top up before paying a shipment
+Test destination address and available shipping channels	Configured by HIOBuy on your WH-DEV warehouse
+
+Do not use a Sandbox key (hio_test_*) to test WH-DEV. Sandbox returns fixtures that are unrelated to your assigned warehouse. WH-DEV integration testing uses hio_live_* + WH-DEV code, which is still a test warehouse configuration — not live fulfillment. See Sandbox.
+
+No WH-DEV code yet? Start at Warehouse authorization.
+End-to-end testing flow
+
+HIOBuy buys
+
+You already own the parcel
+
+WH-DEV authorization
+
+Inbound source
+
+Create procurement order
+
+Create inbound notice
+
+Parcel arrives at warehouse
+
+Package RECEIVED
+
+Get shipping quotes
+
+Select shipping_channel_code
+
+Create international shipment
+
+Shipment PENDING
+
+Warehouse packing
+
+Final weight and dimensions
+
+Final freight calculated
+
+WAIT_PAYMENT ready for payment
+
+Pay shipment
+
+WAIT_SHIP
+
+Dispatch: SHIPPED
+
+International tracking
+
+SIGNED / delivered
+#	Step	API	Doc
+1	Bind the WH-DEV code to your app	— (portal)	Warehouse authorization
+2a	Create a procurement order so the seller ships to the warehouse	POST /v1/orders/create	Create order
+2b	Or declare a parcel you already control	POST /v1/fulfillment/inbounds/create	Inbound notice
+3	Poll the package until it is RECEIVED	GET /v1/fulfillment/packages/{package_id}	Packages
+4	Quote international freight	POST /v1/fulfillment/shipping/quotes	Shipping quotes
+5	Create the shipment with tracking_numbers[], receiver, shipping_channel_code	POST /v1/fulfillment/shipments/create	Shipments · create
+6	Poll the shipment while the warehouse packs and measures	GET /v1/fulfillment/shipments/{id}	Shipments · detail
+7	Pay once the shipment is ready	POST /v1/fulfillment/shipments/{id}/pay	Shipments · pay
+8	Read scan events after dispatch	GET /v1/fulfillment/shipments/{id}/tracking	International tracking
+
+Shipment status progression: PENDING → WAIT_PAYMENT → WAIT_SHIP → SHIPPED → SIGNED.
+Developer actions vs warehouse actions
+Stage	You (developer)	HIOBuy WH-DEV
+Warehouse authorization	Configure the app	Provide the WH-DEV code
+Procurement / inbound notice	API call	—
+Parcel arrival	Poll package status	Simulate warehouse receiving
+Package received	Query package detail	Update warehouse status
+Shipping quote	API call	—
+Create shipment	API call	—
+Retrieve packages from storage	—	Warehouse simulation
+Consolidation / packing	—	Warehouse simulation
+Final weighing and measurement	Poll shipment detail	Warehouse simulation
+Settlement	Pay API	—
+Dispatch	Poll shipment detail	Warehouse simulation
+Tracking progression	Tracking API	Simulated scan events
+Shipment packing and payment
+Why can’t I pay immediately after creating a shipment?
+
+A new shipment normally starts in PENDING:
+
+{
+  "id": "115",
+  "status": "PENDING",
+  "payment_status": "UNPAID",
+  "boxes": [],
+  "times": {
+    "packed_at": null
+  }
+}
+
+That is expected. The warehouse still has to:
+
+    Retrieve the packages from storage
+    Consolidate the selected packages
+    Pack the shipment
+    Measure the final weight
+    Measure the final dimensions
+    Calculate the final freight
+
+Only then does the shipment become payable (WAIT_PAYMENT).
+
+If you call pay too early:
+
+POST /v1/fulfillment/shipments/115/pay
+Authorization: Bearer hio_live_...
+
+you may get:
+HTTP	error.code
+409	SHIPMENT_NOT_READY_FOR_PAYMENT
+
+This is not an integration bug. It means warehouse packing and final measurement are not finished yet.
+
+Poll shipment detail and retry pay once the shipment is ready. Useful signals:
+Signal	Ready for payment
+status	WAIT_PAYMENT
+payment_status	UNPAID with total.outstanding > 0
+times.packed_at	Not null
+boxes[]	Non-empty, with final weight / dimensions
+
+Other pay errors: 404 NOT_FOUND (unknown shipment), 409 SHIPMENT_ALREADY_PAID, 402 INSUFFICIENT_BALANCE — top up via Wallet balance. Full list: Shipments · pay and Errors.
+WH-DEV warehouse simulation
+
+WH-DEV is not a continuously running production warehouse. These events may need HIOBuy to simulate them while you test:
+
+    Package received
+    Package inspection
+    Package storage
+    Shipment packing
+    Final weight measurement
+    Final dimension measurement
+    Shipment dispatch
+    Tracking progression
+    Delivery completion
+
+If your test is waiting on one of these, email support@hiobuy.com or open a support ticket.
+Support request format
+
+Subject: WH-DEV Fulfillment Test Assistance
+
+Application:
+WH-DEV Code:
+
+Package ID:
+Shipment ID:
+Order SN:
+
+Current Status:
+
+Expected Next Test Step:
+
+Request ID:
+
+Every API response carries a request_id. Including it helps HIOBuy developer support locate your exact request.
+What changes in production?
+
+In WH-DEV some physical events are simulated on request. In production a real parcel moves through the normal warehouse workflow:
+
+Package received
+
+Stored
+
+Shipment created
+
+Picking
+
+Consolidation
+
+Packing
+
+Weight and dimension measurement
+
+Final freight
+
+Ready for payment
+
+Payment
+
+Dispatch
+
+These are routine warehouse operations. You do not contact HIOBuy support for each shipment. Your app only needs to:
+
+    Monitor shipment status
+    Query shipment detail
+    Wait until payment becomes available
+    Complete settlement
+    Monitor tracking
+
+Webhooks
+
+Instead of tight polling loops you can subscribe to fulfillment events in the portal 
+. Events relevant to this flow today:
+Event type	When it fires
+package.received	Domestic parcel received at the warehouse
+package.exception	Inbound package exception
+consolidation.completed	Packages consolidated for outbound
+shipment.created	International shipment created
+shipment.dispatched	Shipment handed to the carrier
+shipment.delivered	Delivered to the recipient
+shipment.exception	Outbound exception
+balance.low	Wallet below your threshold
+
+There is no “ready for payment” event today. Detect payability from shipment detail as described above.
+
+Recommended pattern:
+
+HIOBuy warehouse
+        ↓
+Webhook (package.received / shipment.dispatched / …)
+        ↓
+Your system
+        ↓
+GET shipment detail
+        ↓
+Business logic → pay / notify customer
+
+Sandbox resources do not auto-emit webhooks; use Send test in the portal. Full catalog, signature verification, and retries: Webhooks.
+Test shipping channels
+
+Shipping channels returned in WH-DEV are for integration testing:
+
+    Shipping quote integration
+    Channel selection
+    Shipment creation
+    Settlement testing
+    Tracking workflow testing
+
+Do not use WH-DEV shipping channel data as production logistics specifications. Channel names, prices, delivery times, customs models, tax models, and last-mile services in a test warehouse are not commercial commitments. Production channels may differ in pricing, service areas, customs clearance models, tax rules, restrictions, and delivery requirements.
+Shipping channel rules — coming soon
+
+Coming soon
+
+HIOBuy plans to expose richer channel rules so applications can select a lane automatically: service scope, destination coverage, delivery method, last-mile delivery, charging rules, estimated delivery time, customs clearance model, tax model (DDP / DAP / DDU), whether duties and taxes are included, product restrictions, and weight / dimension limits.
+
+These fields and endpoints are not available yet. Build against the documented shipping quotes response for now.
+Related
+
+    Warehouse authorization — get and bind your WH-DEV code
+    Fulfillment overview — endpoint map
+    Shipments · Packages · Inbound notice
+    Sandbox — hio_test_* fixtures vs WH-DEV
+    Errors · Support tickets
+Inbound notice (create)
+
+POST /v1/fulfillment/inbounds/create — submit an inbound notice so the warehouse can expect a domestic shipment (tracking number + items + optional value-added services).
+
+Requires warehouse fulfillment (Portal authorization). Self-fulfillment → 403 FULFILLMENT_MODE_NOT_SUPPORTED.
+
+    Availability: Sandbox is MOCK. Warehouse-mode live keys forward to the warehouse inbound API.
+
+Scope: shipment:create.
+Request body
+
+{
+  "tracking_number": "YT1234567890",
+  "carrier": "YTO",
+  "package_count": 1,
+  "total_value": 128.5,
+  "currency": "CNY",
+  "external_order_id": "MY-ORD-001",
+  "supplier_order_id": "1688-xxx",
+  "remark": "fragile",
+  "sender": {
+    "name": "Zhang San",
+    "phone": "13800000000",
+    "country_code": "CN",
+    "province": "Zhejiang",
+    "city": "Hangzhou",
+    "district": "Yuhang",
+    "postcode": "310000",
+    "address": "…"
+  },
+  "items": [
+    {
+      "name": "Cotton T-Shirt",
+      "quantity": "2",
+      "unit_price": "64.25",
+      "currency": "CNY",
+      "hs_code": "610910",
+      "image_url": "https://example.com/t.jpg"
+    }
+  ],
+  "services": [
+    {
+      "service_code": "photo",
+      "quantity": 1
+    }
+  ]
+}
+
+Field	Required	Notes
+tracking_number	Yes	Domestic carrier tracking number
+package_count	Yes	Number of physical packages
+total_value	Yes	Declared total value (face value, not fen)
+currency	No	Default CNY. Supported: CNY, USD, KRW
+items[]	Yes	Line items; quantity and unit_price are strings
+services[]	No	{ service_code, quantity } — inbound-stage VAS only
+external_order_id	No	Unique per app
+carrier / sender / remark / supplier_order_id	No	Optional metadata
+
+Money: Submit face amounts + currency. Unlike shipment routes, this response does not use monetary_unit: CNY_minor and Gateway does not convert to fen.
+Success response
+
+HTTP 201:
+
+{
+  "success": true,
+  "package_id": "pkg_…",
+  "tracking_number": "YT1234567890",
+  "status": "pending_receive",
+  "package_count": 1,
+  "external_order_id": null,
+  "created_at": "2026-08-16T07:00:00.000Z",
+  "request_id": "req_…"
+}
+
+Sandbox happy-path IDs use the sbi_ prefix. Success also returns package_id (pkg_*) for package detail.
+Cancel inbound {#cancel}
+
+DELETE /v1/fulfillment/inbounds/{id} — cancel a pre-advise while still waiting for warehouse receipt.
+
+Success (HTTP 200):
+
+{
+  "success": true,
+  "package_id": "pkg_…",
+  "status": "cancelled",
+  "cancelled_at": "2026-08-16T10:00:00.000Z",
+  "request_id": "req_…"
+}
+
+Linked package in PENDING becomes DISCARDED in MOCK.
+Trigger / case	HTTP	error.code
+Unknown id / sb_inb_not_found	404	INBOUND_NOT_FOUND
+sb_inb_received	409	INBOUND_ALREADY_RECEIVED
+sb_inb_shipped / sb_inb_consolidated / already cancelled	409	INBOUND_NOT_EDITABLE
+
+Scope: shipment:create.
+Package status (reference)
+
+Warehouse package lifecycle codes (canonical):
+CODE	EN label	Meaning
+PENDING	Pending Receipt	Pre-advised; waiting for warehouse receipt
+RECEIVED	Received	Received into warehouse
+CONSOLIDATED	Consolidated	Added to consolidation / packing batch
+SHIPPED	Shipped	Left the HIOBuy warehouse
+DELIVERED	Delivered	Signed for by overseas recipient
+TRANSFERRING	Transferring	Moving between fulfillment warehouses
+DISCARDED	Discarded	Discard workflow completed
+UNCLAIMED	Unclaimed	At warehouse; cannot match owner / notice
+ARCHIVED	Archived	Archived after completion
+
+Create MOCK currently returns status: "pending_receive" (aligned with PENDING). Future APIs should use the table above.
+Sandbox fixtures
+Trigger	Field	HTTP	error.code
+sb_inbound_shipped	tracking_number	409	INBOUND_TRACKING_ALREADY_SHIPPED
+sb_inbound_exists	tracking_number	409	INBOUND_TRACKING_ALREADY_EXISTS
+sb_inbound_bad_tracking	tracking_number	422	INVALID_TRACKING_NUMBER
+sb_inbound_external_exists	external_order_id	409	EXTERNAL_ORDER_ID_ALREADY_EXISTS
+sb_vas_missing	services[].service_code	422	VALUE_ADDED_SERVICE_NOT_FOUND
+sb_vas_unavailable	services[].service_code	422	VALUE_ADDED_SERVICE_UNAVAILABLE
+sb_vas_outbound	services[].service_code	422	VALUE_ADDED_SERVICE_INVALID_STAGE
+quantity: 0	services[].quantity	422	VALUE_ADDED_SERVICE_QUANTITY_INVALID
+
+Missing required fields → 422 INBOUND_VALIDATION_FAILED with details.fields[] (REQUIRED / INVALID_VALUE / …). Conflicts use protocol 4xx, not soft 200.
+Errors
+
+See Errors — Inbound / VAS group. Gate code: FULFILLMENT_MODE_NOT_SUPPORTED (maps draft FULFILLMENT_NOT_ENABLED).
+Related
+
+    Package detail (after create — contract locked)
+    Fulfillment overview
+    Create shipment (after parcels are received)
+    Sandbox
+Packages (list, detail, tracking & unclaimed)
+
+Warehouse packages after inbound notice.
+
+    Availability: Sandbox is MOCK. Warehouse-mode live keys forward package list, detail, tracking, unclaimed list, and unclaimed claim to the warehouse.
+
+Requires warehouse fulfillment.
+Method	Path	Scope	Purpose
+GET	/v1/fulfillment/packages	warehouse:read	Lightweight list + filters
+GET	/v1/fulfillment/packages/{package_id}	warehouse:read	Full detail
+GET	/v1/fulfillment/packages/{package_id}/tracking	warehouse:read	HioBuy fulfillment timeline
+GET	/v1/fulfillment/unclaimed-packages	warehouse:read	List Unclaimed Packages
+POST	/v1/fulfillment/unclaimed-packages/claim	shipment:create	Claim an Unclaimed Package
+
+After inbound create, use returned package_id (pkg_*). Carrier / warehouse waybill is tracking_number only.
+Lifecycle {#lifecycle}
+
+Main path (solid): inbound notice → received → consolidated → shipped → delivered.
+Side paths (dashed): unmatched inbound → UNCLAIMED (claim back to RECEIVED); RECEIVED may go to DISCARDED.
+
+Auto / manual inbound notice
+
+Warehouse receive
+
+No user match
+
+Claim
+
+Customer consolidate
+
+Warehouse discard
+
+Pack & ship
+
+Customer signed
+
+Start
+
+Pending receipt
+PENDING
+
+Received
+RECEIVED
+
+Consolidated
+CONSOLIDATED
+
+Shipped
+SHIPPED
+
+Delivered
+DELIVERED
+
+Unclaimed
+UNCLAIMED
+
+Discarded
+DISCARDED
+
+End
+
+Also: TRANSFERRING (warehouse transfer), ARCHIVED (after completion).
+List Unclaimed Packages
+
+    Returns packages received by HioBuy Fulfillment that could not be automatically matched to an inbound notice. Tracking numbers are partially masked for security.
+
+Query: carrier, received_from, received_to, page, page_size.
+No full tracking-number search. List never returns full tracking, sender, items, photos, or inbound/developer secrets.
+
+IDs in the list are display-only. Claim does not take an unclaimed id — POST the full domestic tracking number.
+
+Sandbox list: ucp_01K2ABCDEF1234567890 → masked SF1234****9012 (claim with SF123456789012).
+Claim an Unclaimed Package
+
+    Claims an unrecognized warehouse package by verifying its full domestic tracking number. Success creates a normal pkg_* package.
+
+{
+  "tracking_number": "SF123456789012"
+}
+
+Success returns a package id with full tracking_number, status: RECEIVED, claimed: true.
+Unknown tracking → 404 UNCLAIMED_PACKAGE_NOT_FOUND. Claiming the same number again → 409 PACKAGE_ALREADY_CLAIMED.
+Code	HTTP
+UNCLAIMED_PACKAGE_NOT_FOUND	404
+PACKAGE_ALREADY_CLAIMED	409
+PACKAGE_NOT_CLAIMABLE	409
+
+Full contract: internal unclaimed-packages.md.
+Package tracking vs shipment tracking
+API	Meaning
+Package tracking	Inbound → warehouse → claim/transfer → consolidate → ship → optional delivered milestone
+Shipment logistics trace	International flight / customs / last-mile nodes
+
+Branch UI on stable event.code (never on title / description). Event registry includes INBOUND_CREATED, PACKAGE_RECEIVED, PACKAGE_PUTAWAY, PACKAGE_UNCLAIMED / PACKAGE_CLAIMED, transfer start/complete, PACKAGE_EXCEPTION, service codes, PACKAGE_CONSOLIDATED / PACKAGE_SHIPPED / PACKAGE_DELIVERED, discard/archive.
+
+PACKAGE_EXCEPTION may keep lifecycle status: RECEIVED — stage vs problem are separate.
+Tracking example (sb_pkg_shipped)
+
+{
+  "package_id": "sb_pkg_shipped",
+  "status": "SHIPPED",
+  "tracking_number": "SF123456789012",
+  "carrier": "SF Express",
+  "events": [
+    {
+      "code": "INBOUND_CREATED",
+      "status": "PENDING"
+    },
+    {
+      "code": "PACKAGE_RECEIVED",
+      "status": "RECEIVED"
+    },
+    {
+      "code": "PACKAGE_PUTAWAY",
+      "status": "RECEIVED"
+    },
+    {
+      "code": "SERVICE_COMPLETED",
+      "status": "RECEIVED"
+    },
+    {
+      "code": "PACKAGE_CONSOLIDATED",
+      "status": "CONSOLIDATED"
+    },
+    {
+      "code": "PACKAGE_SHIPPED",
+      "status": "SHIPPED"
+    }
+  ]
+}
+
+Full event fields: id, code, status, title, description, optional related_resource / exception / transfer, occurred_at. No location_code.
+List {#list}
+
+List rows are intentionally smaller than detail — no items[], full sender, services[], exception files, fee breakdown, or full timestamps.
+Query parameters
+Param	Notes
+status	Multi: RECEIVED,CONSOLIDATED or repeated status=
+tracking_number	Exact
+external_order_id	Exact
+supplier_order_id	Exact
+goods_type	GENERAL | SENSITIVE
+has_exception	true / false
+archived	true / false
+created_from / created_to	ISO-8601
+page / page_size	Default 1 / 20, max 100
+
+Cursor pagination may be added later for large catalogs. Warehouse live keys POST the same filters to packages/index; sandbox uses page offset.
+List item example
+
+{
+  "id": "pkg_01K2ABCDEF1234567890",
+  "status": "RECEIVED",
+  "archived": false,
+  "external_order_id": "KR-20260816-001",
+  "supplier_order_id": "1688-987654321",
+  "tracking_number": "SF123456789012",
+  "carrier": "SF Express",
+  "warehouse": {
+    "weight": {
+      "value": 2.35,
+      "unit": "kg"
+    },
+    "dimensions": {
+      "length": 42,
+      "width": 30,
+      "height": 18,
+      "unit": "cm"
+    }
+  },
+  "attributes": {
+    "goods_type": "GENERAL",
+    "tags": [
+      "GENERAL_GOODS"
+    ]
+  },
+  "condition": {
+    "status": "NORMAL",
+    "has_exception": false
+  },
+  "item_summary": {
+    "item_count": 2,
+    "total_quantity": 20
+  },
+  "service_summary": {
+    "total": 2,
+    "pending": 0,
+    "processing": 0,
+    "completed": 2
+  },
+  "shipment": {
+    "shipment_id": null
+  },
+  "created_at": "2026-08-16T07:40:00Z",
+  "received_at": "2026-08-16T08:05:00Z",
+  "updated_at": "2026-08-16T09:30:00Z"
+}
+
+List response envelope
+
+{
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total": 128,
+    "total_pages": 7
+  },
+  "request_id": "req_…"
+}
+
+Detail {#detail}
+
+GET /v1/fulfillment/packages/{package_id} — full package after inbound.
+
+Missing package → 404 PACKAGE_NOT_FOUND.
+Response layout (12 blocks)
+
+identity · status · order/tracking · items · sender · warehouse
+attributes · condition · services · fees · claim/transfer/shipment · timestamps
+
+Money: face value + currency (not fen / CNY_minor).
+Items: quantity and unit_price are numbers.
+Identity: id (programmatic) + tracking_number (waybill).
+Locked decisions
+
+    items.quantity / unit_price → numbers
+    attributes.goods_type (GENERAL | SENSITIVE) + tags[]
+    Lifecycle status vs condition
+    Paid photos → services[].result.files; optional warehouse_files
+    fees summary only
+    warehouse is measurements only — no location_code. Use GET /v1/fulfillment/locations for warehouse sites.
+
+Exception codes (v1)
+
+DAMAGED · MISSING_ITEM · QUANTITY_MISMATCH · WRONG_ITEM · WRONG_SKU · PACKAGING_DAMAGED · UNKNOWN_ITEM · OTHER
+Package status
+
+PENDING, RECEIVED, CONSOLIDATED, SHIPPED, DELIVERED, TRANSFERRING, DISCARDED, UNCLAIMED, ARCHIVED.
+Detail example
+
+See internal packages.md for the full detail JSON (includes tracking_number, services, fees, timestamps).
+Related
+
+    Inbound notice
+    Fulfillment overview
+    Errors
+Package returns
+
+Request returning a warehouse package (or selected items) to the Chinese seller when goods are damaged, wrong, or otherwise not shippable outbound.
+
+    Availability: Sandbox / Gateway MOCK is live (hio_test_*). Live warehouse execution and wallet debit are not wired yet.
+
+Requires warehouse fulfillment.
+Method	Path	Scope	Purpose
+POST	/v1/fulfillment/returns	shipment:create	Create Return Request
+GET	/v1/fulfillment/returns	warehouse:read	List Return Requests
+GET	/v1/fulfillment/returns/{return_id}	warehouse:read	Get Return Request
+POST	/v1/fulfillment/returns/{return_id}/confirm	shipment:create	Confirm Return Request
+POST	/v1/fulfillment/returns/{return_id}/cancel	shipment:create	Cancel Return Request
+
+IDs use ret_*. Statuses: PENDING · RETURNED · CANCELLED.
+Lifecycle {#lifecycle}
+
+After-sales / customer return request
+
+Pickup / register return
+
+Cancel return
+
+Start
+
+Pending return
+PENDING
+
+Returned
+RETURNED
+
+Voided
+CANCELLED
+
+End
+Create Return Request
+
+    Creates a request to return a warehouse package or selected items to the seller. HioBuy will calculate the applicable handling and domestic return shipping fees before the return is processed.
+
+Required: package_id, reason (code), items[] (name, quantity > 0), seller_return address. Optional: remark (required when reason=OTHER).
+
+Clients must not submit fees. Mock returns fee.total (e.g. 18.00 CNY) with confirmed: false.
+Confirm Return Request
+
+    Confirms the current return fee and authorizes HioBuy to process the return to the seller.
+
+{
+  "fee_amount": 18,
+  "currency": "CNY"
+}
+
+fee_amount must match current fee.total or the API returns RETURN_FEE_CHANGED. Repeat confirm is idempotent (no double charge).
+Cancel
+
+Only while PENDING. Completed returns → RETURN_ALREADY_RETURNED.
+List filters
+
+status, package_id, tracking_number, reason, created_from / created_to, page / page_size.
+Sandbox
+ID	Notes
+ret_pending_001	Confirm with fee_amount: 18
+ret_pending_002	Fee is 20; confirm 18 → RETURN_FEE_CHANGED
+ret_returned_001	Has domestic return_tracking
+ret_cancelled_001	Already cancelled
+sb_ret_not_found	404
+sb_ret_fee_not_ready / sb_ret_insufficient	Fee / balance edge cases
+Errors
+
+RETURN_NOT_FOUND, RETURN_NOT_CONFIRMABLE, RETURN_NOT_CANCELLABLE, RETURN_ALREADY_RETURNED, RETURN_ALREADY_CANCELLED, RETURN_FEE_NOT_READY, RETURN_FEE_CHANGED, INSUFFICIENT_BALANCE, PACKAGE_NOT_FOUND, PACKAGE_NOT_RETURNABLE, INBOUND_NOT_FOUND, INBOUND_PACKAGE_MISMATCH, INVALID_RETURN_REASON, INVALID_RETURN_ADDRESS, RETURN_VALIDATION_FAILED.
+Webhooks (reserved)
+
+return.created · return.action_required · return.returned · return.cancelled — catalog reserved; delivery not implemented in this phase.
+Related
+
+    Packages
+    Fulfillment overview
+    Errors
+    Internal contract: returns.md
+
+Fulfillment locations
+
+Read-only catalog of HioBuy Fulfillment Locations for self-purchase flows (where to ship domestic parcels in China).
+
+    Availability: Sandbox is MOCK. Warehouse-mode live keys forward to POST /api/gateway-worker/v1/warehouse.
+
+Requires warehouse fulfillment. Scope: warehouse:read.
+Method	Path	Purpose
+GET	/v1/fulfillment/locations	List Fulfillment Locations
+List Fulfillment Locations
+
+    Returns available HioBuy Fulfillment locations, receiving addresses, supported destination countries, supported services, business hours and current receiving status.
+
+    Receiving addresses are returned in the local Chinese format and should be used as provided when placing orders with Chinese suppliers or marketplaces.
+
+Query parameters
+Param	Notes
+destination_country	ISO alpha-2, e.g. KR
+receiving_status	OPEN · PAUSED · CLOSED
+status	ACTIVE · INACTIVE
+
+No pagination. Empty match → 200 with data: [].
+
+Typical call:
+
+GET /v1/fulfillment/locations?destination_country=KR&receiving_status=OPEN
+
+Sort: recommended first, then OPEN receiving, then id.
+Status fields
+Field	Values	Meaning
+status	ACTIVE / INACTIVE	Location still offered by HioBuy
+receiving_status	OPEN / PAUSED / CLOSED	Can you ship domestic parcels now?
+
+Holiday pause: keep status=ACTIVE, set receiving_status=PAUSED, fill notice.
+IDs and country
+
+The warehouse has no location CODE. Live Public id is the warehouse numeric id as a string (e.g. "1"). country is the warehouse Chinese name (e.g. 中国), not CN.
+
+Sandbox mock only: loc_wh_001 (Weihai · KR/JP) · loc_sz_001 (Shenzhen · US/CA/AU, paused) · loc_yw_001 (Yiwu · EU).
+Live example
+
+{
+  "data": [
+    {
+      "id": "1",
+      "name": "默认仓库",
+      "country": "中国",
+      "province": "",
+      "city": "",
+      "address": {
+        "recipient": "小海鸥",
+        "phone": "18866886688",
+        "postal_code": "430000",
+        "address_line": "深圳龙岗区"
+      },
+      "supported_destinations": [
+        "US",
+        "ID"
+      ],
+      "recommended": true,
+      "status": "ACTIVE",
+      "receiving_status": "OPEN",
+      "notice": "默认演示仓库地址",
+      "updated_at": "2026-04-22T13:49:32.000Z"
+    }
+  ],
+  "request_id": "req_..."
+}
+
+Related
+
+    Inbound notice
+    Fulfillment overview
+    Internal: locations.md
+Value-added services
+
+Catalog of warehouse value-added services.
+
+    Availability: Sandbox is MOCK. Warehouse-mode live keys forward to POST /api/gateway-worker/v1/services. Service requests remain mock.
+
+Requires warehouse fulfillment. Scope: warehouse:read.
+Method	Path	Purpose
+GET	/v1/fulfillment/value-added-services	List Value-added Services
+List Value-added Services
+
+    Returns currently available HioBuy Fulfillment value-added services, supported fulfillment stage, pricing method and current rate.
+
+Query: stage (INBOUND | OUTBOUND), category, status. Default returns ACTIVE only. No pagination.
+
+Live warehouse code is a numeric id as a string (e.g. "1" / "2"). Codes are unique per stage, not globally. price is yuan (warehouse fen / 100). pricing_type PER + unit=package maps to PER_PACKAGE. Empty category / description stay empty strings.
+
+Sandbox mock still uses stable codes such as PHOTO and WOODEN_FRAME. Do not use those mock codes against live warehouse.
+
+Stages map to resource types used by Service requests:
+Stage	Resource
+INBOUND	PACKAGE
+OUTBOUND	SHIPMENT
+Live example (default ACTIVE)
+
+{
+  "data": [
+    {
+      "code": "1",
+      "name": "拆包清点",
+      "stage": "INBOUND",
+      "pricing_type": "PER_PACKAGE",
+      "unit": "package",
+      "price": 5,
+      "currency": "CNY",
+      "status": "ACTIVE"
+    }
+  ],
+  "request_id": "req_..."
+}
+
+Related
+
+    Service requests
+    Internal: value-added-services.md
+Service requests
+
+Apply and track value-added services on a package (inbound) or shipment (outbound).
+
+    Availability: Sandbox / Gateway MOCK is live.
+
+Method	Path	Scope	Purpose
+POST	/v1/fulfillment/service-requests	shipment:create	Create Service Requests
+GET	/v1/fulfillment/service-requests	warehouse:read	List Service Requests
+GET	/v1/fulfillment/service-requests/{id}	warehouse:read	Get Service Request
+POST	/v1/fulfillment/service-requests/{id}/confirm	shipment:create	Confirm Service Request
+
+IDs: svc_*. Statuses: PENDING · AWAITING_CONFIRMATION · PROCESSING · COMPLETED · FAILED · CANCELLED.
+List filters
+
+GET /v1/fulfillment/service-requests query parameters:
+Param	Notes
+resource_type	PACKAGE | SHIPMENT
+resource_id	Exact match (e.g. pkg_*, shipment id)
+service_code	Exact VAS CODE (normalized to uppercase)
+stage	INBOUND | OUTBOUND
+status	Multi: PENDING,COMPLETED or repeated status=
+created_from / created_to	Filter by created_at (ISO-8601)
+page / page_size	Default 1 / 20, max page_size 100
+
+Detail GET …/service-requests/{id} has no filters — lookup by id only.
+Create Service Requests
+
+    Requests one or more value-added services for a warehouse package or shipment. Each requested service is created as an independent service request.
+
+Batch create is atomic (validate all, then create all). Stage is derived from resource_type (PACKAGE→INBOUND, SHIPMENT→OUTBOUND). Mismatched codes → VALUE_ADDED_SERVICE_INVALID_STAGE.
+
+Pricing is snapshotted at create time from the current VAS catalog.
+Get Service Request
+
+    Returns the current status, pricing and execution result of a value-added service request, including photos, videos or inspection results when available.
+
+Confirm
+
+For quoted fees (AWAITING_CONFIRMATION): send { "fee_amount", "currency" } matching current pricing.amount. Idempotent when already confirmed.
+Sandbox
+
+svc_photo_completed · svc_inspection_failed · svc_video_processing · svc_reinforce_pending · svc_wooden_awaiting (¥35)
+Related
+
+    Value-added services
+    Errors
+International freight estimate API
+
+POST /v1/fulfillment/shipping/quotes — lightweight calculator; amounts are indicative.
+
+    Compatibility alias: POST /v1/fulfillment/shipments/freight/estimate (same behavior; prefer this path for new integrations).
+
+Quotes are indicative. Exact freight is returned when you create a shipment after parcels are inbound.
+Estimate vs preview
+	shipping/quotes	preview
+When	Before / without inbound parcels	After parcels in warehouse
+Input	Country/postal + weight/size	tracking_numbers[] + full receiver + channel
+Output	quotes[] reference prices	Single freight / services / total
+Request body
+
+{
+  "destination": {
+    "country_code": "US",
+    "region": "California",
+    "postal_code": "90001"
+  },
+  "weight_kg": 2.05,
+  "length_cm": 30,
+  "width_cm": 20,
+  "height_cm": 10,
+  "attributes": [
+    "general"
+  ]
+}
+
+    weight_kg and/or length_cm + width_cm + height_cm (at least one)
+    Optional attributes[] (e.g. general, battery)
+    No tracking_numbers, no full street address
+
+Response
+
+quotes[] with shipping_channel_code, shipping_channel_name, freight, total (fen). Field reference: response models.
+Item attributes {#item-attributes}
+
+GET /v1/fulfillment/shipments/item-attributes — valid attributes[] codes for estimate (e.g. general, battery).
+
+Shipments
+
+Create, pay, cancel, intercept, list, and fetch international outbound shipments (/v1/fulfillment/shipments/*).
+Lifecycle {#lifecycle}
+
+Customer submits consolidation
+
+Warehouse packs
+
+Customer pays freight
+
+Customs + warehouse ship
+
+Customer signed
+
+Start
+
+Pending
+PENDING
+
+Awaiting payment
+WAIT_PAYMENT
+
+Awaiting shipment
+WAIT_SHIP
+
+Shipped
+SHIPPED
+
+Signed
+SIGNED
+
+End
+
+Public status codes: PENDING → WAIT_PAYMENT → WAIT_SHIP → SHIPPED → SIGNED. Cancel → CANCELLED.
+
+Create / pay still return a summary total (freight / services / discount / payment). List is lightweight; detail is the full view (split boxes, packing media, first/last-mile relabel, charge lines, warehouse timeline). Scan events stay on International tracking. Field reference: response models.
+
+Retired: POST /v1/fulfillment/shipments/preview, POST /v1/fulfillment/shipments/logistics/trace, POST /v1/fulfillment/shipments/cancel, POST /v1/fulfillment/shipments/detail. Use {id}/tracking, {id}/cancel, and GET {id} instead. Exact freight is returned on create.
+POST /v1/fulfillment/shipments/create {#create}
+
+Required: tracking_numbers[], receiver, shipping_channel_code. Optional:
+
+    external_shipment_id — idempotency key
+    remark
+    receiver.personal_code — optional personal customs clearance code (e.g. Korea PCCC). Pass when the shipping lane requires it; Gateway forwards the value as-is and does not validate format or presence.
+
+total.payment is the amount charged on pay:
+
+"total": {
+  "freight": { "amount": 8900, "currency": "CNY" },
+  "services": { "amount": 1500, "currency": "CNY" },
+  "discount": { "amount": 200, "currency": "CNY" },
+  "payment": { "amount": 10200, "currency": "CNY" }
+}
+
+Returns id, order_sn, and status (typically PENDING). Public id is the warehouse numeric PK as a string (e.g. "115"); order_sn is the warehouse order number (e.g. JIYUNRI1349). Subsequent pay / cancel / detail / tracking paths use this id.
+
+Create errors (live warehouse → 4xx error object):
+HTTP	error.code	Warehouse upstream_code	Typical message
+404	PARCEL_NOT_FOUND	SHIPMENT_PACKAGE_NOT_FOUND	部分包裹不存在
+400	SHIPMENT_CREATE_EXCEPTION	SHIPMENT_CREATE_EXCEPTION	请先更新包裹…物品属性信息 / 有包裹不是已入库，下单失败
+400	SHIPMENT_CREATE_FAILED	SHIPMENT_CREATE_FAILED	创建订单失败
+409	EXTERNAL_ORDER_ID_ALREADY_EXISTS	EXTERNAL_ORDER_ID_ALREADY_EXISTS	外部订单号已存在
+POST /v1/fulfillment/shipments/{shipment_id}/pay {#pay}
+
+POST /v1/fulfillment/shipments/115/pay
+Authorization: Bearer <API_KEY>
+
+Path {shipment_id} is create/detail id (live warehouse numeric PK as a string, e.g. "115"). Warehouse also accepts order_sn. Sandbox uses sbs_* / sb_shp_*. Body may be empty. Warehouse upstream: POST /api/gateway-worker/v1/shipments/pay with { "shipment_id" } only — not external_shipment_id.
+
+Charges fulfillment wallet. Successful pay → WAIT_SHIP.
+
+Pay errors:
+HTTP	error.code	Warehouse upstream_code	Typical message
+404	NOT_FOUND	SHIPMENT_NOT_EXISTS	订单不存在
+409	SHIPMENT_NOT_READY_FOR_PAYMENT	SHIPMENT_NOT_READY_FOR_PAYMENT	该批货物尚未达到可结算状态…
+409	SHIPMENT_ALREADY_PAID	SHIPMENT_ALREADY_PAID	订单已支付
+402	INSUFFICIENT_BALANCE	INSUFFICIENT_BALANCE	余额不足
+
+Sandbox sb_shp_pay_insufficient may still return 200 + success: false + error_code. Live warehouse uses the 4xx error object. See Errors.
+POST /v1/fulfillment/shipments/{shipment_id}/cancel {#cancel}
+
+cancel_reason is required. Warehouse upstream: POST /api/gateway-worker/v1/shipments/cancel with { shipment_id, cancel_reason }.
+
+{
+  "cancel_reason": "buyer_request"
+}
+
+Cancellable while PENDING or WAIT_PAYMENT. Success → CANCELLED.
+POST /v1/fulfillment/shipments/{shipment_id}/intercept {#intercept}
+
+v1 requests a hold after outbound has started. This does not change shipment lifecycle status. Warehouse upstream: POST /api/gateway-worker/v1/shipments/set-exceptional with { shipment_id, reason, remark }.
+
+{
+  "reason": "CUSTOMER_REQUEST",
+  "remark": "Customer requested to stop the shipment before dispatch."
+}
+
+reason is a fixed CODE: CUSTOMER_REQUEST / ADDRESS_ISSUE / ORDER_CHANGE / PAYMENT_ISSUE / COMPLIANCE_ISSUE / PACKAGE_ISSUE / OTHER. remark is required when reason is OTHER.
+
+Success:
+
+{
+  "shipment_id": "107",
+  "interception": {
+    "status": "REQUESTED",
+    "reason": "ADDRESS_ISSUE",
+    "remark": "Customer address needs to be corrected.",
+    "requested_at": "2026-08-20T12:30:00Z"
+  }
+}
+
+interception.status: REQUESTED → PROCESSING → INTERCEPTED / FAILED. Detail can show status: "SHIPPED" with interception.status: "REQUESTED".
+
+Mock allows WAIT_SHIP and SHIPPED. PENDING / WAIT_PAYMENT / SIGNED / CANCELLED → SHIPMENT_NOT_INTERCEPTABLE. Use cancel before outbound.
+HTTP	error.code
+404	SHIPMENT_NOT_FOUND
+409	SHIPMENT_NOT_INTERCEPTABLE
+409	SHIPMENT_INTERCEPTION_ALREADY_REQUESTED
+422	INVALID_INTERCEPTION_REASON
+422	INTERCEPTION_REMARK_REQUIRED
+
+Sandbox: sb_shp_shipped can request intercept; sb_shp_unpaid / sb_shp_signed cannot; sb_shp_intercepted is already INTERCEPTED. Live warehouse SHIPMENT_NOT_EXISTS maps to SHIPMENT_NOT_FOUND.
+GET /v1/fulfillment/shipments {#list}
+
+GET /v1/fulfillment/shipments?status=WAIT_SHIP&created_from=2026-08-01&page=1&page_size=20
+Authorization: Bearer <API_KEY>
+
+Lightweight rows. Split boxes, packing files, legs, charge lines, timeline, and interception stay on detail. Warehouse upstream: POST /api/gateway-worker/v1/shipments/index.
+Query	Notes
+status	Comma-separated or repeated. PENDING / WAIT_PAYMENT / WAIT_SHIP / SHIPPED / SIGNED / CANCELLED
+created_from	Lower bound (YYYY-MM-DD or datetime)
+created_to	Upper bound
+page	Default 1
+page_size	Default 20, max 100
+
+Each row has id (warehouse numeric PK as a string), order_sn, external_shipment_id, status, international_tracking, receiver, shipping_channel, services, total, payment_status, and times. Empty warehouse strings become null. Amounts are fen.
+
+International tracking lives only on international_tracking — there is no top-level tracking_number. List times omit updated_at / packing_started_at (those stay on detail).
+
+Sandbox includes fixtures (sb_shp_unpaid, sb_shp_shipped, sb_shp_signed, sb_shp_intercepted, …) plus dynamic sbs_* from create.
+
+{
+  "data": [
+    {
+      "id": "107",
+      "order_sn": "JIYUNRI1338",
+      "status": "WAIT_SHIP",
+      "external_shipment_id": "MY-INTL-ORDER-001",
+      "international_tracking": {
+        "tracking_number": null,
+        "carrier": null
+      },
+      "receiver": {
+        "name": "John Doe",
+        "mobile": "+12025550123",
+        "email": "john@example.com",
+        "country_code": "US",
+        "province": "California",
+        "city": "Los Angeles",
+        "district": null,
+        "postal_code": "90001",
+        "address_line1": "123 Main St",
+        "address_line2": "Apt 4B",
+        "personal_code": null
+      },
+      "shipping_channel": {
+        "code": "PUHUO",
+        "name": "General Cargo Air Line"
+      },
+      "services": [
+        {
+          "id": "2",
+          "service_code": "2",
+          "name": "Package Reinforcement",
+          "quantity": 1,
+          "status": "PENDING"
+        }
+      ],
+      "total": {
+        "charges": {
+          "amount": 2000,
+          "currency": "CNY"
+        },
+        "discount": {
+          "amount": 0,
+          "currency": "CNY"
+        },
+        "payable": {
+          "amount": 2000,
+          "currency": "CNY"
+        },
+        "paid": {
+          "amount": 0,
+          "currency": "CNY"
+        },
+        "outstanding": {
+          "amount": 2000,
+          "currency": "CNY"
+        }
+      },
+      "payment_status": "UNPAID",
+      "times": {
+        "created_at": "2026-08-20T09:41:36Z",
+        "packed_at": "2026-08-20T10:20:00Z",
+        "paid_at": null,
+        "shipped_at": null,
+        "delivered_at": null,
+        "cancelled_at": null
+      }
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total": 1,
+    "total_pages": 1
+  },
+  "monetary_unit": "CNY_minor",
+  "request_id": "req_xxx"
+}
+
+GET /v1/fulfillment/shipments/{shipment_id} {#detail}
+
+GET /v1/fulfillment/shipments/107?language=en
+Authorization: Bearer <API_KEY>
+
+Path {shipment_id} is detail id (live: warehouse numeric PK as a string, e.g. "107"; sandbox: sbs_* / sb_shp_*). Optional language is for display names (shipping_channel.name, services[].name, charges[].name). Do not expect status_name.
+
+Warehouse upstream: POST /api/gateway-worker/v1/shipments/detail with { "shipment_id" } only. Public id is the warehouse numeric PK as a string (e.g. "107"); order_sn is the warehouse order number.
+
+This shape covers warehouse facts create/pay cannot express:
+Problem	Where to look
+Split outbound cartons	boxes[]; multi_box: true when more than one carton
+International tracking number	international_tracking; per carton boxes[].tracking
+Warehouse business events	timeline[] (created / packed / paid). Not scan events
+Packing photos / video	files[]: PACKING_IMAGE / PACKING_VIDEO
+Relabel (first mile ≠ last mile)	shipping_legs[] when the warehouse sends first/last-mile numbers
+
+Domestic package A
+
+Outbound box 1
+
+Domestic package B
+
+Domestic package C
+
+Outbound box 2
+
+FIRST_MILE
+
+LAST_MILE
+Block	Meaning
+source_packages	Inbound domestic packages before consolidation (pkg_* + China tracking number)
+boxes	Packed outbound cartons; empty [] until packed
+international_tracking	Shipment-level last-mile { tracking_number, carrier }; both null before outbound
+timeline	Warehouse business events. code may be null if warehouse sends ""
+shipping_legs	Line-haul vs destination last mile after relabel; [] until numbers exist
+files	Packing media (not inbound VAS photos on the package)
+charges	Line items. Discount rows are negative
+total	charges / discount (positive) / payable / paid / outstanding
+payment_status	UNPAID / PAID / PARTIAL
+times	Timestamps; unused nodes are null
+interception	Intercept handling, or null. Independent of shipment status
+
+Amounts are fen (monetary_unit: CNY_minor). Empty arrays are [], not omitted.
+
+Sandbox: GET /v1/fulfillment/shipments/sb_shp_shipped includes split boxes, both legs, and packing files. After create → pay, a dynamic sbs_* detail is WAIT_SHIP with source_packages filled and boxes still empty.
+
+{
+  "id": "107",
+  "order_sn": "JIYUNRI1338",
+  "status": "SHIPPED",
+  "external_shipment_id": "MY-INTL-ORDER-001",
+  "source_packages": [
+    {
+      "id": "pkg_01K2ABC001",
+      "tracking_number": "SF2026082001"
+    },
+    {
+      "id": "pkg_01K2ABC002",
+      "tracking_number": "YT2026082002"
+    }
+  ],
+  "receiver": {
+    "name": "John Doe",
+    "mobile": "+12025550123",
+    "email": "john@example.com",
+    "country_code": "US",
+    "province": "California",
+    "city": "Los Angeles",
+    "district": null,
+    "postal_code": "90001",
+    "address_line1": "123 Main St",
+    "address_line2": "Apt 4B",
+    "personal_code": null
+  },
+  "shipping_channel": {
+    "code": "PUHUO",
+    "name": "General Cargo Air Line"
+  },
+  "multi_box": true,
+  "international_tracking": {
+    "tracking_number": "1Z999999999",
+    "carrier": "UPS"
+  },
+  "timeline": [
+    {
+      "code": "CREATED",
+      "title": "Shipment created",
+      "occurred_at": "2026-08-20T09:41:36Z"
+    },
+    {
+      "code": "PACKED",
+      "title": "Packed",
+      "occurred_at": "2026-08-20T10:20:00Z"
+    },
+    {
+      "code": "PAID",
+      "title": "Paid",
+      "occurred_at": "2026-08-20T10:30:00Z"
+    }
+  ],
+  "boxes": [
+    {
+      "id": "box_01K2BOX001",
+      "box_no": "JIYUNRI1338-1",
+      "status": "SHIPPED",
+      "source_package_ids": [
+        "pkg_01K2ABC001",
+        "pkg_01K2ABC002"
+      ],
+      "weight": {
+        "value": 4.25,
+        "unit": "kg"
+      },
+      "dimensions": {
+        "length": 45,
+        "width": 35,
+        "height": 30,
+        "unit": "cm"
+      },
+      "chargeable_weight": {
+        "value": 4.73,
+        "unit": "kg"
+      },
+      "tracking": {
+        "tracking_number": "1Z999999001",
+        "carrier": "UPS"
+      }
+    }
+  ],
+  "shipping_legs": [
+    {
+      "type": "FIRST_MILE",
+      "carrier": "HioBuy Linehaul",
+      "tracking_number": "HB202608200001",
+      "origin_country": "CN",
+      "destination_country": "US",
+      "status": "DELIVERED",
+      "shipped_at": "2026-08-20T12:00:00Z",
+      "delivered_at": "2026-08-22T04:30:00Z"
+    },
+    {
+      "type": "LAST_MILE",
+      "carrier": "UPS",
+      "tracking_number": "1Z999999999",
+      "origin_country": "US",
+      "destination_country": "US",
+      "status": "IN_TRANSIT",
+      "shipped_at": "2026-08-22T08:00:00Z",
+      "delivered_at": null
+    }
+  ],
+  "files": [
+    {
+      "id": "file_01K2ABC001",
+      "type": "PACKING_IMAGE",
+      "url": "https://cdn.hiobuy.com/shipments/JIYUNRI1338/packing-01.jpg",
+      "created_at": "2026-08-20T10:20:00Z"
+    }
+  ],
+  "charges": [
+    {
+      "type": "FREIGHT",
+      "code": "FREIGHT",
+      "name": "Shipping Fee",
+      "amount": {
+        "amount": 3200,
+        "currency": "CNY"
+      }
+    },
+    {
+      "type": "COUPON_DISCOUNT",
+      "code": "COUPON",
+      "name": "Coupon Discount",
+      "amount": {
+        "amount": -300,
+        "currency": "CNY"
+      }
+    }
+  ],
+  "total": {
+    "charges": {
+      "amount": 3200,
+      "currency": "CNY"
+    },
+    "discount": {
+      "amount": 300,
+      "currency": "CNY"
+    },
+    "payable": {
+      "amount": 2900,
+      "currency": "CNY"
+    },
+    "paid": {
+      "amount": 2900,
+      "currency": "CNY"
+    },
+    "outstanding": {
+      "amount": 0,
+      "currency": "CNY"
+    }
+  },
+  "payment_status": "PAID",
+  "times": {
+    "created_at": "2026-08-20T09:41:36Z",
+    "updated_at": "2026-08-22T08:10:00Z",
+    "packing_started_at": "2026-08-20T10:00:00Z",
+    "packed_at": "2026-08-20T10:20:00Z",
+    "paid_at": "2026-08-20T10:30:00Z",
+    "shipped_at": "2026-08-20T12:00:00Z",
+    "delivered_at": null,
+    "cancelled_at": null
+  },
+  "interception": null,
+  "monetary_unit": "CNY_minor",
+  "request_id": "req_xxx"
+}
+
+See response models for charge type values.
+
+International shipment tracking API
+
+GET /v1/fulfillment/shipments/{shipment_id}/tracking — warehouse → overseas recipient.
+
+Not domestic procurement trace (seller → warehouse).
+Not package tracking (HioBuy warehouse inbound timeline).
+Not shipment detail: that response holds tracking numbers (international_tracking, shipping_legs[], boxes[].tracking) and warehouse business timeline[] (created / packed / paid). This route returns carrier scan nodes in the same field shape as the detail subset below.
+
+Path {shipment_id} is create/detail id (live warehouse numeric PK as a string, e.g. "115"). Warehouse also accepts order_sn. Sandbox uses sbs_* / sb_shp_*. Optional language is for display copy in sandbox; the warehouse body is { "shipment_id" } only.
+
+Warehouse upstream: POST /api/gateway-worker/v1/shipments/track. Retired: POST /v1/fulfillment/shipments/logistics/trace.
+Request
+
+GET /v1/fulfillment/shipments/107/tracking?language=en
+Authorization: Bearer <API_KEY>
+
+Param	In	Required	Description
+shipment_id	path	yes	Shipment order ID
+language	query	no	Display copy (sandbox). Not forwarded in the warehouse body
+Response
+
+Detail-aligned subset: id, order_sn, shipping_channel, international_tracking, status, status_label, timeline[].
+
+{
+  "id": "118",
+  "order_sn": "JIYUNRI1358",
+  "shipping_channel": {
+    "code": "CJ-SEA",
+    "name": "E-commerce Sea - CJ"
+  },
+  "international_tracking": {
+    "tracking_number": null,
+    "carrier": null
+  },
+  "status": "PENDING",
+  "status_label": "Pending",
+  "timeline": [
+    {
+      "code": null,
+      "title": "Order created",
+      "occurred_at": "2026-08-23 11:14:58"
+    }
+  ],
+  "request_id": "req_xxx"
+}
+
+Field reference: response models.
+
+Fulfillment wallet balance API
+
+GET /v1/fulfillment/balance
+
+{
+  "balance": {
+    "available": {
+      "amount": 500000,
+      "currency": "CNY"
+    },
+    "frozen": {
+      "amount": 12000,
+      "currency": "CNY"
+    },
+    "total": {
+      "amount": 512000,
+      "currency": "CNY"
+    }
+  },
+  "request_id": "req_..."
+}
+
+All amounts in fen. Field reference: response models.
+Value-added services {#value-added-services}
+
+Optional on create services[]:
+code	Meaning
+photo	Photo inspection
+qc	Quality check
+reinforce	Package reinforcement
+remove_invoice	Remove invoice
+
+Fulfillment finance
+
+Balance, transaction ledger, and overseas commercial invoice requests for the HioBuy fulfillment account.
+
+    Availability: Sandbox / Gateway MOCK is live. No live tax-authority PDF binary in this phase.
+
+Method	Path	Scope	Purpose
+GET	/v1/fulfillment/balance	warehouse:read	Get Fulfillment Balance (unchanged)
+GET	/v1/fulfillment/transactions	warehouse:read	List Transactions
+GET	/v1/fulfillment/transactions/{id}	warehouse:read	Get Transaction
+POST	/v1/fulfillment/invoices	shipment:create	Create overseas invoice
+GET	/v1/fulfillment/invoices	warehouse:read	List overseas invoices
+GET	/v1/fulfillment/invoices/{id}	warehouse:read	Get Invoice
+GET	/v1/fulfillment/invoices/{id}/download	warehouse:read	Download Invoice
+
+All money fields use monetary_unit: CNY_minor (fen), same as Balance.
+List Transactions
+
+    Returns fulfillment account transaction records, including credits, charges, refunds and account adjustments.
+
+IDs: txn_* (read-only list/detail; no create/update/delete).
+Enums
+Field	Values
+type	CREDIT · DEBIT · REFUND · ADJUSTMENT
+category	TOP_UP · PROCUREMENT · SHIPPING · VALUE_ADDED_SERVICE · RETURN · STORAGE · TRANSFER · REFUND · MANUAL_ADJUSTMENT · OTHER
+invoice_status	NOT_INVOICED · AVAILABLE · INVOICE_PENDING · INVOICED
+related_resource.type	PACKAGE · SHIPMENT · RETURN · SERVICE_REQUEST · INBOUND (may be null for top-ups)
+List filters
+
+GET /v1/fulfillment/transactions — all filters optional. Enum values are uppercased; invalid enum → 422 (INVOICE_VALIDATION_FAILED).
+Param	Match	Notes
+type	Exact, single	Ledger direction / type
+category	Exact, single	Business category
+invoice_status	Exact, single	Invoice eligibility / progress for this txn
+related_resource_type	Exact, single	Related object type (see enum above)
+related_resource_id	Exact string	Related object id (pkg_*, svc_*, ret_*, shipment id, …)
+created_from	created_at >=	ISO-8601 (e.g. 2026-08-01T00:00:00Z)
+created_to	created_at <=	ISO-8601
+page	Pagination	Default 1, min 1
+page_size	Pagination	Default 20, max 100
+
+Notes:
+
+    type / category / invoice_status / related_resource_type are single-value only (no comma multi-select).
+    related_resource_type and related_resource_id may be used alone or together (AND).
+
+GET /v1/fulfillment/transactions?category=SHIPPING&invoice_status=AVAILABLE&page=1&page_size=20
+
+Get Transaction
+
+    Returns details for a single fulfillment account transaction.
+
+No list filters — lookup by {id} only. Includes balance_before, balance_after, optional related_resource and metadata.
+Create Invoice
+
+    Creates an overseas commercial / billing invoice request for one or more eligible fulfillment wallet transactions.
+
+This is not a Chinese mainland VAT invoice (no personal-vs-company buyer type, no domestic special-VAT fields such as registered address / bank account). It is a bill-to invoice for overseas developers and legal entities.
+Field	Required	Notes
+transaction_ids	Yes	Non-empty string array (≥1); duplicates removed. Each txn must belong to the app, share one currency, and have invoice_status=AVAILABLE
+invoice_title	Yes	Bill-to name on the invoice (company or individual legal name), max 200 chars
+billing_address	Yes	Bill-to address (see below)
+tax_number	No	Overseas tax ID / VAT ID when applicable (e.g. EU VAT); empty → null; max 64. Omit for individuals or entities that do not need a tax ID
+email	No	Delivery address for the PDF / notification
+remark	No	Free-text note on the request (not a tax field)
+billing_address
+Field	Required	Notes
+address1	Yes	Street address line 1
+address2	No	Street address line 2 (suite / floor)
+city	Yes	City
+state	No	State / province / region
+postal_code	No	Postal / ZIP code
+country_code	Yes	ISO 3166-1 alpha-2 (e.g. KR, US, DE)
+
+Missing billing_address object → 422 INVALID_BILLING_ADDRESS. Invalid nested fields → 422 INVOICE_VALIDATION_FAILED with details.fields[].
+
+Server computes the total from selected transactions — do not send an amount / total. Validation is atomic: any ineligible txn fails the whole request.
+
+On success: invoice PENDING, selected txns → INVOICE_PENDING.
+
+{
+  "transaction_ids": [
+    "txn_01K2ABC002",
+    "txn_01K2ABC004"
+  ],
+  "invoice_title": "Acme Trading Co., Ltd.",
+  "billing_address": {
+    "address1": "88 Gangnam-daero",
+    "address2": "Suite 1204",
+    "city": "Seoul",
+    "state": "Seoul",
+    "postal_code": "06236",
+    "country_code": "KR"
+  },
+  "tax_number": "EU123456789",
+  "email": "billing@example.com",
+  "remark": "August fulfillment charges"
+}
+
+    Availability note: Sandbox / Gateway MOCK only in this phase — status flow and a temporary download URL are available; no live tax authority PDF binary.
+
+List Invoices
+
+    Returns invoice requests created for the current fulfillment account.
+
+IDs: inv_*.
+Status enum
+status	Meaning
+PENDING	Requested, waiting to be issued
+ISSUED	Issued (downloadable)
+REJECTED	Rejected (may include rejection_reason)
+CANCELLED	Cancelled
+List filters
+
+GET /v1/fulfillment/invoices — all filters optional. status is uppercased; invalid enum → 422 (INVOICE_VALIDATION_FAILED).
+Param	Match	Notes
+status	Exact, single	See table above; no comma multi-select
+created_from	created_at >=	ISO-8601 (e.g. 2026-08-01T00:00:00Z)
+created_to	created_at <=	ISO-8601
+issued_from	issued_at >=	ISO-8601; rows without issued_at are excluded
+issued_to	issued_at <=	Same; rows without issued_at are excluded
+page	Pagination	Default 1, min 1
+page_size	Pagination	Default 20, max 100
+
+Notes:
+
+    created_* filters by request time; issued_* by issue time. Both may be combined (AND).
+    To list downloadable invoices, use status=ISSUED (optionally with issued_from / issued_to).
+    Detail GET …/invoices/{id} has no filters — lookup by id only.
+
+GET /v1/fulfillment/invoices?status=ISSUED&issued_from=2026-08-01T00:00:00Z&page=1&page_size=20
+
+Get Invoice
+
+    Returns invoice details and the transactions included in the invoice.
+
+Rejected invoices may include a public rejection_reason (no internal notes).
+Download Invoice
+
+    Returns a temporary download URL for an issued invoice.
+
+Only ISSUED. Others → 409 INVOICE_NOT_DOWNLOADABLE.
+Sandbox
+
+txn_01K2ABC001…006 · inv_01K2ABC001 (ISSUED) · inv_01K2ABC002 (PENDING) · inv_01K2ABC003 (REJECTED).
+Latest txn balance_after matches Balance available 500000.
+Reserved webhooks
+
+transaction.created · invoice.issued · invoice.rejected (plus existing balance.low). Not delivered in this phase.
+Related
+
+    Fulfillment overview
+    Errors
+
+
+Support tickets
+
+Human support channel for HioBuy warehouse fulfillment integrations. Use when automation cannot resolve package, return, shipment, VAS, billing, or related API issues — attach a related_resource so ops can jump to the warehouse object.
+
+    Availability: Sandbox / Gateway MOCK is live. No Zendesk / email / agent console in this phase.
+    Path remains /v1/support/tickets (not under /v1/fulfillment/*), but the primary use case is fulfillment.
+
+Method	Path	Scope	Purpose
+POST	/v1/support/tickets	support:write	Create Support Ticket
+GET	/v1/support/tickets	support:read	List Support Tickets
+GET	/v1/support/tickets/{ticket_id}	support:read	Get Support Ticket
+POST	/v1/support/tickets/{ticket_id}/messages	support:write	Add Ticket Message
+
+IDs: tkt_* · messages msg_*. Tickets are scoped to the current Application.
+Create Support Ticket
+
+    Creates a support ticket for fulfillment issues (package, return, shipment, VAS, billing) and related API problems.
+
+Prefer linking warehouse resources:
+
+{
+  "category": "PACKAGE",
+  "subject": "Package received with missing items",
+  "priority": "NORMAL",
+  "related_resource": {
+    "type": "PACKAGE",
+    "id": "sb_pkg_received"
+  },
+  "message": "The package should contain 10 items, but only 8 items were received."
+}
+
+Default status: WAITING_FOR_HIOBUY. The first message is created automatically from message.
+
+Category: API · FULFILLMENT · PACKAGE · RETURN · SHIPMENT · BILLING · ACCOUNT · OTHER
+Priority: NORMAL · URGENT
+related_resource.type (optional): INBOUND · PACKAGE · RETURN · SHIPMENT · SERVICE_REQUEST
+List Support Tickets
+
+    Returns support tickets created by the current application.
+
+Query: status, category, priority, related_resource_type, related_resource_id, created_from, created_to, page, page_size.
+
+List items include last_message preview and message_count.
+Get Support Ticket
+
+    Returns ticket details and conversation history.
+
+Includes messages[] with sender_type (DEVELOPER · HIOBUY · SYSTEM). Attachments are reserved on messages only (IMAGE / VIDEO / DOCUMENT). Internal operator fields are never returned.
+Add Ticket Message
+
+    Adds a new message to an existing support ticket.
+
+{
+  "message": "Here is the supplier order information. Please check again."
+}
+
+If status was WAITING_FOR_CUSTOMER, it becomes WAITING_FOR_HIOBUY.
+If status is CLOSED → 409 TICKET_NOT_REPLYABLE.
+Empty message → 422 MESSAGE_REQUIRED. Max length 10000.
+Sandbox fixtures
+id	scenario
+tkt_01K2ABCDEF1234567890	PACKAGE · NORMAL · WAITING_FOR_HIOBUY
+tkt_01K2ABCDEF9876543210	RETURN · URGENT · WAITING_FOR_CUSTOMER
+tkt_01K2ABCDEFAPIRESOLVED	API · NORMAL · RESOLVED
+tkt_01K2ABCDEFSHIPCLOSED	SHIPMENT · NORMAL · CLOSED
+Reserved webhooks (not delivered)
+
+ticket.message.created · ticket.updated · ticket.resolved · ticket.closed
+
+Example payload shape for ticket.message.created:
+
+{
+  "type": "ticket.message.created",
+  "data": {
+    "ticket_id": "tkt_xxx",
+    "message_id": "msg_xxx",
+    "sender_type": "HIOBUY",
+    "status": "WAITING_FOR_CUSTOMER"
+  }
+}
+
+Then call Get Support Ticket for the full conversation.
+Related
+
+    Packages
+    Returns
+    Fulfillment overview
+    Errors
+
+
+Fulfillment API response models
+
+Standard responses (response_format omitted or "standard") include a top-level field:
+Field	Value	Meaning
+monetary_unit	"CNY_minor"	Every { amount, currency } in the response uses CNY fen (minor unit); 1 yuan = 100 fen
+
+Present on money-bearing routes: balance, freight estimate, create, cancel (with refund), list, detail, services. Omitted on pay, logistics trace, item-attributes, and on response_format: "upstream".
+Freight estimate — quotes[] {#freight-estimate-quotes}
+Field	Description
+shipping_channel_code	Pass to create
+shipping_channel_name / description	Localized copy (language in body)
+freight / total	Indicative — binding on create
+estimated_days_min / max	Transit range when provided
+Preview / create — pricing {#preview-create-pricing}
+Field	Description
+freight	International line-haul
+services	Value-added services total
+discount	Promotional deduction
+total / total.payment	freight + services − discount
+id / order_sn	Create: Public id is warehouse numeric PK as a string; order_sn is the warehouse order number
+status	PENDING, WAIT_PAYMENT, WAIT_SHIP, SHIPPED, SIGNED, CANCELLED
+Shipment list {#shipment-list}
+
+GET /v1/fulfillment/shipments returns lightweight rows. Example: Shipments · list.
+Field	Description
+id / order_sn	Public id is warehouse numeric PK as a string; order_sn is the warehouse order number
+external_shipment_id	ISV idempotency key from create; empty warehouse string → null
+status	PENDING / WAIT_PAYMENT / WAIT_SHIP / SHIPPED / SIGNED / CANCELLED
+international_tracking	{ tracking_number, carrier }. No top-level tracking_number
+receiver / shipping_channel / services[]	Same shape as detail
+total	Detail-style charges / discount / payable / paid / outstanding
+payment_status	UNPAID / PAID / PARTIAL
+times	created_at / packed_at / paid_at / shipped_at / delivered_at / cancelled_at
+pagination	page / page_size / total / total_pages
+
+List omits boxes, timeline, files, charges, shipping_legs, source_packages, and interception.
+Shipment detail {#shipment-detail}
+
+GET /v1/fulfillment/shipments/{id} is the full shipment view. Create / pay still use summary total.freight / services / discount / payment. Amounts are fen. Example: Shipments · detail.
+Field	Description
+id / order_sn	Public id (path param) is warehouse numeric PK as a string; order_sn is the warehouse order number
+external_shipment_id	ISV idempotency key from create; empty warehouse string → null
+status	PENDING / WAIT_PAYMENT / WAIT_SHIP / SHIPPED / SIGNED / CANCELLED
+source_packages[]	Inbound domestic packages (id may be null in a transition payload)
+receiver	International recipient; country_code is uppercase ISO; district / personal_code may be null. personal_code is the optional personal customs clearance code (e.g. Korea PCCC) from create
+shipping_channel	{ code, name }
+multi_box	true when boxes.length > 1
+boxes[]	Outbound cartons: box_no (warehouse box_sn), source_package_ids (warehouse package_ids), weight / dimensions, optional tracking
+international_tracking	{ tracking_number, carrier }; empty warehouse strings → null
+timeline[]	Warehouse business events { code, title, occurred_at }. Empty code → null
+shipping_legs[]	FIRST_MILE / LAST_MILE when numbers exist; otherwise []
+files[]	PACKING_IMAGE / PACKING_VIDEO
+services[]	VAS on this shipment (service_code, name, quantity, status)
+charges[]	Line items. Discount rows are negative
+total	charges (positive fees) / discount (positive) / payable / paid / outstanding
+payment_status	UNPAID / PAID / PARTIAL
+times	created_at / packed_at / paid_at / shipped_at / delivered_at / …; unused = null
+
+charges[].type: FREIGHT, VALUE_ADDED_SERVICE, CHANNEL_SERVICE_FEE, CHANNEL_RULE_FEE, INSURANCE, DUTIES_AND_TAXES, PACKAGE_SERVICE, COUPON_DISCOUNT, POINTS_DISCOUNT.
+
+Tracking numbers live on international_tracking / boxes[].tracking / shipping_legs. Warehouse business events (packed / paid) live on shipment detail timeline[]. Carrier scan nodes live on international tracking timeline[] (same { code, title, occurred_at } shape).
+Balance {#balance}
+Field	Description
+balance.available	Spendable for pay
+balance.frozen	Held for pending shipments
+balance.total	Available + frozen
+International trace {#international-trace}
+
+Subset of shipment detail — carrier scan nodes only.
+Field	Description
+id / order_sn	Same as detail
+shipping_channel	{ code, name }
+international_tracking	{ tracking_number, carrier }; empty warehouse strings → null
+status	PENDING / WAIT_PAYMENT / WAIT_SHIP / SHIPPED / SIGNED / CANCELLED
+status_label	Display copy from warehouse
+timeline[]	{ code, title, occurred_at }; empty code → null; title from warehouse description
+
+Detail timeline[] = warehouse business events. This route timeline[] = carrier scan events. Do not mix the two.
+
+
+Webhooks
+
+HIOBuy pushes fulfillment lifecycle events to your HTTPS endpoint when an app runs in warehouse fulfillment mode. Configure endpoints in the Developer Portal → Webhooks 
+. Delivery is asynchronous; Public API responses never wait on your webhook server.
+
+    Prerequisite: Channel Auth → fulfillment mode = HIOBuy warehouse. Self-fulfillment apps can view the portal intro but cannot create or enable endpoints.
+
+Overview {#overview}
+Item	Value
+Transport	POST JSON to your endpoint URL
+Timeout	10 seconds
+Success	HTTP 2xx
+Signing secret	whsec_… (shown once at create / rotate)
+Signature header	HioBuy-Signature
+Event id header	HioBuy-Event-Id
+User-Agent	HioBuy-Webhooks/1.0
+Retries	Up to 5 attempts: immediate, then 1m / 5m / 30m / 2h
+Test events	Portal Send test → livemode: false, id prefix evt_test_
+
+Registration, secret rotation, delivery history, and manual retry are portal-only (session auth). There is no Public /v1/webhooks/* management API in v1.
+Event catalog {#events}
+
+Subscribe per endpoint. At least one event is required.
+Category	Event type	When it fires
+Procurement	procurement.failed	Warehouse procurement failed
+Procurement	procurement.out_of_stock	SKU unavailable during procurement
+Warehouse	package.received	Domestic parcel received at warehouse
+Warehouse	package.exception	Inbound package exception (exception_type in data)
+Consolidation	consolidation.completed	Packages consolidated for outbound
+Shipping	shipment.created	International shipment created
+Shipping	shipment.dispatched	Shipment handed to carrier
+Shipping	shipment.delivered	Delivered to recipient
+Shipping	shipment.exception	Outbound exception (exception_type in data)
+Account	balance.low	Warehouse wallet below threshold
+
+Live warehouse→developer push is rolled out progressively; use Send test in the portal to validate your receiver today.
+Public envelope {#envelope}
+
+Every delivery body is a JSON object:
+
+{
+  "id": "evt_01HXYZ…",
+  "type": "package.received",
+  "created_at": "2026-08-16T04:00:00.000Z",
+  "livemode": true,
+  "app_id": "app_…",
+  "data": {
+    "package_id": "pkg_…",
+    "order_id": "ord_…",
+    "status": "received"
+  }
+}
+
+Field	Type	Description
+id	string	Public event id (evt_… live, evt_test_… test)
+type	string	Event type from the catalog
+created_at	string	ISO-8601 timestamp
+livemode	boolean	false for portal test events
+app_id	string	Your app id
+data	object	Event-specific payload (no warehouse-internal fields)
+Example data shapes {#data-shapes}
+
+Shapes below match portal test samples; live payloads follow the same keys with production ids.
+
+procurement.failed
+
+{
+  "order_id": "ord_…",
+  "status": "failed",
+  "reason": "supplier_rejected"
+}
+
+package.exception
+
+{
+  "package_id": "pkg_…",
+  "order_id": "ord_…",
+  "status": "exception",
+  "exception_type": "DAMAGED"
+}
+
+shipment.dispatched
+
+{
+  "shipment_id": "shp_…",
+  "tracking_number": "…",
+  "status": "dispatched"
+}
+
+balance.low
+
+{
+  "available_amount": 12.5,
+  "currency": "USD",
+  "threshold": 50
+}
+
+HTTP delivery {#delivery}
+
+POST /your/webhook-path HTTP/1.1
+Host: your-server.example
+Content-Type: application/json
+User-Agent: HioBuy-Webhooks/1.0
+HioBuy-Event-Id: evt_01HXYZ…
+HioBuy-Signature: t=1723780800,v1=abcdef0123456789…
+
+    Endpoint URL must be HTTPS in production. Non-production environments may use http://localhost / tunnel hosts for local debugging.
+    Respond with 2xx within 10s. Any other status or network error schedules a retry (until attempts are exhausted).
+    Treat deliveries as at-least-once. Deduplicate on id (and optionally HioBuy-Event-Id).
+
+Signature verification {#signature}
+
+    Read HioBuy-Signature (t=<unix_seconds>,v1=<hex_hmac>).
+    Build the signed payload: "{t}.{raw_body}" where raw_body is the exact request body bytes (UTF-8 JSON string as received).
+    Compute HMAC-SHA256(secret, signed_payload) and hex-encode the digest.
+    Compare to v1 with a constant-time equality check.
+    Reject if |now - t| is too large (recommended tolerance: 5 minutes) to limit replay.
+
+Node.js example
+
+import crypto from "node:crypto";
+ 
+function verifyHioBuySignature(rawBody, signatureHeader, secret, toleranceSec = 300) {
+  const match = /^t=(\d+),v1=([0-9a-f]+)$/i.exec(signatureHeader || "");
+  if (!match) return false;
+ 
+  const t = Number(match[1]);
+  const expected = match[2].toLowerCase();
+  if (!Number.isFinite(t)) return false;
+  if (Math.abs(Math.floor(Date.now() / 1000) - t) > toleranceSec) return false;
+ 
+  const signed = `${t}.${rawBody}`;
+  const digest = crypto
+    .createHmac("sha256", secret)
+    .update(signed, "utf8")
+    .digest("hex");
+ 
+  const a = Buffer.from(digest, "utf8");
+  const b = Buffer.from(expected, "utf8");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+    Store the whsec_… secret only on your server. Portal lists show a masked hint (whsec_••••… + last 6 characters). Rotate anytime; update your server before the next delivery.
+
+Retries & delivery status {#retries}
+Attempt	Delay after previous failure
+1	Immediate (queued)
+2	1 minute
+3	5 minutes
+4	30 minutes
+5	2 hours
+
+After the final failed attempt the delivery is marked failed. You can Retry now from the portal delivery detail for a manual re-queue.
+
+Delivery statuses: pending · success · retrying · failed.
+Portal workflow {#portal}
+
+    Set the app to warehouse fulfillment under Channel Auth 
+    .
+    Open Webhooks 
+    → Add endpoint.
+    Enter HTTPS URL, optional description, and subscribe to events.
+    Copy the signing secret when shown (once).
+    Use Send test event and inspect recent deliveries / attempt history.
+    Rotate secret, disable, or delete when needed.
+
+Limits & retention {#limits}
+Limit	Value
+Payload size	≤ 64 KB
+Attempt response body stored	≤ 4 KB
+Event / delivery retention	~30 days
+Attempt retention	~14 days
+Related
+
+    Fulfillment setup — warehouse mode
+    Fulfillment API — international shipping routes
+    Authentication — API keys (separate from webhook secrets)
+
+Supplier inquiry API
+Estimate international shipping before the customer buys
+
+For a sofa, a floor lamp, a treadmill or a large pet crate, the international shipping cost is driven almost entirely by how the item is actually packed: its packed weight, its box dimensions, and how many packages it ships in.
+
+That data is routinely missing or unreliable on 1688 and Taobao product pages. Which leaves your customer with a very practical problem:
+
+    They know what the product costs. They have no idea what it costs to get it to their country.
+
+The Supplier inquiry API closes that gap. HIOBuy’s supplier communication service contacts the real supplier before the purchase, confirms packed weight, package dimensions and carton details, and returns the answers to your application as structured data — ready to feed into a shipping estimate.
+Why the Product API isn’t enough
+
+The product APIs reliably give you what the marketplace itself knows: title, images, price, SKUs, attributes, shop information. Logistics data is a different story:
+
+    no weight is published at all;
+    the weight shown is the net product weight, not the packed weight;
+    product dimensions exist, but not the dimensions after packing;
+    the weight was typed in by the seller and is only indicative;
+    different SKUs pack to different weights;
+    a large item ships split across several packages;
+    carton quantity, carton weight and carton size are nowhere on the page.
+
+    The Product API tells you what the marketplace knows. A supplier inquiry gets you what only the supplier can confirm.
+
+Example: estimating shipping for a sofa
+
+A customer in the United States is looking at a 1688 sofa in your app, priced at ¥800. The product API has already returned the product, price, images, SKUs and attributes — but no reliable packed weight or package dimensions.
+
+So your app cannot answer the only question that matters next:
+
+Product price          ¥800
+International shipping ???
+
+On a bulky item, that unknown can easily exceed the price of the product itself.
+
+Your app raises an inquiry:
+
+POST /v1/supplier-inquiries
+{
+  "product_url": "https://detail.1688.com/offer/554456348334.html",
+  "questions": [
+    { "type": "packed_weight" },
+    { "type": "package_dimensions" },
+    { "type": "carton_info" }
+  ]
+}
+
+HIOBuy hands the task to the supplier communication service, and a China-based operator contacts the actual supplier of that listing. The supplier replies that the sofa ships as two packages:
+
+Package 1   32 kg   110 × 75 × 55 cm
+Package 2   18 kg    90 × 60 × 40 cm
+
+Those answers come back to your application as structured JSON, and the whole path looks like this:
+
+1688 product
+      ↓  Product API
+Price: ¥800
+      ↓  reliable logistics data missing
+Supplier inquiry
+      ↓  HIOBuy contacts the real supplier
+Supplier confirms: 2 packages, 32 kg + 18 kg, box dimensions
+      ↓  structured logistics data
+International shipping estimate (China → United States)
+      ↓
+The customer sees an approximate total cost before buying
+
+Which is the point of the whole exercise:
+
+Product cost
++ estimated international shipping
+= a realistic pre-purchase cost
+
+Where it sits in the HIOBuy APIs
+
+Product API           "What is the product, and what does it cost?"
+        ↓
+Supplier inquiry API  "How will the supplier actually pack it?"
+        ↓
+Shipping quote        "Roughly what will it cost to ship internationally?"
+
+Supplier inquiry is the missing layer between product data and a shipping quote.
+Supplier-confirmed data is an estimate
+
+What you get back is supplier-confirmed data. For a pre-purchase estimate that is far better than having no logistics data, using the net product weight, guessing from photos, or trusting a marketplace field that was never meant to be accurate.
+
+But supplier-confirmed is not warehouse-measured. Once the goods physically arrive, the packing may differ, the warehouse may repack, and the real weight, dimensions and package count may all change.
+
+Use these answers for pre-purchase international shipping estimation. Do not treat them as the final billable shipping weight — that always comes from what the warehouse actually packs and measures.
+More than shipping data
+
+Packaging data for shipping estimation is the first and most concrete use of this API, but the same supplier communication channel answers anything only the supplier knows:
+
+MOQ · stock · lead time · neutral packaging · customization · carton information · product details · anything else, via the other type.
+
+So today it gives you packaging data → shipping estimate, and the same call can equally serve supplier information → purchasing decision. See question types for all ten and their answer schemas.
+How it works
+
+    Your app calls POST /v1/supplier-inquiries with a product URL, an optional SKU, and one or more typed questions.
+    HIOBuy creates the inquiry and hands it to the supplier communication service.
+    A China-based operator contacts the supplier of that listing.
+    The supplier replies.
+    The reply is normalized into structured data against the schema of each question type.
+    Your endpoint receives the supplier_inquiry.message_answered webhook, or you poll GET /v1/supplier-inquiries/{id}.
+
+An inquiry is a conversation, not a one-shot request. Once it exists you keep adding follow-up messages to the same thread rather than opening a second one.
+This is a human service, not a real-time API
+
+A real person contacts a real supplier, so response time depends on the supplier being online, how fast they reply, how complex the question is, and whether a follow-up is needed. Treat it as an asynchronous task measured in hours, occasionally longer. Some questions will legitimately come back as unavailable or refused.
+
+In practice: never let a customer-facing page wait synchronously on a result, return as soon as the inquiry is created, receive answers by webhook, and show a processing or waiting_supplier state in your UI meanwhile.
+Attachments
+
+Some questions are much easier to ask with a picture. A packaging reference, a SKU screenshot, a dimension drawing, a specification sheet — and in the other direction, the supplier’s own packaging photo, a carton photo or a quotation PDF.
+
+Every message, yours and the supplier’s, can carry up to five attachments:
+
+{
+  "message": "Please ask the supplier whether they can use packaging similar to this.",
+  "attachments": [
+    {
+      "type": "image",
+      "url": "https://example.com/reference-packaging.jpg",
+      "filename": "reference-packaging.jpg",
+      "mime_type": "image/jpeg"
+    }
+  ]
+}
+
+type is image, document or other. The URL must be https://; anything else is rejected with INVALID_ATTACHMENT_URL.
+HIOBuy does not host attachment files
+
+Attachments are references. You host your own files; the supplier’s files are hosted by the inquiry service. HIOBuy stores the metadata and the URL, and never uploads, downloads, copies or proxies the file itself. There is no file upload endpoint, and none is planned.
+
+The practical consequence is that attachment URLs are managed by whoever provides them, and some of them expire. When a response carries expires_at, treat it as the deadline for fetching that file into your own storage; null means the provider states the URL does not expire. Do not build on the assumption that a URL returned today still resolves next month.
+
+Supplier replies may include attachments too. They arrive in the message’s attachments array and in the supplier_inquiry.message_answered webhook, alongside the structured answers. You only ever see attachments the inquiry service marked as yours to see — operator working files and supplier chat screenshots stay internal to the service and never reach the API.
+Access
+
+Supplier inquiry is off by default. HIOBuy enables it per application after commercial onboarding — contact HIOBuy support to request access.
+Requirement	Value
+Capability	Supplier inquiry, enabled per application
+Scopes	supplier_inquiry:read, supplier_inquiry:write
+Auth	Live API key (Authorization: Bearer hio_live_...)
+
+If the capability is missing or suspended, every endpoint returns 403 SUPPLIER_INQUIRY_NOT_ENABLED.
+Supported marketplaces
+Channel	Detected from
+1688	detail.1688.com/offer/{id}.html and equivalent links
+taobao	item.taobao.com / detail.tmall.com item links
+
+Anything else fails with UNSUPPORTED_MARKETPLACE. A product is identified by channel + source_product_id, never by the raw URL string, so different link shapes for the same offer resolve to the same product.
+Inquiry statuses
+Status	Meaning
+pending	Accepted, not yet picked up by the provider
+processing	An operator is working on it
+waiting_supplier	The question was sent; waiting for the supplier to reply
+answered	The latest message has answers — the thread stays open for follow-ups
+completed	The conversation is closed
+failed	The message could not be delivered or the provider rejected it
+cancelled	Cancelled; no further messages accepted
+
+pending, processing, waiting_supplier and answered count as active. An application may hold only one active inquiry per product — that is what keeps a single supplier thread per offer. Sending a create request for a product with a completed or failed inquiry reopens that conversation instead of creating a new one.
+Webhooks
+
+Register an endpoint in the developer portal and subscribe to the supplier_inquiry category. Signing and retries follow the standard webhook rules.
+Event	Fired when
+supplier_inquiry.created	An inquiry is created
+supplier_inquiry.processing	An operator picked up the message
+supplier_inquiry.waiting_supplier	The question reached the supplier
+supplier_inquiry.message_answered	Answers arrived — payload carries the full answers array and any attachments
+supplier_inquiry.completed	The conversation was closed
+supplier_inquiry.failed	The message failed
+
+Every payload carries inquiry_id and product.{channel,source_product_id}.
+Error codes
+Code	HTTP	Meaning
+SUPPLIER_INQUIRY_NOT_ENABLED	403	Capability not granted, or suspended
+INVALID_PRODUCT_URL	400	Not an absolute http(s) URL, or no product id in it
+UNSUPPORTED_MARKETPLACE	400	Channel is not 1688 or Taobao
+INVALID_QUESTION_TYPE	400	Unknown questions[].type
+INVALID_QUESTION_SCHEMA	400	Empty, oversized, or duplicated questions
+INVALID_ATTACHMENT_URL	400	Attachment URL is missing, not absolute, or not https://
+INVALID_ATTACHMENT_TYPE	400	attachments[].type is not image, document or other
+TOO_MANY_ATTACHMENTS	400	More than five attachments on one message
+ACTIVE_INQUIRY_EXISTS	409	An active inquiry already exists — add a message to it instead
+INQUIRY_NOT_FOUND	404	Unknown inquiry, or it belongs to another application
+INQUIRY_NOT_ACTIVE	409	The inquiry is cancelled
+SUPPLIER_INQUIRY_SERVICE_UNAVAILABLE	503	The inquiry service is down or rejected the task
+
+SUPPLIER_INQUIRY_SERVICE_UNAVAILABLE is deliberately generic: provider-side reasons such as balance or account state are not exposed. Quote the request_id when contacting support.
+Endpoints
+Endpoint	Purpose
+POST /v1/supplier-inquiries	Create an inquiry
+POST /v1/supplier-inquiries/{id}/messages	Ask a follow-up
+GET /v1/supplier-inquiries	List inquiries
+GET /v1/supplier-inquiries/{id}	Inquiry detail with all messages
+GET /v1/supplier-inquiries/{id}/messages	Messages with questions and answers
+Create a supplier inquiry
+
+Two endpoints write to a supplier conversation: one starts it, one continues it. Both take the same questions array and both accept an Idempotency-Key.
+Create an inquiry
+
+POST /v1/supplier-inquiries — scope supplier_inquiry:write.
+Request body
+Field	Required	Description
+product_url	Yes	Absolute 1688 or Taobao product link, max 2048 characters
+questions	Yes	1–10 questions, see question types
+sku	No	{ "id": "...", "label": "..." }, 200 characters each — narrows the question to one variant
+attachments	No	Up to 5 file references, see attachments
+
+POST /v1/supplier-inquiries
+Authorization: Bearer hio_live_...
+Idempotency-Key: inq-2026-05-20-001
+ 
+{
+  "product_url": "https://detail.1688.com/offer/554456348334.html",
+  "sku": { "id": "3245:12345", "label": "Black / XL" },
+  "questions": [
+    { "type": "packed_weight", "note": "Weight with the retail box" },
+    { "type": "carton_info" },
+    { "type": "neutral_packaging" }
+  ]
+}
+
+Response
+
+201 Created, or 200 OK when an Idempotency-Key replays an earlier request.
+
+{
+  "id": "sinq_9f2c...",
+  "status": "waiting_supplier",
+  "product": {
+    "channel": "1688",
+    "source_product_id": "554456348334",
+    "product_url": "https://detail.1688.com/offer/554456348334.html",
+    "canonical_product_url": "https://detail.1688.com/offer/554456348334.html",
+    "title": "...",
+    "image": "...",
+    "shop_id": "...",
+    "shop_name": "..."
+  },
+  "sku": {
+    "id": "3245:12345",
+    "label": "Black / XL"
+  },
+  "message_count": 1,
+  "last_message_at": "2026-05-20T08:31:12.000Z",
+  "created_at": "2026-05-20T08:31:11.000Z",
+  "updated_at": "2026-05-20T08:31:12.000Z",
+  "message": {
+    "id": "smsg_1a4b...",
+    "type": "initial",
+    "status": "waiting_supplier"
+  },
+  "request_id": "req_..."
+}
+
+title, image, shop_id and shop_name are filled on a best-effort basis. Enriching them uses the product detail API, which needs a marketplace authorization your application may not hold — when it is unavailable these fields stay null and the inquiry proceeds normally.
+One active inquiry per product
+
+If the product already has an active inquiry, the call fails:
+
+409 Conflict
+{
+  "error": {
+    "code": "ACTIVE_INQUIRY_EXISTS",
+    "message": "An active supplier inquiry already exists for this product.",
+    "details": { "inquiry_id": "sinq_9f2c...", "next_action": "add_message" }
+  }
+}
+
+Use the returned inquiry_id to post a follow-up. If the previous conversation is completed or failed, the create call reopens it instead of failing, and the new message is recorded as a follow_up.
+Ask a follow-up
+
+POST /v1/supplier-inquiries/{inquiry_id}/messages — scope supplier_inquiry:write.
+
+POST /v1/supplier-inquiries/sinq_9f2c.../messages
+{
+  "questions": [
+    { "type": "lead_time", "note": "For 500 units" },
+    { "type": "moq" }
+  ],
+  "attachments": [
+    {
+      "type": "image",
+      "url": "https://cdn.example.com/packaging-example.jpg",
+      "filename": "packaging-example.jpg",
+      "mime_type": "image/jpeg"
+    }
+  ]
+}
+
+201 Created
+{
+  "inquiry_id": "sinq_9f2c...",
+  "status": "waiting_supplier",
+  "message": {
+    "id": "smsg_77de...",
+    "type": "follow_up",
+    "status": "waiting_supplier",
+    "questions": [
+      { "id": "sqst_...", "type": "lead_time", "note": "For 500 units", "question": null, "status": "pending", "answer": null }
+    ],
+    "attachments": [
+      {
+        "id": "satt_...",
+        "type": "image",
+        "url": "https://cdn.example.com/packaging-example.jpg",
+        "filename": "packaging-example.jpg",
+        "mime_type": "image/jpeg",
+        "source": "developer",
+        "expires_at": null,
+        "created_at": "2026-05-20T10:02:00.000Z"
+      }
+    ],
+    "provider_note": null,
+    "created_at": "2026-05-20T10:02:00.000Z",
+    "answered_at": null
+  },
+  "request_id": "req_..."
+}
+
+A cancelled inquiry rejects new messages with 409 INQUIRY_NOT_ACTIVE. A completed or failed one is reopened.
+Attachments
+
+Both write endpoints accept an optional attachments array — a reference photo, a SKU screenshot, a dimension drawing, a specification PDF. Attachments belong to the message you send them with, so each round of the conversation carries its own.
+Field	Required	Description
+url	Yes	https:// only, max 2048 characters. http:, file:, data:, javascript: and ftp: are rejected with INVALID_ATTACHMENT_URL
+type	No	image, document or other; defaults to other
+filename	No	Max 255 characters
+mime_type	No	Max 128 characters — your declared value, stored as-is
+
+At most five attachments per message, otherwise 400 TOO_MANY_ATTACHMENTS.
+
+HIOBuy stores the metadata and the URL, never the file: it does not upload, download, copy or proxy attachment content, and it never fetches the URL you send. Host the file yourself and make sure the URL is reachable by the inquiry service for as long as the conversation is open.
+Idempotency
+
+Send Idempotency-Key (or X-Idempotency-Key, max 200 characters) on both write endpoints. A repeated key within the same application returns the message created the first time, with status 200 instead of 201, and never contacts the supplier twice.
+
+Always retry a timed-out create with the same key — without one, a retry may open a second conversation or hit ACTIVE_INQUIRY_EXISTS.
+
+
+Question types & answer schemas
+
+Questions are typed rather than free text, which is what makes the answers machine-readable: packed_weight always comes back as a number plus a unit, never as “about 1.2 kilos I think”.
+Asking a question
+
+{
+  "type": "packed_weight",
+  "note": "Weight including the retail box"
+}
+
+Field	Required	Description
+type	Yes	One of the ten types below
+note	No	Extra context for the operator, max 500 characters
+question	Only for other	The free-text question, max 500 characters
+
+Rules: 1–10 questions per message; a standard type may appear only once per message (INVALID_QUESTION_SCHEMA otherwise); other may repeat because each one is a different question. On standard types a question field is ignored — put the context in note.
+Answer envelope
+
+Every answer carries a status:
+Status	Meaning
+answered	The supplier answered; value is populated
+unavailable	The supplier does not have this information
+refused	The supplier declined to answer
+unknown	No usable answer could be obtained
+
+Only answered carries a value — the other three always return value: null.
+
+{
+  "question_id": "sqst_...",
+  "type": "packed_weight",
+  "status": "answered",
+  "value": 1250,
+  "unit": "g",
+  "provider_note": null,
+  "answered_at": "2026-05-20T11:40:00.000Z"
+}
+
+The ten types
+packed_weight
+
+Weight of one unit as packed by the supplier.
+
+{
+  "status": "answered",
+  "value": 1250,
+  "unit": "g"
+}
+
+value is a positive number, unit is g or kg.
+package_dimensions
+
+Outer dimensions of a single packed unit.
+
+{
+  "status": "answered",
+  "value": {
+    "length": 32,
+    "width": 24,
+    "height": 12,
+    "unit": "cm"
+  }
+}
+
+All three are positive numbers; unit is cm, mm or in.
+carton_info
+
+Master carton specification — the one that decides your freight cost.
+
+{
+  "status": "answered",
+  "value": {
+    "quantity_per_carton": 24,
+    "gross_weight": 14.5,
+    "weight_unit": "kg",
+    "length": 60,
+    "width": 40,
+    "height": 35,
+    "dimension_unit": "cm"
+  }
+}
+
+quantity_per_carton is a positive integer; the rest are positive numbers with g/kg and cm/mm/in units.
+stock
+
+{
+  "status": "answered",
+  "value": {
+    "availability": "in_stock",
+    "quantity": 800
+  }
+}
+
+availability is in_stock, out_of_stock, partial or unknown. quantity is optional and may be null.
+lead_time
+
+Production or restock time in days.
+
+{
+  "status": "answered",
+  "value": {
+    "min_days": 7,
+    "max_days": 15
+  }
+}
+
+Both are integers and max_days must be greater than or equal to min_days.
+moq
+
+{
+  "status": "answered",
+  "value": {
+    "quantity": 100,
+    "unit": "pieces"
+  }
+}
+
+unit is the supplier’s own wording (pieces, sets, cartons, …), max 32 characters.
+neutral_packaging
+
+Whether the supplier ships without their own branding.
+
+{
+  "status": "answered",
+  "value": {
+    "support": "conditional",
+    "note": "Free above 200 units"
+  }
+}
+
+support is yes, no, conditional or unknown; note is optional free text.
+customization
+
+Logo printing, custom colour, custom packaging.
+
+{
+  "status": "answered",
+  "value": {
+    "support": "yes",
+    "moq": 500,
+    "note": "One-colour logo print, plate fee applies"
+  }
+}
+
+moq and note are both optional.
+product_details
+
+Anything descriptive — material, certification, voltage, model differences.
+
+{
+  "status": "answered",
+  "value": {
+    "text": "304 stainless steel, 1.2 mm wall"
+  }
+}
+
+other
+
+The escape hatch. question is required when asking; the answer is free text, max 4000 characters.
+
+{
+  "status": "answered",
+  "value": {
+    "text": "Yes, they can ship on Saturdays."
+  }
+}
+
+Prefer a standard type over other
+
+Standard types are validated, comparable across suppliers, and feed the shared logistics dataset. Free text does none of that. Use other only when nothing else fits.
+Weight and dimension answers are reused
+
+Answers to packed_weight, package_dimensions and carton_info are recorded as supplier-confirmed logistics observations against channel + source_product_id + sku. That makes them available for freight estimation on later orders for the same product. Only the physical attributes are kept — never your questions, notes or business context.
+
+Read supplier inquiries
+
+Three read endpoints, all requiring the supplier_inquiry:read scope. Inquiries are scoped to the application that created them: another application’s inquiry id returns 404 INQUIRY_NOT_FOUND, not 403.
+List inquiries
+
+GET /v1/supplier-inquiries
+Query	Description
+status	One inquiry status (pending, processing, waiting_supplier, answered, completed, failed, cancelled)
+channel	1688 or taobao
+source_product_id	Exact marketplace product id
+created_after / created_before	ISO 8601 timestamps
+page	Defaults to 1
+limit	Defaults to 20, max 100
+
+GET /v1/supplier-inquiries?status=answered&channel=1688&limit=20
+ 
+{
+  "data": [
+    {
+      "id": "sinq_9f2c...",
+      "status": "answered",
+      "product": {
+        "channel": "1688",
+        "source_product_id": "554456348334",
+        "product_url": "https://detail.1688.com/offer/554456348334.html",
+        "canonical_product_url": "https://detail.1688.com/offer/554456348334.html",
+        "title": "...", "image": "...", "shop_id": "...", "shop_name": "..."
+      },
+      "sku": { "id": "3245:12345", "label": "Black / XL" },
+      "message_count": 2,
+      "last_message_at": "2026-05-20T10:02:00.000Z",
+      "created_at": "2026-05-20T08:31:11.000Z",
+      "updated_at": "2026-05-20T11:40:00.000Z"
+    }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 1, "total_pages": 1 },
+  "request_id": "req_..."
+}
+
+An unknown status or channel is rejected with 400, so a typo never silently returns everything.
+Inquiry detail
+
+GET /v1/supplier-inquiries/{inquiry_id} returns the summary plus the whole conversation and a compact timeline.
+
+{
+  "id": "sinq_9f2c...",
+  "status": "answered",
+  "product": {
+    "channel": "1688",
+    "source_product_id": "554456348334",
+    "...": "..."
+  },
+  "sku": {
+    "id": "3245:12345",
+    "label": "Black / XL"
+  },
+  "message_count": 2,
+  "messages": [
+    {
+      "id": "smsg_1a4b...",
+      "type": "initial",
+      "status": "answered",
+      "questions": [
+        {
+          "id": "sqst_...",
+          "type": "packed_weight",
+          "note": "Weight with the retail box",
+          "question": null,
+          "status": "answered",
+          "answer": {
+            "question_id": "sqst_...",
+            "type": "packed_weight",
+            "status": "answered",
+            "value": 1250,
+            "unit": "g",
+            "provider_note": null,
+            "answered_at": "2026-05-20T11:40:00.000Z"
+          }
+        }
+      ],
+      "attachments": [
+        {
+          "id": "satt_...",
+          "type": "image",
+          "url": "https://files.example.com/packaging.jpg",
+          "filename": "supplier-packaging.jpg",
+          "mime_type": "image/jpeg",
+          "source": "supplier",
+          "expires_at": null,
+          "created_at": "2026-05-20T11:40:00.000Z"
+        }
+      ],
+      "provider_note": null,
+      "created_at": "2026-05-20T08:31:12.000Z",
+      "answered_at": "2026-05-20T11:40:00.000Z"
+    }
+  ],
+  "timeline": [
+    {
+      "message_id": "smsg_1a4b...",
+      "type": "initial",
+      "status": "answered",
+      "created_at": "2026-05-20T08:31:12.000Z",
+      "answered_at": "2026-05-20T11:40:00.000Z"
+    }
+  ],
+  "request_id": "req_..."
+}
+
+question is non-null only for other questions. A question with no answer yet has status: "pending" and answer: null.
+
+attachments lists the file references on that message — the ones you sent, plus any the supplier side shared with you. source tells them apart (developer, operator, supplier, system). Files the inquiry service keeps internal are never returned here. HIOBuy does not host these files: url points at the provider’s or your own storage, and a non-null expires_at is the point after which that URL may stop resolving.
+Messages only
+
+GET /v1/supplier-inquiries/{inquiry_id}/messages returns the same message objects without the product block — the cheaper call when you already hold the inquiry and only want new answers.
+
+{
+  "inquiry_id": "sinq_9f2c...",
+  "status": "answered",
+  "data": [ /* messages, oldest first */ ],
+  "request_id": "req_..."
+}
+
+Polling versus webhooks
+
+Prefer the supplier_inquiry.message_answered webhook: its payload already carries the full answers array, so a notification is often all you need. If you poll instead, poll the messages endpoint on a schedule of minutes — answers arrive on human timescales, and polling every few seconds only burns rate limit.
+
+

@@ -122,6 +122,11 @@ export async function middleware(request: NextRequest) {
   } else {
     supabaseResponse.headers.set('x-auth-status', 'authenticated')
     supabaseResponse.headers.set('x-user-id', user.id)
+    
+    const hasPhone = !!user.user_metadata?.phone || !!user.phone;
+    if (!hasPhone) {
+      supabaseResponse.headers.set('x-needs-profile', 'true')
+    }
   }
 
   return supabaseResponse

@@ -8,9 +8,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface WelcomeModalProps {
   createdAt: string;
+  userId: string;
 }
 
-export function WelcomeModal({ createdAt }: WelcomeModalProps) {
+export function WelcomeModal({ createdAt, userId }: WelcomeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -21,7 +22,7 @@ export function WelcomeModal({ createdAt }: WelcomeModalProps) {
     const accountAgeMs = new Date().getTime() - new Date(createdAt.replace(' ', 'T')).getTime();
     const isNewAccount = accountAgeMs < 24 * 60 * 60 * 1000;
 
-    const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");
+    const hasSeenWelcome = localStorage.getItem(`hasSeenWelcome_${userId}`);
 
     // Only show if it's a new account and they haven't seen it yet
     if (isNewAccount && !hasSeenWelcome) {
@@ -31,11 +32,11 @@ export function WelcomeModal({ createdAt }: WelcomeModalProps) {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [createdAt]);
+  }, [createdAt, userId]);
 
   const handleClose = () => {
     setIsOpen(false);
-    localStorage.setItem("hasSeenWelcome", "true");
+    localStorage.setItem(`hasSeenWelcome_${userId}`, "true");
   };
 
   if (!mounted) return null;

@@ -1,0 +1,659 @@
+C2G Logistics
+Dashboard
+Orders
+E-commerce Orders
+Products
+Shipments
+Customers
+Incoming Packages
+Package Scanner
+Scanned Packages
+Promotions
+Announcements
+Gallery
+Search
+Ad Management
+Admin Management
+Employees
+Broadcasts & Email
+Accounts
+Settings
+Logout
+Light Mode
+Scanned Packages Log
+History of all barcode scans from the Package Scanner
+
+Search Tracking #, Customer...
+
+All Results
+
+Refresh
+621 selected
+
+Update to In Transit
+
+Delete Selected
+
+Clear Selection
+	Time	Tracking #	Result	Customer	Items
+	7/18/2026, 5:37:21 AM	YT7626739223895	Not Found	N/A	N/A
+	7/18/2026, 5:37:20 AM	6976896034259	Not Found	N/A	N/A
+	7/18/2026, 5:37:15 AM	YT7626738131728	Not Found	N/A	N/A
+	7/18/2026, 5:37:04 AM	773426074394524	Not Found	N/A	N/A
+	7/18/2026, 5:37:00 AM	773426082804372	Not Found	N/A	N/A
+	7/4/2026, 4:52:51 AM	79116277011540	Updated (In Warehouse)	Chief Bryn	Pinduoduo: Board Game Ladies Shirt Multifunctional Wrench Card game 500pcs of printed stickers
+	7/4/2026, 4:52:47 AM	777420456032116	Not Found	N/A	N/A
+	7/4/2026, 4:52:42 AM	777420579087188	Not Found	N/A	N/A
+	7/4/2026, 4:52:32 AM	79115001816343	Not Found	N/A	N/A
+	7/4/2026, 4:52:25 AM	79114006941272	Updated (In Warehouse)	Chief Bryn	618 Peng Xian Sheng Jia De Pu Zi 55: European & American Cross-border Printed Belted Dress - New Style Slimming Fitted Women's Elegant Waist-Cinching Houndstooth 3/4 Sleeve Dress
+	7/4/2026, 4:52:19 AM	465424396586335	Updated (In Warehouse)	Chief Bryn	618 Pinduoduo: 1. Floral Print Dress 2. Men loose fit Pant 3. Dress - Simple Style with Pockets, High-Waisted Waist-Cinching Short Sleeve Midi Dress
+	7/4/2026, 4:52:14 AM	465434680565630	Not Found	N/A	N/A
+	7/4/2026, 4:52:09 AM	465439973445946	Not Found	N/A	N/A
+	7/4/2026, 4:35:29 AM	YT8,WDV5P	Not Found	N/A	N/A
+	7/4/2026, 4:35:27 AM	YT8876854214899	Not Found	N/A	N/A
+	7/4/2026, 4:35:22 AM	JT3167808817555	Not Found	N/A	N/A
+	7/4/2026, 4:35:18 AM	435228872599435	Not Found	N/A	N/A
+	7/4/2026, 4:35:13 AM	YT8877784172422	Not Found	N/A	N/A
+	7/4/2026, 4:35:08 AM	YT8880268395325	Not Found	N/A	N/A
+	7/4/2026, 4:35:03 AM	777417955397830	Not Found	N/A	N/A
+	7/4/2026, 4:35:00 AM	777417607617320	Not Found	N/A	N/A
+	7/4/2026, 4:34:45 AM	435220600099418	Not Found	N/A	N/A
+	7/4/2026, 4:34:34 AM	73712836618280	Not Found	N/A	N/A
+	7/4/2026, 4:34:30 AM	465422393587000	Not Found	N/A	N/A
+	7/4/2026, 4:34:26 AM	79112981774972	Not Found	N/A	N/A
+	7/4/2026, 4:34:22 AM	465414870292395	Not Found	N/A	N/A
+	7/4/2026, 4:34:18 AM	465415039422881	Not Found	N/A	N/A
+	7/4/2026, 4:34:13 AM	465415383840671	Not Found	N/A	N/A
+	7/4/2026, 4:34:08 AM	79113075128336	Not Found	N/A	N/A
+	7/4/2026, 4:34:04 AM	435212748878455	Already Processed	Chief Bryn	kaynway2023 SellerPhone: 15603052721: Minoxidil Tincture Application Artifact Micro-Needle Rolling Needle Essence Introduction Scalp Hair Growth Head Massage Medication Instrument L
+	7/4/2026, 4:33:58 AM	465415233313276	Not Found	N/A	N/A
+	7/4/2026, 4:33:45 AM	MMM={'K1':'S351WJ','K2':'S351BFM','K3':'','K5':'S71472769535001'}	Not Found	N/A	N/A
+	7/4/2026, 4:33:44 AM	S71472769535001	Not Found	N/A	N/A
+	7/4/2026, 4:33:29 AM	773428058386595	Not Found	N/A	N/A
+	7/4/2026, 4:33:18 AM	777417783885286	Not Found	N/A	N/A
+	7/4/2026, 4:33:10 AM	5743098069729121	Not Found	N/A	N/A
+	7/4/2026, 4:33:09 AM	773428058069633	Not Found	N/A	N/A
+	7/4/2026, 4:32:55 AM	465447592691717	Updated (In Warehouse)	Chief Bryn	Pinduoduo: Board Game Ladies Shirt Multifunctional Wrench Card game 500pcs of printed stickers
+	7/4/2026, 4:32:49 AM	9817243336710	Not Found	N/A	N/A
+	7/4/2026, 4:32:44 AM	777421313637906	Updated (In Warehouse)	Michael Kyei Asenso	Pinduoduo: 1 sneaker
+	7/4/2026, 4:32:39 AM	79012903083386	Not Found	N/A	N/A
+	7/4/2026, 4:32:28 AM	777417783885286	Not Found	N/A	N/A
+	7/4/2026, 4:32:28 AM	03780400	Not Found	N/A	N/A
+	7/4/2026, 4:32:28 AM	777417783885286	Not Found	N/A	N/A
+	7/4/2026, 4:32:28 AM	777417783885286	Not Found	N/A	N/A
+	7/4/2026, 4:32:05 AM	YT7626739223895	Not Found	N/A	N/A
+	7/4/2026, 4:32:01 AM	YT7626738131728	Not Found	N/A	N/A
+	7/4/2026, 4:31:50 AM	773426082804372	Not Found	N/A	N/A
+	7/4/2026, 4:31:40 AM	773426074394524	Not Found	N/A	N/A
+	7/4/2026, 4:31:32 AM	JT5497449172354	Updated (In Warehouse)	Francis kumah	Pinduoduo: AirPod pro, DJI OSMO
+	7/4/2026, 4:31:25 AM	777417870794302	Not Found	N/A	N/A
+	7/4/2026, 4:31:18 AM	YT8880931804404	Updated (In Warehouse)	Chief Bryn	Pinduoduo: Board Game Ladies Shirt Multifunctional Wrench Card game 500pcs of printed stickers
+	7/4/2026, 4:31:09 AM	73710955332146	Not Found	N/A	N/A
+	7/4/2026, 4:31:02 AM	JT5498022092943	Updated (In Warehouse)	Francis kumah	Pinduoduo: AirPod pro, DJI OSMO
+	7/4/2026, 4:30:54 AM	465453453306543	Updated (In Warehouse)	Chief Bryn	Pinduoduo: Board Game Ladies Shirt Multifunctional Wrench Card game 500pcs of printed stickers
+	7/4/2026, 4:30:43 AM	JT5498148784957	Updated (In Warehouse)	Michael Kyei Asenso	Pinduoduo: 1 watch
+	7/4/2026, 4:30:38 AM	YT8879982822028	Not Found	N/A	N/A
+	7/4/2026, 4:30:30 AM	YT8878324077351	Updated (In Warehouse)	Chief Bryn	618 Pinduoduo: 1. Floral Print Dress 2. Men loose fit Pant 3. Dress - Simple Style with Pockets, High-Waisted Waist-Cinching Short Sleeve Midi Dress
+	7/4/2026, 4:30:25 AM	9817203750173	Not Found	N/A	N/A
+	7/4/2026, 4:30:20 AM	YT8877020024940	Not Found	N/A	N/A
+	7/4/2026, 4:30:13 AM	465443737024299	Not Found	N/A	N/A
+	7/4/2026, 4:30:07 AM	YT8877140616887	Not Found	N/A	N/A
+	7/4/2026, 4:30:01 AM	YT8876990543543	Not Found	N/A	N/A
+	7/4/2026, 4:29:50 AM	YT8877784172422	Not Found	N/A	N/A
+	7/4/2026, 4:29:02 AM	JT3167808817555	Not Found	N/A	N/A
+	7/4/2026, 4:28:56 AM	435228872599435	Not Found	N/A	N/A
+	7/4/2026, 4:28:56 AM	YT8,WDV5P	Not Found	N/A	N/A
+	7/4/2026, 4:28:56 AM	YT8876854214899	Not Found	N/A	N/A
+	7/4/2026, 4:28:56 AM	YT8876854214899	Not Found	N/A	N/A
+	7/4/2026, 4:28:55 AM	B96$$-5D	Not Found	N/A	N/A
+	7/4/2026, 4:28:35 AM	HTTPS://A7Q.CN/JPHRBDCK44	Not Found	N/A	N/A
+	7/4/2026, 4:28:33 AM	777417607617320	Not Found	N/A	N/A
+	7/4/2026, 4:28:30 AM	777417951397832216	Not Found	N/A	N/A
+	7/4/2026, 4:28:30 AM	777417955397830	Not Found	N/A	N/A
+	7/4/2026, 4:28:29 AM	YT8880268395325	Not Found	N/A	N/A
+	6/20/2026, 9:12:46 AM	79009589724025	Not Found	N/A	N/A
+	6/20/2026, 9:12:27 AM	435212748878455	Updated (In Warehouse)	Chief Bryn	kaynway2023 SellerPhone: 15603052721: Minoxidil Tincture Application Artifact Micro-Needle Rolling Needle Essence Introduction Scalp Hair Growth Head Massage Medication Instrument L
+	6/19/2026, 9:53:48 AM	465410107817577	Not Found	N/A	N/A
+	6/17/2026, 10:23:25 AM	79011161598588	Not Found	N/A	N/A
+	6/17/2026, 10:23:17 AM	465415233313276	Not Found	N/A	N/A
+	6/17/2026, 10:23:16 AM	157252455505	Not Found	N/A	N/A
+	6/17/2026, 10:23:15 AM	465422393587000	Not Found	N/A	N/A
+	6/17/2026, 10:23:08 AM	465410107817577	Not Found	N/A	N/A
+	6/17/2026, 10:23:03 AM	465415383840671	Not Found	N/A	N/A
+	6/17/2026, 10:22:56 AM	79112981774972	Not Found	N/A	N/A
+	6/17/2026, 10:22:53 AM	465414870292395	Not Found	N/A	N/A
+	6/17/2026, 10:22:49 AM	465415039422881	Not Found	N/A	N/A
+	6/17/2026, 10:22:46 AM	79113075128336	Not Found	N/A	N/A
+	6/17/2026, 10:22:42 AM	435220600099418	Not Found	N/A	N/A
+	6/17/2026, 10:22:38 AM	79010005641429	Updated (In Warehouse)	Chief Bryn	Baigou New City Chaobei Bag Factory: 2025 Cross-Border New Fashion Retro Large-Capacity Shoulder Bag High-End Commuter Casual Handbag Tote Bag for Women http://detail.m.1688.com/page/index.htm?offerId=999707278100
+	6/17/2026, 10:22:34 AM	73712836618280	Not Found	N/A	N/A
+	6/16/2026, 8:32:54 AM	777417828551771	Not Found	N/A	N/A
+	6/16/2026, 8:32:50 AM	777417912702967	Not Found	N/A	N/A
+	6/16/2026, 8:32:45 AM	773425388339811	Updated (In Warehouse)	Baba Patience	Northern snow maple: Intimate Area Tightening Gel] Sumifun Amazon TEMU Crosp (5) boxes
+	6/16/2026, 8:32:42 AM	JT5495085040390	Not Found	N/A	N/A
+	6/16/2026, 8:32:39 AM	9817186383580	Not Found	N/A	N/A
+	6/16/2026, 8:32:37 AM	777417955397830	Not Found	N/A	N/A
+	6/16/2026, 8:32:36 AM	JT5495085040390	Not Found	N/A	N/A
+	6/16/2026, 8:32:34 AM	777417607617320	Not Found	N/A	N/A
+	6/16/2026, 8:32:30 AM	YT8876854214899	Not Found	N/A	N/A
+	6/16/2026, 8:32:30 AM	YT8,WDV5P	Not Found	N/A	N/A
+	6/16/2026, 8:32:25 AM	YT8877139781958	Not Found	N/A	N/A
+	6/16/2026, 8:32:21 AM	JT5495085040390	Not Found	N/A	N/A
+	6/16/2026, 8:32:15 AM	777416852773240	Not Found	N/A	N/A
+	6/16/2026, 8:32:12 AM	777417973854670	Not Found	N/A	N/A
+	6/16/2026, 8:32:08 AM	951720539707R	Not Found	N/A	N/A
+	6/16/2026, 8:32:06 AM	9817209997074	Not Found	N/A	N/A
+	6/16/2026, 8:32:02 AM	JT5495019892731	Not Found	N/A	N/A
+	6/16/2026, 8:31:56 AM	777417776984377	Not Found	N/A	N/A
+	6/16/2026, 8:31:52 AM	JT5495085042749	Not Found	N/A	N/A
+	6/16/2026, 8:31:46 AM	9817184724469	Not Found	N/A	N/A
+	6/16/2026, 8:31:43 AM	JT5494609924877	Not Found	N/A	N/A
+	6/16/2026, 8:31:34 AM	9817185134670	Not Found	N/A	N/A
+	6/16/2026, 8:31:30 AM	777417906667653	Not Found	N/A	N/A
+	6/16/2026, 8:31:28 AM	JT5494982673574	Not Found	N/A	N/A
+	6/16/2026, 8:31:23 AM	777417950047424	Not Found	N/A	N/A
+	6/16/2026, 8:31:21 AM	YT8877507700093	Not Found	N/A	N/A
+	6/16/2026, 8:31:07 AM	777417841561304	Not Found	N/A	N/A
+	6/16/2026, 8:30:56 AM	JT5495260447976	Not Found	N/A	N/A
+	6/16/2026, 8:30:45 AM	JT5495260464339	Not Found	N/A	N/A
+	6/16/2026, 8:30:38 AM	JT5495260438168	Not Found	N/A	N/A
+	6/16/2026, 8:30:26 AM	JT3166506664740	Not Found	N/A	N/A
+	6/16/2026, 8:30:01 AM	777417783872377	Not Found	N/A	N/A
+	6/16/2026, 8:29:46 AM	JT3166487403534	Not Found	N/A	N/A
+	6/16/2026, 8:29:38 AM	YT7627086011292	Updated (In Warehouse)	Hasinawu Sulemana	Alibaba/ Summer Zhu: 20pieces of ladies bags.
+	6/16/2026, 8:29:35 AM	YT8876549965233	Not Found	N/A	N/A
+	6/16/2026, 8:29:25 AM	YT7626390826891	Updated (In Warehouse)	Chief Bryn	Guangzhou Qinglong Biomedical Co., Ltd: Amazon Tk Cross-Border In-Stock Hair Growth Capsules Biotin Capsules Biotin Collagen Keratin
+	6/16/2026, 8:29:23 AM	)T3,^Z1HM)	Not Found	N/A	N/A
+	6/16/2026, 8:29:22 AM	YT7625817724530	Updated (In Warehouse)	Chief Bryn	: 丰吉皮具 SellerPhone: 13066371065: Women's Bag, Light Luxury Wedding Bag, Women's 2025 New Summer Mother's Bag, Elegant Middle-Aged Women's Handbag
+	6/16/2026, 8:29:11 AM	JT3166525265859	Not Found	N/A	N/A
+	6/16/2026, 8:29:04 AM	773426082804384	Not Found	N/A	N/A
+	6/16/2026, 7:57:17 AM	SF1574476023168	Not Found	N/A	N/A
+	6/16/2026, 6:58:14 AM	7932106077848932	Not Found	N/A	N/A
+	6/16/2026, 6:58:14 AM	79009999898932	Updated (In Warehouse)	Chief Bryn	Guangzhou Binse Clothing Co., Ltd.: Lot of 100 Multi Colored Shirts
+	6/16/2026, 6:58:06 AM	79010849524299	Not Found	N/A	N/A
+	6/14/2026, 9:58:51 AM	777410461823713	Updated (In Warehouse)	Baba Patience	Li Muzi’s Little wardrobe: 2 pieces set, Milk tea color XL
+	6/14/2026, 8:35:50 AM	9816614309852	Updated (In Warehouse)	Baba Patience	Wotai Home Furnishing Department Store: Laundry Detergent Pods with Long-lasting Fragrance,
+	6/11/2026, 2:15:16 AM	YT8876091172637	Not Found	N/A	N/A
+	6/9/2026, 9:48:22 AM	777411018606652	Not Found	N/A	N/A
+	6/9/2026, 9:42:06 AM	777413449248550	Not Found	N/A	N/A
+	6/9/2026, 9:17:39 AM	YT8870535221891	Not Found	N/A	N/A
+	6/9/2026, 9:17:28 AM	435184812362614	Already Processed	Enoch Selorm	Made-In-China: 20 pieces of Phone covers
+	6/9/2026, 9:17:19 AM	435183993768586	Already Processed	Amadu Abdul-Karim	1688: Wig
+	6/9/2026, 9:16:41 AM	9816241805225	Not Found	N/A	N/A
+	6/9/2026, 9:16:34 AM	773423251088296	Already Processed	Samuel Korley	Alibaba: Chinese Traditional Medical Herb Nasal Spray
+	6/9/2026, 9:16:26 AM	79009740182129	Updated (In Warehouse)	Chief Bryn	中通快递(ZTO): Woven Bag, Single-Shoulder Baguette Style, Niche High-End Horizontal Handbag, Evening Bag, Crossbody Versatile Bag
+	6/9/2026, 9:16:00 AM	YT8866042028278	Not Found	N/A	N/A
+	6/9/2026, 9:15:52 AM	79009587185084	Updated (In Warehouse)	Chief Bryn	SellerWangWang: 麦沃maiwo SellerPhone: 13652302527: Transparent Creative USB3.0 Gen1 SSD solid-state SATA protocol M.2 NGFF mobile hard disk box USB interface
+	6/9/2026, 9:15:47 AM	YT8873120778518	Not Found	N/A	N/A
+	6/9/2026, 9:15:31 AM	79009589724025	Not Found	N/A	N/A
+	6/9/2026, 9:13:04 AM	YT8866054274669	Not Found	N/A	N/A
+	6/9/2026, 9:09:39 AM	YT7625505376348	Not Found	N/A	N/A
+	6/9/2026, 9:09:29 AM	YT7625798159992	Updated (In Warehouse)	Chief Bryn	圆通速递(YTO) Logistics phone： 95554: New Version of Cross-Border Non-Kirkland Hair Growth Serum for Men, Kirkland 6-Bottle Set, Minoxidil
+	6/9/2026, 9:09:19 AM	YT8874342385052	Updated (In Warehouse)	Joseph Ayoka	Pinduoduo: 1 Birkenstock
+	6/9/2026, 9:09:13 AM	YT7625736209985	Updated (In Warehouse)	Chief Bryn	广州乐芙皮具商行: 2026 New Model Women's Bag, Gift for Mom, Wedding Bag, Elegant Bride Bag, Large Capacity Handbag for Middle-Aged Women
+	6/9/2026, 4:53:49 AM	79001655448019	Not Found	N/A	N/A
+	6/9/2026, 4:53:33 AM	JT5487696317000	Not Found	N/A	N/A
+	6/9/2026, 4:53:23 AM	465367194051730	Already Processed	Baba Patience	Xiyan Children's Shop: Children's Slippers (1)
+	6/9/2026, 4:53:07 AM	9816381841497	Already Processed	Baba Patience	Zhulong Children's Clothing Specialty Store: Red dress + hat, 110 X 1
+	6/9/2026, 4:53:02 AM	79101491056204	Not Found	N/A	N/A
+	6/9/2026, 4:52:52 AM	79003044629748	Already Processed	Joseph Ayoka	1688: Children's Underwear Set Color:A21-Coffee Bear Head suitable for height:73
+	6/9/2026, 4:52:47 AM	JT5477963925876	Not Found	N/A	N/A
+	6/9/2026, 4:52:18 AM	777407709335426	Not Found	N/A	N/A
+	6/9/2026, 4:52:12 AM	9816847679363	Not Found	N/A	N/A
+	6/9/2026, 4:51:56 AM	465318302672233	Not Found	N/A	N/A
+	6/9/2026, 4:51:51 AM	9816847679363	Not Found	N/A	N/A
+	6/9/2026, 4:51:42 AM	YT8872926697975	Not Found	N/A	N/A
+	6/9/2026, 4:51:29 AM	YT8869429225912	Not Found	N/A	N/A
+	6/9/2026, 4:51:17 AM	79001419397513	Not Found	N/A	N/A
+	6/9/2026, 4:51:11 AM	79102754788125	Not Found	N/A	N/A
+	6/9/2026, 4:51:06 AM	1972711111032	Not Found	N/A	N/A
+	6/9/2026, 4:51:05 AM	79107103894264	Not Found	N/A	N/A
+	6/9/2026, 4:51:05 AM	10541629	Not Found	N/A	N/A
+	6/9/2026, 4:50:56 AM	435162557010580	Not Found	N/A	N/A
+	6/9/2026, 4:50:49 AM	465282486398447	Not Found	N/A	N/A
+	6/9/2026, 4:50:44 AM	9816468622199	Not Found	N/A	N/A
+	6/9/2026, 4:50:36 AM	9816867963505	Not Found	N/A	N/A
+	6/9/2026, 4:50:27 AM	777406858749573	Not Found	N/A	N/A
+	6/9/2026, 4:50:17 AM	73709488743543	Not Found	N/A	N/A
+	6/8/2026, 10:47:20 AM	YT7625772434639	Updated (In Warehouse)	Chief Bryn	肃宁县维盛服装 SellerPhone: 18232888186: Heavy cotton short-sleeved shoulder T-shirt custom crew neck tide brand short-sleeved advertising shirt class uniform Tuanjian overalls 260g 100pcs
+	6/8/2026, 10:47:19 AM	YT7,^YHKNG	Not Found	N/A	N/A
+	6/8/2026, 10:03:06 AM	465318302672233	Not Found	N/A	N/A
+	6/8/2026, 10:02:55 AM	465334091532647	Already Processed	Hannah Biney	Pinduoduo: Bathroom shelves
+	6/8/2026, 10:02:48 AM	YT8872926697975	Not Found	N/A	N/A
+	6/8/2026, 10:02:40 AM	JT5485034296874	Already Processed	Hannah Biney	Pinduoduo: Ear phone
+	6/8/2026, 10:02:25 AM	JT5487696317000	Not Found	N/A	N/A
+	6/8/2026, 10:02:15 AM	YT8871095693302	Already Processed	Bright Kofi Badu Amoah	Pinduoduo: Camouflage workwear short
+	6/8/2026, 10:02:11 AM	773420882916800	Already Processed	Joseph Ayoka	1688: 2 Children's Basketball Clothes
+	6/8/2026, 10:01:23 AM	YT8869429226489	Already Processed	Baba Patience	Yushu Technology: Phone covers 4 pieces. 2 iPhone 13 and 2 iPhone 15 pro max
+	6/8/2026, 10:00:36 AM	YT8870666565718	Not Found	N/A	N/A
+	6/8/2026, 10:00:05 AM	777407704335421522	Not Found	N/A	N/A
+	6/8/2026, 10:00:04 AM	777407709335426	Not Found	N/A	N/A
+	6/8/2026, 9:59:59 AM	79003052203720	Already Processed	Joseph Ayoka	1688: Children's All-Season Type a Color:12 pairs/hand Children's socks size:6-12 months
+	6/8/2026, 9:59:53 AM	9816704504405	Already Processed	Bright Kofi Badu Amoah	Pinduoduo: EVA slide
+	6/8/2026, 9:59:47 AM	79003083630393	Already Processed	Joseph Ayoka	1688: Baby anti-fall pillow headrest
+	6/8/2026, 9:59:42 AM	9816847679363	Not Found	N/A	N/A
+	6/8/2026, 9:59:38 AM	455972596660	Not Found	N/A	N/A
+	6/8/2026, 9:59:37 AM	YT8871093954269	Updated (In Warehouse)	Baba Patience	Longshe Mental Health Specialty Store: Hair Growth Liquid – Fast-actin g Hair Thickening Solution (1)
+	6/8/2026, 9:58:59 AM	JT5477963925876	Not Found	N/A	N/A
+	6/8/2026, 9:58:50 AM	9816381841497	Already Processed	Baba Patience	Zhulong Children's Clothing Specialty Store: Red dress + hat, 110 X 1
+	6/8/2026, 9:58:46 AM	YT8871380075721	Already Processed	Baba Patience	Chuang Ya Nuo Optical Store: Cycling Goggle s – Women's Sports Sunglasse (1)
+	6/8/2026, 9:58:37 AM	79003044629748	Already Processed	Joseph Ayoka	1688: Children's Underwear Set Color:A21-Coffee Bear Head suitable for height:73
+	6/8/2026, 9:58:33 AM	465327300759837	Already Processed	Baba Patience	DX selection: Fat Burning and Weight Loss Lazy Person Shaking Waist Belt (1)
+	6/8/2026, 9:58:22 AM	79101491056204	Not Found	N/A	N/A
+	6/8/2026, 9:57:45 AM	435183993768586	Already Processed	Amadu Abdul-Karim	1688: Wig
+	6/8/2026, 9:57:20 AM	777410044557836	Already Processed	Benedict Afukah	Pinduoduo: 1 cross silver chain
+	6/8/2026, 9:56:50 AM	777410318759970	Already Processed	Benedict Afukah	Pinduoduo: 1 Chrome heart Ring
+	6/8/2026, 9:56:38 AM	YT8872926697975	Not Found	N/A	N/A
+	6/8/2026, 9:56:23 AM	777413449248550	Not Found	N/A	N/A
+	6/8/2026, 9:56:09 AM	YT8870666565718	Not Found	N/A	N/A
+	6/8/2026, 9:55:50 AM	79109371523478	Not Found	N/A	N/A
+	6/8/2026, 9:51:35 AM	79101491056204	Not Found	N/A	N/A
+	6/8/2026, 9:51:28 AM	465367194051730	Already Processed	Baba Patience	Xiyan Children's Shop: Children's Slippers (1)
+	6/8/2026, 9:51:22 AM	79003379086723	Already Processed	Joseph Ayoka	1688: Yara black 100ml and Pink Ice cream 100ml
+	6/8/2026, 9:49:42 AM	79109330583706	Not Found	N/A	N/A
+	6/8/2026, 9:49:36 AM	79109371523478	Not Found	N/A	N/A
+	6/8/2026, 9:49:32 AM	79109367269570	Not Found	N/A	N/A
+	6/8/2026, 9:49:27 AM	435212206450245	Already Processed	Chief Bryn	韵达快递 Logistics phone： 95546: Niche Design Large-Capacity Bag 2026 Summer New Trendy Women's Simple Shoulder Tote Bag Niche Design
+	6/8/2026, 9:14:19 AM	YT8866518216558	Already Processed	Benedict Afukah	Pinduoduo: 1 Rick Owens Sneaker
+	6/8/2026, 9:14:07 AM	YT8873152670992	Not Found	N/A	N/A
+	6/8/2026, 9:14:03 AM	435140180330145	Already Processed	Amadu Abdul-Karim	1688: 2 dye for clothes
+	6/8/2026, 9:13:58 AM	777407364106576	Already Processed	Benedict Afukah	Pinduoduo: 1 Red string bracelet
+	6/8/2026, 9:13:55 AM	6446257123019	Not Found	N/A	N/A
+	6/8/2026, 9:13:54 AM	9816757701698	Already Processed	Benedict Afukah	Pinduoduo: 1 ring for women
+	6/8/2026, 9:13:48 AM	773423251088291628	Not Found	N/A	N/A
+	6/8/2026, 9:13:47 AM	773423251088296	Already Processed	Samuel Korley	Alibaba: Chinese Traditional Medical Herb Nasal Spray
+	6/8/2026, 9:13:40 AM	9816241805225	Not Found	N/A	N/A
+	6/8/2026, 9:13:36 AM	79106326372120	Already Processed	Benedict Afukah	Pinduoduo: 1 Ear ring
+	6/8/2026, 9:13:30 AM	78997781856383	Already Processed	Amadu Abdul-Karim	1688: For Samsung Z FOLD6 simulation folding
+	6/8/2026, 9:13:26 AM	439581993735309454	Not Found	N/A	N/A
+	6/8/2026, 9:13:16 AM	9816288841043	Not Found	N/A	N/A
+	6/8/2026, 9:13:15 AM	9816288829143	Already Processed	Benedict Afukah	Pinduoduo: A pair of ear ring
+	6/8/2026, 9:13:09 AM	YT8870262227238	Already Processed	Benedict Afukah	Pinduoduo: 1 Tattoo sticker
+	6/8/2026, 9:13:04 AM	JT5483476487491	Already Processed	Benedict Afukah	Pinduoduo: 1 vintage belt
+	6/8/2026, 9:12:59 AM	79106127309427	Already Processed	Benedict Afukah	Pinduoduo: Chrome style bracelet
+	6/8/2026, 9:12:54 AM	YT8862788407903	Not Found	N/A	N/A
+	6/8/2026, 9:12:53 AM	YT8869188407903	Already Processed	Benedict Afukah	Pinduoduo: 1 tattoo sticker (0-9)
+	6/8/2026, 9:12:49 AM	YT8873120778518	Not Found	N/A	N/A
+	6/8/2026, 9:12:43 AM	79103333648198	Already Processed	Benedict Afukah	Pinduoduo: 1 silver chain
+	6/8/2026, 9:12:38 AM	777413597556495	Updated (In Warehouse)	Hannah Biney	Pinduoduo: Wristband
+	6/8/2026, 9:12:32 AM	9816845373448	Already Processed	Hannah Biney	Pinduoduo: Water bottle
+	6/8/2026, 9:12:25 AM	773422126916319	Already Processed	Amadu Abdul-Karim	1688: Hat and bag (5)
+	6/8/2026, 9:12:20 AM	YT8866042028278	Not Found	N/A	N/A
+	6/8/2026, 9:12:13 AM	435183983708472	Already Processed	Amadu Abdul-Karim	1688: Wig (2)
+	6/8/2026, 9:12:08 AM	YT8870535221891	Not Found	N/A	N/A
+	6/8/2026, 9:11:58 AM	YT7616146015293	Already Processed	Amadu Abdul-Karim	1688: Pair of shoes
+	6/8/2026, 9:11:45 AM	435162557010580	Not Found	N/A	N/A
+	6/8/2026, 9:11:38 AM	435162557010580	Not Found	N/A	N/A
+	6/8/2026, 9:11:32 AM	435184812362614	Already Processed	Enoch Selorm	Made-In-China: 20 pieces of Phone covers
+	6/8/2026, 9:10:47 AM	9801468622191613	Not Found	N/A	N/A
+	6/8/2026, 9:10:45 AM	9816468622199	Not Found	N/A	N/A
+	6/8/2026, 8:55:25 AM	766584756327001	Not Found	N/A	N/A
+	6/8/2026, 8:23:55 AM	79109367269570	Not Found	N/A	N/A
+	6/8/2026, 8:23:50 AM	79109371523478	Not Found	N/A	N/A
+	6/8/2026, 8:23:44 AM	465380092742440	Not Found	N/A	N/A
+	6/8/2026, 8:23:37 AM	SF0210202647200	Already Processed	Emma Quayson	Changzhou Sanvera Trading Co.,LTD: 1 kg biodegradable PE film with package dimensions around 0.001m³
+	6/8/2026, 8:23:32 AM	773425254949833	Updated (In Warehouse)	Chief Bryn	申通快递(STO) Logistics phone： 95543: New Fashionable Niche Bags, Feminine Chain Bags, High-End Evening Bags, Retro Versatile Shoulder and Crossbody Bags
+	6/8/2026, 8:23:26 AM	79009754856643	Updated (In Warehouse)	Chief Bryn	德宁箱包厂 SellerPhone: 86-: Winter Canvas Tote Bag for Women, Large Capacity Commuter Shoulder Bag
+	6/8/2026, 8:23:21 AM	73711824124007	Not Found	N/A	N/A
+	6/8/2026, 8:23:14 AM	465380558245089	Updated (In Warehouse)	Hannah Biney	Pinduoduo: Soap holder
+	6/8/2026, 8:23:08 AM	79009754182290	Not Found	N/A	N/A
+	6/8/2026, 8:23:07 AM	79009754311091	Not Found	N/A	N/A
+	6/8/2026, 8:23:01 AM	79009654940303	Updated (In Warehouse)	Chief Bryn	见全箱包厂 SellerPhone: 15516794999: Valentine's Day Gift Hot-selling Handbag Women's Shoulder Crossbody Bag Trendy Niche Design High-grade Practical Bag
+	6/8/2026, 8:22:54 AM	435210452691117	Not Found	N/A	N/A
+	6/8/2026, 8:22:49 AM	JT5491885493767	Not Found	N/A	N/A
+	6/8/2026, 8:22:48 AM	JT5491885933773	Not Found	N/A	N/A
+	6/8/2026, 8:22:40 AM	YT7625672321266	Updated (In Warehouse)	Chief Bryn	: 墨美箱包厂 SellerPhone: 15831584816: Tote Bag, Fashionable and Simple Bag, Large Capacity, High-End Commuter Bag, Cross-Border Wholesale, Multi-Compartment Women's Handbag
+	6/8/2026, 8:22:32 AM	9816980703429	Not Found	N/A	N/A
+	6/8/2026, 8:22:29 AM	042974034711	Not Found	N/A	N/A
+	6/8/2026, 8:22:29 AM	JT3165623711608	Updated (In Warehouse)	Chief Bryn	1688: Lot of 2 150m wireless network RT8188 chip card USB small network card with antenna computer WIFI network adapter http://detail.m.1688.com/page/index.htm?offerId=721063953275
+	6/8/2026, 8:22:22 AM	435212206450245	Updated (In Warehouse)	Chief Bryn	韵达快递 Logistics phone： 95546: Niche Design Large-Capacity Bag 2026 Summer New Trendy Women's Simple Shoulder Tote Bag Niche Design
+	6/8/2026, 8:22:13 AM	773425213634283	Updated (In Warehouse)	Chief Bryn	: 帝犀女包批发 SellerPhone: 13571460001: 2025 New Fashion Handbag Korean Style Textured Shoulder Printed Crossbody Bag Women's Manufacturer Foreign Trade Bag Women
+	6/8/2026, 8:21:55 AM	YT2548173546833	Not Found	N/A	N/A
+	6/8/2026, 8:21:41 AM	777415059621401	Not Found	N/A	N/A
+	6/8/2026, 8:21:25 AM	JT5492342596237	Not Found	N/A	N/A
+	6/8/2026, 8:21:17 AM	YT7625685404666	Updated (In Warehouse)	Chief Bryn	: 广州旺华皮具有限公司 SellerPhone: 18126866874: Large-Capacity High-End Cross-Border Bag for Women 2026 Spring New Versatile Retro Texture Printed Shoulder Tote Bag
+	6/8/2026, 8:21:11 AM	9816922931839	Not Found	N/A	N/A
+	6/8/2026, 8:21:02 AM	YT7625686143089	Updated (In Warehouse)	Chief Bryn	圆通速递(YTO) Logistics phone： 95554: Manufacturer Wholesale 2024 New Model Solid Color High-Quality Luxury Fashion Women's Bag Simple Stylish Handbag and Crossbody Bag 2pcs
+	6/8/2026, 7:34:57 AM	435152494621635	Not Found	N/A	N/A
+	6/6/2026, 3:39:49 AM	9816288829143	Already Processed	Benedict Afukah	Pinduoduo: A pair of ear ring
+	6/6/2026, 3:39:45 AM	777407364106576	Already Processed	Benedict Afukah	Pinduoduo: 1 Red string bracelet
+	6/6/2026, 3:38:47 AM	79102697809876	Not Found	N/A	N/A
+	6/6/2026, 3:38:40 AM	YT8870535221891	Not Found	N/A	N/A
+	6/6/2026, 3:38:30 AM	78997781856383	Already Processed	Amadu Abdul-Karim	1688: For Samsung Z FOLD6 simulation folding
+	6/6/2026, 3:38:25 AM	73709488743543	Not Found	N/A	N/A
+	6/6/2026, 3:38:16 AM	465317456494266	Not Found	N/A	N/A
+	6/6/2026, 3:38:07 AM	JT3162843127866	Already Processed	Joseph Ayoka	1688: Package 1 (100 pieces of Pampers
+	6/6/2026, 3:37:59 AM	73709488743543	Not Found	N/A	N/A
+	6/6/2026, 3:37:55 AM	JT3162842688109	Already Processed	Joseph Ayoka	1688: Package 2 ( 100 pieces of pampers)
+	6/6/2026, 3:37:47 AM	777411347093018	Already Processed	Baba Patience	World peace trade: Light blue set (2 piece) LX
+	6/6/2026, 3:37:41 AM	435172548117138	Already Processed	Joseph Ayoka	1688: Only 1 Children's Velvet Thickened
+	6/6/2026, 3:37:34 AM	79004454989783	Not Found	N/A	N/A
+	6/6/2026, 3:37:29 AM	YT8866518216558	Already Processed	Benedict Afukah	Pinduoduo: 1 Rick Owens Sneaker
+	6/6/2026, 3:37:21 AM	773422126916319	Already Processed	Amadu Abdul-Karim	1688: Hat and bag (5)
+	6/6/2026, 3:37:16 AM	9816241805225	Not Found	N/A	N/A
+	6/6/2026, 3:37:11 AM	YT7623084573187	Not Found	N/A	N/A
+	6/6/2026, 3:37:07 AM	435169856284794	Not Found	N/A	N/A
+	6/6/2026, 3:37:02 AM	293417649605161520	Not Found	N/A	N/A
+	6/6/2026, 3:37:02 AM	773417649668167	Already Processed	Baba Patience	Huicongman Clothing Store: 3 High waisted pants(one blue, one pink n one yellow )
+	6/6/2026, 3:36:58 AM	9822270802165	Already Processed	Joseph Ayoka	1688: 2 240g Heavyweight Pure
+	6/6/2026, 3:36:50 AM	773420882916800	Already Processed	Joseph Ayoka	1688: 2 Children's Basketball Clothes
+	6/6/2026, 3:36:46 AM	79001419397513	Not Found	N/A	N/A
+	6/6/2026, 3:36:41 AM	79102754788125	Not Found	N/A	N/A
+	6/6/2026, 3:36:35 AM	D8$9685D	Not Found	N/A	N/A
+	6/6/2026, 3:36:35 AM	435183993768586	Already Processed	Amadu Abdul-Karim	1688: Wig
+	6/6/2026, 3:36:30 AM	79001655448019	Not Found	N/A	N/A
+	6/6/2026, 3:36:25 AM	79003083630393	Already Processed	Joseph Ayoka	1688: Baby anti-fall pillow headrest
+	6/6/2026, 3:36:21 AM	465318724256659	Not Found	N/A	N/A
+	6/6/2026, 3:36:16 AM	777407709335426	Not Found	N/A	N/A
+	6/6/2026, 3:36:02 AM	435184812362614	Already Processed	Enoch Selorm	Made-In-China: 20 pieces of Phone covers
+	6/6/2026, 3:35:51 AM	79003379086723	Already Processed	Joseph Ayoka	1688: Yara black 100ml and Pink Ice cream 100ml
+	6/6/2026, 3:35:45 AM	79003483039919	Already Processed	Joseph Ayoka	1688: 2 Large size both sides white Three colors (white + warm + neutral li ght
+	6/6/2026, 3:35:38 AM	465334091532647	Already Processed	Hannah Biney	Pinduoduo: Bathroom shelves
+	6/6/2026, 3:35:34 AM	YT8870536661340	Not Found	N/A	N/A
+	6/6/2026, 3:35:33 AM	99422707	Not Found	N/A	N/A
+	6/6/2026, 3:35:27 AM	79107200765805	Already Processed	Baba Patience	Yueya Children's Book Specialty Store: Brand Talking Bilingual Early learning book
+	6/6/2026, 3:35:22 AM	79107103894264	Not Found	N/A	N/A
+	6/6/2026, 3:35:18 AM	79003052203720	Already Processed	Joseph Ayoka	1688: Children's All-Season Type a Color:12 pairs/hand Children's socks size:6-12 months
+	6/6/2026, 3:35:14 AM	YT8871095693302	Already Processed	Bright Kofi Badu Amoah	Pinduoduo: Camouflage workwear short
+	6/6/2026, 3:35:09 AM	79106031934210	Already Processed	Baba Patience	Left and right boutique women’s shoes: 2026 New Style Hollow-Out Rhi nestone-Embellished Mesh Shoe black 41
+	6/6/2026, 3:35:04 AM	9816704504405	Already Processed	Bright Kofi Badu Amoah	Pinduoduo: EVA slide
+	6/6/2026, 3:34:56 AM	YT8866042028278	Not Found	N/A	N/A
+	6/6/2026, 3:34:48 AM	465329420508866	Already Processed	Hannah Biney	Pinduoduo: 2 hot comb
+	6/6/2026, 3:34:43 AM	9816381841497	Already Processed	Baba Patience	Zhulong Children's Clothing Specialty Store: Red dress + hat, 110 X 1
+	6/6/2026, 3:34:37 AM	YT8866054274669	Not Found	N/A	N/A
+	6/6/2026, 3:34:31 AM	9816468622199	Not Found	N/A	N/A
+	6/6/2026, 3:34:26 AM	465327300759837	Already Processed	Baba Patience	DX selection: Fat Burning and Weight Loss Lazy Person Shaking Waist Belt (1)
+	6/6/2026, 3:34:26 AM	17140946	Not Found	N/A	N/A
+	6/6/2026, 3:34:22 AM	465367194051730	Already Processed	Baba Patience	Xiyan Children's Shop: Children's Slippers (1)
+	6/6/2026, 3:34:16 AM	435162557010580	Not Found	N/A	N/A
+	6/6/2026, 3:34:11 AM	79003044629748	Already Processed	Joseph Ayoka	1688: Children's Underwear Set Color:A21-Coffee Bear Head suitable for height:73
+	6/6/2026, 3:34:06 AM	9816292255543	Not Found	N/A	N/A
+	6/6/2026, 3:33:59 AM	770806858771573	Not Found	N/A	N/A
+	6/6/2026, 3:33:58 AM	777406858749573	Not Found	N/A	N/A
+	6/6/2026, 3:33:50 AM	79102826909515	Not Found	N/A	N/A
+	6/6/2026, 3:33:41 AM	9816257522862	Not Found	N/A	N/A
+	6/6/2026, 3:33:35 AM	YT7616146015293	Already Processed	Amadu Abdul-Karim	1688: Pair of shoes
+	6/6/2026, 3:33:29 AM	YT7-\{ARF=	Not Found	N/A	N/A
+	6/6/2026, 3:33:28 AM	YT7609165823877	Not Found	N/A	N/A
+	6/6/2026, 3:33:23 AM	525282483398441523	Not Found	N/A	N/A
+	6/6/2026, 3:33:22 AM	465282486398447	Not Found	N/A	N/A
+	6/6/2026, 3:33:15 AM	79102066802546	Not Found	N/A	N/A
+	6/6/2026, 3:33:09 AM	777407213411712	Not Found	N/A	N/A
+	6/6/2026, 3:33:01 AM	YT2587583386352	Already Processed	Joseph Ayoka	1688: 10 derma stamp Cross-Border Source
+	6/6/2026, 3:32:49 AM	777407262643936	Not Found	N/A	N/A
+	6/6/2026, 3:32:45 AM	435172882121827	Already Processed	Joseph Ayoka	1688: High-Quality Fabric Color: 2 Embroidered t-shirt navy blue and white Suitable Height:90 cm
+	6/2/2026, 10:10:28 AM	79104146860392	Already Processed	Hannah Biney	Pinduoduo: Hair bow net
+	6/2/2026, 10:10:20 AM	777407262643936	Not Found	N/A	N/A
+	6/2/2026, 10:10:12 AM	465318302672233	Not Found	N/A	N/A
+	6/2/2026, 9:36:40 AM	9816851832491	Not Found	N/A	N/A
+	6/2/2026, 9:36:34 AM	435183983708472	Already Processed	Amadu Abdul-Karim	1688: Wig (2)
+	6/2/2026, 9:36:17 AM	YT8872926697975	Not Found	N/A	N/A
+	6/2/2026, 9:36:01 AM	465351762110857	Not Found	N/A	N/A
+	6/2/2026, 9:35:53 AM	YT8871093954269	Not Found	N/A	N/A
+	6/2/2026, 9:35:49 AM	9816847679363	Not Found	N/A	N/A
+	6/2/2026, 9:35:42 AM	YT8869198623342	Already Processed	Baba Patience	WANGVSHA Women's Shoes Official: Transparent High-Heel Thick-S oled Slide Sandals (2) black and silver size 38 for all
+	6/2/2026, 9:35:34 AM	777411018606652	Not Found	N/A	N/A
+	6/2/2026, 9:35:30 AM	777402360126420	Not Found	N/A	N/A
+	6/2/2026, 9:35:27 AM	78598965897043	Not Found	N/A	N/A
+	6/2/2026, 9:35:22 AM	9822202481017	Not Found	N/A	N/A
+	6/2/2026, 9:35:18 AM	YT7619214516443	Not Found	N/A	N/A
+	6/2/2026, 9:35:13 AM	JT5483724897391	Not Found	N/A	N/A
+	6/2/2026, 9:35:06 AM	79005879657951	Not Found	N/A	N/A
+	6/2/2026, 9:35:01 AM	9816867963505	Not Found	N/A	N/A
+	6/2/2026, 9:34:56 AM	JT5490259313482	Already Processed	Hannah Biney	Pinduoduo: Head band
+	6/2/2026, 9:34:51 AM	JT548923065	Not Found	N/A	N/A
+	6/2/2026, 9:34:40 AM	79000987713515	Not Found	N/A	N/A
+	6/2/2026, 9:34:36 AM	78599007558076	Not Found	N/A	N/A
+	6/2/2026, 9:34:32 AM	79101491056204	Not Found	N/A	N/A
+	6/2/2026, 9:34:26 AM	435186555432802	Not Found	N/A	N/A
+	6/2/2026, 9:34:22 AM	YT8869429227581	Not Found	N/A	N/A
+	6/2/2026, 9:34:18 AM	465357996984160	Already Processed	Bright Kofi Badu Amoah	Pinduoduo: Travis Scott AJ1 Low
+	6/2/2026, 9:34:14 AM	777413449248550	Not Found	N/A	N/A
+	6/2/2026, 9:34:10 AM	777413437070374	Not Found	N/A	N/A
+	6/2/2026, 9:34:01 AM	465317574854411	Not Found	N/A	N/A
+	6/2/2026, 9:33:56 AM	YT8869188407903	Already Processed	Benedict Afukah	Pinduoduo: 1 tattoo sticker (0-9)
+	6/2/2026, 9:33:53 AM	YT8870666565718	Not Found	N/A	N/A
+	6/2/2026, 9:33:48 AM	79104352588311	Already Processed	Baba Patience	Banana Monster Lingerie Flagship Store: Retro American striped women's underwear, pure cotton, antibacterial, extra X5 pieces
+	6/2/2026, 9:33:43 AM	YT8869429225912	Not Found	N/A	N/A
+	6/2/2026, 9:33:38 AM	79106127309427	Already Processed	Benedict Afukah	Pinduoduo: Chrome style bracelet
+	6/2/2026, 9:33:33 AM	465318108373805	Not Found	N/A	N/A
+	6/2/2026, 9:33:33 AM	465318108373805	Not Found	N/A	N/A
+	6/2/2026, 9:33:33 AM	465318108373805	Not Found	N/A	N/A
+	6/2/2026, 9:33:30 AM	79106326372120	Already Processed	Benedict Afukah	Pinduoduo: 1 Ear ring
+	6/2/2026, 9:33:03 AM	9816757701698	Already Processed	Benedict Afukah	Pinduoduo: 1 ring for women
+	6/2/2026, 9:33:00 AM	564833858897762	Not Found	N/A	N/A
+	6/2/2026, 9:32:59 AM	465333858897762	Already Processed	Baba Patience	Fat burning shop: Big Belly, Stubborn Type, Whole Body Fat Burning and Rapid Weight Loss Cream X3
+	6/2/2026, 9:32:53 AM	435140180330145	Already Processed	Amadu Abdul-Karim	1688: 2 dye for clothes
+	6/2/2026, 9:32:46 AM	YT8870262227238	Already Processed	Benedict Afukah	Pinduoduo: 1 Tattoo sticker
+	6/2/2026, 9:32:40 AM	435152494621635	Not Found	N/A	N/A
+	6/2/2026, 9:32:35 AM	JT5483476487491	Already Processed	Benedict Afukah	Pinduoduo: 1 vintage belt
+	6/2/2026, 9:32:31 AM	JT3161683348043	Not Found	N/A	N/A
+	6/2/2026, 9:32:27 AM	JT3161266991281	Not Found	N/A	N/A
+	6/2/2026, 9:32:21 AM	435163028594817	Not Found	N/A	N/A
+	6/2/2026, 9:32:21 AM	96284018	Not Found	N/A	N/A
+	6/2/2026, 9:32:11 AM	79103333648198	Already Processed	Benedict Afukah	Pinduoduo: 1 silver chain
+	6/2/2026, 9:32:05 AM	JT5485034296874	Already Processed	Hannah Biney	Pinduoduo: Ear phone
+	6/2/2026, 9:31:56 AM	465319000848222	Not Found	N/A	N/A
+	6/2/2026, 9:25:39 AM	YT8871093954269	Not Found	N/A	N/A
+	6/2/2026, 9:25:34 AM	YT8869429226489	Updated (In Warehouse)	Baba Patience	Yushu Technology: Phone covers 4 pieces. 2 iPhone 13 and 2 iPhone 15 pro max
+	6/2/2026, 9:25:29 AM	YT8871380075721	Already Processed	Baba Patience	Chuang Ya Nuo Optical Store: Cycling Goggle s – Women's Sports Sunglasse (1)
+	6/2/2026, 9:25:26 AM	464820762110857	Not Found	N/A	N/A
+	6/2/2026, 9:25:25 AM	465351762110857	Not Found	N/A	N/A
+	6/2/2026, 9:25:15 AM	YT8869429227581	Not Found	N/A	N/A
+	6/2/2026, 9:25:09 AM	YT8869429225912	Not Found	N/A	N/A
+	6/2/2026, 9:25:03 AM	YT8869429225912	Not Found	N/A	N/A
+	6/2/2026, 9:24:58 AM	79005879657951	Not Found	N/A	N/A
+	6/2/2026, 9:24:55 AM	435186555432802	Not Found	N/A	N/A
+	6/2/2026, 9:24:49 AM	469967194051734	Not Found	N/A	N/A
+	6/2/2026, 9:24:49 AM	465367194051730	Already Processed	Baba Patience	Xiyan Children's Shop: Children's Slippers (1)
+	6/2/2026, 9:24:24 AM	773423251088296	Updated (In Warehouse)	Samuel Korley	Alibaba: Chinese Traditional Medical Herb Nasal Spray
+	6/2/2026, 9:24:20 AM	435183983708472	Already Processed	Amadu Abdul-Karim	1688: Wig (2)
+	6/2/2026, 9:24:14 AM	9816847679363	Not Found	N/A	N/A
+	6/2/2026, 9:24:08 AM	YT7619214516443	Not Found	N/A	N/A
+	6/2/2026, 9:23:48 AM	YT760916582387760	Not Found	N/A	N/A
+	6/2/2026, 9:23:46 AM	YT7609165823877	Not Found	N/A	N/A
+	6/2/2026, 9:23:36 AM	YT8869198623342	Already Processed	Baba Patience	WANGVSHA Women's Shoes Official: Transparent High-Heel Thick-S oled Slide Sandals (2) black and silver size 38 for all
+	6/2/2026, 9:23:30 AM	9816750250769	Already Processed	Baba Patience	Gugu Children's Clothing Store: Boys' New Summer Vest Set - Korean-style Children's Cloth...(1) Korean-style set
+	6/2/2026, 9:23:24 AM	9816867963505	Not Found	N/A	N/A
+	6/2/2026, 9:23:18 AM	777413437070374	Not Found	N/A	N/A
+	6/2/2026, 9:23:13 AM	JT5490259313482	Updated (In Warehouse)	Hannah Biney	Pinduoduo: Head band
+	6/2/2026, 9:23:06 AM	777413449248550	Not Found	N/A	N/A
+	6/2/2026, 9:23:02 AM	465357996984160	Already Processed	Bright Kofi Badu Amoah	Pinduoduo: Travis Scott AJ1 Low
+	6/2/2026, 9:22:58 AM	YT8872926697975	Not Found	N/A	N/A
+	6/2/2026, 9:22:41 AM	9801851832491617	Not Found	N/A	N/A
+	6/2/2026, 9:22:37 AM	9816851832491	Not Found	N/A	N/A
+	6/2/2026, 9:22:35 AM	YT8873120778518	Not Found	N/A	N/A
+	6/2/2026, 9:22:30 AM	9816845373448	Updated (In Warehouse)	Hannah Biney	Pinduoduo: Water bottle
+	6/2/2026, 9:22:21 AM	YT8873152670992	Not Found	N/A	N/A
+	6/1/2026, 8:34:33 AM	465357996984160	Updated (In Warehouse)	Bright Kofi Badu Amoah	Pinduoduo: Travis Scott AJ1 Low
+	5/31/2026, 10:23:29 PM	79107200765805	Already Processed	Baba Patience	Yueya Children's Book Specialty Store: Brand Talking Bilingual Early learning book
+	5/31/2026, 10:21:51 PM	YT8871093954269	Not Found	N/A	N/A
+	5/31/2026, 10:21:28 PM	465367194051730	Updated (In Warehouse)	Baba Patience	Xiyan Children's Shop: Children's Slippers (1)
+	5/31/2026, 10:21:14 PM	9816750250769	Already Processed	Baba Patience	Gugu Children's Clothing Store: Boys' New Summer Vest Set - Korean-style Children's Cloth...(1) Korean-style set
+	5/31/2026, 10:20:59 PM	YT8869198623342	Updated (In Warehouse)	Baba Patience	WANGVSHA Women's Shoes Official: Transparent High-Heel Thick-S oled Slide Sandals (2) black and silver size 38 for all
+	5/31/2026, 10:20:40 PM	9816632011516	Already Processed	Baba Patience	Chixia swimsuit: 3 pieces set (3) different colors
+	5/31/2026, 10:20:26 PM	JT5486596622570	Updated (In Warehouse)	Baba Patience	Xiao Nana’s shop 8758: Toe clip sandals Apricot size 40 and 38 2
+	5/31/2026, 10:20:04 PM	JT5486664291613	Updated (In Warehouse)	Baba Patience	Pu hao clothing bags: B344 [Short Sleeve & Short s Set](2) ;XL black and apricot 2XL
+	5/31/2026, 10:19:31 PM	1333994155544	Not Found	N/A	N/A
+	5/31/2026, 10:19:03 PM	9816468622199	Not Found	N/A	N/A
+	5/31/2026, 10:18:08 PM	1333996540144	Not Found	N/A	N/A
+	5/31/2026, 10:15:00 PM	435183983708472	Updated (In Warehouse)	Amadu Abdul-Karim	1688: Wig (2)
+	5/31/2026, 9:47:17 PM	YT8871093954269	Not Found	N/A	N/A
+	5/31/2026, 9:46:58 PM	YT8871380075721	Updated (In Warehouse)	Baba Patience	Chuang Ya Nuo Optical Store: Cycling Goggle s – Women's Sports Sunglasse (1)
+	5/31/2026, 9:46:42 PM	1333993137144	Updated (In Warehouse)	Baba Patience	Forest Realm Lazy Furniture Factory: 2 pink Pumpkin chair
+	5/31/2026, 9:44:45 PM	YT8870262227238	Already Processed	Benedict Afukah	Pinduoduo: 1 Tattoo sticker
+	5/31/2026, 5:30:30 PM	YT8870262227238	Updated (In Warehouse)	Benedict Afukah	Pinduoduo: 1 Tattoo sticker
+	5/31/2026, 3:19:55 PM	9816468622199	Not Found	N/A	N/A
+	5/31/2026, 3:19:22 PM	1333994155544	Not Found	N/A	N/A
+	5/31/2026, 3:19:07 PM	9816632011516	Updated (In Warehouse)	Baba Patience	Chixia swimsuit: 3 pieces set (3) different colors
+	5/31/2026, 3:18:51 PM	9816750250769	Updated (In Warehouse)	Baba Patience	Gugu Children's Clothing Store: Boys' New Summer Vest Set - Korean-style Children's Cloth...(1) Korean-style set
+	5/30/2026, 6:58:38 AM	Yittrtggggydd	Not Found	N/A	N/A
+	5/30/2026, 6:53:16 AM	SF0210202647200	Updated (In Warehouse)	Emma Quayson	Changzhou Sanvera Trading Co.,LTD: 1 kg biodegradable PE film with package dimensions around 0.001m³
+	5/30/2026, 2:27:56 AM	78967195610784	Updated (In Warehouse)	Awal Abdallah Maikano	1688: wsff
+	5/30/2026, 2:23:39 AM	78967195610784	Updated (In Warehouse)	Awal Abdallah Maikano	1688: wsff
+	5/30/2026, 1:35:28 AM	(01)10948346950887	Not Found	N/A	N/A
+	5/30/2026, 1:34:07 AM	79004454989783	Not Found	N/A	N/A
+	5/30/2026, 1:33:37 AM	79004454989783	Not Found	N/A	N/A
+	5/30/2026, 1:33:28 AM	79004454989783	Not Found	N/A	N/A
+	5/30/2026, 1:32:56 AM	79004454989783	Not Found	N/A	N/A
+	5/30/2026, 1:31:05 AM	435184812362614	Already Processed	Enoch Selorm	Made-In-China: 20 pieces of Phone covers
+	5/30/2026, 1:30:46 AM	YT8869188407903	Already Processed	Benedict Afukah	Pinduoduo: 1 tattoo sticker (0-9)
+	5/30/2026, 1:30:40 AM	79107200765805	Already Processed	Baba Patience	Yueya Children's Book Specialty Store: Brand Talking Bilingual Early learning book
+	5/30/2026, 1:30:32 AM	YT8866054274669	Not Found	N/A	N/A
+	5/30/2026, 1:30:06 AM	435162557010580	Not Found	N/A	N/A
+	5/30/2026, 1:30:02 AM	9816468622199	Not Found	N/A	N/A
+	5/30/2026, 1:29:56 AM	79001419397513	Not Found	N/A	N/A
+	5/30/2026, 1:29:49 AM	YT8866042028278	Not Found	N/A	N/A
+	5/30/2026, 1:29:05 AM	79102910597968	Not Found	N/A	N/A
+	5/30/2026, 1:28:54 AM	435163028594817	Not Found	N/A	N/A
+	5/30/2026, 1:27:07 AM	465282486398447	Not Found	N/A	N/A
+	5/30/2026, 1:26:05 AM	435140180330145	Already Processed	Amadu Abdul-Karim	1688: 2 dye for clothes
+	5/30/2026, 1:25:25 AM	(01)49933218005293	Not Found	N/A	N/A
+	5/30/2026, 1:24:27 AM	YT8870666565718	Not Found	N/A	N/A
+	5/30/2026, 1:24:13 AM	777407709335426	Not Found	N/A	N/A
+	5/30/2026, 1:24:06 AM	79102697809876	Not Found	N/A	N/A
+	5/30/2026, 1:23:50 AM	435169856284794	Not Found	N/A	N/A
+	5/30/2026, 1:22:49 AM	79102754788125	Not Found	N/A	N/A
+	5/30/2026, 1:21:45 AM	777406858749573	Not Found	N/A	N/A
+	5/30/2026, 1:21:07 AM	773420882916800	Already Processed	Joseph Ayoka	1688: 2 Children's Basketball Clothes
+	5/30/2026, 1:20:13 AM	YT8870535221891	Not Found	N/A	N/A
+	5/30/2026, 1:19:57 AM	78598965897043	Not Found	N/A	N/A
+	5/30/2026, 1:19:47 AM	79102066802546	Not Found	N/A	N/A
+	5/30/2026, 1:18:50 AM	465317574854411	Not Found	N/A	N/A
+	5/30/2026, 1:18:09 AM	79102826909515	Not Found	N/A	N/A
+	5/30/2026, 1:18:01 AM	JT5483724897391	Not Found	N/A	N/A
+	5/30/2026, 1:17:40 AM	YT7623084573187	Not Found	N/A	N/A
+	5/30/2026, 1:17:07 AM	(01)12677448132386	Not Found	N/A	N/A
+	5/30/2026, 1:16:33 AM	JT5485034296874	Updated (In Warehouse)	Hannah Biney	Pinduoduo: Ear phone
+	5/30/2026, 1:16:15 AM	79001655448019	Not Found	N/A	N/A
+	5/30/2026, 1:15:44 AM	9816257522862	Not Found	N/A	N/A
+	5/30/2026, 1:15:37 AM	9816292255543	Not Found	N/A	N/A
+	5/30/2026, 1:15:30 AM	465317456494266	Not Found	N/A	N/A
+	5/30/2026, 1:14:35 AM	777407262643936	Not Found	N/A	N/A
+	5/30/2026, 1:14:16 AM	79000987713515	Not Found	N/A	N/A
+	5/30/2026, 1:14:06 AM	(01)05806597800444	Not Found	N/A	N/A
+	5/30/2026, 1:13:36 AM	777407213411712	Not Found	N/A	N/A
+	5/30/2026, 1:13:00 AM	78599007558076	Not Found	N/A	N/A
+	5/30/2026, 1:12:43 AM	79101491056204	Not Found	N/A	N/A
+	5/30/2026, 1:11:30 AM	JT3161683348043	Not Found	N/A	N/A
+	5/30/2026, 1:11:18 AM	777402360126420	Not Found	N/A	N/A
+	5/30/2026, 1:10:53 AM	465318302672233	Not Found	N/A	N/A
+	5/30/2026, 1:10:02 AM	465318108373805	Not Found	N/A	N/A
+	5/30/2026, 1:08:38 AM	465319000848222	Not Found	N/A	N/A
+	5/30/2026, 1:06:38 AM	435152494621635	Not Found	N/A	N/A
+	5/30/2026, 1:05:12 AM	JT3161266991281	Not Found	N/A	N/A
+	5/30/2026, 1:04:29 AM	435163028594817	Not Found	N/A	N/A
+	5/30/2026, 1:03:13 AM	435163028594817	Not Found	N/A	N/A
+	5/30/2026, 1:03:10 AM	(01)50077911388485	Not Found	N/A	N/A
+	5/30/2026, 1:00:33 AM	9816757701698	Updated (In Warehouse)	Benedict Afukah	Pinduoduo: 1 ring for women
+	5/30/2026, 12:56:39 AM	JT3162837163033	Updated (In Warehouse)	Joseph Ayoka	1688: 2 Spot office chair lifting swivel
+	5/30/2026, 12:56:14 AM	978007744	Updated (In Warehouse)	Joseph Ayoka	1688: 2 Light Luxury Minimalist Coffee Table Large and Small Round Combination Marble Pattern New Small Table Round Iron Storage Mother-In-Law Coffee Table
+	5/30/2026, 12:55:54 AM	435175284456796	Updated (In Warehouse)	Joseph Ayoka	1688: 55 Micro-Needle Rollers
+	5/30/2026, 12:55:27 AM	YT7621049281124	Updated (In Warehouse)	Joseph Ayoka	1688: Cross-Border American Version of Kirkland Scalp Care Solution Set, 6 Bottles Package 2 ( 10 boxes)
+	5/30/2026, 12:54:46 AM	YT7621047193342	Updated (In Warehouse)	Joseph Ayoka	1688: Cross-Border American Version of Kirkland Scalp Care Solution Set, 6 Bottles Package 1 ( 30 boxes)
+	5/29/2026, 8:23:57 AM	JT3161266149981	Not Found	N/A	N/A
+	5/29/2026, 8:23:56 AM	JT3161266991281	Not Found	N/A	N/A
+	5/29/2026, 8:23:52 AM	465282486398447	Not Found	N/A	N/A
+	5/29/2026, 8:23:48 AM	15139311	Not Found	N/A	N/A
+	5/29/2026, 8:23:48 AM	435140180330145	Already Processed	Amadu Abdul-Karim	1688: 2 dye for clothes
+	5/29/2026, 8:23:14 AM	78997781856383	Already Processed	Amadu Abdul-Karim	1688: For Samsung Z FOLD6 simulation folding
+	5/29/2026, 8:23:11 AM	465333858897762	Already Processed	Baba Patience	Fat burning shop: Big Belly, Stubborn Type, Whole Body Fat Burning and Rapid Weight Loss Cream X3
+	5/29/2026, 8:22:52 AM	435152494621635	Not Found	N/A	N/A
+	5/29/2026, 8:22:39 AM	JT3161683348043	Not Found	N/A	N/A
+	5/29/2026, 8:22:34 AM	777402360126420	Not Found	N/A	N/A
+	5/29/2026, 8:22:22 AM	79101491056204	Not Found	N/A	N/A
+	5/29/2026, 8:22:11 AM	YT7616146015293	Already Processed	Amadu Abdul-Karim	1688: Pair of shoes
+	5/29/2026, 8:22:02 AM	79000987713515	Not Found	N/A	N/A
+	5/29/2026, 8:21:55 AM	777407262643936	Not Found	N/A	N/A
+	5/29/2026, 8:21:45 AM	JT5477963925876	Not Found	N/A	N/A
+	5/29/2026, 8:21:37 AM	78599007558076	Not Found	N/A	N/A
+	5/29/2026, 8:21:28 AM	773417649668167	Already Processed	Baba Patience	Huicongman Clothing Store: 3 High waisted pants(one blue, one pink n one yellow )
+	5/29/2026, 8:21:19 AM	`AYAYAYFK	Not Found	N/A	N/A
+	5/29/2026, 8:21:17 AM	78598965897043	Not Found	N/A	N/A
+	5/29/2026, 8:21:10 AM	773420882916800	Already Processed	Joseph Ayoka	1688: 2 Children's Basketball Clothes
+	5/29/2026, 8:21:02 AM	79102066802546	Not Found	N/A	N/A
+	5/29/2026, 8:20:56 AM	777407709335426	Not Found	N/A	N/A
+	5/29/2026, 8:20:51 AM	79102697809876	Not Found	N/A	N/A
+	5/29/2026, 8:20:39 AM	79104146860392	Already Processed	Hannah Biney	Pinduoduo: Hair bow net
+	5/29/2026, 8:20:31 AM	465317574854411	Not Found	N/A	N/A
+	5/29/2026, 8:20:26 AM	46532972425665732925	Not Found	N/A	N/A
+	5/29/2026, 8:20:23 AM	465318724256659	Not Found	N/A	N/A
+	5/29/2026, 8:20:16 AM	465329420508866	Already Processed	Hannah Biney	Pinduoduo: 2 hot comb
+	5/29/2026, 8:20:08 AM	465334091532647	Already Processed	Hannah Biney	Pinduoduo: Bathroom shelves
+	5/29/2026, 8:20:00 AM	79104352588311	Already Processed	Baba Patience	Banana Monster Lingerie Flagship Store: Retro American striped women's underwear, pure cotton, antibacterial, extra X5 pieces
+	5/29/2026, 8:19:55 AM	465327300759837	Already Processed	Baba Patience	DX selection: Fat Burning and Weight Loss Lazy Person Shaking Waist Belt (1)
+	5/29/2026, 8:19:49 AM	YT8870666565718	Not Found	N/A	N/A
+	5/29/2026, 8:19:40 AM	435169856284794	Not Found	N/A	N/A
+	5/29/2026, 8:19:35 AM	79102754788125	Not Found	N/A	N/A
+	5/29/2026, 8:19:29 AM	435172548117138	Already Processed	Joseph Ayoka	1688: Only 1 Children's Velvet Thickened
+	5/29/2026, 8:19:24 AM	465319000848222	Not Found	N/A	N/A
+	5/29/2026, 8:19:18 AM	777406858749573	Not Found	N/A	N/A
+	5/29/2026, 8:19:12 AM	777407213411712	Not Found	N/A	N/A
+	5/29/2026, 8:19:08 AM	465318302672233	Not Found	N/A	N/A
+	5/29/2026, 8:19:00 AM	96SM*SU	Not Found	N/A	N/A
+	5/29/2026, 8:19:00 AM	461518516494261622	Not Found	N/A	N/A
+	5/29/2026, 8:19:00 AM	465317456494266	Not Found	N/A	N/A
+	5/29/2026, 8:18:49 AM	465317108374805	Not Found	N/A	N/A
+	5/29/2026, 8:18:44 AM	YT2587583386352	Updated (In Warehouse)	Joseph Ayoka	1688: 10 derma stamp Cross-Border Source
+	5/29/2026, 8:18:33 AM	79102826909515	Not Found	N/A	N/A
+	5/29/2026, 8:18:28 AM	79106127309427	Updated (In Warehouse)	Benedict Afukah	Pinduoduo: Chrome style bracelet
+	5/29/2026, 8:18:22 AM	9816292255543	Not Found	N/A	N/A
+	5/29/2026, 8:18:16 AM	9816257522862	Not Found	N/A	N/A
+	5/29/2026, 8:18:10 AM	JT5005034596874	Not Found	N/A	N/A
+	5/29/2026, 8:18:03 AM	9816381841497	Already Processed	Baba Patience	Zhulong Children's Clothing Specialty Store: Red dress + hat, 110 X 1
+	5/29/2026, 8:17:58 AM	79001655448019	Not Found	N/A	N/A
+	5/29/2026, 8:17:46 AM	JT3162842688109	Updated (In Warehouse)	Joseph Ayoka	1688: Package 2 ( 100 pieces of pampers)
+	5/29/2026, 8:17:37 AM	79003483039919	Updated (In Warehouse)	Joseph Ayoka	1688: 2 Large size both sides white Three colors (white + warm + neutral li ght
+	5/29/2026, 8:17:26 AM	777411018606652	Not Found	N/A	N/A
+	5/29/2026, 8:17:18 AM	79001419397513	Not Found	N/A	N/A
+	5/29/2026, 8:17:13 AM	773422126916319	Updated (In Warehouse)	Amadu Abdul-Karim	1688: Hat and bag (5)
+	5/29/2026, 8:17:07 AM	YT7,^>0Y?W	Not Found	N/A	N/A
+	5/29/2026, 8:17:05 AM	YT7623084573187	Not Found	N/A	N/A
+	5/29/2026, 8:16:59 AM	79004454989783	Not Found	N/A	N/A
+	5/29/2026, 8:16:50 AM	9816241805225	Not Found	N/A	N/A
+	5/29/2026, 8:16:44 AM	JT5483476487491	Already Processed	Benedict Afukah	Pinduoduo: 1 vintage belt
+	5/29/2026, 8:16:32 AM	73709488743543	Not Found	N/A	N/A
+	5/29/2026, 8:16:24 AM	9816704504405	Updated (In Warehouse)	Bright Kofi Badu Amoah	Pinduoduo: EVA slide
+	5/29/2026, 8:16:20 AM	JDVC3616112558111	Already Processed	Christiana Agyare	YanTam: 58pcs of wigs
+	5/29/2026, 8:16:16 AM	JT5773700897391	Not Found	N/A	N/A
+	5/29/2026, 8:16:12 AM	JT5483724897391	Not Found	N/A	N/A
+	5/29/2026, 8:16:05 AM	79003083630393	Updated (In Warehouse)	Joseph Ayoka	1688: Baby anti-fall pillow headrest
+	5/29/2026, 8:15:57 AM	YT8866042028278	Not Found	N/A	N/A
+	5/29/2026, 8:15:49 AM	JT3162843127866	Updated (In Warehouse)	Joseph Ayoka	1688: Package 1 (100 pieces of Pampers
+	5/29/2026, 8:15:44 AM	79106326372120	Updated (In Warehouse)	Benedict Afukah	Pinduoduo: 1 Ear ring
+	5/29/2026, 8:15:39 AM	9822270802165	Already Processed	Joseph Ayoka	1688: 2 240g Heavyweight Pure
+	5/29/2026, 8:15:32 AM	YT8866054274669	Not Found	N/A	N/A
+	5/29/2026, 8:15:25 AM	79003044629748	Updated (In Warehouse)	Joseph Ayoka	1688: Children's Underwear Set Color:A21-Coffee Bear Head suitable for height:73
+	5/29/2026, 8:15:19 AM	9816468622199	Not Found	N/A	N/A
+	5/29/2026, 8:15:13 AM	79106031934210	Updated (In Warehouse)	Baba Patience	Left and right boutique women’s shoes: 2026 New Style Hollow-Out Rhi nestone-Embellished Mesh Shoe black 41
+	5/29/2026, 8:15:07 AM	435183993768586	Updated (In Warehouse)	Amadu Abdul-Karim	1688: Wig
+	5/29/2026, 8:15:02 AM	435163028594817	Not Found	N/A	N/A
+	5/29/2026, 8:14:56 AM	435162557010580	Not Found	N/A	N/A
+	5/29/2026, 8:14:55 AM	6160710060214	Not Found	N/A	N/A
+	5/29/2026, 8:14:50 AM	435162557010580	Not Found	N/A	N/A
+	5/29/2026, 8:14:43 AM	435172882121827	Updated (In Warehouse)	Joseph Ayoka	1688: High-Quality Fabric Color: 2 Embroidered t-shirt navy blue and white Suitable Height:90 cm
+	5/29/2026, 8:14:33 AM	79107103894264	Not Found	N/A	N/A
+	5/29/2026, 8:14:20 AM	79103333648198	Already Processed	Benedict Afukah	Pinduoduo: 1 silver chain
+	5/29/2026, 8:14:16 AM	79003052203720	Updated (In Warehouse)	Joseph Ayoka	1688: Children's All-Season Type a Color:12 pairs/hand Children's socks size:6-12 months
+	5/29/2026, 8:14:11 AM	YT8871095693302	Updated (In Warehouse)	Bright Kofi Badu Amoah	Pinduoduo: Camouflage workwear short
+	5/29/2026, 8:13:36 AM	YT8870535221891	Not Found	N/A	N/A
+	5/29/2026, 8:13:27 AM	6230829815286	Not Found	N/A	N/A
+	5/29/2026, 8:13:27 AM	YT8870535221891	Not Found	N/A	N/A
+	5/29/2026, 8:13:13 AM	HTTPS://PAGE.CAINIAO.COM/KUAIDI/AD-TRANSFER/INDEX.HTML	Not Found	N/A	N/A
+	5/29/2026, 8:13:11 AM	435184812362611504	Not Found	N/A	N/A
+	5/29/2026, 8:13:07 AM	HTTPS://PAGE.CAINIAO.COM/KUAIDI/AD-TRANSFER/INDEX.HTML	Not Found	N/A	N/A
+	5/29/2026, 8:13:04 AM	435184812362614	Already Processed	Enoch Selorm	Made-In-China: 20 pieces of Phone covers
+	5/29/2026, 8:12:56 AM	YT8866518216558	Updated (In Warehouse)	Benedict Afukah	Pinduoduo: 1 Rick Owens Sneaker
+	5/29/2026, 8:12:37 AM	79102910597968	Not Found	N/A	N/A
+	5/29/2026, 8:12:31 AM	79102910597968	Not Found	N/A	N/A
+	5/29/2026, 8:12:02 AM	YT8870536661340	Not Found	N/A	N/A
+	5/29/2026, 8:11:56 AM	YT8870536661340	Not Found	N/A	N/A
+	5/29/2026, 8:11:46 AM	9822202481017	Not Found	N/A	N/A
+	5/29/2026, 8:11:40 AM	9822202481017	Not Found	N/A	N/A
+	5/29/2026, 8:11:34 AM	777411347093018	Updated (In Warehouse)	Baba Patience	World peace trade: Light blue set (2 piece) LX
+	5/29/2026, 8:11:29 AM	79107200765805	Updated (In Warehouse)	Baba Patience	Yueya Children's Book Specialty Store: Brand Talking Bilingual Early learning book
+	5/29/2026, 8:11:16 AM	YT8862788407903	Not Found	N/A	N/A
+	5/29/2026, 8:11:16 AM	YT8869188407903	Updated (In Warehouse)	Benedict Afukah	Pinduoduo: 1 tattoo sticker (0-9)
+	5/29/2026, 8:11:11 AM	79003379086723	Updated (In Warehouse)	Joseph Ayoka	1688: Yara black 100ml and Pink Ice cream 100ml
+	5/28/2026, 5:53:54 PM	435184812362614	Updated (In Warehouse)	Enoch Selorm	Made-In-China: 20 pieces of Phone covers
+	5/24/2026, 2:33:47 PM	78967195610784	Updated (In Warehouse)	Awal Abdallah Maikano	1688: wsff

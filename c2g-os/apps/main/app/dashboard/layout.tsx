@@ -7,6 +7,8 @@ import { WelcomeModal } from "../../components/welcome-modal";
 import { getDashboardStats } from "./actions";
 import { getSecureWalletBalance } from "./wallet/shared-actions";
 
+import { headers } from "next/headers";
+
 export const metadata: Metadata = {
   title: "Dashboard | C2G Logistics",
   description: "Manage your shipments, link orders, and mall purchases.",
@@ -21,12 +23,20 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-
-  // Strict Auth Guard: If no valid session exists, immediately redirect to login
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const headersList = await headers();
   
-  if (error || !user) {
+  if (headersList.get('x-auth-status') !== 'authenticated') {
+    redirect("/login");
+  }
+
+  if (headersList.get('x-needs-profile') === 'true') {
+    redirect("/auth/complete-profile");
+  }
+
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (!user || error) {
     redirect("/login");
   }
 
@@ -42,7 +52,7 @@ export default async function DashboardLayout({
         {children}
       </DashboardClientLayout>
       <PushPrompt />
-      <WelcomeModal createdAt={user.created_at} />
+      <WelcomeModal createdAt={user.created_at} userId={user.id} />
     </>
   );
 }

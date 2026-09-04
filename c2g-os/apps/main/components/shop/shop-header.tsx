@@ -173,7 +173,7 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
   }, [isUploadingImage]);
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[100] bg-background/95 backdrop-blur-xl border-t-0 border-x-0 border-b border-border/50 shadow-lg shadow-black/5 pt-[env(safe-area-inset-top)]">
+    <div className="sticky top-0 inset-x-0 z-[100] w-full bg-background/95 backdrop-blur-xl border-t-0 border-x-0 border-b border-border/50 shadow-lg shadow-black/5 pt-[env(safe-area-inset-top)]">
       {/* Top bar: Logo + Search + Cart */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-3 h-14 md:h-16">

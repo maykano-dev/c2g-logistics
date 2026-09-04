@@ -1,0 +1,4 @@
+name = "c2g-logistics-main"
+compatibility_date = "2024-03-20"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"

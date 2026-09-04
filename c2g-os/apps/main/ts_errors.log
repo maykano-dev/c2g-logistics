@@ -1,0 +1,8 @@
+components/shop/product-options.tsx(53,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+components/shop/product-options.tsx(61,45): error TS2538: Type 'undefined' cannot be used as an index type.
+components/shop/product-options.tsx(65,35): error TS2538: Type 'undefined' cannot be used as an index type.
+components/shop/product-options.tsx(100,144): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+scratch/test-hiobuy.ts(1,32): error TS2307: Cannot find module './lib/hiobuy/client' or its corresponding type declarations.
+scratch/test-hiobuy.ts(2,20): error TS2307: Cannot find module 'dotenv' or its corresponding type declarations.

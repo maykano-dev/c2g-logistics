@@ -24,7 +24,11 @@ export async function GET(request: Request) {
           status: 'active'
         }).select('id').maybeSingle() // Use maybeSingle to not throw if conflicting
       }
-      return NextResponse.redirect(`${origin}${next}`)
+      // Check for phone number to ensure interceptor flow
+      const hasPhone = !!user.user_metadata?.phone || !!user.phone;
+      const redirectTarget = hasPhone ? next : '/auth/complete-profile';
+
+      return NextResponse.redirect(`${origin}${redirectTarget}`)
     }
   }
 

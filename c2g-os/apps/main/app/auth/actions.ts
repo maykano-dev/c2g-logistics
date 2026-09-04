@@ -15,6 +15,60 @@ async function getClientContext() {
   return { ip, ua };
 }
 
+export async function loginWithGoogle() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      queryParams: {
+        prompt: 'select_account',
+      }
+    },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (data?.url) {
+    redirect(data.url);
+  }
+}
+
+export async function completeProfile(prevState: any, formData: FormData) {
+  const supabase = await createClient();
+  const phone = (formData.get('phone') as string || '').trim();
+  
+  if (!phone || phone.length < 8) {
+    return { error: 'Please enter a valid WhatsApp/Phone number.' };
+  }
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { error: 'Not authenticated. Please log in first.' };
+  }
+
+  // Update auth metadata
+  const { error: updateError } = await supabase.auth.updateUser({
+    data: { phone }
+  });
+
+  if (updateError) {
+    return { error: updateError.message || 'Failed to update profile' };
+  }
+
+  // Ensure customer record is updated
+  await supabase.from('customers').upsert({
+    id: user.id,
+    email: user.email,
+    name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer',
+    phone: phone,
+    status: 'active'
+  }, { onConflict: 'id' });
+
+  return { success: true };
+}
 
 export async function login(prevState: any, formData: FormData) {
   const supabase = await createClient();
