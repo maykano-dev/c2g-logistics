@@ -53,10 +53,20 @@ export async function middleware(request: NextRequest) {
     if (!checkRateLimit(ip, '/api/webhooks', 100, 60000)) { // 100 req / minute
       return new NextResponse('Too Many Requests', { status: 429 });
     }
-  } else if (path.startsWith('/auth/')) {
+  } else if (path.startsWith('/auth/') && !path.startsWith('/auth/callback')) {
     if (!checkRateLimit(ip, '/auth', 10, 60000)) { // 10 req / minute
       return new NextResponse('Too Many Requests', { status: 429 });
     }
+  }
+
+  // CRITICAL: Do NOT run any Supabase logic on /auth/callback.
+  // The PKCE code verifier cookie must be intact when the callback page loads.
+  // Running getUser() here clears orphaned cookies and destroys the verifier.
+  if (path === '/auth/callback') {
+    const passthroughResponse = NextResponse.next({ request: { headers: request.headers } });
+    passthroughResponse.headers.set('x-auth-status', 'unauthenticated');
+    passthroughResponse.headers.set('x-pathname', path);
+    return passthroughResponse;
   }
 
   let supabaseResponse = NextResponse.next({
@@ -139,6 +149,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

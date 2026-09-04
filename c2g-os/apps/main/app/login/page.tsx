@@ -34,27 +34,28 @@ export default async function LoginPage(
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-background relative overflow-hidden">
+    <div className="min-h-[100dvh] lg:h-screen flex items-center justify-center bg-background relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[150px] rounded-full animate-drift" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[150px] rounded-full animate-drift-slow" />
       </div>
       
-      <div className="w-full flex z-10 max-w-6xl mx-auto h-[100dvh] lg:h-[90dvh] lg:max-h-[800px] sm:rounded-2xl sm:shadow-2xl overflow-y-auto sm:overflow-hidden border-border/50 sm:border bg-background/80 backdrop-blur-xl">
+      {/* Card container — full height on desktop, scrollable form inside */}
+      <div className="w-full flex z-10 max-w-6xl mx-auto h-auto lg:h-[92vh] sm:rounded-2xl sm:shadow-2xl sm:border border-border/50 bg-background/80 backdrop-blur-xl overflow-hidden">
         
-        {/* Left Column: Form (Visible on all sizes) */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-8 sm:px-8 xl:px-12 relative overflow-y-auto sm:overflow-visible">
-          <div className="max-w-[400px] mx-auto w-full space-y-6 xl:space-y-8">
+        {/* Left Column: Form — scrollable so it never clips */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-start lg:justify-center px-5 py-8 sm:px-8 xl:px-12 overflow-y-auto">
+          <div className="max-w-[400px] mx-auto w-full space-y-4 lg:space-y-5 xl:space-y-6">
             {/* Logo & Header */}
             <div className="flex flex-col animate-fade-in text-center sm:text-left">
-              <div className="w-24 h-24 sm:w-32 sm:h-32 relative flex items-center justify-center sm:justify-start mb-4 mx-auto sm:mx-0">
+              <div className="w-16 h-16 lg:w-20 lg:h-20 xl:w-28 xl:h-28 relative flex items-center justify-center sm:justify-start mb-2 lg:mb-3 mx-auto sm:mx-0">
                 <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground mb-2">
+              <h1 className="text-2xl lg:text-3xl xl:text-4xl font-black tracking-tight text-foreground mb-1">
                 Welcome Back
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              <p className="text-muted-foreground text-sm">
                 Sign in to manage your shipments and C2G Mall orders.
               </p>
             </div>
