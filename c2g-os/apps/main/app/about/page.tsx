@@ -1,5 +1,6 @@
 import { SiteNav } from "../../components/site-nav";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata = {
   title: "About Us | C2G Logistics | Your Gateway to China, Delivered to Ghana",
@@ -67,9 +68,9 @@ export default function AboutPage() {
             </div>
             <div className="relative">
               <div className="rounded-3xl overflow-hidden border border-border bg-gradient-to-br from-secondary to-background h-80 lg:h-[420px] flex items-center justify-center shadow-2xl">
-                <div className="text-center p-8 space-y-4">
-                  <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto">
-                    <i className="fas fa-globe text-3xl text-primary" />
+                <div className="text-center p-8 space-y-4 flex flex-col items-center">
+                  <div className="w-48 h-20 relative mx-auto mb-2">
+                    <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain drop-shadow-2xl" />
                   </div>
                   <p className="text-2xl font-bold text-foreground">China → Ghana</p>
                   <p className="text-muted-foreground">Trusted Logistics Partner</p>
