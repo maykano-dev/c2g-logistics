@@ -1,4 +1,5 @@
 "use client";
+import React from 'react';
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,8 +11,12 @@ function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const hasAttempted = React.useRef(false);
 
   useEffect(() => {
+    if (hasAttempted.current) return;
+    hasAttempted.current = true;
+    
     let mounted = true;
 
     const handleAuth = async () => {
