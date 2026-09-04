@@ -1,13 +1,14 @@
 "use client";
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { createBrowserClient } from "@supabase/ssr";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
 function AuthCallbackContent() {
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"loading" | "error">("loading");
+  const [errorMsg, setErrorMsg] = useState<string>("");
   const hasAttempted = React.useRef(false);
 
   useEffect(() => {
@@ -15,61 +16,70 @@ function AuthCallbackContent() {
     hasAttempted.current = true;
 
     const next = searchParams.get("next") || "/dashboard";
-    const supabase = createClient();
+    const code = searchParams.get("code");
 
-    // Let Supabase handle PKCE exchange automatically via detectSessionInUrl (default).
-    // We just listen for the resulting SIGNED_IN event and then redirect.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        subscription.unsubscribe();
+    if (!code) {
+      setErrorMsg("No authentication code found in URL.");
+      setStatus("error");
+      return;
+    }
 
-        const user = session.user;
-        let hasPhone = !!user.user_metadata?.phone || !!user.phone;
+    // Create a dedicated callback client with detectSessionInUrl:false to prevent
+    // any automatic exchange race condition. We do the exchange manually below.
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { detectSessionInUrl: false, persistSession: true } }
+    );
 
-        try {
-          // Upsert customer record
-          await supabase.from("customers").insert({
-            id: user.id,
-            email: user.email,
-            name: user.user_metadata?.full_name || "Customer",
-            phone: user.user_metadata?.phone || null,
-            status: "active"
-          }).select("id").maybeSingle();
+    const doExchange = async () => {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-          if (!hasPhone) {
-            const { data: customer } = await supabase
-              .from("customers")
-              .select("phone")
-              .eq("id", user.id)
-              .maybeSingle();
-
-            if (customer?.phone) {
-              hasPhone = true;
-              await supabase.auth.updateUser({ data: { phone: customer.phone } });
-            }
-          }
-        } catch (dbError) {
-          console.error("Non-critical DB sync error:", dbError);
-        }
-
-        // Hard navigate to bypass Next.js router cache
-        window.location.href = hasPhone ? next : "/auth/complete-profile";
-
-      } else if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
-        // Ignore these events on callback page
+      if (error) {
+        setErrorMsg(error.message);
+        setStatus("error");
+        return;
       }
-    });
 
-    // Fallback: if nothing fires within 10 seconds, show error
-    const timeout = setTimeout(() => {
-      subscription.unsubscribe();
-      setError("Authentication timed out. Please try again.");
-    }, 10000);
+      const user = data?.user;
+      if (!user) {
+        setErrorMsg("Session was created but user data is missing.");
+        setStatus("error");
+        return;
+      }
 
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeout);
+      let hasPhone = !!user.user_metadata?.phone || !!user.phone;
+
+      try {
+        await supabase.from("customers").insert({
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.full_name || "Customer",
+          phone: user.user_metadata?.phone || null,
+          status: "active"
+        }).select("id").maybeSingle();
+
+        if (!hasPhone) {
+          const { data: customer } = await supabase
+            .from("customers")
+            .select("phone")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (customer?.phone) {
+            hasPhone = true;
+            await supabase.auth.updateUser({ data: { phone: customer.phone } });
+          }
+        }
+      } catch (dbErr) {
+        console.error("Non-critical DB sync error:", dbErr);
+      }
+
+      // Hard navigate to bust any Next.js router cache of the unauthenticated state
+      window.location.href = hasPhone ? next : "/auth/complete-profile";
     };
+
+    doExchange();
   }, [searchParams]);
 
   return (
@@ -78,10 +88,10 @@ function AuthCallbackContent() {
         <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
       </div>
 
-      {error ? (
+      {status === "error" ? (
         <div className="space-y-4 animate-scale-in">
-          <div className="p-4 bg-destructive/10 text-destructive rounded-xl border border-destructive/20 font-medium">
-            {error}
+          <div className="p-4 bg-destructive/10 text-destructive rounded-xl border border-destructive/20 font-medium text-sm">
+            {errorMsg}
           </div>
           <button
             onClick={() => { window.location.href = "/login"; }}
