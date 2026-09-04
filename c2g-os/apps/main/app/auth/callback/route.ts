@@ -47,10 +47,12 @@ export async function GET(request: Request) {
 
         return NextResponse.redirect(`${origin}${redirectTarget}`)
       }
+    } else {
+      const errorMessage = error.message || 'Could not verify your session';
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(errorMessage)}`)
     }
   }
 
-  // return the user to an error page with instructions
-  const errorMessage = error?.message || 'Could not verify your session';
-  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(errorMessage)}`)
+  // return the user to an error page with instructions if no code
+  return NextResponse.redirect(`${origin}/login?error=Could not verify your session`)
 }
