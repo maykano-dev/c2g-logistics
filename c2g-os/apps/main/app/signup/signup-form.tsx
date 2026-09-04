@@ -147,17 +147,9 @@ export function SignupForm() {
 
   const handleGoogleLogin = async () => {
     startGoogleTransition(async () => {
-      const supabase = createClient();
-      
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            prompt: 'select_account',
-          }
-        },
-      });
+      // Call the server action directly to ensure PKCE cookies are set by the server
+      const origin = window.location.origin;
+      await loginWithGoogle(origin);
     });
   };
 
