@@ -70,7 +70,7 @@ export function AuthRightPanel() {
           </div>
           <div>
             <h3 className="text-sm xl:text-base font-bold text-white">Shop More. Ship Smarter.</h3>
-            <p className="text-[10px] xl:text-[11px] text-muted-foreground mt-0.5 mb-1.5 xl:mb-2 leading-snug">From electronics to fashion, beauty to home essentials — C2G Mall brings China closer to you.</p>
+            <p className="text-[10px] xl:text-[11px] text-muted-foreground mt-0.5 mb-1.5 xl:mb-2 leading-snug">From electronics to fashion, beauty to home essentials C2G Mall brings China closer to you.</p>
             <Link href="/shop" className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 group-hover:gap-2 transition-all">
               Start Shopping Now <span aria-hidden="true">&rarr;</span>
             </Link>
