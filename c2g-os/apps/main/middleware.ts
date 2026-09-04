@@ -126,18 +126,36 @@ export async function middleware(request: NextRequest) {
 
   // Requirement: "middleware never redirects". We pass the auth status via headers.
   if (!user || error) {
-    supabaseResponse.headers.set('x-auth-status', 'unauthenticated')
+    request.headers.set('x-auth-status', 'unauthenticated')
   } else {
-    supabaseResponse.headers.set('x-auth-status', 'authenticated')
-    supabaseResponse.headers.set('x-user-id', user.id)
+    request.headers.set('x-auth-status', 'authenticated')
+    request.headers.set('x-user-id', user.id)
     
     const hasPhone = !!user.user_metadata?.phone || !!user.phone;
     if (!hasPhone) {
-      supabaseResponse.headers.set('x-needs-profile', 'true')
+      request.headers.set('x-needs-profile', 'true')
     }
   }
 
-  return supabaseResponse
+  // To ensure Server Components (like app/page.tsx or app/dashboard/layout.tsx) see these headers,
+  // we must rebuild the NextResponse using the mutated request headers.
+  const finalResponse = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  // Preserve any cookies that Supabase might have set (e.g., during a token refresh)
+  supabaseResponse.cookies.getAll().forEach(cookie => {
+    finalResponse.cookies.set(cookie.name, cookie.value)
+  })
+
+  // Preserve other headers we explicitly set (like x-pathname)
+  supabaseResponse.headers.forEach((value, key) => {
+    finalResponse.headers.set(key, value)
+  })
+
+  return finalResponse
 }
 
 export const config = {
