@@ -7,7 +7,7 @@ export async function createClient() {
   
   const pathname = headersList.get('x-pathname') || ''
   
-  let cookieName = 'sb-c2g-auth-token';
+  let cookieName: string | undefined = undefined;
   if (pathname.startsWith('/admin')) {
     cookieName = 'sb-c2g-admin-auth-token';
   } else if (pathname.startsWith('/staff') || pathname.startsWith('/finance')) {
@@ -37,9 +37,7 @@ export async function createClient() {
           }
         },
       },
-      cookieOptions: {
-        name: cookieName,
-      }
+      cookieOptions: cookieName ? { name: cookieName } : undefined
     }
   )
 }

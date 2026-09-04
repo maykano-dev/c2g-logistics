@@ -4,7 +4,7 @@ export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
 
-  let cookieName = 'sb-c2g-auth-token';
+  let cookieName: string | undefined = undefined;
   
   if (typeof window !== 'undefined') {
     const pathname = window.location.pathname;
@@ -19,9 +19,7 @@ export function createClient() {
     supabaseUrl,
     supabaseKey,
     {
-      cookieOptions: {
-        name: cookieName,
-      }
+      cookieOptions: cookieName ? { name: cookieName } : undefined
     }
   )
 }
