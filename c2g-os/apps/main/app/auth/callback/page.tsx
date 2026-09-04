@@ -68,7 +68,7 @@ function AuthCallbackContent() {
         }
 
         if (mounted) {
-          router.push(hasPhone ? next : "/auth/complete-profile");
+          window.location.href = hasPhone ? next : "/auth/complete-profile";
         }
       }
     };
