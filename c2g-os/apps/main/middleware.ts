@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
   })
 
   // Determine cookie namespace based on the requested path
-  let cookieName: string | undefined = undefined;
+  let cookieName: string = 'sb-c2g-auth-token';
   const truePath = path === '/auth/callback' ? request.nextUrl.searchParams.get('next') || path : path;
   
   if (truePath.startsWith('/admin')) {

@@ -12,6 +12,10 @@ export async function GET(request: Request) {
   }
 
   const cookieStore = await cookies()
+  
+  // DEBUG LOGGING
+  const allCookies = cookieStore.getAll();
+  console.log('[auth/callback] Incoming cookies:', allCookies.map(c => c.name));
 
   // Use a plain createServerClient with NO custom cookie options.
   // This ensures it reads the PKCE verifier using the default key
@@ -33,7 +37,8 @@ export async function GET(request: Request) {
             // setAll is called from a Server Component - safe to ignore
           }
         }
-      }
+      },
+      cookieOptions: { name: 'sb-c2g-auth-token' }
     }
   )
 

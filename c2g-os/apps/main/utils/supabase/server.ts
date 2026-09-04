@@ -7,7 +7,7 @@ export async function createClient() {
   
   const pathname = headersList.get('x-pathname') || ''
   
-  let cookieName: string | undefined = undefined;
+  let cookieName: string = 'sb-c2g-auth-token';
   if (pathname.startsWith('/admin')) {
     cookieName = 'sb-c2g-admin-auth-token';
   } else if (pathname.startsWith('/staff') || pathname.startsWith('/finance')) {
