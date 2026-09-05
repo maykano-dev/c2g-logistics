@@ -45,24 +45,35 @@ export async function GET(request: Request) {
   )
 
   const buildRedirect = (url: string) => {
+    console.log(`[auth/callback] Building redirect to: ${url}`);
     const response = NextResponse.redirect(url)
     cookieJar.forEach(({ name, value, options }) => {
+      console.log(`[auth/callback] Attaching session cookie to redirect: ${name}`);
       response.cookies.set(name, value, options)
     })
     return response
   }
 
+  console.log(`[auth/callback] Calling exchangeCodeForSession with code: ${code?.substring(0, 5)}...`);
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    console.error('[auth/callback] exchangeCodeForSession error:', error.message)
+    console.error('[auth/callback] exchangeCodeForSession error:', error.message);
+    
+    // Debug PKCE state if exchange failed
+    const pkceCookie = cookieStore.get('sb-c2g-auth-token-code-verifier');
+    console.error('[auth/callback] PKCE cookie present during failure?', !!pkceCookie);
+    
     return buildRedirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
   }
+
+  console.log('[auth/callback] exchangeCodeForSession SUCCEEDED.');
 
   // Exchange succeeded — check if user has a phone number
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
+    console.error('[auth/callback] getUser failed right after exchange!');
     return buildRedirect(`${origin}/login?error=Session+could+not+be+established`)
   }
 
