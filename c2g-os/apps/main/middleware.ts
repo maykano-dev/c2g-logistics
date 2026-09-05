@@ -123,7 +123,12 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
-      cookieOptions: cookieName ? { name: cookieName } : undefined
+      cookieOptions: cookieName ? { 
+        name: cookieName,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 31536000
+      } : undefined
     }
   )
 
@@ -134,35 +139,39 @@ export async function middleware(request: NextRequest) {
   // https://supabase.com/docs/guides/auth/server-side/nextjs
   const { data: { user }, error } = await supabase.auth.getUser()
 
-  // Requirement: "middleware never redirects". We pass the auth status via headers.
+  // Clone headers properly to pass them downstream to Server Components
+  const requestHeaders = new Headers(request.headers)
+  
   if (!user || error) {
     console.log(`[Middleware] Auth Failed for path ${path}:`, error?.message || 'No user');
-    request.headers.set('x-auth-status', 'unauthenticated')
+    requestHeaders.set('x-auth-status', 'unauthenticated')
   } else {
     console.log(`[Middleware] Auth Success for path ${path}. User ID:`, user.id);
-    request.headers.set('x-auth-status', 'authenticated')
-    request.headers.set('x-user-id', user.id)
+    requestHeaders.set('x-auth-status', 'authenticated')
+    requestHeaders.set('x-user-id', user.id)
     
     const hasPhone = !!user.user_metadata?.phone || !!user.phone;
     if (!hasPhone) {
-      request.headers.set('x-needs-profile', 'true')
+      requestHeaders.set('x-needs-profile', 'true')
     }
   }
 
-  // To ensure Server Components (like app/page.tsx or app/dashboard/layout.tsx) see these headers,
-  // we must rebuild the NextResponse using the mutated request headers.
+  // Ensure x-pathname is set
+  requestHeaders.set('x-pathname', truePath)
+
+  // Create the final response using the properly cloned request headers
   const finalResponse = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: requestHeaders,
     },
   })
 
-  // Preserve any cookies that Supabase might have set (e.g., during a token refresh)
+  // Crucial: Copy cookies set by Supabase (e.g. token refresh) into the final response
   supabaseResponse.cookies.getAll().forEach(cookie => {
     finalResponse.cookies.set(cookie.name, cookie.value)
   })
 
-  // Preserve other headers we explicitly set (like x-pathname)
+  // Copy any other custom headers Supabase might have set on the response
   supabaseResponse.headers.forEach((value, key) => {
     finalResponse.headers.set(key, value)
   })

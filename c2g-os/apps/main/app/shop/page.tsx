@@ -25,6 +25,8 @@ export const metadata = {
     "Buy cheap quality goods from China at C2G Mall. Fast shipping from China to Ghana.",
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function ShopPage({
   searchParams,
 }: {

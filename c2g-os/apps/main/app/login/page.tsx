@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthRightPanel } from "@/components/auth-right-panel";
+import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = {
   title: "Login | C2G",
@@ -26,10 +27,10 @@ export default async function LoginPage(
     redirect(`/auth/callback?code=${searchParams.code}`);
   }
 
-  const headersList = await headers();
-  const authStatus = headersList.get('x-auth-status');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (authStatus === 'authenticated') {
+  if (user) {
     redirect("/dashboard");
   }
 

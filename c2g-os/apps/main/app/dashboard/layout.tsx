@@ -24,17 +24,11 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const headersList = await headers();
-  
-  if (headersList.get('x-auth-status') !== 'authenticated') {
-    console.log('[Dashboard Layout] Redirecting because x-auth-status is not authenticated. Value:', headersList.get('x-auth-status'));
-    redirect("/login");
-  }
 
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (!user || error) {
-    console.log('[Dashboard Layout] Redirecting because getUser failed:', error?.message || 'No user');
     redirect("/login");
   }
 

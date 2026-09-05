@@ -65,8 +65,8 @@ export function GoogleSignInButton({ label = "Continue with Google" }: { label?:
       })
 
       if (authError) {
-        console.error('[GoogleSignIn] signInWithIdToken error:', authError.message)
-        setError(authError.message)
+        console.error('[GoogleSignIn] signInWithIdToken full error object:', authError)
+        setError(authError.message || JSON.stringify(authError))
         setIsLoading(false)
         return
       }
@@ -100,18 +100,26 @@ export function GoogleSignInButton({ label = "Continue with Google" }: { label?:
             if (customer?.phone) {
               // Phone exists in DB, update user metadata
               await supabase.auth.updateUser({ data: { phone: customer.phone } })
-              router.push('/dashboard')
+              // Give the cookie setter a moment to finish before hard navigating
+              setTimeout(() => {
+                window.location.href = '/dashboard'
+              }, 100)
               return
             }
           } catch (e) {
             // Non-critical
           }
-          router.push('/auth/complete-profile')
+          
+          setTimeout(() => {
+            window.location.href = '/auth/complete-profile'
+          }, 500)
           return
         }
       }
 
-      router.push('/dashboard')
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 500)
     } catch (err: any) {
       console.error('[GoogleSignIn] Unexpected error:', err)
       setError(err?.message || 'An unexpected error occurred')

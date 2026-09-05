@@ -41,9 +41,15 @@ export async function createClient() {
       },
       cookieOptions: cookieName ? { 
         name: cookieName,
-        secure: !isLocal
+        secure: !isLocal,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 31536000
       } : {
-        secure: !isLocal
+        secure: !isLocal,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 31536000
       }
     }
   )

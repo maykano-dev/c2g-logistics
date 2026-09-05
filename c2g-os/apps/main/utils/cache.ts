@@ -20,10 +20,21 @@ export const getCachedSettings = unstable_cache(
       .single();
       
     if (error) {
-      console.error('Error fetching cached settings:', error);
-      return null;
+      console.warn('Warning: Failed to fetch settings, using fallbacks:', error.message || error);
+      // Return safe fallback settings to prevent crashes
+      return {
+        exchange_rate_ghs_to_cny: 0.52,
+        markup_percentage: 5,
+        support_whatsapp_number: '233550000000',
+        support_email: 'support@c2g.com'
+      };
     }
-    return settings;
+    return settings || {
+        exchange_rate_ghs_to_cny: 0.52,
+        markup_percentage: 5,
+        support_whatsapp_number: '233550000000',
+        support_email: 'support@c2g.com'
+    };
   },
   ['global-settings'],
   { revalidate: 3600, tags: ['settings'] }
@@ -41,7 +52,7 @@ export const getCachedWarehouseAddresses = unstable_cache(
       .order('is_default', { ascending: false });
       
     if (error) {
-      console.error('Error fetching cached warehouse addresses:', error);
+      console.warn('Warning: Failed to fetch warehouse addresses:', error.message || error);
       return [];
     }
     return addresses || [];

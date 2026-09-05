@@ -111,6 +111,14 @@ export default function OfflinePage() {
           box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5); 
         }
         
+        .retry-btn:disabled {
+          background: #4b5563;
+          cursor: not-allowed;
+          box-shadow: none;
+          transform: none;
+          opacity: 0.8;
+        }
+        
         .retry-svg { 
           width: 1.25rem; 
           height: 1.25rem; 
@@ -136,9 +144,13 @@ export default function OfflinePage() {
           C2G Logistics requires an active internet connection to browse products and track shipments. Please check your network and try again.
         </p>
 
-        <button onClick={handleRetry} className="retry-btn border-none cursor-pointer">
+        <button 
+          onClick={handleRetry} 
+          disabled={isRetrying}
+          className="retry-btn border-none cursor-pointer"
+        >
           <Loader2 className={`retry-svg ${isRetrying ? 'is-spinning' : ''}`} />
-          Try Again
+          {isRetrying ? 'Refreshing...' : 'Refresh Page'}
         </button>
       </div>
     </>
