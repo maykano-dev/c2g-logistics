@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createAnonClient } from "@supabase/supabase-js";
-import { searchProducts, getProductDetail, searchProductsByImage } from "@/lib/hiobuy";
+import { searchProducts, getProductDetail, searchProductsByImage, parseProduct } from "@/lib/hiobuy";
 import type { ProductChannel } from "@/lib/hiobuy";
 import { normalizeProductTitle } from "@/lib/alibaba/text-cleaner";
 import crypto from 'crypto';
@@ -55,6 +55,8 @@ function mapHiobuyToC2g(hbProduct: any, pricing: { rate: number, markup: number 
   let imageUrl = hbProduct.image || hbProduct.images?.[0]?.url || "https://placehold.co/300";
   if (imageUrl.startsWith('//')) {
     imageUrl = 'https:' + imageUrl;
+  } else if (imageUrl.startsWith('http://')) {
+    imageUrl = imageUrl.replace('http://', 'https://');
   }
   
   // Fallback for non-resolving mock test images or invalid relative URLs
@@ -190,6 +192,7 @@ async function fetchShopProductsBase(params?: {
   localProducts = (localData || []).map((p) => {
     let img = p.thumbnail_url || 'https://placehold.co/300';
     if (img.startsWith('//')) img = 'https:' + img;
+    else if (img.startsWith('http://')) img = img.replace('http://', 'https://');
     else if (!img.startsWith('http')) img = 'https://placehold.co/300';
 
     const cnyPrice = p.price_snapshot_usd * 7.2;
@@ -436,6 +439,7 @@ export async function getProductDetails(id: string) {
     mainImages = mainImages.map(img => {
       if (img.includes('cdn.hiobuy.com/mock')) return "https://placehold.co/600x600/1e293b/94a3b8?text=Mock+Product";
       if (img.startsWith('//')) return 'https:' + img;
+      if (img.startsWith('http://')) return img.replace('http://', 'https://');
       return img;
     });
 
@@ -584,6 +588,27 @@ export async function processImageSearch(base64Data: string) {
     return { success: false, error: err.message };
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// URL Parsing (HioBuy API)
+// ═══════════════════════════════════════════════════════════════════
+export async function processUrlParse(url: string) {
+  try {
+    const res = await parseProduct({ url });
+    if (!res?.product?.id) {
+      return { success: false, error: "Could not parse product URL." };
+    }
+    
+    // Auto-detect channel if possible, or fallback to the parsed channel, or 1688
+    const channel = res.product.channel || (url.includes('taobao') ? 'taobao' : url.includes('weidian') ? 'weidian' : '1688');
+    
+    return { success: true, productId: res.product.id, channel };
+  } catch (err: any) {
+    console.error("processUrlParse failed", err);
+    return { success: false, error: err.message || "Failed to parse URL." };
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════════════════
 // Trending & New Arrivals (Local DB Only)

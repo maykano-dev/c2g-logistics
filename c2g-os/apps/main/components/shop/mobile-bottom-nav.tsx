@@ -34,7 +34,7 @@ function BottomNavContent() {
       ];
 
   return (
-    <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[380px]">
+    <nav className="md:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[380px]">
       {/* Outer fully-pill liquid glass shell */}
       <div
         className="relative flex items-center justify-between rounded-full p-2"
@@ -149,7 +149,7 @@ function BottomNavContent() {
 
 export default function MobileBottomNav() {
   return (
-    <Suspense fallback={<div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[380px] h-[64px] bg-background/50 rounded-full" />}>
+    <Suspense fallback={<div className="md:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[380px] h-[64px] bg-background/50 rounded-full" />}>
       <BottomNavContent />
     </Suspense>
   );

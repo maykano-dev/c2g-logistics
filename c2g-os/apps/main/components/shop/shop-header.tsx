@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import { useCart } from "./cart-context";
 import { useWishlist } from "./wishlist-context";
-import { processImageSearch } from "../../app/shop/actions";
+import { processImageSearch, processUrlParse } from "../../app/shop/actions";
 import { useModal } from "../providers/modal-provider";
 
 export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalance?: number, isLoggedIn?: boolean }) {
@@ -38,15 +38,43 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
     [searchParams]
   );
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!query) return;
+
     setIsPending(true);
-    const params = new URLSearchParams(searchParams.toString());
-    if (query) {
-      params.set("query", query);
-    } else {
-      params.delete("query");
+
+    // Basic URL detection for Chinese marketplaces
+    const isUrl = /^https?:\/\//i.test(query.trim()) || 
+                  /^(?:m\.|detail\.)?(1688\.com|taobao\.com|weidian\.com|tmall\.com)/i.test(query.trim());
+
+    if (isUrl) {
+      let urlToParse = query.trim();
+      if (!/^https?:\/\//i.test(urlToParse)) {
+        urlToParse = `https://${urlToParse}`;
+      }
+
+      try {
+        const res = await processUrlParse(urlToParse);
+        if (res.success && res.productId) {
+          router.push(`/shop/product/${res.productId}?channel=${res.channel || '1688'}`);
+          setTimeout(() => setIsPending(false), 1000);
+          return;
+        } else {
+          showAlert({ title: 'Link Error', message: res.error || "Could not extract a product from this link. Try searching by keywords instead.", type: 'danger' });
+          setIsPending(false);
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+        showAlert({ title: 'Error', message: "Failed to parse product link.", type: 'danger' });
+        setIsPending(false);
+        return;
+      }
     }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("query", query);
     // Clear visual search when performing a text search
     params.delete("searchId");
     router.push("/shop?" + params.toString());

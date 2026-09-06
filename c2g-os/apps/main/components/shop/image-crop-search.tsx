@@ -133,12 +133,12 @@ export default function ImageCropSearch({ searchId }: { searchId: string }) {
 
       {/* Crop Modal */}
       {isCropModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-6">
           <div 
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => !isSearching && setIsCropModalOpen(false)}
           />
-          <div className="relative bg-card w-full max-w-2xl rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="relative bg-card w-full max-w-2xl rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[75dvh]">
             
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h3 className="font-bold flex items-center gap-2">
