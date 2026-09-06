@@ -1,23 +1,56 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Script from 'next/script'
 import { createClient } from '@/utils/supabase/client'
 import { Loader2 } from 'lucide-react'
 
+type CredentialResponse = {
+  credential: string;
+  select_by: string;
+  clientId: string;
+};
+
+declare const google: { 
+  accounts: {
+    id: {
+      initialize: (config: any) => void;
+      prompt: (callback?: (notification: any) => void) => void;
+    }
+  } 
+};
+
+const generateNonce = async (): Promise<string[]> => {
+  const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
+  const encoder = new TextEncoder()
+  const encodedNonce = encoder.encode(nonce)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encodedNonce)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashedNonce = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+  return [nonce, hashedNonce]
+}
+
 export function GoogleSignInButton({ label = "Continue with Google" }: { label?: string }) {
   const supabase = createClient()
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  const nonceRef = useRef<string | undefined>(undefined)
+  const initializedRef = useRef(false)
+  const scriptLoadedRef = useRef(false)
 
-  const handleSignIn = async () => {
-    setIsLoading(true)
-    setError(null)
-    
+  const fallbackToOAuth = async () => {
+    console.log('[GoogleSignIn] Using standard OAuth redirect with select_account')
     try {
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            prompt: 'select_account',
+          }
         },
       })
       
@@ -31,11 +64,113 @@ export function GoogleSignInButton({ label = "Continue with Google" }: { label?:
     }
   }
 
+  const handleCredentialResponse = useCallback(async (response: CredentialResponse) => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+        nonce: nonceRef.current!,
+      })
+
+      if (authError) {
+        setError(authError.message)
+        setIsLoading(false)
+        return
+      }
+
+      if (data?.user) {
+        try {
+          await supabase.from('customers').insert({
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Customer',
+            status: 'active'
+          })
+        } catch (e) {}
+
+        const hasPhone = !!data.user.user_metadata?.phone || !!data.user.phone
+        if (!hasPhone) {
+          try {
+            const { data: customer } = await supabase.from('customers').select('phone').eq('id', data.user.id).maybeSingle()
+            if (customer?.phone) {
+              await supabase.auth.updateUser({ data: { phone: customer.phone } })
+              setTimeout(() => { window.location.href = '/dashboard' }, 100)
+              return
+            }
+          } catch (e) {}
+          setTimeout(() => { window.location.href = '/auth/complete-profile' }, 500)
+          return
+        }
+      }
+
+      setTimeout(() => { window.location.href = '/dashboard' }, 500)
+    } catch (err: any) {
+      setError(err?.message || 'An unexpected error occurred')
+      setIsLoading(false)
+    }
+  }, [supabase, router])
+
+  const initializeGoogleSDK = useCallback(async () => {
+    if (initializedRef.current) return
+    
+    // Check if we are in the browser to safely access navigator
+    if (typeof window === 'undefined') return
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      scriptLoadedRef.current = true
+      return
+    }
+
+    initializedRef.current = true
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    if (!clientId) {
+      setError('Google Client ID is not configured')
+      return
+    }
+
+    const [nonce, hashedNonce] = await generateNonce()
+    nonceRef.current = nonce
+
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleCredentialResponse,
+      nonce: hashedNonce,
+      use_fedcm_for_prompt: true,
+      auto_select: false,
+      context: 'signin',
+      ux_mode: 'popup',
+      itp_support: true,
+    })
+
+    scriptLoadedRef.current = true
+    // Automatically trigger One Tap prompt on page load for PC
+    google.accounts.id.prompt()
+  }, [handleCredentialResponse])
+
+  const handleSignInClick = () => {
+    setIsLoading(true)
+    setError(null)
+    
+    // Explicit button clicks ALWAYS use OAuth redirect to guarantee account selection
+    fallbackToOAuth()
+  }
+
   return (
     <div className="w-full flex flex-col items-center">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        onReady={() => { initializeGoogleSDK() }}
+        strategy="afterInteractive"
+      />
+
       <button
         type="button"
-        onClick={handleSignIn}
+        onClick={handleSignInClick}
         disabled={isLoading}
         className="w-full flex items-center justify-center gap-2 h-11 rounded-md border border-input bg-background/50 hover:bg-secondary transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
