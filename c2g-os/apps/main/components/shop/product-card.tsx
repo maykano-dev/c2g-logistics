@@ -113,6 +113,7 @@ export default function ProductCard({
             src={imageUrl}
             alt={product.name}
             loading="lazy"
+            referrerPolicy="no-referrer"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
           />
 

@@ -15,6 +15,7 @@ import { MaintenanceBlocker } from "../components/maintenance-blocker";
 const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  referrer: 'no-referrer',
   title: {
     default: "C2G Logistics - Your Gateway to China, Delivered to Ghana",
     template: "%s | C2G Logistics",
