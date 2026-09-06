@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { createClient } from "@/utils/supabase/server";
 import {
   getShopProducts,
   getTopPurchasedProducts,
@@ -37,6 +38,10 @@ export default async function ShopPage({
 
   // Fast local DB fetch, won't noticeably block navigation
   const walletRes = await getSecureWalletBalance();
+  
+  // Check auth state
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   return (
     <div className="bg-background min-h-screen pb-20 md:pb-8 pt-20 md:pt-24">
@@ -44,7 +49,7 @@ export default async function ShopPage({
       <div className="fixed top-0 left-0 right-0 z-50">
         <AnnouncementBanner />
         <Suspense fallback={<div className="h-20 bg-background border-b border-border/50" />}>
-          <ShopHeader walletBalance={walletRes.available_balance} />
+          <ShopHeader walletBalance={walletRes.available_balance} isLoggedIn={!!user} />
         </Suspense>
       </div>
 

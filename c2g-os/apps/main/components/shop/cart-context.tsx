@@ -90,10 +90,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem("c2g_mall_cart", JSON.stringify(items));
-      // Fire and forget DB sync (safe to fail if not logged in)
-      import("../../app/shop/actions").then(({ syncDbCart }) => {
-        syncDbCart(items).catch(() => {});
-      });
+      
+      const timer = setTimeout(() => {
+        // Fire and forget DB sync (safe to fail if not logged in)
+        import("../../app/shop/actions").then(({ syncDbCart }) => {
+          syncDbCart(items).catch(() => {});
+        });
+      }, 1000); // 1-second debounce
+
+      return () => clearTimeout(timer);
     }
   }, [items, isLoaded]);
 

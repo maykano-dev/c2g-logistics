@@ -52,7 +52,15 @@ export default async function SignupPage(
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground mb-1 sm:mb-2">
                 Join the C2G Family Today
               </h1>
-              <p className="hidden sm:block text-muted-foreground text-sm sm:text-base">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2 mt-1">
+                <span className="bg-gradient-to-r from-primary/20 to-accent/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm">
+                  Ghana's 1688
+                </span>
+                <span className="text-sm font-bold text-foreground/90">
+                  All you need is a MoMo account
+                </span>
+              </div>
+              <p className="hidden sm:block text-muted-foreground text-sm sm:text-base mt-1">
                 Join 450+ customers using C2G to source, ship, and grow.
               </p>
               <p className="block sm:hidden text-muted-foreground text-sm font-medium mt-1">

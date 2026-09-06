@@ -421,9 +421,9 @@ export default function CheckoutClient({
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(true)}
-                    className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all bg-zinc-800 text-white hover:bg-zinc-700 h-12 shadow-lg gap-2"
+                    className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 gap-2"
                   >
-                    Pay ₵{totalAmount.toFixed(2)}
+                    Pay ₵{totalAmount.toFixed(2)} <ChevronRight className="w-5 h-5" />
                   </button>
                 ) : (
                   <button 

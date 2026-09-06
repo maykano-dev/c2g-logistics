@@ -158,7 +158,7 @@ export default async function ProductPage({
     <div className="bg-background min-h-screen pb-24 md:pb-8 pt-14 md:pt-16">
       {/* Fixed Shop Header */}
       <Suspense fallback={<div className="h-28 bg-background" />}>
-        <ShopHeader walletBalance={walletRes.available_balance} />
+        <ShopHeader walletBalance={walletRes.available_balance} isLoggedIn={isLoggedIn} />
       </Suspense>
 
       <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">

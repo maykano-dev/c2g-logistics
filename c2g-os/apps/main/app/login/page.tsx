@@ -56,12 +56,43 @@ export default async function LoginPage(
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground mb-2">
                 Welcome Back
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2 mt-1">
+                <span className="bg-gradient-to-r from-primary/20 to-accent/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm">
+                  Ghana's 1688
+                </span>
+                <span className="text-sm font-bold text-foreground/90">
+                  All you need is a MoMo account
+                </span>
+              </div>
+              <p className="text-muted-foreground text-sm sm:text-base mt-1">
                 Sign in to manage your shipments and C2G Mall orders.
               </p>
             </div>
 
-            <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+            <Suspense fallback={
+              <div className="w-full max-w-sm mx-auto space-y-4 animate-pulse">
+                <div className="w-full h-10 bg-secondary/50 rounded-md"></div>
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border"></span></div>
+                </div>
+                <div className="space-y-4 w-full">
+                  <div className="space-y-2">
+                    <div className="w-24 h-4 bg-secondary/50 rounded"></div>
+                    <div className="w-full h-11 bg-secondary/30 rounded-md"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <div className="w-20 h-4 bg-secondary/50 rounded"></div>
+                      <div className="w-24 h-3 bg-secondary/30 rounded"></div>
+                    </div>
+                    <div className="w-full h-11 bg-secondary/30 rounded-md"></div>
+                  </div>
+                  <div className="pt-4">
+                    <div className="w-full h-12 bg-primary/20 rounded-md"></div>
+                  </div>
+                </div>
+              </div>
+            }>
               <LoginForm />
             </Suspense>
 

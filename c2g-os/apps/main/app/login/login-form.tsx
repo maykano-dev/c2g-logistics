@@ -30,6 +30,7 @@ export function LoginForm() {
       </div>
 
       <form action={action} className="space-y-4 w-full">
+        <input type="hidden" name="next" value={searchParams.get("next") || "/dashboard"} />
         {verified && !state?.error && (
         <div className="p-3 text-sm font-medium bg-green-500/10 text-green-500 rounded-md border border-green-500/20 animate-fade-in flex items-start gap-2">
           <span>Account verified successfully! Please sign in.</span>

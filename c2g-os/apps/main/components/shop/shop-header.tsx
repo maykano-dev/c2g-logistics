@@ -10,7 +10,7 @@ import { useWishlist } from "./wishlist-context";
 import { processImageSearch } from "../../app/shop/actions";
 import { useModal } from "../providers/modal-provider";
 
-export default function ShopHeader({ walletBalance }: { walletBalance?: number }) {
+export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalance?: number, isLoggedIn?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentQuery = searchParams.get("query") || "";
@@ -242,7 +242,7 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
 
           {/* Cart + Wishlist + Account */}
           <div className="flex items-center gap-1">
-            {typeof walletBalance === 'number' && (
+            {typeof walletBalance === 'number' && isLoggedIn && (
               <Link href="/dashboard/wallet" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-tr from-primary/10 to-accent/10 border border-border hover:bg-white/10 transition-colors shadow-sm mr-2 min-w-0 max-w-[160px]">
                 <span className="text-sm font-bold tracking-tight text-primary truncate">₵{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(walletBalance)}</span>
               </Link>
@@ -271,13 +271,30 @@ export default function ShopHeader({ walletBalance }: { walletBalance?: number }
                 </span>
               )}
             </Link>
-            <Link
-              href="/dashboard"
-              className="p-2.5 rounded-full hover:bg-secondary transition-colors hidden sm:flex"
-              title="Account"
-            >
-              <User className="w-5 h-5" />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="p-2.5 rounded-full hover:bg-secondary transition-colors hidden sm:flex"
+                title="Account"
+              >
+                <User className="w-5 h-5" />
+              </Link>
+            ) : (
+              <div className="hidden sm:flex items-center gap-2 ml-2">
+                <Link
+                  href="/login"
+                  className="text-sm font-medium hover:text-primary transition-colors px-2"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="text-sm font-medium bg-primary text-primary-foreground px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

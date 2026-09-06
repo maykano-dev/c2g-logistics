@@ -133,7 +133,7 @@ async function fetchShopProductsBase(params?: {
   );
   const pricing = await getPricingConfig(supabase);
   const page = params?.page || 1;
-  const limit = 21;
+  const limit = 20;
 
   // Intercept for Image Search
   if (params?.imageId) {

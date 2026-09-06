@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { getCartFreightEstimate } from "../../app/checkout/actions";
 
-export default function CartClient() {
+export default function CartClient({ isLoggedIn }: { isLoggedIn?: boolean }) {
   const { items, removeFromCart, updateQuantity, cartTotalGhs, cartCount, clearCart } = useCart();
   const router = useRouter();
 
@@ -164,12 +164,21 @@ export default function CartClient() {
             </div>
           </div>
 
-          <button 
-            onClick={() => router.push("/checkout")}
-            className="w-full h-14 inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] shadow-lg shadow-primary/25 gap-2"
-          >
-            Proceed to Checkout <ArrowRight className="w-5 h-5" />
-          </button>
+          {isLoggedIn ? (
+            <button 
+              onClick={() => router.push("/checkout")}
+              className="w-full h-14 inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] shadow-lg shadow-primary/25 gap-2"
+            >
+              Proceed to Checkout <ArrowRight className="w-5 h-5" />
+            </button>
+          ) : (
+            <button 
+              onClick={() => router.push("/login?next=/checkout")}
+              className="w-full h-14 inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-secondary text-secondary-foreground hover:bg-secondary/90 hover:scale-[1.02] gap-2 border border-border"
+            >
+              Log in to Proceed <ArrowRight className="w-5 h-5" />
+            </button>
+          )}
           
           <div className="mt-6 flex items-center justify-center gap-4 text-muted-foreground opacity-70">
             <div className="flex items-center gap-1.5 text-xs font-semibold">

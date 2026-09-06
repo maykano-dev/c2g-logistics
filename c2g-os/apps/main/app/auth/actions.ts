@@ -124,6 +124,7 @@ export async function login(prevState: any, formData: FormData) {
   revalidatePath('/', 'layout');
   
   const role = data.user?.user_metadata?.role;
+  const nextRoute = formData.get('next') as string;
   // Check if they are an importer by querying the database (handles upgraded users)
   const { data: importerData } = await supabase
     .from('importers')
@@ -134,7 +135,7 @@ export async function login(prevState: any, formData: FormData) {
   if (importerData || role === 'importer') {
     redirect('/importer-dashboard');
   } else {
-    redirect('/dashboard');
+    redirect(nextRoute || '/dashboard');
   }
 }
 

@@ -67,7 +67,7 @@ export default async function CheckoutPage() {
 
   return (
     <div className="bg-background min-h-screen pb-24 pt-14 md:pt-16">
-      <CustomShopHeader walletBalance={walletBalance} />
+      <CustomShopHeader walletBalance={walletBalance} isLoggedIn={true} />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
           <Link href="/cart" className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors">
