@@ -19,8 +19,9 @@ export function MaintenanceBlocker({ settings, children }: { settings: any, chil
     });
   }, []);
 
-  // Check if we are in development mode, bypass maintenance
-  if (process.env.NODE_ENV === 'development') {
+  // Check if we are in development mode, or on the netlify testing domain, bypass maintenance
+  const isNetlify = typeof window !== 'undefined' && window.location.hostname === 'c2g-logistics.netlify.app';
+  if (process.env.NODE_ENV === 'development' || isNetlify) {
     return <>{children}</>;
   }
 
