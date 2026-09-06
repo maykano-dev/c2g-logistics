@@ -16,6 +16,7 @@ import FloatingCart from "../../components/shop/floating-cart";
 import ShopLayoutWrapper from "../../components/shop/shop-layout-wrapper";
 import { PromoSection } from "../../components/shop/promo-section";
 import { AnnouncementBanner } from "../../components/shop/announcement-banner";
+import ImageCropSearch from "../../components/shop/image-crop-search";
 import { Search, ShoppingBag, ArrowRight, ArrowLeft, Flame, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { getSecureWalletBalance } from "../dashboard/wallet/shared-actions";
@@ -257,6 +258,11 @@ async function ShopContent({
                   : "All Products"}
               </h2>
             </div>
+            {resolvedParams.searchId && (
+              <div className="mt-2 sm:mt-0">
+                <ImageCropSearch searchId={resolvedParams.searchId} />
+              </div>
+            )}
           </div>
 
           {hasProducts ? (

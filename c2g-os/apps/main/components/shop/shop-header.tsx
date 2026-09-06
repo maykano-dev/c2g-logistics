@@ -99,6 +99,12 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
         try {
           const res = await processImageSearch(base64Data);
           if (res.success && res.searchId) {
+            // Save the base64 image to sessionStorage before navigating
+            try {
+              sessionStorage.setItem(`c2g_search_image_${res.searchId}`, base64Data);
+            } catch (storageError) {
+              console.warn("Failed to save image to sessionStorage", storageError);
+            }
             router.push(`/shop?searchId=${res.searchId}`);
           } else {
             showAlert({ title: 'Error', message: res.error || "Image search failed", type: 'danger' });
