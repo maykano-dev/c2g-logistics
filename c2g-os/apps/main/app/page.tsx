@@ -199,6 +199,50 @@ export default async function LandingPage(
           </div>
         </section>
 
+        {/* SMART LINK GATEWAY */}
+        <section className="relative glass-panel overflow-hidden border-primary/20 shadow-2xl p-8 md:p-16 text-center my-12 group rounded-3xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 z-0" />
+          <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/30 transition-colors duration-700" />
+          <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none group-hover:bg-blue-500/30 transition-colors duration-700" />
+          
+          <div className="relative z-10 max-w-3xl mx-auto space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/80 text-secondary-foreground border border-border text-sm font-bold shadow-sm backdrop-blur-md">
+              <LinkIcon className="w-4 h-4 text-primary" /> Smart Link Gateway
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-balance">
+              Got a 1688 or Taobao Link?
+            </h2>
+            <p className="text-lg text-muted-foreground text-balance">
+              Paste it here. We'll instantly translate the product, calculate the price in Cedis, and let you check out immediately.
+            </p>
+            
+            <form action="/shop" method="GET" className="mt-8 max-w-2xl mx-auto relative flex items-center shadow-2xl">
+              <div className="absolute left-4 z-10 bg-secondary/80 p-1.5 rounded-md backdrop-blur-md">
+                <LinkIcon className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <input 
+                type="text" 
+                name="q"
+                placeholder="https://detail.1688.com/offer/..." 
+                className="w-full h-16 pl-14 pr-32 md:pr-40 rounded-2xl border-2 border-border bg-background/80 backdrop-blur-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all text-base md:text-lg shadow-inner"
+                required
+              />
+              <button 
+                type="submit" 
+                className="absolute right-2 top-2 bottom-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 md:px-8 rounded-xl font-bold flex items-center gap-2 transition-all hover:scale-[1.02] shadow-lg shadow-primary/30"
+              >
+                Buy Now <ArrowRight className="w-4 h-4 hidden sm:block" />
+              </button>
+            </form>
+            
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-sm font-medium text-muted-foreground">
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" /> Auto-Translated</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" /> Exact Cedi Price</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" /> Pay with MoMo</span>
+            </div>
+          </div>
+        </section>
+
         {/* C2G MALL */}
         <section className="glass-panel p-8 md:p-12 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px]" />
@@ -223,6 +267,47 @@ export default async function LandingPage(
                 fill 
                 className="object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
               />
+            </div>
+          </div>
+        </section>
+
+        {/* VISUAL SEARCH TEASER */}
+        <section className="relative glass-panel overflow-hidden border-primary/20 shadow-xl p-8 md:p-12 mb-12 rounded-3xl bg-gradient-to-br from-background to-secondary/30">
+          <div className="flex flex-col md:flex-row gap-10 items-center">
+            <div className="flex-1 w-full relative h-[300px] flex items-center justify-center">
+               {/* Decorative floating elements for the image search */}
+               <div className="absolute inset-0 bg-primary/5 rounded-full blur-[60px]" />
+               <div className="relative z-10 w-full max-w-sm aspect-square bg-card border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col">
+                 <div className="h-10 bg-secondary/80 border-b border-border flex items-center px-4 gap-2">
+                   <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                   <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                   <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                 </div>
+                 <div className="flex-1 relative bg-[url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80')] bg-cover bg-center">
+                   <div className="absolute inset-0 bg-black/40" />
+                   {/* Scanning animation line */}
+                   <div className="absolute left-0 right-0 h-1 bg-primary shadow-[0_0_15px_rgba(var(--primary),1)] animate-[scan_2s_ease-in-out_infinite]" />
+                   <div className="absolute inset-0 flex items-center justify-center">
+                     <div className="w-16 h-16 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary),0.6)] backdrop-blur-md">
+                       <ShoppingCart className="w-8 h-8" />
+                     </div>
+                   </div>
+                 </div>
+               </div>
+            </div>
+            <div className="flex-1 space-y-6 text-center md:text-left">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-secondary text-secondary-foreground border border-border text-sm font-bold mb-2">
+                New Feature
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Found It On TikTok? <br/>Buy It On C2G Mall.</h2>
+              <p className="text-lg text-muted-foreground">
+                Saw a product you love on Instagram or TikTok? Just save the image and upload it to our visual search. We'll find the exact product from Chinese suppliers instantly.
+              </p>
+              <div className="pt-2">
+                <Link href="/shop" className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-base font-bold transition-all bg-secondary text-foreground hover:bg-secondary/80 h-12 px-8 border border-border hover:border-primary/50">
+                  <ShoppingCart className="w-4 h-4" /> Try Image Search
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -376,14 +461,15 @@ export default async function LandingPage(
                 View All Products <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="flex overflow-x-auto pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 gap-4 snap-x snap-mandatory scrollbar-hide">
               {featuredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  exchangeRate={exchangeRate || 1}
-                  variant="grid"
-                />
+                <div key={product.id} className="snap-start shrink-0">
+                  <ProductCard
+                    product={product}
+                    exchangeRate={exchangeRate || 1}
+                    variant="scroll"
+                  />
+                </div>
               ))}
             </div>
           </section>

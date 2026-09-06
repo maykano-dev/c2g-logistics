@@ -54,9 +54,11 @@ export default async function ProductPage({
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
   const storeSlug = typeof resolvedSearchParams.store === 'string' ? resolvedSearchParams.store : null;
+  const channel = typeof resolvedSearchParams.channel === 'string' ? resolvedSearchParams.channel : undefined;
 
   const { product: rawProduct, exchangeRate, error } = await getProductDetails(
-    resolvedParams.id
+    resolvedParams.id,
+    channel
   );
   
   const product: any = rawProduct;

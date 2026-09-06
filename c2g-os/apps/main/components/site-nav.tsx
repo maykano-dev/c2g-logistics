@@ -52,30 +52,12 @@ export function SiteNav() {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/shop" className={`text-sm font-medium transition-colors hover:text-primary ${pathname === '/shop' ? 'text-primary' : 'text-muted-foreground'}`}>C2G Mall</Link>
-            
-            {/* Services dropdown */}
-            <div className="relative group">
-              <button
-                className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                onMouseEnter={() => setServicesOpen(true)}
-                onMouseLeave={() => setServicesOpen(false)}
-              >
-                Services <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-              <div
-                className={`absolute top-full left-0 mt-2 w-52 rounded-xl border border-border bg-card shadow-xl shadow-black/10 py-2 transition-all ${servicesOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
-                onMouseEnter={() => setServicesOpen(true)}
-                onMouseLeave={() => setServicesOpen(false)}
-              >
-                <Link href="/dashboard" className="block px-4 py-2.5 text-sm text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors">Pay Supplier</Link>
-                <Link href="/get-quote" className="block px-4 py-2.5 text-sm text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors">Get Quote</Link>
-                <Link href="/dashboard/warehouse" className="block px-4 py-2.5 text-sm text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors">Get Warehouse Address</Link>
-              </div>
-            </div>
-
+            <Link href="/shop" className={`text-sm font-medium transition-colors hover:text-primary ${pathname?.startsWith('/shop') ? 'text-primary' : 'text-muted-foreground'}`}>C2G Mall</Link>
+            <Link href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Buy For Me</Link>
+            <Link href="/get-quote" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Shipping</Link>
+            <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Business</Link>
+            <Link href="/#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">How It Works</Link>
             <Link href="/about" className={`text-sm font-medium transition-colors hover:text-primary ${pathname === '/about' ? 'text-primary' : 'text-muted-foreground'}`}>About</Link>
-            <Link href="/contact" className={`text-sm font-medium transition-colors hover:text-primary ${pathname === '/contact' ? 'text-primary' : 'text-muted-foreground'}`}>Contact</Link>
           </div>
 
           {/* Desktop auth */}
@@ -121,10 +103,11 @@ export function SiteNav() {
         {mobileOpen && (
           <div className="md:hidden py-4 border-t border-border/50 space-y-1">
             <Link href="/shop" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>C2G Mall</Link>
-            <Link href="/dashboard" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Pay Supplier</Link>
-            <Link href="/get-quote" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Get Quote</Link>
+            <Link href="/dashboard" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Buy For Me</Link>
+            <Link href="/get-quote" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Shipping</Link>
+            <Link href="/contact" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Business</Link>
+            <Link href="/#how-it-works" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>How It Works</Link>
             <Link href="/about" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>About</Link>
-            <Link href="/contact" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors" onClick={() => setMobileOpen(false)}>Contact</Link>
             <div className="flex flex-col gap-3 px-3 pt-2">
               {isLoading ? (
                 <div className="w-full h-10 bg-secondary animate-pulse rounded-lg" />

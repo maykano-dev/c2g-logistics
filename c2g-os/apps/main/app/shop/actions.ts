@@ -402,7 +402,7 @@ export const getShopProducts = async (params?: {
 // ═══════════════════════════════════════════════════════════════════
 // Live Product Details (HioBuy API)
 // ═══════════════════════════════════════════════════════════════════
-export async function getProductDetails(id: string) {
+export async function getProductDetails(id: string, explicitChannel?: string) {
   const supabase = await createClient();
   const pricing = await getPricingConfig(supabase);
 
@@ -423,11 +423,18 @@ export async function getProductDetails(id: string) {
     }
 
     // CACHE MISS → Call HioBuy API
-    // We try 1688 first, but in a real scenario we'd know the channel from the ID
-    const res = await getProductDetail({
-      channel: "1688",
-      id: id,
-    }).catch(() => getProductDetail({ channel: "taobao", id })); // fallback to taobao if 1688 fails
+    let res;
+    if (explicitChannel) {
+      res = await getProductDetail({ channel: explicitChannel as any, id });
+    } else {
+      res = await getProductDetail({ channel: "1688", id }).catch(async (err1688) => {
+        try {
+          return await getProductDetail({ channel: "taobao", id });
+        } catch (errTaobao) {
+          throw err1688; // Throw the original 1688 error if taobao also fails (or is unauthorized)
+        }
+      });
+    }
 
     const raw = res?.product;
     if (!raw) throw new Error("Product not found on HioBuy");

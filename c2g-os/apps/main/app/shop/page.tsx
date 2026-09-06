@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 import {
   getShopProducts,
   getTopPurchasedProducts,
   getTrendingProducts,
   getNewArrivals,
   getBestSellers,
+  processUrlParse,
 } from "./actions";
 import ProductCard from "../../components/shop/product-card";
 import ShopHeader from "../../components/shop/shop-header";
@@ -35,6 +37,18 @@ export default async function ShopPage({
   searchParams: Promise<{ category?: string; query?: string; sort?: string; minPrice?: string; maxPrice?: string; page?: string; searchId?: string }>;
 }) {
   const resolvedParams = await searchParams;
+
+  // Smart Link Gateway Interceptor
+  if (resolvedParams.query) {
+    const q = resolvedParams.query.trim();
+    if (q.startsWith('http://') || q.startsWith('https://') || q.includes('detail.1688.com') || q.includes('taobao.com')) {
+      const parseRes = await processUrlParse(q);
+      if (parseRes.success && parseRes.productId) {
+        redirect(`/shop/product/${parseRes.productId}?channel=${parseRes.channel || '1688'}`);
+      }
+    }
+  }
+
   const suspenseKey = JSON.stringify(resolvedParams);
 
   // Fast local DB fetch, won't noticeably block navigation
