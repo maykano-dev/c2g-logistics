@@ -132,7 +132,7 @@ export async function GET(request: Request) {
                   title: 'Order Shipped by Supplier',
                   message: `Your Mall order #${order.order_id} has been shipped by the supplier. Local tracking #: ${localTrackingNumber}. It is now en route to our China warehouse.`,
                   type: 'system',
-                  priority: 'normal',
+                  priority: 'info',
                   link: `/dashboard/orders/mall/${order.id}`
                 }).catch(e => console.warn('Failed to send notification in cron:', e));
               }
