@@ -57,6 +57,11 @@ export async function middleware(request: NextRequest) {
     if (!checkRateLimit(ip, '/auth', 10, 60000)) { // 10 req / minute
       return new NextResponse('Too Many Requests', { status: 429 });
     }
+  } else if (path.startsWith('/shop')) {
+    // Anti-scraping protection for product pages
+    if (!checkRateLimit(ip, '/shop', 45, 60000)) { // Max 45 product views/searches per minute
+      return new NextResponse('Rate Limit Exceeded: Please slow down your browsing.', { status: 429 });
+    }
   }
 
   // CRITICAL: Do NOT run any Supabase logic on /auth/callback.

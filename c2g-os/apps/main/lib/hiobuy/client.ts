@@ -83,7 +83,9 @@ export async function hiobuyFetch<T>(
     method,
     headers,
     body: fetchBody,
-    cache: "no-store",
+    // If it's a GET request (like searches or product details), cache it for 1 hour (3600 seconds)
+    // If it's a POST request (like logistics or placing orders), do not cache it
+    ...(method === "GET" ? { next: { revalidate: 3600 } } : { cache: "no-store" }),
   });
 
   const data = (await res.json().catch(() => ({}))) as {
