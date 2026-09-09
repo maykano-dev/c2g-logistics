@@ -10,25 +10,6 @@ import { payMallOrder, fetchOrderTrackingTimeline } from "../../../mall-orders/a
 export function MallOrderDetailsClient({ order, initialTrack }: { order: any, initialTrack: boolean }) {
   const router = useRouter();
   const { showAlert } = useModal();
-  
-  const [trackingData, setTrackingData] = useState<any>(null);
-  const [isLoadingTracking, setIsLoadingTracking] = useState(true);
-
-  useEffect(() => {
-    async function loadTracking() {
-      try {
-        const res = await fetchOrderTrackingTimeline(order.id);
-        if (res.success) {
-          setTrackingData(res);
-        }
-      } catch (err) {
-        console.error("Failed to load tracking:", err);
-      } finally {
-        setIsLoadingTracking(false);
-      }
-    }
-    loadTracking();
-  }, [order.id]);
 
   const timelineSteps = [
     { key: "new", label: "Awaiting Payment", icon: CreditCard },
@@ -44,23 +25,23 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
   // Map history to timeline
   const getTimeline = () => {
     const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
-    
+
     let currentStepIndex = timelineSteps.findIndex(s => s.key === order.order_status);
-    
+
     // Automatically advance timeline if payment went through but order_status is lagging
     if (currentStepIndex <= 0 && isPaid) {
       currentStepIndex = 1; // Force 'Processing' 
     }
-    
+
     if (currentStepIndex === -1) currentStepIndex = 0;
 
     return timelineSteps.map((step, index) => {
       const historyEntry = order.history?.find((h: any) => h.status === step.key);
       const isCompleted = index <= currentStepIndex;
-      const date = historyEntry 
-        ? new Date(historyEntry.changed_at).toLocaleString('en-GB', { 
-            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-          })
+      const date = historyEntry
+        ? new Date(historyEntry.changed_at).toLocaleString('en-GB', {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        })
         : null;
 
       // Special case for creation
@@ -71,8 +52,8 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
           completed: true,
           isCurrent: index === currentStepIndex,
           Icon: step.icon,
-          date: new Date(order.created_at).toLocaleString('en-GB', { 
-            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+          date: new Date(order.created_at).toLocaleString('en-GB', {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
           })
         };
       }
@@ -90,7 +71,7 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
 
   const timeline = getTimeline();
   const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
-  
+
   const formatCurrency = (amount: number) => `₵${parseFloat((amount || 0).toString()).toFixed(2)}`;
 
   // Assuming items is an array of products
@@ -104,7 +85,7 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
     <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => router.push("/dashboard/orders?tab=mall")}
           className="p-2 -ml-2 hover:bg-secondary rounded-full transition-colors"
         >
@@ -117,19 +98,18 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
       </div>
 
       <div className="flex flex-col gap-6 lg:gap-10">
-        
+
         {/* Main Info Card */}
         <div className="space-y-6 w-full">
           <div className="glass-panel p-6 relative overflow-hidden">
-             {/* Absolute Payment Status Badge */}
-             <div className="absolute top-6 right-6">
-               <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap capitalize ${
-                  isPaid 
-                    ? 'bg-green-500/10 text-green-500 border-green-500/20' 
-                    : 'bg-destructive/10 text-destructive border-destructive/20 animate-pulse'
+            {/* Absolute Payment Status Badge */}
+            <div className="absolute top-6 right-6">
+              <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap capitalize ${isPaid
+                  ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                  : 'bg-destructive/10 text-destructive border-destructive/20 animate-pulse'
                 }`}>
-                  {order.payment_status?.replace('_', ' ') || 'Unpaid'}
-                </span>
+                {order.payment_status?.replace('_', ' ') || 'Unpaid'}
+              </span>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6">
@@ -154,17 +134,19 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
                   <span className="w-1 h-1 rounded-full bg-border" />
                   <span className="font-semibold text-primary">{formatCurrency(order.total_amount || 0)}</span>
                 </div>
-                <div className="flex items-center gap-2 mt-4 text-sm font-medium capitalize">
-                  {order.shipping_method === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
-                  {order.shipping_method || 'Air Express'}
-                </div>
+                {order.tracking_number && (
+                  <div className="flex items-center gap-2 mt-4 text-sm font-medium">
+                    <Truck className="w-4 h-4 text-primary" />
+                    Local Tracking: <span className="font-bold font-mono text-primary select-all bg-primary/10 px-2 py-0.5 rounded border border-primary/20">{order.tracking_number}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Quick Actions */}
             <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row gap-3">
               {!isPaid && (
-                <button 
+                <button
                   onClick={async (e) => {
                     const btn = e.currentTarget;
                     const originalHtml = btn.innerHTML;
@@ -199,15 +181,15 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
         <div className="w-full">
           <div className="glass-panel p-6 space-y-4">
             <h3 className="font-bold border-b border-border/50 pb-2 mb-4">Order Summary</h3>
-            
+
             <div className="flex justify-between items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">Order ID</span>
               <span className="font-mono text-sm font-medium">{order.order_id || `C2G-${String(order.id).split('-').pop()?.substring(0, 8)}`}</span>
             </div>
-            
+
             <div className="flex justify-between items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">Date Placed</span>
-              <span className="font-medium">
+              <span className="font-medium" suppressHydrationWarning>
                 {order.created_at && !isNaN(new Date(order.created_at).getTime()) ? new Date(order.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Pending'}
               </span>
             </div>
@@ -229,9 +211,9 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
                       <div className="flex flex-col overflow-hidden w-full">
                         <span className="font-medium text-sm truncate" title={item.name}>{item.name || `Item ${idx + 1}`}</span>
                         {item.selectedOptions && (
-                           <span className="text-xs text-muted-foreground mt-1 truncate" title={Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ')}>
-                             {Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ')}
-                           </span>
+                          <span className="text-xs text-muted-foreground mt-1 truncate" title={Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ')}>
+                            {Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -270,8 +252,8 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 mt-2">
               <div className="flex justify-between items-center p-3 rounded-lg border border-border/50 bg-background/50">
                 <span className="text-muted-foreground text-sm flex items-center gap-2">
-                   {order.shipping_method === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
-                   Shipping Mode
+                  {order.shipping_method === "sea" ? <Ship className="w-4 h-4 text-green-500" /> : <Plane className="w-4 h-4 text-blue-500" />}
+                  Shipping Mode
                 </span>
                 <span className="font-semibold text-sm capitalize">
                   {order.shipping_method || 'Air Express'}
@@ -306,75 +288,115 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
                 {order.shipping_notes && <p className="text-xs text-muted-foreground mt-1">Note: {order.shipping_notes}</p>}
               </div>
             )}
-            
+
           </div>
         </div>
 
         {/* Tracking Timeline */}
         <div className="w-full">
           <div className="glass-panel p-6 space-y-4 relative overflow-hidden">
-             <h3 className="font-bold border-b border-border/50 pb-2 mb-4 flex items-center gap-2">
-               <Map className="w-5 h-5 text-primary" /> Live Tracking Timeline
-             </h3>
-             
-             {isLoadingTracking ? (
-                <div className="flex flex-col items-center justify-center py-10 space-y-3">
-                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                  <p className="text-sm text-muted-foreground font-medium animate-pulse">Connecting to China Logistics Network...</p>
-                </div>
-             ) : (
-                <div className="relative border-l-2 border-border ml-3 mt-6 space-y-8 pb-4">
-                  {/* Phase 1: Hiobuy/Domestic Trace */}
-                  {trackingData?.hiobuyTrace?.logistics_nodes || trackingData?.hiobuyTrace?.data?.logistics_nodes ? (
-                     ((trackingData.hiobuyTrace.logistics_nodes || trackingData.hiobuyTrace.data.logistics_nodes) as any[]).map((node, idx) => (
-                        <div key={`hiobuy-${idx}`} className="relative pl-6">
-                          <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary/20 border-2 border-primary shadow-[0_0_10px_rgba(var(--primary),0.3)] z-10" />
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-muted-foreground mb-1">{node.time}</span>
-                            <span className="text-sm font-medium text-foreground">{node.description}</span>
-                          </div>
-                        </div>
-                     ))
-                  ) : (
-                     <div className="relative pl-6">
-                        <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-secondary border-2 border-border z-10" />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-muted-foreground">Domestic logistics trace not yet available.</span>
-                        </div>
-                     </div>
-                  )}
+            <h3 className="font-bold border-b border-border/50 pb-2 mb-6 flex items-center gap-2">
+              <Map className="w-5 h-5 text-primary" /> Live Tracking Timeline
+            </h3>
 
-                  {/* C2G System Order History */}
-                  {(trackingData?.localHistory || []).map((history: any, idx: number) => (
-                    <div key={`hist-${idx}`} className="relative pl-6 opacity-80">
-                      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-secondary border-2 border-border z-10" />
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-muted-foreground mb-1">
-                          {new Date(history.changed_at).toLocaleString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        <span className="text-sm font-medium text-foreground capitalize">
-                           System Status Updated: {history.status.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Order Placed */}
-                  <div className="relative pl-6 opacity-60">
-                     <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-secondary border-2 border-border z-10" />
-                     <div className="flex flex-col">
-                       <span className="text-xs font-bold text-muted-foreground mb-1">
-                          {order.created_at && !isNaN(new Date(order.created_at).getTime()) ? new Date(order.created_at).toLocaleString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown'}
-                       </span>
-                       <span className="text-sm font-medium text-foreground">
-                          Order Placed
-                       </span>
-                     </div>
+            <div className="relative border-l-2 border-primary/20 ml-4 mt-2 space-y-8 pb-6">
+
+                {/* 1. Order Placed (Oldest - Top) */}
+                <div className="relative pl-8 opacity-60">
+                  <div className="absolute -left-[11px] top-1.5 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center z-10 border border-primary/30">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                   </div>
-
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-muted-foreground mb-0.5" suppressHydrationWarning>
+                      {order.created_at && !isNaN(new Date(order.created_at).getTime()) ? new Date(order.created_at).toLocaleString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown'}
+                    </span>
+                    <span className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                      <Package className="w-3.5 h-3.5" />
+                      Order Placed
+                    </span>
+                  </div>
                 </div>
-             )}
-          </div>
+
+                {/* 2. C2G System Order History */}
+                {(order.history || []).map((history: any, idx: number) => (
+                  <div key={`hist-${idx}`} className="relative pl-8 opacity-75 hover:opacity-100 transition-opacity">
+                    <div className="absolute -left-[11px] top-1.5 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center z-10 border border-primary/30">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-muted-foreground mb-0.5">
+                        {new Date(history.changed_at).toLocaleString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="text-sm font-medium text-foreground capitalize flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        Status Updated: <span className="text-primary">{history.status.replace(/_/g, ' ')}</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* 3. Phase 1: Hiobuy/Domestic Trace (Read directly from Supabase DB sync) - Newest at Bottom */}
+                {(() => {
+                  const trace = order.logistics_trace;
+                  const packages = trace?.tracking?.packages || trace?.packages || [];
+                  const steps = packages.length > 0 ? packages[0].steps : [];
+                  const carrier = packages.length > 0 ? packages[0].carrier || "Local Logistics" : "";
+
+                  if (steps && steps.length > 0) {
+                    return (
+                      <div className="space-y-8">
+                        {carrier && (
+                          <div className="absolute -top-6 left-6 text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                            {carrier}
+                          </div>
+                        )}
+                        {/* API actually returns newest at the top (idx 0 is newest). To show oldest at the top, we MUST reverse it so the newest is at the very bottom of the page! */}
+                        {steps.slice().reverse().map((node: any, idx: number) => {
+                          const isLatest = idx === steps.length - 1;
+                          return (
+                            <div 
+                              key={`hiobuy-${idx}`} 
+                              className={`relative pl-8 transition-all duration-500 hover:translate-x-1 animate-in fade-in slide-in-from-left-4`}
+                              style={{ animationDelay: `${idx * 150}ms`, animationFillMode: 'both' }}
+                            >
+                              <div className={`absolute -left-[11px] top-1 w-5 h-5 rounded-full flex items-center justify-center z-10 
+                                ${isLatest 
+                                  ? 'bg-primary border-4 border-primary/30 shadow-[0_0_15px_rgba(var(--primary),0.6)]' 
+                                  : 'bg-primary/10 border border-primary/30'}`} 
+                              >
+                                {!isLatest && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                              </div>
+                              <div className="flex flex-col bg-card/50 p-3 rounded-xl border border-border/50 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors">
+                                {isLatest && <div className="absolute top-0 left-0 w-1 h-full bg-primary" />}
+                                <span className={`text-xs font-bold mb-1 ${isLatest ? 'text-primary' : 'text-muted-foreground'}`}>
+                                  {node.time}
+                                </span>
+                                <span className={`text-sm ${isLatest ? 'font-bold text-foreground' : 'font-medium text-foreground/80'}`}>
+                                  {node.translatedRemark || node.remark || node.description}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="relative pl-8 animate-in fade-in">
+                        <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-secondary border-2 border-border z-10" />
+                        <div className="flex flex-col bg-secondary/20 p-3 rounded-xl border border-border/50 border-dashed">
+                          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <Truck className="w-4 h-4 opacity-50" />
+                            Domestic logistics trace not yet available.
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+
+              </div>
+            </div>
         </div>
       </div>
     </div>

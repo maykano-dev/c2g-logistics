@@ -18,12 +18,12 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
 
   // Helper to format currency
   const formatCurrency = (amount: number) => `₵${parseFloat((amount || 0).toString()).toFixed(2)}`;
-  
+
   // Format dates
   const formattedDate = order.created_at && !isNaN(new Date(order.created_at).getTime())
     ? new Date(order.created_at).toLocaleDateString('en-GB', {
-        year: 'numeric', month: 'short', day: 'numeric'
-      })
+      year: 'numeric', month: 'short', day: 'numeric'
+    })
     : 'Pending';
 
   const isPaid = order.payment_status === 'paid' || order.payment_status === 'Paid';
@@ -35,7 +35,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
   }
 
   const getStatusBadgeClass = (status: string) => {
-    switch(status?.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'delivered':
       case 'available_for_pickup':
         return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
@@ -66,7 +66,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
       confirmText: 'Delete',
       type: 'danger',
     });
-    
+
     if (confirmed) {
       startDelete(async () => {
         const result = await deleteLinkOrder(order.id);
@@ -80,7 +80,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
   };
 
   return (
-    <div 
+    <div
       className="glass-panel p-6 overflow-hidden flex flex-col relative transition-all duration-300 hover:border-primary/50 cursor-pointer group"
       onClick={() => router.push(`/dashboard/orders/${order.id}`)}
     >
@@ -102,26 +102,25 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
         itemName={order.product_name || "Link Order"}
         isProcessing={isPaying}
       />
-      
+
       {/* Absolute Payment Status Badge */}
       <div className="absolute top-6 right-6 flex items-center gap-2">
-          {!isPaid && (
-            <button 
-              onClick={handleDelete}
-              disabled={isPendingDelete || isPaying || isEditing}
-              className="p-1 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 border border-transparent"
-              title="Delete Order"
-            >
-              {isPendingDelete ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            </button>
-          )}
-          <span className={`px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${
-            isPaid 
-              ? 'bg-green-500/10 text-green-500 border-green-500/20' 
-              : 'bg-red-500/20 text-red-500 border-red-500/30 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.2)]'
+        {!isPaid && (
+          <button
+            onClick={handleDelete}
+            disabled={isPendingDelete || isPaying || isEditing}
+            className="p-1 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 border border-transparent"
+            title="Delete Order"
+          >
+            {isPendingDelete ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          </button>
+        )}
+        <span className={`px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${isPaid
+            ? 'bg-green-500/10 text-green-500 border-green-500/20'
+            : 'bg-red-500/20 text-red-500 border-red-500/30 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.2)]'
           }`}>
-            {order.payment_status?.replace('_', ' ') || 'Unpaid'}
-          </span>
+          {order.payment_status?.replace('_', ' ') || 'Unpaid'}
+        </span>
       </div>
 
       {/* Order Details Header */}
@@ -133,7 +132,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
           {formattedDate}
         </span>
       </div>
-      
+
       {/* Order Content */}
       <div className="flex flex-col md:flex-row gap-6 mb-2">
         <div className="flex gap-4 md:w-[40%]">
@@ -144,7 +143,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
             <h3 className="font-bold text-base leading-tight mb-1 pr-16 truncate" title={order.product_name}>
               {order.product_name || 'Link Order Items'}
             </h3>
-            
+
             {/* Item Level Warehouse Status Tracking */}
             <div className="flex flex-col gap-1 mb-1">
               <p className="text-xs text-muted-foreground">Qty: {order.quantity || 1}</p>
@@ -155,9 +154,9 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
                 } else if (order.notes && order.notes.includes('JSON_ITEMS:')) {
                   try {
                     parsedItems = JSON.parse(order.notes.split('JSON_ITEMS:')[1]);
-                  } catch(e) {}
+                  } catch (e) { }
                 }
-                
+
                 if (parsedItems.length > 0) {
                   const totalItems = parsedItems.length;
                   const inWarehouseCount = parsedItems.filter((i: any) => i.status === 'in_warehouse').length;
@@ -172,7 +171,7 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
                 return null;
               })()}
             </div>
-            
+
             <p className="text-sm font-black text-primary">
               {formatCurrency(order.total || 0)}
             </p>
@@ -199,11 +198,11 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
         <div className="md:w-[30%] flex items-center justify-end md:pl-6 border-t md:border-t-0 md:border-l border-border/50 pt-4 md:pt-0 mt-2 md:mt-0 gap-2">
           {!isPaid ? (
             <>
-              <button 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
                   setIsEditing(true);
-                  router.push(`/dashboard/orders/edit/${order.id}`); 
+                  router.push(`/dashboard/orders/edit/${order.id}`);
                 }}
                 disabled={isEditing || isPaying || isPendingDelete}
                 className="p-2 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border disabled:opacity-50"
@@ -211,29 +210,28 @@ export function LinkOrderCard({ order, walletBalance = 0 }: { order: any, wallet
               >
                 {isEditing ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Edit className="w-5 h-5" />}
               </button>
-              <button 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (isPaying) return;
                   setIsModalOpen(true);
                 }}
                 disabled={isPaying || !order.total || parseFloat(order.total) <= 0}
-                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors h-10 px-4 gap-2 flex-1 shadow-lg disabled:opacity-50 disabled:pointer-events-none ${
-                  (!order.total || parseFloat(order.total) <= 0) 
-                    ? 'bg-muted text-muted-foreground shadow-none cursor-not-allowed' 
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors h-10 px-4 gap-2 flex-1 shadow-lg disabled:opacity-50 disabled:pointer-events-none ${(!order.total || parseFloat(order.total) <= 0)
+                    ? 'bg-muted text-muted-foreground shadow-none cursor-not-allowed'
                     : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20'
-                }`}
+                  }`}
                 title={(!order.total || parseFloat(order.total) <= 0) ? "Wait for an admin to set the price" : "Pay Now"}
               >
                 <CreditCard className="w-4 h-4" /> Pay {formatCurrency(order.total || 0)}
               </button>
             </>
           ) : (
-            <button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
                 setIsTrackLoading(true);
-                router.push(`/dashboard/reservations`); 
+                router.push(`/dashboard/reservations`);
               }}
               disabled={isTrackLoading}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2 flex-1 disabled:opacity-50"

@@ -9,8 +9,8 @@ import { useModal } from "@/components/providers/modal-provider";
 import Link from "next/link";
 import WalletPaymentModal from "@/components/wallet/wallet-payment-modal";
 
-export default function CheckoutClient({ 
-  initialProfile, 
+export default function CheckoutClient({
+  initialProfile,
   savedAddresses,
   exchangeRate,
   serviceFeePercentage,
@@ -18,8 +18,8 @@ export default function CheckoutClient({
   localDeliveryPercentage,
   minLocalDeliveryFee,
   walletBalance
-}: { 
-  initialProfile: any, 
+}: {
+  initialProfile: any,
   savedAddresses: any[],
   exchangeRate: number,
   serviceFeePercentage: number,
@@ -34,12 +34,12 @@ export default function CheckoutClient({
 
   const [loading, setLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
-  
+
   // Track selected address ID
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
     savedAddresses?.find(a => a.is_primary)?.id || savedAddresses?.[0]?.id || null
   );
-  
+
   // Form state for adding new address
   const [showAddressForm, setShowAddressForm] = useState(savedAddresses?.length === 0);
   const [newAddress, setNewAddress] = useState({
@@ -49,7 +49,7 @@ export default function CheckoutClient({
     city: "",
     region: ""
   });
-  
+
   const [notes, setNotes] = useState("");
 
   const [exactFreightGhs, setExactFreightGhs] = useState<number | null>(null);
@@ -76,9 +76,9 @@ export default function CheckoutClient({
   // DB-driven Calculations
   const calculatedServiceFee = cartTotalGhs * (serviceFeePercentage / 100);
   const serviceFee = Math.max(calculatedServiceFee, minServiceFee);
-  
-  const localDelivery = exactFreightGhs || 0; 
-  
+
+  const localDelivery = exactFreightGhs || 0;
+
   const totalAmount = cartTotalGhs + serviceFee + localDelivery; // Exclude shipping cost until it arrives
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -90,25 +90,25 @@ export default function CheckoutClient({
       showAlert({ title: "Address Required", message: "Please select a delivery address.", type: "warning" });
       return;
     }
-    
+
     setLoading(true);
-    
+
     // LIVE ALIBABA INVENTORY CHECK
     const verifyRes = await verifyCartInventory(items);
     if (!verifyRes.success) {
       setLoading(false);
       if (verifyRes.outOfStock) {
-        showAlert({ 
-          title: 'Inventory Alert', 
-          message: `The following items are no longer available from the supplier: ${verifyRes.outOfStock.join(', ')}. Please remove them from your cart to proceed.`, 
-          type: 'danger' 
+        showAlert({
+          title: 'Inventory Alert',
+          message: `The following items are no longer available from the supplier: ${verifyRes.outOfStock.join(', ')}. Please remove them from your cart to proceed.`,
+          type: 'danger'
         });
       } else {
         showAlert({ title: 'Error', message: verifyRes.error || "Failed to verify inventory.", type: 'danger' });
       }
       return;
     }
-    
+
     setLoading(false);
     setIsModalOpen(true);
   };
@@ -146,7 +146,7 @@ export default function CheckoutClient({
     setLoading(true);
 
     const reference = `C2G_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-    
+
     const selectedAddress = savedAddresses?.find(a => a.id === selectedAddressId);
     if (!selectedAddress) {
       setLoading(false);
@@ -233,8 +233,8 @@ export default function CheckoutClient({
                   <MapPin className="w-5 h-5 text-primary" /> Delivery Addresses
                 </h2>
                 {savedAddresses.length > 0 && savedAddresses.length < 3 && !showAddressForm && (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setShowAddressForm(true)}
                     className="text-sm font-medium text-primary flex items-center gap-1 hover:underline"
                   >
@@ -242,28 +242,26 @@ export default function CheckoutClient({
                   </button>
                 )}
               </div>
-              
+
               <div className="space-y-4 mb-6">
                 {savedAddresses.map(address => (
-                  <div 
-                    key={address.id} 
+                  <div
+                    key={address.id}
                     onClick={() => setSelectedAddressId(address.id)}
-                    className={`relative p-4 rounded-xl border transition-all cursor-pointer ${
-                      selectedAddressId === address.id 
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                    className={`relative p-4 rounded-xl border transition-all cursor-pointer ${selectedAddressId === address.id
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
                         : 'border-border/50 bg-card hover:border-primary/50'
-                    }`}
+                      }`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                          selectedAddressId === address.id ? 'border-primary bg-primary' : 'border-muted-foreground'
-                        }`}>
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${selectedAddressId === address.id ? 'border-primary bg-primary' : 'border-muted-foreground'
+                          }`}>
                           {selectedAddressId === address.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground" />}
                         </div>
                         <div>
                           <div className="font-bold flex items-center gap-2">
-                            {address.name} 
+                            {address.name}
                             {address.is_primary && (
                               <span className="text-[10px] uppercase font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-sm">Default</span>
                             )}
@@ -273,7 +271,7 @@ export default function CheckoutClient({
                           <div className="text-sm">{address.city}, {address.region}</div>
                         </div>
                       </div>
-                      
+
                       <div className="flex flex-col items-end gap-2">
                         <button
                           type="button"
@@ -298,7 +296,7 @@ export default function CheckoutClient({
                     </div>
                   </div>
                 ))}
-                
+
                 {savedAddresses.length === 0 && !showAddressForm && (
                   <div className="text-center py-6 text-muted-foreground">
                     You have no saved addresses. Please add one.
@@ -359,7 +357,7 @@ export default function CheckoutClient({
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2 border-b border-border/50 pb-4">
                 <Ship className="w-5 h-5 text-primary" /> Shipping Selection
               </h2>
-              
+
               <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400">
                 <p className="leading-relaxed">
                   Your shipping method will be selected after your items arrive at our China warehouse. Once they're ready, simply visit the <strong>Reservations</strong> page to choose your preferred shipping option and prepare your shipment.
@@ -377,7 +375,7 @@ export default function CheckoutClient({
               <Calculator className="w-5 h-5 text-primary" />
               <h3 className="font-bold text-lg">Live Cost Summary</h3>
             </div>
-            
+
             <div className="p-5 space-y-4">
               <div className="bg-secondary/30 p-3 rounded-lg border border-border/50 text-xs">
                 <p className="font-semibold mb-1">Using Platform Rate: 1 GHS = {exchangeRate.toFixed(4)} CNY</p>
@@ -418,7 +416,7 @@ export default function CheckoutClient({
 
               <div className="mt-4 flex flex-col gap-3">
                 {isInsufficient ? (
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setIsModalOpen(true)}
                     className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 gap-2"
@@ -426,7 +424,7 @@ export default function CheckoutClient({
                     Pay ₵{totalAmount.toFixed(2)} <ChevronRight className="w-5 h-5" />
                   </button>
                 ) : (
-                  <button 
+                  <button
                     type="submit"
                     form="checkout-form"
                     disabled={loading || items.length === 0 || isFetchingFreight}
@@ -443,7 +441,7 @@ export default function CheckoutClient({
                     )}
                   </button>
                 )}
-                
+
                 <div className="mt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
                   <ShieldCheck className="w-4 h-4 text-green-500" /> Secure Automatic Deduction
                 </div>

@@ -166,10 +166,31 @@ export async function fetchOrderTrackingTimeline(orderId: string) {
         order_id: job.outer_purchase_id
       });
       hiobuyTrace = traceRes;
+
+      // Auto-translate Chinese remarks on the server to avoid CORS
+      if (hiobuyTrace?.tracking?.packages?.[0]?.steps) {
+        const steps = hiobuyTrace.tracking.packages[0].steps;
+        await Promise.all(steps.map(async (step: any) => {
+          if (step.remark && /[\u4e00-\u9fa5]/.test(step.remark)) {
+            try {
+              const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(step.remark)}&langpair=zh-CN|en`;
+              const tRes = await fetch(url);
+              const tData = await tRes.json();
+              if (tData?.responseData?.translatedText) {
+                step.translatedRemark = tData.responseData.translatedText;
+              }
+            } catch (e) {
+              console.error("Translation failed on server for step", step, e);
+            }
+          }
+        }));
+      }
     } catch (e) {
       console.error("Failed to fetch hiobuy trace", e);
     }
   }
+
+  console.log("Hiobuy Trace returned:", JSON.stringify(hiobuyTrace, null, 2));
 
   return { 
     success: true, 

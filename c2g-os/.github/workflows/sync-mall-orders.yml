@@ -1,0 +1,18 @@
+name: Sync Mall Orders Cron
+
+on:
+  schedule:
+    # Runs every hour at the top of the hour (e.g., 1:00, 2:00, etc.)
+    - cron: '0 * * * *'
+  
+  # Also allow manual triggering from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  sync_orders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit the Sync API Endpoint
+        run: |
+          curl -X GET "https://YOUR_DOMAIN.com/api/cron/sync-mall-orders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
