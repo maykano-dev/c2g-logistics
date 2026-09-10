@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
 import { searchProductsByImage, jsonError } from "@/lib/hiobuy";
 import type { ProductChannel, ProductSearchSortField, ProductSearchSortOrder } from "@/lib/hiobuy";
+import { createClient } from "@/utils/supabase/server";
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "Please log in to use Image Search." } },
+        { status: 401 }
+      );
+    }
     const body = (await request.json()) as {
       channel?: ProductChannel;
       image_base64?: string;

@@ -3,6 +3,7 @@ import type {
   StandardProductDetail,
   StandardProductList,
 } from "./types";
+import { unstable_cache } from "next/cache";
 
 export class HiobuyApiError extends Error {
   constructor(
@@ -158,15 +159,23 @@ function searchFilterBody(input: ProductSearchFilters): Record<string, unknown> 
   return body;
 }
 
+const getCachedSearch = unstable_cache(
+  async (channel: string, keyword: string, filterStr: string) => {
+    return hiobuyFetch<StandardProductList>("/v1/products/search", {
+      channel,
+      keyword,
+      ...JSON.parse(filterStr),
+    });
+  },
+  ['hiobuy-product-search'],
+  { revalidate: 3600 } // 1 hour cache
+);
+
 export async function searchProducts(input: {
   channel: ProductChannel;
   keyword: string;
 } & ProductSearchFilters): Promise<StandardProductList> {
-  return hiobuyFetch<StandardProductList>("/v1/products/search", {
-    channel: input.channel,
-    keyword: input.keyword,
-    ...searchFilterBody(input),
-  });
+  return getCachedSearch(input.channel, input.keyword, JSON.stringify(searchFilterBody(input)));
 }
 
 export async function searchProductsByImage(input: {
@@ -197,6 +206,21 @@ export async function parseProduct(input: {
   );
 }
 
+const getCachedProductDetail = unstable_cache(
+  async (channel: string, id: string | undefined, url: string | undefined) => {
+    return hiobuyFetch<{ product: StandardProductDetail; request_id?: string }>(
+      "/v1/products/detail",
+      {
+        channel,
+        ...(id ? { id } : {}),
+        ...(url ? { url } : {}),
+      },
+    );
+  },
+  ['hiobuy-product-detail'],
+  { revalidate: 86400 } // 24 hours cache
+);
+
 export async function getProductDetail(input: {
   channel: ProductChannel;
   id?: string;
@@ -207,14 +231,7 @@ export async function getProductDetail(input: {
   if (!id && !url) {
     throw new Error("id or url is required");
   }
-  return hiobuyFetch<{ product: StandardProductDetail; request_id?: string }>(
-    "/v1/products/detail",
-    {
-      channel: input.channel,
-      ...(id ? { id } : {}),
-      ...(url ? { url } : {}),
-    },
-  );
+  return getCachedProductDetail(input.channel, id, url);
 }
 
 export async function estimateFreight(input: {

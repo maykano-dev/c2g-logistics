@@ -96,6 +96,10 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const handleFile = (file: File) => {
+    if (!isLoggedIn) {
+      showAlert({ title: 'Login Required', message: 'Please log in or create an account to use the Image Search feature.', type: 'info' });
+      return;
+    }
     if (isUploadingImage) return;
     setIsUploadingImage(true);
     
@@ -253,7 +257,13 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
               )}
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    showAlert({ title: 'Login Required', message: 'Please log in or create an account to use the Image Search feature.', type: 'info' });
+                    return;
+                  }
+                  fileInputRef.current?.click();
+                }}
                 disabled={isUploadingImage}
                 className="p-1.5 rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                 title="Search by Image"
