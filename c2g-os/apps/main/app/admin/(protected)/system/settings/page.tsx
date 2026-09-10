@@ -235,28 +235,68 @@ export default function AdminSettingsView() {
             </div>
           </div>
           
-          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">Maintenance Toggles</h2>
-            <div className="flex items-center gap-3 pt-2">
-              <input type="checkbox" id="maintenance" checked={settings?.maintenance_mode || false} onChange={e => setSettings({...settings, maintenance_mode: e.target.checked})} className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-indigo-600 focus:ring-indigo-600" />
-              <label htmlFor="maintenance" className="text-sm font-medium text-red-400">Global Maintenance Mode (Blocks all users)</label>
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">Maintenance Toggles</h2>
+              <button 
+                onClick={handleSave} 
+                disabled={saving} 
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save Maintenance'}
+              </button>
             </div>
             
-            <div className="mt-4 border-t border-zinc-800 pt-4">
-              <label className="block text-sm font-bold text-zinc-400 mb-2">Block Specific Sections:</label>
-              <div className="grid grid-cols-2 gap-3">
-                {['cart', 'checkout', 'shop', 'dashboard'].map(page => (
-                  <div key={page} className="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      id={`maint-${page}`} 
-                      checked={settings?.maintenance_pages?.[page] || false}
-                      onChange={e => setSettings({...settings, maintenance_pages: {...settings.maintenance_pages, [page]: e.target.checked}})}
-                      className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-indigo-600 focus:ring-indigo-600"
-                    />
-                    <label htmlFor={`maint-${page}`} className="text-sm text-zinc-300 capitalize">{page}</label>
-                  </div>
-                ))}
+            <div className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
+              <div>
+                <label className="text-sm font-bold text-red-400 block mb-1">Global Maintenance Mode</label>
+                <p className="text-xs text-zinc-400">Blocks all users from accessing the platform.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={settings?.maintenance_mode || false}
+                onClick={() => setSettings({...settings, maintenance_mode: !settings?.maintenance_mode})}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-zinc-900 ${
+                  settings?.maintenance_mode ? 'bg-red-500' : 'bg-zinc-700'
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    settings?.maintenance_mode ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            
+            <div className="border-t border-zinc-800 pt-5">
+              <label className="block text-sm font-bold text-zinc-300 mb-3">Block Specific Sections:</label>
+              <div className="grid grid-cols-2 gap-4">
+                {['cart', 'checkout', 'shop', 'dashboard'].map(page => {
+                  const isChecked = settings?.maintenance_pages?.[page] || false;
+                  return (
+                    <div key={page} className="flex items-center justify-between p-3 bg-zinc-950/50 border border-zinc-800 rounded-lg">
+                      <label className="text-sm text-zinc-300 capitalize font-medium">{page}</label>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isChecked}
+                        onClick={() => setSettings({...settings, maintenance_pages: {...settings.maintenance_pages, [page]: !isChecked}})}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-950 ${
+                          isChecked ? 'bg-indigo-500' : 'bg-zinc-800'
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            isChecked ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
