@@ -88,16 +88,28 @@ export async function hiobuyFetch<T>(
     ...(method === "GET" ? { next: { revalidate: 3600 } } : { cache: "no-store" }),
   });
 
-  const data = (await res.json().catch(() => ({}))) as {
-    error?: { code?: string; message?: string; request_id?: string };
-    request_id?: string;
-  };
+  const data = (await res.json().catch(() => ({}))) as any;
 
-  if (!res.ok) {
+  // Hiobuy sometimes returns 200 OK but with an error payload { code: 429, msg: "..." }
+  const isErrorPayload = !!data.error || (data.code && data.code !== 200 && data.code !== '200');
+
+  if (!res.ok || isErrorPayload) {
+    let errorMessage = data.error?.message || data.msg || data.message || `Marketplace connection error (${res.status})`;
+    
+    // Sanitize backend provider names and handle rate limits gracefully
+    const lowerError = String(errorMessage).toLowerCase();
+    if (lowerError.includes('hiobuy') || lowerError.includes('quota') || res.status === 429 || data.code === 429 || data.code === '429') {
+      if (res.status === 429 || data.code === 429 || data.code === '429' || lowerError.includes('quota')) {
+        errorMessage = 'Our China marketplace connection is currently experiencing extremely high demand. Please try again in a few minutes.';
+      } else {
+        errorMessage = 'We encountered an error connecting to our China suppliers. Please try again later.';
+      }
+    }
+
     throw new HiobuyApiError(
-      data.error?.message || `HIOBuy API error (${res.status})`,
-      res.status,
-      data.error?.code,
+      errorMessage,
+      res.status === 200 && data.code ? (typeof data.code === 'number' ? data.code : 400) : res.status,
+      data.error?.code || String(data.code || 'API_ERROR'),
       data.error?.request_id || data.request_id,
     );
   }
