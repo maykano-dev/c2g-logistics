@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import AdminLogin from '@/components/admin/admin-login';
+import { ClientRedirect } from './client-redirect';
 
 export default async function AdminLoginRoute() {
   const supabase = await createClient();
@@ -19,7 +19,8 @@ export default async function AdminLoginRoute() {
       const is2faVerified = cookieStore.get('admin_2fa_verified')?.value === 'true';
 
       if (!admin.totp_enabled || is2faVerified) {
-        redirect('/admin/dashboard');
+        // Fix for Turbopack negative timestamp bug: use client redirect instead of server redirect
+        return <ClientRedirect to="/admin/dashboard" />;
       }
     }
   }

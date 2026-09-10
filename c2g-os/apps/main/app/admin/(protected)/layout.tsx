@@ -9,32 +9,31 @@ export default async function AdminProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // --- AUTHENTICATION REMOVED PER REQUEST ---
-  // const supabase = await createClient();
-  // const { data: { user } } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // if (!user) {
-  //   redirect('/admin');
-  // }
+  if (!user) {
+    redirect('/admin');
+  }
 
   // Verify Admin status
-  // const { data: admin } = await supabase
-  //   .from('admins')
-  //   .select('totp_enabled')
-  //   .eq('user_id', user.id)
-  //   .single();
+  const { data: admin } = await supabase
+    .from('admins')
+    .select('totp_enabled')
+    .eq('user_id', user.id)
+    .single();
 
-  // if (!admin) {
-  //   redirect('/'); // Normal users shouldn't even know this exists
-  // }
+  if (!admin) {
+    redirect('/'); // Normal users shouldn't even know this exists
+  }
 
   // Enforce 2FA Cookie
-  // const cookieStore = await cookies();
-  // const is2faVerified = cookieStore.get('admin_2fa_verified')?.value === 'true';
+  const cookieStore = await cookies();
+  const is2faVerified = cookieStore.get('admin_2fa_verified')?.value === 'true';
 
-  // if (admin?.totp_enabled && !is2faVerified) {
-  //   redirect('/admin');
-  // }
+  if (admin.totp_enabled && !is2faVerified) {
+    redirect('/admin');
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex overflow-x-hidden w-full">
