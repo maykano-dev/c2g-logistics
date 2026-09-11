@@ -9,6 +9,23 @@ import crypto from 'crypto';
 import { unstable_cache } from 'next/cache';
 
 // ═══════════════════════════════════════════════════════════════════
+// Keyword Normalization
+// ═══════════════════════════════════════════════════════════════════
+function normalizeSearchQuery(query: string): string {
+  let q = query.toLowerCase().replace(/\s+/g, ' ').trim();
+  
+  const dict: Record<string, string> = {
+    'smartwatch': 'smart watch', 'smartwatches': 'smart watch', 'smart watches': 'smart watch',
+    'sneaker': 'shoes', 'sneakers': 'shoes', 'trainers': 'shoes',
+    'tshirt': 't-shirt', 't shirt': 't-shirt', 'tees': 't-shirt',
+    'earbuds': 'wireless earbuds', 'airpods': 'wireless earbuds',
+    'purse': 'bags', 'handbag': 'bags', 'handbags': 'bags',
+    'dress': 'dresses', 'sunglass': 'sunglasses', 'shades': 'sunglasses'
+  };
+  return dict[q] || q;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // In-Memory Cache (works in both dev and production)
 // unstable_cache is DISABLED during `next dev`, so this is critical
 // to prevent every single page view from burning API credits.
@@ -237,11 +254,15 @@ async function fetchShopProductsBase(params?: {
 
   // 2. We ALWAYS fetch from HioBuy to fill out the shop. 
   // If no search or category, we use a rotating keyword based on the page number to populate the generic shop page with a mixture of categories.
-  let searchQuery = params?.query ? params.query.toLowerCase().replace(/\s+/g, ' ').trim() : '';
-  const searchCategory = params?.category === 'all' || !params?.category ? '' : params.category.toLowerCase().replace(/\s+/g, ' ').trim();
+  let rawQuery = params?.query || '';
+  let rawCategory = params?.category === 'all' || !params?.category ? '' : params.category;
+  
+  let searchQuery = rawQuery ? normalizeSearchQuery(rawQuery) : '';
+  const searchCategory = rawCategory ? normalizeSearchQuery(rawCategory) : '';
 
   let isHeterogeneousHomepage = false;
   let homepageKeywords: string[] = [];
+  let displayQueryText = searchQuery || searchCategory;
 
   if (!searchQuery && !searchCategory) {
     isHeterogeneousHomepage = true;
@@ -249,6 +270,7 @@ async function fetchShopProductsBase(params?: {
     // This costs exactly 4 API credits per 24 hours, regardless of traffic.
     homepageKeywords = ['shoes', 'dresses', 'electronics', 'beauty'];
     searchQuery = `homepage_fixed_${page}`;
+    displayQueryText = `system_homepage_fixed_${page}`;
   }
   
   const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`);
@@ -336,7 +358,7 @@ async function fetchShopProductsBase(params?: {
 
           await supabase.from("search_query_cache").upsert({
             query_hash:  qHash,
-            query_text:  `${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`,
+            query_text:  displayQueryText,
             result_data: { items: combinedItems, total: combinedTotal },
             expires_at:  expiresAt.toISOString()
           });
@@ -372,7 +394,7 @@ async function fetchShopProductsBase(params?: {
 
           await supabase.from("search_query_cache").upsert({
             query_hash:  qHash,
-            query_text:  `${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`,
+            query_text:  displayQueryText,
             result_data: { items: res.items, total: res.total || res.items.length },
             expires_at:  expiresAt.toISOString()
           });
@@ -917,4 +939,46 @@ export async function clearDbWishlist() {
   if (!user) return { success: false };
   await supabase.from("wishlist").delete().eq("customer_id", user.id);
   return { success: true };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Search Suggestions (Auto-Suggest)
+// ═══════════════════════════════════════════════════════════════════
+export async function getSearchSuggestions(prefix: string) {
+  if (!prefix || prefix.trim().length < 2) return { suggestions: [] };
+
+  const cleanPrefix = normalizeSearchQuery(prefix);
+  const supabase = await createClient();
+
+  // Query actual cached queries that start with the prefix, ignoring system queries
+  const { data, error } = await supabase
+    .from('search_query_cache')
+    .select('query_text')
+    .not('query_text', 'like', 'system_%')
+    .not('query_text', 'like', 'similar_%')
+    .ilike('query_text', `${cleanPrefix}%`)
+    .limit(10);
+
+  let unique: string[] = [];
+  if (!error && data) {
+    const cleaned = data.map(d => {
+      let t = d.query_text || "";
+      // Clean up legacy cache strings which look like 'backpack__4_'
+      if (t.includes('_')) {
+        t = t.split('_').filter(Boolean)[0] || ""; // Take the first actual word before underscores
+      }
+      return t;
+    }).filter(Boolean);
+    unique = Array.from(new Set(cleaned));
+  }
+
+  // Seed with highly popular global terms if cache is sparse or fresh
+  const goldenSeeds = ['shoes', 'dresses', 'electronics', 'smart watch', 'wireless earbuds', 'bags', 't-shirt', 'sunglasses', 'home decor'];
+  for (const seed of goldenSeeds) {
+    if (unique.length < 5 && seed.startsWith(cleanPrefix) && !unique.includes(seed)) {
+      unique.push(seed);
+    }
+  }
+
+  return { suggestions: unique.slice(0, 8) };
 }
