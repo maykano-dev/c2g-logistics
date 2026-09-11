@@ -948,6 +948,10 @@ export async function getSearchSuggestions(prefix: string) {
   if (!prefix || prefix.trim().length < 2) return { suggestions: [] };
 
   const cleanPrefix = normalizeSearchQuery(prefix);
+  
+  // Force dynamic to prevent Next.js from aggressively caching this fetch request in production
+  unstable_noStore();
+  
   const supabase = await createClient();
 
   // Query actual cached queries that start with the prefix, ignoring system queries
