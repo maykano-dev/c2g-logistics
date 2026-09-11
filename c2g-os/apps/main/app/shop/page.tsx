@@ -59,7 +59,7 @@ export default async function ShopPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <div className="bg-background min-h-screen pb-20 md:pb-8 pt-20 md:pt-24">
+    <div className="bg-background min-h-screen pb-20 md:pb-8 pt-28 md:pt-32">
       {/* Fixed Shop Header + Announcement Banner */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <AnnouncementBanner />
