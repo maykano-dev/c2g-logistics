@@ -777,14 +777,12 @@ export async function getShippingRecommendation(weightKg?: number, volumeCbm?: n
 // Similar Products & Reviews
 // ═══════════════════════════════════════════════════════════════════
 export async function getSimilarProducts(productId: string, category?: string) {
-  if (!category) return { products: [], exchangeRate: 1 };
-
-  const qHash = `similar_${crypto.createHash("md5").update(category).digest("hex")}`;
+  // Use a SINGLE global cache key so this section only updates once per 24 hours across the entire site
+  const qHash = `similar_products_global_24h`;
   
   // 1. Memory Cache
   const memCached = getFromMemoryCache(qHash);
   if (memCached) {
-    // Filter out current product from cached category results
     const filtered = memCached.products.filter((p: any) => String(p.id) !== productId);
     return { ...memCached, products: filtered.slice(0, 8) };
   }
@@ -804,15 +802,16 @@ export async function getSimilarProducts(productId: string, category?: string) {
     return { ...cacheData.result_data, products: filtered.slice(0, 8) };
   }
 
-  // 3. Fetch Fresh (which is also cached by getShopProducts, but we do this to create a dedicated category block)
-  const res = await getShopProducts({ category, page: 1 });
+  // 3. Fetch Fresh (Uses the first visitor's category of the day to populate the global cache)
+  const searchCat = category || 'shoes'; 
+  const res = await getShopProducts({ category: searchCat, page: 1 });
   
-  // Save the full category result to cache, not just the filtered one, so other products in same category can use it
+  // Save globally
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + 24);
   await supabase.from("search_query_cache").upsert({
     query_hash:  qHash,
-    query_text:  `similar_${category}`,
+    query_text:  `global_similar_products`,
     result_data: res,
     expires_at:  expiresAt.toISOString()
   });
