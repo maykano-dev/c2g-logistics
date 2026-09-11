@@ -605,6 +605,11 @@ export async function getProductDetails(id: string, explicitChannel?: string) {
 // ═══════════════════════════════════════════════════════════════════
 export async function processImageSearch(base64Data: string) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Authentication required to use image search." };
+  }
+
   // Strip the 'data:image/...;base64,' prefix if it exists
   const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, "");
   
@@ -659,6 +664,32 @@ export async function processImageSearch(base64Data: string) {
 // ═══════════════════════════════════════════════════════════════════
 export async function processUrlParse(url: string) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Authentication required to parse links." };
+    }
+
+    const qHash = `url_parse_${crypto.createHash("md5").update(url.trim()).digest("hex")}`;
+    
+    // Check in-memory cache first
+    const memCached = getFromMemoryCache(qHash);
+    if (memCached) {
+      return memCached;
+    }
+
+    // Check persistent cache
+    const { data: cacheData } = await supabase
+      .from("search_query_cache")
+      .select("result_data, expires_at")
+      .eq("query_hash", qHash)
+      .single();
+
+    if (cacheData && new Date(cacheData.expires_at) > new Date()) {
+      setMemoryCache(qHash, cacheData.result_data, 86400);
+      return cacheData.result_data;
+    }
+
     const res = await parseProduct({ url });
     if (!res?.product?.id) {
       return { success: false, error: "Could not parse product URL." };
@@ -667,7 +698,20 @@ export async function processUrlParse(url: string) {
     // Auto-detect channel if possible, or fallback to the parsed channel, or 1688
     const channel = res.product.channel || (url.includes('taobao') ? 'taobao' : url.includes('weidian') ? 'weidian' : '1688');
     
-    return { success: true, productId: res.product.id, channel };
+    const result = { success: true, productId: res.product.id, channel };
+    
+    // Save to Cache (24 hours TTL)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+    await supabase.from("search_query_cache").upsert({
+      query_hash:  qHash,
+      query_text:  `url_parse`,
+      result_data: result,
+      expires_at:  expiresAt.toISOString()
+    });
+    setMemoryCache(qHash, result, 86400);
+
+    return result;
   } catch (err: any) {
     console.error("processUrlParse failed", err);
     return { success: false, error: err.message || "Failed to parse URL." };
