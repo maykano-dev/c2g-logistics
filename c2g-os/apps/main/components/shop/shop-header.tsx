@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, ShoppingCart, User, X, Heart, Loader2, Camera } from "lucide-react";
+import { Search, ShoppingCart, User, X, Heart, Loader2, Camera, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +20,23 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
   const { showAlert } = useModal();
+
+  // Pre-cached popular search terms — clicking these costs 0 credits after first load
+  const POPULAR_SEARCHES = [
+    'Shoes', 'Dresses', 'Electronics', 'Beauty', 'Sneakers', 
+    'Earbuds', 'Watches', 'Bags', 'Phone Cases', 'Jewelry',
+    'Skincare', 'Fitness', 'Home Decor'
+  ];
+
+  const handleQuickSearch = (term: string) => {
+    setQuery(term);
+    setIsPending(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("query", term);
+    params.delete("searchId");
+    router.push("/shop?" + params.toString());
+    setTimeout(() => setIsPending(false), 1000);
+  };
 
   useEffect(() => {
     setQuery(searchParams.get("query") || "");
@@ -342,6 +359,25 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
           </div>
         </div>
       </div>
+
+      {/* Popular Searches — only show when not actively searching */}
+      {!currentQuery && (
+        <div className="max-w-7xl mx-auto px-4 pb-2">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+            <TrendingUp className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            {POPULAR_SEARCHES.map((term) => (
+              <button
+                key={term}
+                type="button"
+                onClick={() => handleQuickSearch(term.toLowerCase())}
+                className="shrink-0 px-3 py-1 rounded-full text-xs font-medium bg-secondary/70 hover:bg-primary/10 hover:text-primary border border-border/50 hover:border-primary/30 transition-all whitespace-nowrap"
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

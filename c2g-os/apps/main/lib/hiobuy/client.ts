@@ -84,9 +84,8 @@ export async function hiobuyFetch<T>(
     method,
     headers,
     body: fetchBody,
-    // If it's a GET request (like searches or product details), cache it for 1 hour (3600 seconds)
-    // If it's a POST request (like logistics or placing orders), do not cache it
-    ...(method === "GET" ? { next: { revalidate: 3600 } } : { cache: "no-store" }),
+    // Cache all GET requests for 24 hours (86400 seconds) to protect API quota
+    ...(method === "GET" ? { next: { revalidate: 86400 } } : { cache: "no-store" }),
   });
 
   const data = (await res.json().catch(() => ({}))) as any;
@@ -168,7 +167,7 @@ const getCachedSearch = unstable_cache(
     });
   },
   ['hiobuy-product-search'],
-  { revalidate: 3600 } // 1 hour cache
+  { revalidate: 86400 } // 24 hour cache
 );
 
 export async function searchProducts(input: {

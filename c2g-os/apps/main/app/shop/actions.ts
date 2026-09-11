@@ -245,23 +245,10 @@ async function fetchShopProductsBase(params?: {
 
   if (!searchQuery && !searchCategory) {
     isHeterogeneousHomepage = true;
-    const mixKeywords = [
-      'shoes', 'decor', 'sneakers', 'smartwatch', 'kitchenware', 'dresses', 
-      'earbuds', 'fitness', 'stationery', 'toys', 'sunglasses', 'backpack', 
-      'jewelry', 'makeup', 'gaming', 'accessories', 'outdoor', 'pets', 'vintage', 
-      'streetwear', 'tools', 'party', 'handbags'
-    ];
-    // DETERMINISTIC rotation: pick 4 keywords based on UTC hour + page number
-    // This ensures ALL visitors within the same hour get the SAME keywords,
-    // so the Supabase cache actually works instead of making 4 fresh API calls per visit.
-    const hourSlot = Math.floor(Date.now() / (1000 * 60 * 60)); // changes every hour
-    const offset = ((hourSlot + page) * 7) % mixKeywords.length; // rotate through list
-    homepageKeywords = [];
-    for (let i = 0; i < 4; i++) {
-      homepageKeywords.push(mixKeywords[(offset + i) % mixKeywords.length]);
-    }
-    // Include the actual keywords in the searchQuery so the hash is unique per keyword set
-    searchQuery = `homepage_${homepageKeywords.join('_')}`;
+    // FIXED keywords — these NEVER change. Every visitor sees the same products.
+    // This costs exactly 4 API credits per 24 hours, regardless of traffic.
+    homepageKeywords = ['shoes', 'dresses', 'electronics', 'beauty'];
+    searchQuery = `homepage_fixed_${page}`;
   }
   
   const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`);
@@ -294,8 +281,8 @@ async function fetchShopProductsBase(params?: {
     const parsedData = cacheData.result_data;
     alibabaProducts = parsedData.items.map((p: any) => mapHiobuyToC2g(p, pricing));
     totalCount += parsedData.total || 0;
-    // Store in memory cache for 1 hour so we don't even need to query Supabase next time
-    setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: parsedData.total || 0 }, 3600);
+    // Store in memory cache for 24 hours so we don't even need to query Supabase next time
+    setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: parsedData.total || 0 }, 86400);
   } else {
     // CACHE MISS → Call HioBuy API
     try {
@@ -345,7 +332,7 @@ async function fetchShopProductsBase(params?: {
           totalCount += combinedTotal;
 
           const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 12);
+          expiresAt.setHours(expiresAt.getHours() + 24);
 
           await supabase.from("search_query_cache").upsert({
             query_hash:  qHash,
@@ -353,8 +340,8 @@ async function fetchShopProductsBase(params?: {
             result_data: { items: combinedItems, total: combinedTotal },
             expires_at:  expiresAt.toISOString()
           });
-          // Also populate in-memory cache (1 hour TTL)
-          setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: combinedTotal }, 3600);
+          // Also populate in-memory cache (24 hour TTL)
+          setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: combinedTotal }, 86400);
         }
       } else {
         // Specific Keyword Search
@@ -379,9 +366,9 @@ async function fetchShopProductsBase(params?: {
           alibabaProducts = res.items.map((p: any) => mapHiobuyToC2g(p, pricing));
           totalCount += res.total || res.items.length;
 
-          // Save to Cache (TTL 12 hours)
+          // Save to Cache (TTL 24 hours)
           const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 12);
+          expiresAt.setHours(expiresAt.getHours() + 24);
 
           await supabase.from("search_query_cache").upsert({
             query_hash:  qHash,
@@ -389,8 +376,8 @@ async function fetchShopProductsBase(params?: {
             result_data: { items: res.items, total: res.total || res.items.length },
             expires_at:  expiresAt.toISOString()
           });
-          // Also populate in-memory cache (1 hour TTL)
-          setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: res.total || res.items.length }, 3600);
+          // Also populate in-memory cache (24 hour TTL)
+          setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: res.total || res.items.length }, 86400);
         }
       }
     } catch (e: any) {
@@ -437,7 +424,7 @@ const getCachedShopProducts = unstable_cache(
     });
   },
   ['shop-products-search'],
-  { revalidate: 900 }
+  { revalidate: 86400 } // 24 hour cache
 );
 
 export const getShopProducts = async (params?: {
