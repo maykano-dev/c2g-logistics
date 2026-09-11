@@ -777,12 +777,49 @@ export async function getShippingRecommendation(weightKg?: number, volumeCbm?: n
 // Similar Products & Reviews
 // ═══════════════════════════════════════════════════════════════════
 export async function getSimilarProducts(productId: string, category?: string) {
-  if (category) {
-    const res = await getShopProducts({ category, page: 1 });
-    const filtered = res.products.filter((p: any) => String(p.id) !== productId);
-    return { products: filtered.slice(0, 8), exchangeRate: res.exchangeRate };
+  if (!category) return { products: [], exchangeRate: 1 };
+
+  const qHash = `similar_${crypto.createHash("md5").update(category).digest("hex")}`;
+  
+  // 1. Memory Cache
+  const memCached = getFromMemoryCache(qHash);
+  if (memCached) {
+    // Filter out current product from cached category results
+    const filtered = memCached.products.filter((p: any) => String(p.id) !== productId);
+    return { ...memCached, products: filtered.slice(0, 8) };
   }
-  return { products: [], exchangeRate: 1 };
+
+  const supabase = await createClient();
+  
+  // 2. Persistent DB Cache
+  const { data: cacheData } = await supabase
+    .from("search_query_cache")
+    .select("result_data, expires_at")
+    .eq("query_hash", qHash)
+    .single();
+
+  if (cacheData && new Date(cacheData.expires_at) > new Date()) {
+    setMemoryCache(qHash, cacheData.result_data, 86400);
+    const filtered = cacheData.result_data.products.filter((p: any) => String(p.id) !== productId);
+    return { ...cacheData.result_data, products: filtered.slice(0, 8) };
+  }
+
+  // 3. Fetch Fresh (which is also cached by getShopProducts, but we do this to create a dedicated category block)
+  const res = await getShopProducts({ category, page: 1 });
+  
+  // Save the full category result to cache, not just the filtered one, so other products in same category can use it
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 24);
+  await supabase.from("search_query_cache").upsert({
+    query_hash:  qHash,
+    query_text:  `similar_${category}`,
+    result_data: res,
+    expires_at:  expiresAt.toISOString()
+  });
+  setMemoryCache(qHash, res, 86400);
+
+  const filtered = res.products.filter((p: any) => String(p.id) !== productId);
+  return { products: filtered.slice(0, 8), exchangeRate: res.exchangeRate };
 }
 
 export async function submitProductReview(productId: string, rating: number, reviewText: string) {
