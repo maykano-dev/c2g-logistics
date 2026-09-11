@@ -35,7 +35,7 @@ export default function ShopLayoutWrapper({
   return (
     <div className="max-w-7xl mx-auto px-4 w-full">
       {/* Mobile Filter Toggle Button (Rendered only on mobile) */}
-      <div className="md:hidden py-4 flex justify-end sticky top-[80px] z-40 bg-background/95 backdrop-blur-md border-b border-border/50 -mx-4 px-4">
+      <div className="md:hidden py-4 flex justify-end sticky top-[120px] z-40 bg-background/95 backdrop-blur-md border-b border-border/50 -mx-4 px-4">
         <button
           onClick={() => setIsMobileFiltersOpen(true)}
           className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-full text-sm font-semibold hover:bg-secondary/80 transition-colors"
@@ -47,7 +47,7 @@ export default function ShopLayoutWrapper({
 
       <div className="flex flex-col md:flex-row gap-8 py-6 md:py-8">
         {/* Desktop Sidebar (Hidden on mobile) */}
-        <div className="hidden md:block w-64 shrink-0 sticky top-[80px] pr-4 self-start max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar">
+        <div className="hidden md:block w-64 shrink-0 sticky top-[130px] pr-4 self-start max-h-[calc(100vh-150px)] overflow-y-auto custom-scrollbar">
           <ShopSidebar />
         </div>
 

@@ -237,8 +237,8 @@ async function fetchShopProductsBase(params?: {
 
   // 2. We ALWAYS fetch from HioBuy to fill out the shop. 
   // If no search or category, we use a rotating keyword based on the page number to populate the generic shop page with a mixture of categories.
-  let searchQuery = params?.query || '';
-  const searchCategory = params?.category === 'all' ? '' : (params?.category || '');
+  let searchQuery = params?.query ? params.query.toLowerCase().replace(/\s+/g, ' ').trim() : '';
+  const searchCategory = params?.category === 'all' || !params?.category ? '' : params.category.toLowerCase().replace(/\s+/g, ' ').trim();
 
   let isHeterogeneousHomepage = false;
   let homepageKeywords: string[] = [];
