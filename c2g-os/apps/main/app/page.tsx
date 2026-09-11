@@ -265,6 +265,8 @@ export default async function LandingPage(
                 src="/images/shop-from-china.png" 
                 alt="Shop Products From China" 
                 fill 
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
                 className="object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
               />
             </div>

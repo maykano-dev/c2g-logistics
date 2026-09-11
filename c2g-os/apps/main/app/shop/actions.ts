@@ -9,6 +9,34 @@ import crypto from 'crypto';
 import { unstable_cache } from 'next/cache';
 
 // ═══════════════════════════════════════════════════════════════════
+// In-Memory Cache (works in both dev and production)
+// unstable_cache is DISABLED during `next dev`, so this is critical
+// to prevent every single page view from burning API credits.
+// ═══════════════════════════════════════════════════════════════════
+const memoryCache = new Map<string, { data: any; expiresAt: number }>();
+
+function getFromMemoryCache(key: string): any | null {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    memoryCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setMemoryCache(key: string, data: any, ttlSeconds: number) {
+  memoryCache.set(key, { data, expiresAt: Date.now() + ttlSeconds * 1000 });
+  // Evict old entries if cache grows too large (prevent memory leak)
+  if (memoryCache.size > 500) {
+    const now = Date.now();
+    for (const [k, v] of memoryCache) {
+      if (now > v.expiresAt) memoryCache.delete(k);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════════
 async function getPricingConfig(supabase: any): Promise<{ rate: number, markup: number }> {
@@ -223,15 +251,38 @@ async function fetchShopProductsBase(params?: {
       'jewelry', 'makeup', 'gaming', 'accessories', 'outdoor', 'pets', 'vintage', 
       'streetwear', 'tools', 'party', 'handbags'
     ];
-    // Pick 4 completely random keywords to fetch for a heterogeneous mix
-    const shuffled = [...mixKeywords].sort(() => 0.5 - Math.random());
-    homepageKeywords = shuffled.slice(0, 4);
-    searchQuery = 'homepage_mixed';
+    // DETERMINISTIC rotation: pick 4 keywords based on UTC hour + page number
+    // This ensures ALL visitors within the same hour get the SAME keywords,
+    // so the Supabase cache actually works instead of making 4 fresh API calls per visit.
+    const hourSlot = Math.floor(Date.now() / (1000 * 60 * 60)); // changes every hour
+    const offset = ((hourSlot + page) * 7) % mixKeywords.length; // rotate through list
+    homepageKeywords = [];
+    for (let i = 0; i < 4; i++) {
+      homepageKeywords.push(mixKeywords[(offset + i) % mixKeywords.length]);
+    }
+    // Include the actual keywords in the searchQuery so the hash is unique per keyword set
+    searchQuery = `homepage_${homepageKeywords.join('_')}`;
   }
   
   const qHash = hashQuery(`${searchQuery}_${searchCategory}_${page}_${params?.minPrice || ''}_${params?.maxPrice || ''}`);
   
-  // Check Search Query Cache first
+  // ── Layer 1: In-memory cache (instant, works in dev mode) ──
+  const memoryCacheKey = `shop_${qHash}`;
+  const memCached = getFromMemoryCache(memoryCacheKey);
+  if (memCached) {
+    // Merge with local products and return
+    const localIds = new Set(localProducts.map(p => String(p.id)));
+    const uniqueAlibaba = memCached.products.filter((p: any) => !localIds.has(String(p.id)));
+    const finalProducts = [...localProducts, ...uniqueAlibaba].slice(0, limit);
+    return { 
+      success: true, products: finalProducts, exchangeRate: pricing.rate,
+      totalCount: (totalCount || 0) + (memCached.totalCount || 0),
+      totalPages: Math.ceil(((totalCount || 0) + (memCached.totalCount || 0)) / limit) || 1,
+      currentPage: page
+    };
+  }
+
+  // ── Layer 2: Supabase search_query_cache (persistent, shared across server restarts) ──
   const { data: cacheData } = await supabase
     .from("search_query_cache")
     .select("result_data, expires_at")
@@ -239,15 +290,19 @@ async function fetchShopProductsBase(params?: {
     .single();
 
   if (cacheData && new Date(cacheData.expires_at) > new Date()) {
-    // CACHE HIT
+    // CACHE HIT from Supabase — also populate in-memory cache for faster subsequent hits
     const parsedData = cacheData.result_data;
     alibabaProducts = parsedData.items.map((p: any) => mapHiobuyToC2g(p, pricing));
     totalCount += parsedData.total || 0;
+    // Store in memory cache for 1 hour so we don't even need to query Supabase next time
+    setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: parsedData.total || 0 }, 3600);
   } else {
     // CACHE MISS → Call HioBuy API
     try {
       if (isHeterogeneousHomepage) {
-        // Fetch 4 different keywords simultaneously, 5 items each
+        // Fetch 4 different keywords simultaneously, 6 items each
+        // These keywords are deterministic per hour, so the individual searchProducts
+        // calls will also hit the unstable_cache / fetch cache on repeated visits.
         const searchPromises = homepageKeywords.map(kw => 
           searchProducts({
             channel: "1688",
@@ -256,7 +311,7 @@ async function fetchShopProductsBase(params?: {
             page_size: 6,
             price_start: cnyMinPrice,
             price_end: cnyMaxPrice
-          }).catch(e => { console.warn('HioBuy multi-search error:', e); return null; })
+          }).catch(e => { console.warn('HioBuy multi-search error:', e.message); return null; })
         );
 
         const results = await Promise.all(searchPromises);
@@ -282,8 +337,8 @@ async function fetchShopProductsBase(params?: {
           }
         }
 
-        // Interleave/shuffle the combined items so they are truly mixed
-        deduplicatedItems.sort(() => 0.5 - Math.random());
+        // Items are already mixed from different keyword searches — no shuffle needed.
+        // (Random shuffle would defeat caching since the output changes every time.)
 
         if (deduplicatedItems.length > 0) {
           alibabaProducts = deduplicatedItems.map((p: any) => mapHiobuyToC2g(p, pricing));
@@ -298,6 +353,8 @@ async function fetchShopProductsBase(params?: {
             result_data: { items: combinedItems, total: combinedTotal },
             expires_at:  expiresAt.toISOString()
           });
+          // Also populate in-memory cache (1 hour TTL)
+          setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: combinedTotal }, 3600);
         }
       } else {
         // Specific Keyword Search
@@ -332,10 +389,12 @@ async function fetchShopProductsBase(params?: {
             result_data: { items: res.items, total: res.total || res.items.length },
             expires_at:  expiresAt.toISOString()
           });
+          // Also populate in-memory cache (1 hour TTL)
+          setMemoryCache(memoryCacheKey, { products: alibabaProducts, totalCount: res.total || res.items.length }, 3600);
         }
       }
-    } catch (e) {
-      console.error("HioBuy Search Failed", e);
+    } catch (e: any) {
+      console.warn("HioBuy Search Failed (Serving Local Cache):", e.message || "Unknown error");
     }
   }
 
@@ -409,7 +468,15 @@ export async function getProductDetails(id: string, explicitChannel?: string) {
   try {
     const qHash = `product_detail_${id}_v2`;
     
-    // Check Cache First
+    // ── Layer 1: In-memory cache (instant, works in dev mode) ──
+    const memKey = `pd_${id}`;
+    const memCached = getFromMemoryCache(memKey);
+    if (memCached) {
+      supabase.rpc('increment_view_count', { p_id: id }).then(null, () => {});
+      return { success: true, product: memCached, exchangeRate: pricing.rate };
+    }
+
+    // ── Layer 2: Supabase search_query_cache ──
     const { data: cacheData } = await supabase
       .from("search_query_cache")
       .select("result_data, expires_at")
@@ -419,6 +486,8 @@ export async function getProductDetails(id: string, explicitChannel?: string) {
     if (cacheData && new Date(cacheData.expires_at) > new Date()) {
       // Track View Count (For Auto-Promotion Engine) in background
       supabase.rpc('increment_view_count', { p_id: id }).then(null, () => {});
+      // Populate memory cache (24 hour TTL) so next hit is instant
+      setMemoryCache(memKey, cacheData.result_data, 86400);
       return { success: true, product: cacheData.result_data, exchangeRate: pricing.rate };
     }
 
@@ -526,6 +595,8 @@ export async function getProductDetails(id: string, explicitChannel?: string) {
       result_data: mappedProduct,
       expires_at:  expiresAt.toISOString()
     }).then(null, (e: any) => console.error("Failed to cache product details", e));
+    // Also populate in-memory cache (24 hour TTL)
+    setMemoryCache(memKey, mappedProduct, 86400);
 
     // Track View Count (For Auto-Promotion Engine)
     try {
@@ -537,7 +608,7 @@ export async function getProductDetails(id: string, explicitChannel?: string) {
     return { success: true, product: mappedProduct, exchangeRate: pricing.rate };
 
   } catch (error: any) {
-    console.error("Error fetching HioBuy product details:", error);
+    console.warn("HioBuy Product Details Failed:", error.message || "Unknown error");
     return { success: false, error: error.message };
   }
 }

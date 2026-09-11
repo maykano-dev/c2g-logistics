@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
           {/* Logo & Header */}
           <div className="flex flex-col items-center mb-8 mt-2">
             <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center mb-4">
-              <Image src="/logo.png" alt="C2G Logistics Logo" fill className="object-contain" />
+              <Image src="/logo.png" alt="C2G Logistics Logo" fill sizes="48px" priority className="object-contain" />
             </div>
             <h1 className="text-2xl font-black tracking-tight text-foreground text-center">Reset Password</h1>
             <p className="text-sm text-muted-foreground mt-2 text-center max-w-[280px]">
