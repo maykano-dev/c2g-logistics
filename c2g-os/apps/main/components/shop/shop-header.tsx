@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useCallback, useTransition, useRef, useEffect } from "react";
 import { useCart } from "./cart-context";
 import { useWishlist } from "./wishlist-context";
-import { processImageSearch, processUrlParse } from "../../app/shop/actions";
+import { processImageSearch, processUrlParse, getSearchSuggestions } from "../../app/shop/actions";
 import { useModal } from "../providers/modal-provider";
 
 export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalance?: number, isLoggedIn?: boolean }) {
@@ -20,6 +20,30 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
   const { showAlert } = useModal();
+
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  
+  // Debounced search suggestions
+  useEffect(() => {
+    if (!query || query.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      // Don't fetch if it looks like a URL
+      if (/^https?:\/\//i.test(query) || query.includes('detail.1688.com') || query.includes('taobao.com')) {
+        setSuggestions([]);
+        return;
+      }
+      try {
+        const res = await getSearchSuggestions(query);
+        setSuggestions(res.suggestions || []);
+      } catch (e) {
+        console.error("Failed to fetch suggestions", e);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   // Pre-cached popular search terms — clicking these costs 0 credits after first load
   const POPULAR_SEARCHES = [
@@ -254,13 +278,38 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
+              onBlur={() => {
+                // Delay hiding so clicks on suggestions register before blur
+                setTimeout(() => setIsSearchFocused(false), 200);
+              }}
               className={`w-full h-10 md:h-11 rounded-full border bg-secondary/50 pl-10 pr-20 text-sm focus:outline-none transition-all ${
                 isSearchFocused
                   ? "border-primary ring-2 ring-primary/20 bg-background"
                   : "border-border/50"
               }`}
             />
+            
+            {/* Auto-suggest Dropdown */}
+            {isSearchFocused && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border/50 rounded-xl shadow-xl shadow-black/5 overflow-hidden z-50">
+                <div className="py-2">
+                  <div className="px-4 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5" /> Trending Searches
+                  </div>
+                  {suggestions.map((sug, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleQuickSearch(sug)}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary/50 transition-colors flex items-center gap-3 group"
+                    >
+                      <Search className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <span className="truncate">{sug}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {query && !isPending && (
