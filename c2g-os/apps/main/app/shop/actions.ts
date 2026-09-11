@@ -6,7 +6,7 @@ import { searchProducts, getProductDetail, searchProductsByImage, parseProduct }
 import type { ProductChannel } from "@/lib/hiobuy";
 import { normalizeProductTitle } from "@/lib/alibaba/text-cleaner";
 import crypto from 'crypto';
-import { unstable_cache } from 'next/cache';
+import { unstable_cache, unstable_noStore } from 'next/cache';
 
 // ═══════════════════════════════════════════════════════════════════
 // Keyword Normalization
