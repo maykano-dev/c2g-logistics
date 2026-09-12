@@ -127,7 +127,13 @@ export default async function RootLayout({
         />
       </head>
       <body className={outfit.className}>
-        <NextTopLoader color="transparent" height={0} showSpinner={true} shadow="none" />
+        <NextTopLoader 
+          color="transparent" 
+          height={0} 
+          showSpinner={true} 
+          shadow="none" 
+          template='<div role="spinner" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm"><div class="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 border-l-blue-500 rounded-full animate-spin"></div></div>'
+        />
         <ModalProvider>
           <CartProvider>
             <WishlistProvider>
