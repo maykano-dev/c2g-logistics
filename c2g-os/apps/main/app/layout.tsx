@@ -127,7 +127,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={outfit.className}>
-        <NextTopLoader color="#3b82f6" showSpinner={true} shadow="none" />
+        <NextTopLoader color="transparent" height={0} showSpinner={true} shadow="none" />
         <ModalProvider>
           <CartProvider>
             <WishlistProvider>
