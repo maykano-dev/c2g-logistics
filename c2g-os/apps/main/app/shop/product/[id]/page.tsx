@@ -30,17 +30,58 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = await params;
-  const { product } = await getProductDetails(resolvedParams.id);
+  const { product, exchangeRate } = await getProductDetails(resolvedParams.id);
 
   if (!product) {
     return { title: "Product Not Found | C2G Mall" };
   }
 
+  const priceGhs = product.price
+    ? (Number(product.price) / (exchangeRate || 0.52)).toFixed(2)
+    : null;
+  const desc =
+    product.description?.replace(/<[^>]*>/g, "").substring(0, 155) ||
+    `Buy ${product.name} from China at C2G Mall. Fast shipping to Ghana. Pay in Cedis.`;
+
   return {
-    title: `${product.name} | C2G Mall`,
-    description:
-      product.description?.substring(0, 160) ||
-      "Buy cheap quality goods from China on C2G Mall.",
+    title: `${product.name} — Buy at C2G Mall | Ship to Ghana`,
+    description: desc,
+    keywords: [
+      product.name,
+      product.category || "general",
+      "buy from china ghana",
+      "c2g mall",
+      "1688 ghana",
+      "china to ghana",
+      "online shopping ghana",
+    ],
+    alternates: {
+      canonical: `https://c2g-logistics.com/shop/product/${resolvedParams.id}`,
+    },
+    openGraph: {
+      title: `${product.name} — C2G Mall`,
+      description: desc,
+      url: `https://c2g-logistics.com/shop/product/${resolvedParams.id}`,
+      siteName: "C2G Mall",
+      images: product.images?.[0]
+        ? [
+            {
+              url: product.images[0],
+              width: 800,
+              height: 800,
+              alt: product.name,
+            },
+          ]
+        : undefined,
+      locale: "en_GH",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} — C2G Mall`,
+      description: desc,
+      images: product.images?.[0] ? [product.images[0]] : undefined,
+    },
   };
 }
 
@@ -158,6 +199,35 @@ export default async function ProductPage({
 
   return (
     <div className="bg-background min-h-screen pb-24 md:pb-8 pt-14 md:pt-16">
+      {/* JSON-LD Product Schema for Google Rich Snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": product.name,
+            "image": product.images || [],
+            "description": product.description?.replace(/<[^>]*>/g, "").substring(0, 500) || `Buy ${product.name} at C2G Mall`,
+            "brand": {
+              "@type": "Brand",
+              "name": "C2G Mall"
+            },
+            "offers": {
+              "@type": "Offer",
+              "url": `https://c2g-logistics.com/shop/product/${resolvedParams.id}`,
+              "priceCurrency": "GHS",
+              "price": product.price ? (Number(product.price) / (exchangeRate || 0.52)).toFixed(2) : undefined,
+              "availability": (product.stock > 0 || (product.variants && product.variants.length > 0)) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+              "seller": {
+                "@type": "Organization",
+                "name": "C2G Logistics"
+              }
+            },
+            "category": product.category || "General"
+          })
+        }}
+      />
       {/* Fixed Shop Header */}
       <Suspense fallback={<div className="h-28 bg-background" />}>
         <ShopHeader walletBalance={walletRes.available_balance} isLoggedIn={isLoggedIn} />
