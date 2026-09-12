@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useCart } from "./cart-context";
 import { useRouter } from "next/navigation";
-import { createEcomOrder, verifyCartInventory, getCartFreightEstimate, saveCheckoutAddress, setPrimaryAddress, deleteAddress } from "../../app/checkout/actions";
-import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck, Calculator, Info, Plane, Zap, Loader2, Plus, Trash2, Star } from "lucide-react";
+import { createEcomOrder, verifyCartInventory, getCartFreightEstimate, saveCheckoutAddress, setPrimaryAddress, deleteAddress, type SupplierFreightGroup } from "../../app/checkout/actions";
+import { CheckCircle2, ChevronRight, MapPin, CreditCard, Ship, ShoppingBag, ShieldCheck, Calculator, Info, Plane, Zap, Loader2, Plus, Trash2, Star, AlertTriangle, XCircle, Package } from "lucide-react";
 import { useModal } from "@/components/providers/modal-provider";
 import Link from "next/link";
 import WalletPaymentModal from "@/components/wallet/wallet-payment-modal";
@@ -52,32 +52,38 @@ export default function CheckoutClient({
 
   const [notes, setNotes] = useState("");
 
-  const [exactFreightGhs, setExactFreightGhs] = useState<number | null>(null);
+  // Per-supplier freight breakdown
+  const [supplierFreightData, setSupplierFreightData] = useState<SupplierFreightGroup[] | null>(null);
   const [isFetchingFreight, setIsFetchingFreight] = useState(true);
+
+  const hasFailedGroups = supplierFreightData?.some(g => g.freightFailed) || false;
+  const hasSuspiciousGroups = supplierFreightData?.some(g => g.isSuspicious) || false;
+  const totalLocalDelivery = supplierFreightData?.reduce((sum, g) => sum + g.freightGhs, 0) || 0;
 
   useEffect(() => {
     if (isLoaded && items.length === 0 && !loading) {
       router.push("/cart");
-    } else if (isLoaded && items.length > 0 && exactFreightGhs === null) {
-      // Fetch the exact domestic freight for the checkout payload
+    } else if (isLoaded && items.length > 0 && supplierFreightData === null) {
       getCartFreightEstimate(items).then(res => {
-        if (res.success && res.freightGhs !== undefined) {
-          setExactFreightGhs(res.freightGhs);
+        if (res.supplierGroups && res.supplierGroups.length > 0) {
+          setSupplierFreightData(res.supplierGroups);
         } else {
-          // Fallback to old percentage logic if API fails
-          const calculatedLocalDelivery = cartTotalGhs * (localDeliveryPercentage / 100);
-          setExactFreightGhs(Math.max(calculatedLocalDelivery, minLocalDeliveryFee));
+          // Complete failure — set empty so UI shows error
+          setSupplierFreightData([]);
         }
+        setIsFetchingFreight(false);
+      }).catch(() => {
+        setSupplierFreightData([]);
         setIsFetchingFreight(false);
       });
     }
-  }, [items, router, loading, exactFreightGhs, cartTotalGhs, localDeliveryPercentage, minLocalDeliveryFee]);
+  }, [items, router, loading, supplierFreightData]);
 
   // DB-driven Calculations
   const calculatedServiceFee = cartTotalGhs * (serviceFeePercentage / 100);
   const serviceFee = Math.max(calculatedServiceFee, minServiceFee);
 
-  const localDelivery = exactFreightGhs || 0;
+  const localDelivery = totalLocalDelivery;
 
   const totalAmount = cartTotalGhs + serviceFee + localDelivery; // Exclude shipping cost until it arrives
 
@@ -153,20 +159,28 @@ export default function CheckoutClient({
       return;
     }
 
+    // Build supplier groups for the new multi-supplier order creation
+    const supplierGroupsPayload = supplierFreightData?.map(group => ({
+      sellerName: group.sellerName,
+      items: group.items,
+      shippingCost: group.freightGhs,
+    })) || [];
+
     const payload = {
       shippingName: selectedAddress.name,
       shippingPhone: selectedAddress.phone,
       shippingAddress: `${selectedAddress.street_address}, ${selectedAddress.city}, ${selectedAddress.region}`,
       shippingNotes: notes,
       shippingMethod: "pending",
-      items,
+      items, // Full flat list for backwards compatibility / validation
+      supplierGroups: supplierGroupsPayload,
       subtotal: cartTotalGhs,
       serviceFee,
-      shippingCost: localDelivery, // Maps local delivery to the DB's initial shipping_cost
+      shippingCost: localDelivery,
       totalAmount,
       exchangeRate,
       reference,
-      paymentGateway: "wallet" // Uses the wallet!
+      paymentGateway: "wallet"
     };
 
     const res = await createEcomOrder(payload);
@@ -203,19 +217,51 @@ export default function CheckoutClient({
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-border/50 pb-4">
           <ShoppingBag className="w-5 h-5 text-primary" /> Cart Items
         </h2>
-        <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-          {items.map(item => (
-            <div key={item.id} className="flex gap-3 text-sm">
-              <img src={item.imageUrl} alt="" className="w-12 h-12 rounded object-cover border border-border" />
-              <div className="flex-1">
-                <div className="font-medium line-clamp-1">{item.name}</div>
-                <div className="text-muted-foreground text-xs mt-0.5">Qty: {item.quantity}</div>
+        
+        {supplierFreightData && supplierFreightData.length > 1 && (
+          <div className="mb-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400 flex gap-3 text-sm">
+            <Info className="w-5 h-5 shrink-0 mt-0.5" />
+            <p>Your cart contains items from <strong>{supplierFreightData.length} different suppliers</strong> in China. Each supplier ships independently, so separate orders will be created.</p>
+          </div>
+        )}
+
+        <div className="space-y-6 max-h-[28rem] overflow-y-auto pr-2 custom-scrollbar">
+          {supplierFreightData ? supplierFreightData.map((group, idx) => (
+            <div key={idx} className="space-y-3">
+              <div className="text-sm font-bold flex items-center gap-2 text-muted-foreground bg-secondary/50 p-2 rounded-md">
+                <Package className="w-4 h-4" />
+                Supplier: {group.displayName} ({group.items.length} item{group.items.length > 1 ? 's' : ''})
               </div>
-              <div className="font-bold text-right shrink-0">
-                ₵{(item.priceGhs * item.quantity).toFixed(2)}
+              <div className="space-y-4 pl-2 border-l-2 border-border/50 ml-2">
+                {group.items.map(item => (
+                  <div key={item.id} className="flex gap-3 text-sm">
+                    <img src={item.imageUrl} alt="" className="w-12 h-12 rounded object-cover border border-border" />
+                    <div className="flex-1">
+                      <div className="font-medium line-clamp-1">{item.name}</div>
+                      <div className="text-muted-foreground text-xs mt-0.5">Qty: {item.quantity}</div>
+                    </div>
+                    <div className="font-bold text-right shrink-0">
+                      ₵{(item.priceGhs * item.quantity).toFixed(2)}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          )) : (
+            // Fallback before grouped data is ready
+            items.map(item => (
+              <div key={item.id} className="flex gap-3 text-sm">
+                <img src={item.imageUrl} alt="" className="w-12 h-12 rounded object-cover border border-border" />
+                <div className="flex-1">
+                  <div className="font-medium line-clamp-1">{item.name}</div>
+                  <div className="text-muted-foreground text-xs mt-0.5">Qty: {item.quantity}</div>
+                </div>
+                <div className="font-bold text-right shrink-0">
+                  ₵{(item.priceGhs * item.quantity).toFixed(2)}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -377,11 +423,6 @@ export default function CheckoutClient({
             </div>
 
             <div className="p-5 space-y-4">
-              <div className="bg-secondary/30 p-3 rounded-lg border border-border/50 text-xs">
-                <p className="font-semibold mb-1">Using Platform Rate: 1 GHS = {exchangeRate.toFixed(4)} CNY</p>
-                <p className="text-muted-foreground">The exchange rates used on C2G reflect the actual rates applied in mainland China, not the rates shown on Google.</p>
-              </div>
-
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Items Subtotal</span>
@@ -397,6 +438,47 @@ export default function CheckoutClient({
                     {isFetchingFreight ? <span className="animate-pulse">Estimating...</span> : `₵${localDelivery.toFixed(2)}`}
                   </span>
                 </div>
+                
+                {/* Per-Supplier Breakdown */}
+                {!isFetchingFreight && supplierFreightData && supplierFreightData.length > 0 && (
+                  <div className="pl-4 mt-2 border-l-2 border-border/50 space-y-1.5 text-xs">
+                    {supplierFreightData.map((group, idx) => (
+                      <div key={idx} className={`flex justify-between ${group.freightFailed ? 'text-red-500 font-medium' : group.isSuspicious ? 'text-amber-500 font-medium' : 'text-muted-foreground'}`}>
+                        <div className="flex items-center gap-1.5 line-clamp-1">
+                          {group.freightFailed && <XCircle className="w-3 h-3 shrink-0" />}
+                          {group.isSuspicious && !group.freightFailed && <AlertTriangle className="w-3 h-3 shrink-0" />}
+                          <span className="truncate max-w-[140px]">{group.displayName}</span>
+                          <span className="opacity-70">({group.items.length})</span>
+                        </div>
+                        <div className="flex flex-col text-right">
+                          <span>
+                            {group.freightFailed ? 'Failed' : `₵${group.freightGhs.toFixed(2)}`}
+                          </span>
+                          {group.errorMessage && (
+                            <span className="text-[9px] text-red-500/80 max-w-[150px] leading-tight mt-1 break-words">
+                              {group.errorMessage}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Warnings and Errors */}
+                {hasFailedGroups && (
+                  <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex gap-2">
+                    <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <p>We couldn't estimate shipping for one or more suppliers. Please remove their items to proceed.</p>
+                  </div>
+                )}
+                
+                {hasSuspiciousGroups && !hasFailedGroups && (
+                  <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs flex gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <p>One of your suppliers is charging unusually high domestic shipping relative to the item value. Please review the breakdown.</p>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-border/50 pt-4 mt-2">
@@ -419,7 +501,8 @@ export default function CheckoutClient({
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(true)}
-                    className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 gap-2"
+                    disabled={hasFailedGroups}
+                    className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100 gap-2"
                   >
                     Pay ₵{totalAmount.toFixed(2)} <ChevronRight className="w-5 h-5" />
                   </button>
@@ -427,8 +510,8 @@ export default function CheckoutClient({
                   <button
                     type="submit"
                     form="checkout-form"
-                    disabled={loading || items.length === 0 || isFetchingFreight}
-                    className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none gap-2"
+                    disabled={loading || items.length === 0 || isFetchingFreight || hasFailedGroups}
+                    className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] h-12 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100 gap-2"
                   >
                     {loading ? (
                       <>

@@ -28,16 +28,63 @@ export async function updateMallOrderStatus(orderId: string, newStatus: string) 
   
   const { data: order, error: fetchError } = await supabase
     .from('ecom_orders')
-    .select('customer_id, order_id, customer_name, alibaba_tracking_number')
+    .select('customer_id, order_id, customer_name, alibaba_tracking_number, order_status, payment_status, total_amount, total_cost_ghs, shipping_cost')
     .eq('id', orderId)
     .single();
 
   if (fetchError || !order) return { success: false, error: 'Order not found' };
 
+  if (newStatus === 'refunded' && order.order_status === 'refunded') {
+    return { success: false, error: 'Order is already refunded' };
+  }
+
+  let refundAmount = 0;
+  if (newStatus === 'refunded' && (order.payment_status === 'paid' || order.payment_status === 'Paid')) {
+    refundAmount = Number(order.total_amount || order.total_cost_ghs || 0);
+    // If shipping was also paid, refund it too (assuming shipping_cost is part of the paid total or paid separately)
+    // Based on user instructions, refund the money paid. 
+    // In our system, if shipping_cost exists and order is paid, usually it's paid.
+    if (order.shipping_cost) {
+      refundAmount += Number(order.shipping_cost);
+    }
+  }
+
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  if (newStatus === 'refunded' && refundAmount > 0) {
+    const crypto = require('crypto');
+    const ref = `REFUND-${order.order_id}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+
+    // Find user's wallet
+    const { data: wallet } = await supabaseAdmin.from('wallets').select('id, available_balance').eq('customer_id', order.customer_id).single();
+    
+    if (wallet) {
+      const newBalance = Number(wallet.available_balance) + refundAmount;
+      await supabaseAdmin.from('wallets').update({ available_balance: newBalance }).eq('id', wallet.id);
+      
+      await supabaseAdmin.from('wallet_transactions').insert({
+        wallet_id: wallet.id,
+        amount: refundAmount,
+        transaction_type: 'refund',
+        status: 'completed',
+        reference_id: ref,
+        description: `Refund for cancelled mall order ${order.order_id}`
+      });
+    }
+  }
+
   // Map UI friendly names back to DB ENUM if needed, but we'll assume the UI sends the right value.
+  const updatePayload: any = { order_status: newStatus };
+  if (newStatus === 'refunded') {
+    updatePayload.payment_status = 'refunded';
+  }
+
   const { error } = await supabase
     .from('ecom_orders')
-    .update({ order_status: newStatus })
+    .update(updatePayload)
     .eq('id', orderId);
 
   if (error) return { success: false, error: error.message };
@@ -71,13 +118,23 @@ export async function updateMallOrderStatus(orderId: string, newStatus: string) 
   }
 
   // Notify User
+  let notifTitle = 'Mall Order Update';
+  let notifMessage = `Your mall order (${order.order_id}) status is now: ${newStatus.replace(/_/g, ' ').toUpperCase()}`;
+  let notifType = 'order_update';
+
+  if (newStatus === 'refunded') {
+    notifTitle = 'Order Cancelled & Refunded';
+    notifMessage = `Your mall order (${order.order_id}) has been cancelled. A refund of ₵${refundAmount.toFixed(2)} has been credited to your wallet.`;
+    notifType = 'payment';
+  }
+
   await createNotification({
     userId: order.customer_id,
-    title: 'Mall Order Update',
-    message: `Your mall order (${order.order_id}) status is now: ${newStatus.replace(/_/g, ' ').toUpperCase()}`,
-    type: 'order_update',
-    priority: 'info',
-    link: '/dashboard/orders'
+    title: notifTitle,
+    message: notifMessage,
+    type: notifType,
+    priority: newStatus === 'refunded' ? 'important' : 'info',
+    link: newStatus === 'refunded' ? '/dashboard/wallet' : '/dashboard/orders'
   });
 
   revalidatePath('/admin/commerce/mall-orders');

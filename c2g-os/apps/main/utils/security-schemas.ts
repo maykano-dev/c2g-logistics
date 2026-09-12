@@ -77,6 +77,7 @@ export const CheckoutSchema = z.object({
   items: z.array(z.object({
     productId: z.string(),
     variantId: z.string().optional().nullable(),
+    channel: z.string().optional(),
     name: z.string().optional(),
     quantity: z.number().int().positive(),
     priceGhs: z.number().optional(),
@@ -84,6 +85,11 @@ export const CheckoutSchema = z.object({
     imageUrl: z.string().optional(),
     combination: z.any().optional(),
   })).min(1),
+  supplierGroups: z.array(z.object({
+    sellerName: z.string(),
+    items: z.array(z.any()),
+    shippingCost: z.number(),
+  })).optional(),
   shippingName: z.string().min(1),
   shippingPhone: z.string().min(1),
   shippingAddress: z.string().min(1),
@@ -94,6 +100,7 @@ export const CheckoutSchema = z.object({
   subtotal: z.number().optional(),
   shippingCost: z.number().optional(),
   serviceFee: z.number().optional(),
+  totalAmount: z.number().optional(),
   exchangeRate: z.number().optional(),
 });
 

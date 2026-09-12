@@ -6,8 +6,9 @@ import { ArrowLeft, CheckCircle2, Map, Plane, Ship, CreditCard, Settings, Shoppi
 
 import { useModal } from "@/components/providers/modal-provider";
 import { payMallOrder, fetchOrderTrackingTimeline } from "../../../mall-orders/actions";
+import Link from "next/link";
 
-export function MallOrderDetailsClient({ order, initialTrack }: { order: any, initialTrack: boolean }) {
+export function MallOrderDetailsClient({ order, siblingOrders = [], initialTrack }: { order: any, siblingOrders?: any[], initialTrack: boolean }) {
   const router = useRouter();
   const { showAlert } = useModal();
 
@@ -290,6 +291,40 @@ export function MallOrderDetailsClient({ order, initialTrack }: { order: any, in
             )}
 
           </div>
+          
+          {siblingOrders.length > 0 && (
+            <div className="glass-panel p-6 mt-6 space-y-4">
+              <h3 className="font-bold border-b border-border/50 pb-2 mb-4 flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4 text-primary" /> Related Orders
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                This order was placed alongside other items in a multi-supplier checkout.
+              </p>
+              <div className="space-y-3">
+                {siblingOrders.map(sibling => (
+                  <div key={sibling.id} className="flex justify-between items-center bg-secondary/20 p-3 rounded-lg border border-border/50">
+                    <div>
+                      <Link href={`/dashboard/orders/mall/${sibling.id}`} className="font-bold text-primary hover:underline block">
+                        {sibling.order_id || `C2G-${String(sibling.id).split('-').pop()?.substring(0, 8)}`}
+                      </Link>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {Array.isArray(sibling.items) ? sibling.items.length : 0} items • {formatCurrency(sibling.total_amount || 0)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className={`px-2 py-1 rounded text-xs font-semibold capitalize ${
+                        sibling.order_status === 'delivered' ? 'bg-green-500/10 text-green-500' :
+                        sibling.order_status === 'pending_payment' ? 'bg-orange-500/10 text-orange-500' :
+                        'bg-blue-500/10 text-blue-500'
+                      }`}>
+                        {sibling.order_status?.replace(/_/g, ' ') || 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tracking Timeline */}

@@ -1,4 +1,4 @@
-import { getMallOrder } from "../../../mall-orders/actions";
+import { getMallOrder, getSiblingOrders } from "../../../mall-orders/actions";
 import { MallOrderDetailsClient } from "./mall-order-details-client";
 import { notFound } from "next/navigation";
 
@@ -18,9 +18,13 @@ export default async function MallOrderDetailsPage({
     notFound();
   }
 
+  const siblingOrders = order.checkout_group_id 
+    ? await getSiblingOrders(order.checkout_group_id, order.id)
+    : [];
+
   const initialTrack = resolvedSearchParams.track === "true";
 
   return (
-    <MallOrderDetailsClient order={order} initialTrack={initialTrack} />
+    <MallOrderDetailsClient order={order} siblingOrders={siblingOrders} initialTrack={initialTrack} />
   );
 }

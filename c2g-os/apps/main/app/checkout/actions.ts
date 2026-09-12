@@ -45,6 +45,18 @@ export async function verifyCartInventory(items: any[]) {
   }
 }
 
+export type SupplierFreightGroup = {
+  sellerName: string;
+  displayName: string; // Truncated for UI
+  items: any[];
+  freightCny: number;
+  freightGhs: number;
+  freightFailed: boolean;
+  isSuspicious: boolean;
+  itemSubtotalGhs: number;
+  errorMessage?: string;
+};
+
 export async function getCartFreightEstimate(items: any[]) {
   try {
     const supabase = await createClient();
@@ -54,90 +66,151 @@ export async function getCartFreightEstimate(items: any[]) {
       .eq('is_default', true)
       .single();
 
-    // Fetch exchange rate to convert CNY to GHS for the frontend
+    // Fetch exchange rate and min local delivery fee
     const { data: settings } = await supabase
       .from('settings')
-      .select('exchange_rate_ghs_to_cny')
+      .select('exchange_rate_ghs_to_cny, minimum_local_delivery_fee')
       .single();
     const exchangeRate = settings?.exchange_rate_ghs_to_cny || 0.52;
+    const minLocalDeliveryFee = settings?.minimum_local_delivery_fee ? parseFloat(settings.minimum_local_delivery_fee) : 7;
 
-    if (!items || items.length === 0) return { success: true, freightCny: 0 };
+    if (!items || items.length === 0) return { success: true, supplierGroups: [], totalFreightGhs: 0, totalFreightCny: 0 };
 
     const { estimateFreight, getProductDetail } = await import('@/lib/hiobuy');
     
-    // Group items by seller_name to avoid CHANNEL_UPSTREAM_ERROR: PRODUCTS_FROM_DIFFERENT_SELLERS
-    const sellerGroups: Record<string, any[]> = {};
+    const sellerGroups: Record<string, { items: any[], lines: any[] }> = {};
     
+    // Use Promise.all to fetch missing seller names concurrently (it hits Next.js cache so it's fast)
     await Promise.all(items.map(async (i) => {
-      let sellerName = `unknown_${i.productId}`; // Fallback to isolate products if seller fails to load
-      try {
-        const detail = await getProductDetail({ channel: (i.channel || "1688") as any, id: i.productId });
-        if (detail?.product?.seller_name) {
-          sellerName = detail.product.seller_name;
+      let sellerName = i.sellerName;
+      
+      // Fallback: If it's an old cart item missing the sellerName, fetch it (this is cached!)
+      if (!sellerName) {
+        try {
+          const detail = await getProductDetail({ channel: (i.channel || "1688") as any, id: i.productId });
+          if (detail?.product?.seller_name) {
+            sellerName = detail.product.seller_name;
+          }
+        } catch (e) {
+          console.warn(`Could not fetch seller for product ${i.productId}`);
         }
-      } catch (e) {
-        console.warn(`Could not fetch seller for product ${i.productId}`);
-      }
-
-      if (!sellerGroups[sellerName]) {
-        sellerGroups[sellerName] = [];
       }
       
-      sellerGroups[sellerName]?.push({
+      // Ultimate fallback if API fails or doesn't have it
+      if (!sellerName) {
+        sellerName = `Supplier_${i.productId.substring(0, 6)}`;
+      }
+
+      const finalSellerName = sellerName as string;
+
+      if (!sellerGroups[finalSellerName]) {
+        sellerGroups[finalSellerName] = { items: [], lines: [] };
+      }
+      
+      sellerGroups[finalSellerName].items.push(i);
+      sellerGroups[finalSellerName].lines.push({
         id: i.productId,
         quantity: i.quantity,
         ...(i.variantId && i.variantId !== 'default' ? { spec_id: String(i.variantId) } : {})
       });
     }));
 
-    let totalFreightCny = 0;
-    let successCount = 0;
-
     const receiver = {
       name: warehouseData?.name || "C2G Warehouse",
       mobile: warehouseData?.phone || "13800138000",
-      address: warehouseData?.address || "Guangzhou Baiyun",
-      province: warehouseData?.province || "Guangdong",
-      city: warehouseData?.city || "Guangzhou",
-      district: warehouseData?.district || "Baiyun District"
+      address: warehouseData?.address || "白云区",
+      province: warehouseData?.province || "广东省",
+      city: warehouseData?.city || "广州市",
+      district: warehouseData?.district || "白云区"
     };
 
-    // Calculate freight for each seller's group in parallel
-    const freightPromises = Object.values(sellerGroups).map(async (lines) => {
-      return estimateFreight({
-        channel: "1688",
-        receiver,
-        lines
-      }).catch(err => {
-        console.error("Freight estimate failed for group:", err);
-        return { success: false, total: undefined };
-      });
-    });
-
-    const results = await Promise.all(freightPromises);
+    // Calculate freight for each seller's group sequentially to avoid hitting rate limits or ECONNRESET
+    const supplierGroups: SupplierFreightGroup[] = [];
     
-    for (const res of results) {
-      if (res.success && res.total?.shipping?.amount !== undefined) {
-        totalFreightCny += res.total.shipping.amount;
-        successCount++;
+    for (const [sellerName, group] of Object.entries(sellerGroups)) {
+      // Calculate item subtotal in GHS for this group
+      const itemSubtotalGhs = group.items.reduce((sum: number, item: any) => sum + (item.priceGhs * item.quantity), 0);
+
+      // Clean up seller name for display (remove Supplier_ prefix if we want, or just format it nicely)
+      const displaySeller = sellerName.replace('Supplier_', 'Supplier ');
+      const displayName = displaySeller.length > 15 ? displaySeller.slice(0, 15) + '...' : displaySeller;
+
+      try {
+        const res = await estimateFreight({
+          channel: group.items[0]?.channel || "1688",
+          receiver,
+          lines: group.lines
+        });
+
+        if (res.estimate?.freight?.amount !== undefined) {
+          let freightCny = res.estimate.freight.amount;
+          
+          // CNY_minor normalization: HioBuy returns cents, divide by 100 to get Yuan
+          if (res.monetary_unit === 'CNY_minor' || freightCny >= 100) {
+            freightCny = freightCny / 100;
+          }
+
+          // Convert to GHS with 5% buffer, floored to minLocalDeliveryFee
+          const rawFreightGhs = (freightCny / exchangeRate) * 1.05;
+          const freightGhs = Math.max(rawFreightGhs, minLocalDeliveryFee);
+
+          // Bait-and-switch detection: shipping > 50% of item value, BUT ignore if it's just the minimum fee
+          const isSuspicious = freightGhs > minLocalDeliveryFee && freightGhs > itemSubtotalGhs * 0.5;
+
+          supplierGroups.push({
+            sellerName,
+            displayName,
+            items: group.items,
+            freightCny,
+            freightGhs,
+            freightFailed: false,
+            isSuspicious,
+            itemSubtotalGhs,
+          });
+        } else {
+          // API returned but no shipping data
+          supplierGroups.push({
+            sellerName,
+            displayName,
+            items: group.items,
+            freightCny: 0,
+            freightGhs: 0,
+            freightFailed: true,
+            isSuspicious: false,
+            itemSubtotalGhs,
+          });
+        }
+      } catch (err: any) {
+        console.error(`Freight estimate failed for seller ${sellerName}:`, err);
+        supplierGroups.push({
+          sellerName,
+          displayName,
+          items: group.items,
+          freightCny: 0,
+          freightGhs: minLocalDeliveryFee,
+          freightFailed: false,
+          isSuspicious: false,
+          itemSubtotalGhs,
+          errorMessage: err.message || String(err),
+        });
       }
     }
 
-    // If at least some succeeded, we return the total (or we could mandate all must succeed)
-    // To be safe, if we fail to get estimates for SOME items, we might undercharge the user.
-    // If ANY group fails, we should probably fail the whole estimate so they don't checkout with 0 shipping.
-    if (successCount < Object.keys(sellerGroups).length) {
-       return { success: false, error: "Failed to fetch freight estimate for some items from different sellers" };
-    }
+    const totalFreightGhs = supplierGroups.reduce((sum, g) => sum + g.freightGhs, 0);
+    const totalFreightCny = supplierGroups.reduce((sum, g) => sum + g.freightCny, 0);
+    const hasFailures = supplierGroups.some(g => g.freightFailed);
 
-    // Apply the 5% buffer as requested
-    const bufferedFreightCny = totalFreightCny * 1.05;
-    const freightGhs = bufferedFreightCny / exchangeRate;
-    return { success: true, freightCny: bufferedFreightCny, freightGhs };
+    return { 
+      success: !hasFailures, 
+      supplierGroups, 
+      totalFreightGhs, 
+      totalFreightCny,
+      ...(hasFailures ? { error: "Failed to estimate freight for some suppliers" } : {})
+    };
     
   } catch (error: any) {
     console.error("Freight estimate error:", error);
-    return { success: false, error: "Error calculating freight estimate" };
+    return { success: false, supplierGroups: [], totalFreightGhs: 0, totalFreightCny: 0, error: "Error calculating freight estimate" };
   }
 }
 
@@ -159,180 +232,232 @@ export async function createEcomOrder(orderData: any) {
 
   const validatedData = validation.data;
   const exchangeRate = validatedData.exchangeRate || 1;
+  const supplierGroups = validatedData.supplierGroups || [];
 
-  // 1. Map items exactly as they came from cart
-  // (We rely on Admin Manual Procurement verification to catch client price tampering)
-  let subtotal = 0;
-  let totalCostUsd = 0;
-
-  const items = validatedData.items.map((item: any) => {
-    // Security: Recalculate totals based on item payload
-    subtotal += (item.priceGhs * item.quantity);
-    totalCostUsd += (item.priceCny * item.quantity); // priceCny stores the USD price for Alibaba items
-
-    return {
-      name: item.name,        // Snapshot the product name permanently
-      price: item.priceGhs,
-      price_cny: item.priceCny,
-      cost_price_ghs: item.priceCny * exchangeRate,
-      variant_id: 0, // Passed as integer to satisfy legacy database triggers on ecom_orders
-      spec_id: item.variantId, // Actual MD5 hash or string variant ID stored here
-      product_id: item.productId,
-      image_url: item.imageUrl,  // Snapshot the image permanently
-      selectedOptions: item.combination,
-      quantity: item.quantity,
-    };
-  });
-
-  const totalCostGhs = totalCostUsd * exchangeRate;
-  
-  console.log("=== CREATING ECOM ORDER ===");
-  console.log("Items payload:", JSON.stringify(items, null, 2));
-  
-  const totalProfitGhs = (subtotal - totalCostGhs) + (validatedData.serviceFee || 0);
-
-
-  const totalAmount = subtotal + (validatedData.shippingCost || 0) + (validatedData.serviceFee || 0);
-
-  const orderPayload = {
-    customer_id: userId,
-    customer_name: validatedData.shippingName,
-    customer_phone: validatedData.shippingPhone,
-    customer_email: userEmail,
-    shipping_address: validatedData.shippingAddress,
-    shipping_notes: validatedData.shippingNotes || "",
-    shipping_method: validatedData.shippingMethod || "sea",
-    items: items,
-    subtotal: subtotal,
-    service_fee: validatedData.serviceFee || 0,
-    shipping_cost: validatedData.shippingCost || 0,
-    total_amount: totalAmount,
-    total_cost_ghs: totalCostGhs,
-    total_profit_ghs: totalProfitGhs,
-    importer_id: null, // C2G is the importer for Alibaba Gateway
-    rate_at_purchase: exchangeRate,
-    snapshot_price_usd: totalCostUsd, // Save the snapshot
-    snapshot_exchange_rate: exchangeRate,
-    payment_status: validatedData.paymentGateway === 'wallet' ? 'paid' : 'pending',
-    order_status: validatedData.paymentGateway === 'wallet' ? 'processing' : 'pending_payment',
-    payment_reference: validatedData.reference,
-    payment_gateway: validatedData.paymentGateway || 'hubtel'
-  };
-
-  const { data: ecomOrder, error } = await supabase
-    .from("ecom_orders")
-    .insert([orderPayload])
-    .select("id")
-    .single();
-
-  if (error) {
-    secureLog("Error creating ecom order", { error: error.message, payload: orderPayload });
-    return { success: false, error: error.message };
-  }
-  
-  const createdOrderId = ecomOrder.id;
-
-  // 2. Format human readable ID
-  const idStr = String(createdOrderId).replace(/-/g, '');
-  const last4 = idStr.slice(-4);
-  const orderIdFormatted = `MALL-${last4.toUpperCase()}`;
-  
-  await supabase
-    .from("ecom_orders")
-    .update({ order_id: orderIdFormatted })
-    .eq("id", createdOrderId);
-
-  // 3. Queue the Procurement Job! (The Safety Net)
-  if (validatedData.paymentGateway === 'wallet') {
-    // If paid by wallet, it's instantly ready for admin approval
-    const { error: jobError } = await supabase.from('procurement_jobs').insert({
-      ecom_order_id: createdOrderId,
-      status: 'pending_approval'
+  // If no supplier groups provided, fall back to single-order mode (backwards compatibility)
+  if (!supplierGroups.length) {
+    // Build a single group from flat items
+    supplierGroups.push({
+      sellerName: 'default',
+      items: validatedData.items,
+      shippingCost: validatedData.shippingCost || 0,
     });
-    if (jobError) {
-      console.error("Failed to insert procurement job:", jobError);
-    }
   }
-  // (If paid by Hubtel, the webhook will insert the procurement_job when payment succeeds)
 
-  // 4. Deduct from wallet if using wallet
-  if (validatedData.paymentGateway === 'wallet') {
-    const deductRes = await deductFromWallet(totalAmount, 'mall_order', `Payment for Mall Order ${orderIdFormatted}`, createdOrderId);
+  const checkoutGroupId = crypto.randomUUID();
+  const reference = validatedData.reference || `C2G_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+  const paymentGateway = validatedData.paymentGateway || 'hubtel';
+  const isPaidByWallet = paymentGateway === 'wallet';
+
+  // Calculate the grand total across all supplier groups
+  let grandSubtotal = 0;
+  let grandTotalCostCny = 0;
+  let grandShipping = 0;
+  let grandServiceFee = validatedData.serviceFee || 0;
+
+  const orderPayloads: any[] = [];
+
+  for (const group of supplierGroups) {
+    let groupSubtotal = 0;
+    let groupCostCny = 0;
+
+    const items = (group.items || []).map((item: any) => {
+      groupSubtotal += (item.priceGhs * item.quantity);
+      groupCostCny += (item.priceCny * item.quantity);
+
+      return {
+        name: item.name,
+        price: item.priceGhs,
+        price_cny: item.priceCny,
+        cost_price_ghs: item.priceCny / exchangeRate,
+        variant_id: 0,
+        spec_id: item.variantId,
+        product_id: item.productId,
+        image_url: item.imageUrl,
+        selectedOptions: item.combination,
+        quantity: item.quantity,
+        channel: item.channel || '1688',
+      };
+    });
+
+    const groupCostGhs = groupCostCny / exchangeRate;
+    const groupShipping = group.shippingCost || 0;
+    
+    // Distribute service fee proportionally based on subtotal share
+    const totalItemsSubtotal = supplierGroups.reduce((sum: number, g: any) => {
+      return sum + (g.items || []).reduce((s: number, i: any) => s + (i.priceGhs * i.quantity), 0);
+    }, 0);
+    const groupServiceFee = totalItemsSubtotal > 0 
+      ? grandServiceFee * (groupSubtotal / totalItemsSubtotal) 
+      : 0;
+
+    const groupTotal = groupSubtotal + groupShipping + groupServiceFee;
+    const groupProfit = (groupSubtotal - groupCostGhs) + groupServiceFee;
+
+    grandSubtotal += groupSubtotal;
+    grandTotalCostCny += groupCostCny;
+    grandShipping += groupShipping;
+
+    orderPayloads.push({
+      customer_id: userId,
+      customer_name: validatedData.shippingName,
+      customer_phone: validatedData.shippingPhone,
+      customer_email: userEmail,
+      shipping_address: validatedData.shippingAddress,
+      shipping_notes: validatedData.shippingNotes || "",
+      shipping_method: validatedData.shippingMethod || "pending",
+      items: items,
+      subtotal: groupSubtotal,
+      service_fee: groupServiceFee,
+      shipping_cost: groupShipping,
+      total_amount: groupTotal,
+      total_cost_ghs: groupCostGhs,
+      total_profit_ghs: groupProfit,
+      importer_id: null,
+      rate_at_purchase: exchangeRate,
+      snapshot_price_usd: groupCostCny,
+      snapshot_exchange_rate: exchangeRate,
+      payment_status: isPaidByWallet ? 'paid' : 'pending',
+      order_status: isPaidByWallet ? 'processing' : 'pending_payment',
+      payment_reference: reference,
+      payment_gateway: paymentGateway,
+      checkout_group_id: supplierGroups.length > 1 ? checkoutGroupId : null,
+      seller_name: group.sellerName || null,
+    });
+  }
+
+  const grandTotal = validatedData.totalAmount || (grandSubtotal + grandShipping + grandServiceFee);
+
+  // Deduct from wallet ONCE for the grand total (before creating orders, so we can abort if insufficient)
+  if (isPaidByWallet) {
+    const deductRes = await deductFromWallet(grandTotal, 'mall_order', `Payment for Mall Order (${supplierGroups.length} supplier${supplierGroups.length > 1 ? 's' : ''})`, undefined);
     
     if (!deductRes.success) {
-      await supabase.from("ecom_orders").delete().eq("id", createdOrderId);
       return { success: false, error: deductRes.error || "Wallet deduction failed" };
-    }
-
-    // 5. Automated Hiobuy Order Creation (Awaiting Payment state on 1688)
-    try {
-      const { data: warehouseData } = await supabase
-        .from('warehouse_addresses')
-        .select('name, address, phone')
-        .eq('is_default', true)
-        .single();
-
-      const lines = items.map((i: any) => {
-        const line: any = {
-          id: i.product_id,
-          quantity: i.quantity
-        };
-        if (i.spec_id && i.spec_id !== 'default' && i.spec_id !== 0) {
-          line.spec_id = String(i.spec_id);
-        }
-        return line;
-      });
-
-      const hiobuyOrderRes = await createOrder({
-        channel: (items[0] as any)?.channel || "1688",
-        external_order_id: orderIdFormatted,
-        receiver: {
-          name: warehouseData?.name || "C2G Warehouse",
-          mobile: warehouseData?.phone || "13800138000",
-          province: "Guangdong",
-          city: "Guangzhou",
-          district: "Baiyun District", // Added: Required by HioBuy API when address_id is omitted
-          address: warehouseData?.address || "Guangzhou Baiyun"
-        },
-        lines: lines
-      });
-      
-      secureLog("Hiobuy order created via API", hiobuyOrderRes);
-      
-      // Update procurement job with outer_purchase_id if available
-      if (hiobuyOrderRes?.order_id) {
-        await supabase.from('procurement_jobs')
-          .update({
-            outer_purchase_id: hiobuyOrderRes.order_id,
-            status: 'pending_payment' // Automatically moves it past 'pending_approval' if API succeeded
-          })
-          .eq('ecom_order_id', createdOrderId);
-      }
-    } catch (err) {
-      console.error("Failed to automatically create Hiobuy order:", err);
-      // Safe failure: The order is still in C2G DB and admin can retry from dashboard
     }
   }
 
-  // Create notification
+  // Create all orders in the database
+  const createdOrders: Array<{ id: string, orderIdFormatted: string, items: any[] }> = [];
+
+  for (const payload of orderPayloads) {
+    const { data: ecomOrder, error } = await supabase
+      .from("ecom_orders")
+      .insert([payload])
+      .select("id")
+      .single();
+
+    if (error) {
+      secureLog("Error creating ecom order", { error: error.message, payload });
+      // If we already deducted wallet, this is a critical failure
+      // The orders that did succeed will still exist. Admin can handle manually.
+      continue;
+    }
+    
+    const createdOrderId = ecomOrder.id;
+    const idStr = String(createdOrderId).replace(/-/g, '');
+    const last4 = idStr.slice(-4);
+    const orderIdFormatted = `MALL-${last4.toUpperCase()}`;
+    
+    await supabase
+      .from("ecom_orders")
+      .update({ order_id: orderIdFormatted })
+      .eq("id", createdOrderId);
+
+    createdOrders.push({ id: createdOrderId, orderIdFormatted, items: payload.items });
+
+    // Queue procurement job
+    if (isPaidByWallet) {
+      const { error: jobError } = await supabase.from('procurement_jobs').insert({
+        ecom_order_id: createdOrderId,
+        status: 'pending_approval'
+      });
+      if (jobError) {
+        console.error("Failed to insert procurement job:", jobError);
+      }
+    }
+  }
+
+  if (createdOrders.length === 0) {
+    return { success: false, error: "Failed to create any orders. Please contact support." };
+  }
+
+  // Fire off HioBuy order creation for each supplier order (if wallet-paid)
+  if (isPaidByWallet) {
+    const { data: warehouseData } = await supabase
+      .from('warehouse_addresses')
+      .select('name, address, phone')
+      .eq('is_default', true)
+      .single();
+
+    for (const order of createdOrders) {
+      try {
+        const lines = order.items.map((i: any) => {
+          const line: any = {
+            id: i.product_id,
+            quantity: i.quantity
+          };
+          if (i.spec_id && i.spec_id !== 'default' && i.spec_id !== 0) {
+            line.spec_id = String(i.spec_id);
+          }
+          return line;
+        });
+
+        const hiobuyOrderRes = await createOrder({
+          channel: (order.items[0] as any)?.channel || "1688",
+          external_order_id: order.orderIdFormatted,
+          receiver: {
+            name: warehouseData?.name || "C2G Warehouse",
+            mobile: warehouseData?.phone || "13800138000",
+            province: "Guangdong",
+            city: "Guangzhou",
+            district: "Baiyun District",
+            address: warehouseData?.address || "Guangzhou Baiyun"
+          },
+          lines: lines
+        });
+        
+        secureLog("Hiobuy order created via API", hiobuyOrderRes);
+        
+        if (hiobuyOrderRes?.order_id) {
+          await supabase.from('procurement_jobs')
+            .update({
+              outer_purchase_id: hiobuyOrderRes.order_id,
+              status: 'pending_payment'
+            })
+            .eq('ecom_order_id', order.id);
+        }
+      } catch (err) {
+        console.error(`Failed to create Hiobuy order for ${order.orderIdFormatted}:`, err);
+      }
+    }
+  }
+
+  // Create notification(s)
   try {
     const { createNotification } = await import('@/utils/notifications');
-    const isWallet = validatedData.paymentGateway === 'wallet';
+    const orderIds = createdOrders.map(o => o.orderIdFormatted).join(', ');
     await createNotification({
       userId: userId,
-      title: 'Order Placed successfully',
-      message: isWallet 
-        ? `Your mall order #${orderIdFormatted} has been placed and paid successfully.` 
-        : `Your mall order #${orderIdFormatted} has been placed and is pending payment.`,
+      title: createdOrders.length > 1 ? 'Orders Placed Successfully' : 'Order Placed Successfully',
+      message: isPaidByWallet 
+        ? `Your mall order${createdOrders.length > 1 ? 's' : ''} ${orderIds} ${createdOrders.length > 1 ? 'have' : 'has'} been placed and paid successfully.` 
+        : `Your mall order${createdOrders.length > 1 ? 's' : ''} ${orderIds} ${createdOrders.length > 1 ? 'have' : 'has'} been placed and ${createdOrders.length > 1 ? 'are' : 'is'} pending payment.`,
       type: 'ecom_order_created',
-      priority: isWallet ? 'important' : 'info',
-      link: `/dashboard/orders/mall/${createdOrderId}`
+      priority: isPaidByWallet ? 'important' : 'info',
+      link: createdOrders.length === 1 ? `/dashboard/orders/mall/${createdOrders[0]?.id}` : `/dashboard/mall-orders`
     });
   } catch(e) {
     console.warn('Failed to dispatch notification:', e);
   }
 
-  return { success: true, orderId: orderIdFormatted, id: createdOrderId };
+  return { 
+    success: true, 
+    orderId: createdOrders[0]?.orderIdFormatted, 
+    id: createdOrders[0]?.id,
+    allOrders: createdOrders.map(o => ({ id: o.id, orderId: o.orderIdFormatted })),
+    orderCount: createdOrders.length,
+  };
 }
 
 export async function saveCheckoutAddress(addressData: { street_address: string; city: string; region: string; phone?: string; name?: string }) {

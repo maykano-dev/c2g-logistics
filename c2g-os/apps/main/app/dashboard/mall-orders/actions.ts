@@ -49,6 +49,29 @@ export async function getMallOrder(id: string) {
   return data;
 }
 
+export async function getSiblingOrders(checkoutGroupId: string, currentOrderId: string) {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData?.user) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("ecom_orders")
+    .select("id, order_id, order_status, total_amount, items")
+    .eq("checkout_group_id", checkoutGroupId)
+    .eq("customer_id", authData.user.id)
+    .neq("id", currentOrderId)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data;
+}
+
 export async function deleteMallOrder(id: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

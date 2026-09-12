@@ -233,6 +233,22 @@ export async function getProductDetail(input: {
   return getCachedProductDetail(input.channel, id, url);
 }
 
+const getCachedFreightEstimate = unstable_cache(
+  async (channel: string, receiver: any, lines: any[]) => {
+    return hiobuyFetch<{
+      estimate?: { freight?: { amount: number; currency: string } };
+      monetary_unit?: string;
+      request_id?: string;
+    }>("/v1/products/freight/estimate", {
+      channel,
+      receiver,
+      lines,
+    });
+  },
+  ['hiobuy-freight-estimate'],
+  { revalidate: 3600 } // 1 hour cache
+);
+
 export async function estimateFreight(input: {
   channel: ProductChannel;
   receiver: {
@@ -249,19 +265,11 @@ export async function estimateFreight(input: {
     quantity: number;
   }>;
 }): Promise<{
-  success: boolean;
-  total?: {
-    shipping: { amount: number; currency: string };
+  estimate?: {
+    freight?: { amount: number; currency: string };
   };
+  monetary_unit?: string;
   request_id?: string;
 }> {
-  return hiobuyFetch<{
-    success: boolean;
-    total?: { shipping: { amount: number; currency: string } };
-    request_id?: string;
-  }>("/v1/products/freight/estimate", {
-    channel: input.channel,
-    receiver: input.receiver,
-    lines: input.lines,
-  });
+  return getCachedFreightEstimate(input.channel, input.receiver, input.lines);
 }

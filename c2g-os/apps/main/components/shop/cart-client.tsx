@@ -5,32 +5,10 @@ import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Trash, CreditCard, Smartp
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { getCartFreightEstimate } from "../../app/checkout/actions";
 
 export default function CartClient({ isLoggedIn }: { isLoggedIn?: boolean }) {
   const { items, removeFromCart, updateQuantity, cartTotalGhs, cartCount, clearCart } = useCart();
   const router = useRouter();
-
-  const [estimatedFreightGhs, setEstimatedFreightGhs] = useState<number | null>(null);
-  const [isEstimating, setIsEstimating] = useState(false);
-
-  useEffect(() => {
-    if (items.length === 0) {
-      setEstimatedFreightGhs(0);
-      return;
-    }
-    
-    setIsEstimating(true);
-    const debounceTimer = setTimeout(async () => {
-      const res = await getCartFreightEstimate(items);
-      if (res.success && res.freightGhs !== undefined) {
-        setEstimatedFreightGhs(res.freightGhs);
-      }
-      setIsEstimating(false);
-    }, 500);
-
-    return () => clearTimeout(debounceTimer);
-  }, [items]);
 
   if (items.length === 0) {
     return (
@@ -142,15 +120,7 @@ export default function CartClient({ isLoggedIn }: { isLoggedIn?: boolean }) {
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>China Delivery Fee</span>
-              <span className="text-sm">
-                {isEstimating ? (
-                  <span className="animate-pulse">Calculating...</span>
-                ) : estimatedFreightGhs !== null ? (
-                  `~₵${estimatedFreightGhs.toFixed(2)}`
-                ) : (
-                  "Calculated at checkout"
-                )}
-              </span>
+              <span className="text-sm">Calculated at checkout</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>C2G Processing Fee</span>
@@ -159,7 +129,7 @@ export default function CartClient({ isLoggedIn }: { isLoggedIn?: boolean }) {
             <div className="pt-4 border-t border-border/50 flex justify-between items-center">
               <span className="font-bold text-base">Estimated Total</span>
               <span className="font-extrabold text-2xl text-primary">
-                ₵{(cartTotalGhs + (estimatedFreightGhs || 0)).toFixed(2)}
+                ₵{cartTotalGhs.toFixed(2)}
               </span>
             </div>
           </div>

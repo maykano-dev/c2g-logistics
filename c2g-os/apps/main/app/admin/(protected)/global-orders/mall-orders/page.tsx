@@ -17,7 +17,8 @@ const STATUS_OPTIONS = [
   { value: 'ready_for_pickup', label: 'Available for pickup', color: 'bg-teal-500/10 text-teal-400 border-teal-500/30' },
   { value: 'shipped', label: 'Shipped', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' },
   { value: 'delivered', label: 'Delivered', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' },
-  { value: 'cancelled', label: 'Cancelled', color: 'bg-red-500/10 text-red-400 border-red-500/30' }
+  { value: 'cancelled', label: 'Cancelled', color: 'bg-red-500/10 text-red-400 border-red-500/30' },
+  { value: 'refunded', label: 'Refunded', color: 'bg-red-500/10 text-red-400 border-red-500/30' }
 ];
 
 export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
@@ -234,6 +235,7 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Customer</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Payment</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status</th>
+                <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Supplier</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Items</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Shipping Fee</th>
                 <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total (GHS)</th>
@@ -284,6 +286,9 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                             {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value} className="bg-zinc-900 text-white">{s.label}</option>)}
                           </select>
                         </div>
+                      </td>
+                      <td className="p-4 text-sm text-zinc-300">
+                        <span className="font-medium text-indigo-400 line-clamp-1 max-w-[120px]" title={order.seller_name}>{order.seller_name || 'Unknown'}</span>
                       </td>
                       <td className="p-4 text-sm text-zinc-300">
                         {itemsList.length} items
@@ -363,6 +368,10 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-sm bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Supplier</p>
+                        <p className="text-indigo-400 font-medium truncate max-w-[100px]">{order.seller_name || 'Unknown'}</p>
+                      </div>
                       <div>
                         <p className="text-xs text-zinc-500 mb-1">Items</p>
                         <p className="text-zinc-300 font-medium">{itemsList.length}</p>
@@ -484,6 +493,9 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                     <p className="text-sm text-white flex justify-between"><span className="text-zinc-500">Date:</span> {format(new Date(selectedOrder.created_at), 'MMM dd, yyyy HH:mm')}</p>
                     <p className="text-sm text-white flex justify-between"><span className="text-zinc-500">Ref:</span> <span className="font-mono text-xs bg-zinc-950 px-1 py-0.5 rounded border border-zinc-800">{selectedOrder.payment_reference || selectedOrder.reference || 'N/A'}</span></p>
                     <p className="text-sm text-white flex justify-between"><span className="text-zinc-500">Gateway:</span> <span className="capitalize">{selectedOrder.payment_gateway || 'hubtel'}</span></p>
+                    {selectedOrder.seller_name && (
+                      <p className="text-sm text-white flex justify-between items-center"><span className="text-zinc-500">Supplier:</span> <span className="text-indigo-400 truncate max-w-[150px]" title={selectedOrder.seller_name}>{selectedOrder.seller_name}</span></p>
+                    )}
                   </div>
                 </div>
 
@@ -531,7 +543,7 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
               {/* Items List */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">Items to Purchase</h3>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">Items Purchased</h3>
                   <button 
                     onClick={() => copyAllLinks(selectedOrder.items || [])}
                     className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 hover:text-indigo-300 rounded-lg text-xs font-bold transition-all duration-300 w-32 justify-center"
@@ -557,9 +569,9 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                     </thead>
                     <tbody className="divide-y divide-zinc-800">
                       {(selectedOrder.items || []).map((item: any, i: number) => {
-                        const supplierUrl = item.url || item.product_url || item.product_link;
-                        const c2gUrl = item.productId ? `https://c2g-logistics.com/shop/product/${item.productId}` : null;
-                        const imageUrl = item.image_url || item.image || item.thumbnail;
+                        const supplierUrl = item.url || item.product_url || item.product_link || (item.product_id ? `https://detail.1688.com/offer/${item.product_id}.html` : null);
+                        const c2gUrl = item.product_id ? `https://c2g-logistics.com/shop/product/${item.product_id}` : (item.productId ? `https://c2g-logistics.com/shop/product/${item.productId}` : null);
+                        const imageUrl = item.image_url || item.image || item.thumbnail || item.imageUrl;
                         
                         return (
                         <tr key={i} className="hover:bg-zinc-900/50">
@@ -589,9 +601,9 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                             </div>
                           </td>
                           <td className="p-4">
-                            {item.variants && Object.keys(item.variants).length > 0 ? (
+                            {(item.variants || item.selectedOptions) && Object.keys(item.variants || item.selectedOptions).length > 0 ? (
                               <div className="space-y-1">
-                                {Object.entries(item.variants).map(([k, v]) => (
+                                {Object.entries(item.variants || item.selectedOptions).map(([k, v]) => (
                                   <p key={k} className="text-[11px] text-zinc-400 capitalize">
                                     {k}: <span className="text-zinc-200 font-medium">{String(v)}</span>
                                   </p>
@@ -604,7 +616,7 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                           <td className="p-4 text-center text-sm text-white font-medium">{item.quantity}</td>
                           <td className="p-4 text-right">
                             <span className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700/50 text-xs font-bold text-zinc-300">
-                              ¥{item.price_cny || '0.00'}
+                              {item.price_cny || item.priceCny ? `¥${Number(item.price_cny || item.priceCny).toFixed(2)}` : (item.price ? `₵${Number(item.price).toFixed(2)}` : '¥0.00')}
                             </span>
                           </td>
                           <td className="p-4 text-right">
@@ -638,9 +650,9 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                   {/* Mobile Cards for Items */}
                   <div className="sm:hidden flex flex-col divide-y divide-zinc-800">
                     {(selectedOrder.items || []).map((item: any, i: number) => {
-                      const supplierUrl = item.url || item.product_url || item.product_link;
-                      const c2gUrl = item.productId ? `https://c2g-logistics.com/shop/product/${item.productId}` : null;
-                      const imageUrl = item.image_url || item.image || item.thumbnail;
+                      const supplierUrl = item.url || item.product_url || item.product_link || (item.product_id ? `https://detail.1688.com/offer/${item.product_id}.html` : null);
+                      const c2gUrl = item.product_id ? `https://c2g-logistics.com/shop/product/${item.product_id}` : (item.productId ? `https://c2g-logistics.com/shop/product/${item.productId}` : null);
+                      const imageUrl = item.image_url || item.image || item.thumbnail || item.imageUrl;
                       
                       return (
                         <div key={i} className="p-4 flex flex-col gap-3 hover:bg-zinc-900/50 transition-colors">
@@ -664,9 +676,9 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                               <p className="text-sm font-medium text-white line-clamp-2 leading-tight mb-1">{item.name}</p>
                               <p className="text-xs text-zinc-400 font-medium">Qty: {item.quantity}</p>
                               <div className="mt-1">
-                                {item.variants && Object.keys(item.variants).length > 0 ? (
+                                {(item.variants || item.selectedOptions) && Object.keys(item.variants || item.selectedOptions).length > 0 ? (
                                   <div className="flex flex-wrap gap-1">
-                                    {Object.entries(item.variants).map(([k, v]) => (
+                                    {Object.entries(item.variants || item.selectedOptions).map(([k, v]) => (
                                       <span key={k} className="text-[10px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded-md border border-zinc-700/50">{String(v)}</span>
                                     ))}
                                   </div>
@@ -678,7 +690,7 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                           </div>
                           <div className="flex items-center justify-between pt-2 border-t border-zinc-800/50">
                             <span className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700/50 text-sm font-bold text-zinc-200">
-                              ¥{item.price_cny || '0.00'}
+                              {item.price_cny || item.priceCny ? `¥${Number(item.price_cny || item.priceCny).toFixed(2)}` : (item.price ? `₵${Number(item.price).toFixed(2)}` : '¥0.00')}
                             </span>
                             <div className="flex items-center gap-2">
                               {supplierUrl && (
@@ -704,13 +716,13 @@ export function MallOrdersView({ readOnly = false }: { readOnly?: boolean }) {
                     
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-zinc-400">Subtotal</span>
-                      <span className="text-sm text-white font-medium">¥{selectedOrder.subtotal || selectedOrder.items?.reduce((acc: number, item: any) => acc + ((item.price_cny || 0) * (item.quantity || 1)), 0).toFixed(2) || '0.00'}</span>
+                      <span className="text-sm text-white font-medium">₵{selectedOrder.subtotal ? Number(selectedOrder.subtotal).toFixed(2) : (selectedOrder.items?.reduce((acc: number, item: any) => acc + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2) || '0.00')}</span>
                     </div>
                     
                     {selectedOrder.service_fee > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-zinc-400">Service Fee</span>
-                        <span className="text-sm text-white font-medium">¥{selectedOrder.service_fee.toFixed(2)}</span>
+                        <span className="text-sm text-white font-medium">₵{Number(selectedOrder.service_fee).toFixed(2)}</span>
                       </div>
                     )}
                     

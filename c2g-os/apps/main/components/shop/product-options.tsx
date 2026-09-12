@@ -170,7 +170,8 @@ export default function ProductOptions({ product, variants, exchangeRate, option
           quantity: qty,
           combination: undefined,
           stock: product.stock,
-          moq: product.min_order_quantity || 1
+          moq: product.min_order_quantity || 1,
+          sellerName: product.seller_name || product.supplier_name || undefined
         });
         addedCount++;
       }
@@ -197,7 +198,8 @@ export default function ProductOptions({ product, variants, exchangeRate, option
               quantity: qty,
               combination: combo,
               stock: v.stock,
-              moq: product.min_order_quantity || 1
+              moq: product.min_order_quantity || 1,
+              sellerName: product.seller_name || product.supplier_name || undefined
             });
             addedCount++;
           }

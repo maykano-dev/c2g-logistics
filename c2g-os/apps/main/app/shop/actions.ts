@@ -97,16 +97,11 @@ function mapHiobuyToC2g(hbProduct: any, pricing: { rate: number, markup: number 
   // Approximate USD for internal tracking only
   const usdPrice = cnyPrice / 7.2;
 
-  let imageUrl = hbProduct.image || hbProduct.images?.[0]?.url || "https://placehold.co/300";
+  let imageUrl = hbProduct.image || hbProduct.images?.[0]?.url || "";
   if (imageUrl.startsWith('//')) {
     imageUrl = 'https:' + imageUrl;
   } else if (imageUrl.startsWith('http://')) {
     imageUrl = imageUrl.replace('http://', 'https://');
-  }
-  
-  // Fallback for non-resolving mock test images or invalid relative URLs
-  if (imageUrl.includes('cdn.hiobuy.com/mock') || (!imageUrl.startsWith('http') && !imageUrl.startsWith('/'))) {
-    imageUrl = "https://placehold.co/600x600/1e293b/94a3b8?text=Mock+Product";
   }
 
   return {
@@ -350,7 +345,12 @@ async function fetchShopProductsBase(params?: {
         // (Random shuffle would defeat caching since the output changes every time.)
 
         if (deduplicatedItems.length > 0) {
-          alibabaProducts = deduplicatedItems.map((p: any) => mapHiobuyToC2g(p, pricing));
+          // Filter out mock products returned by test API keys
+          const validItems = deduplicatedItems.filter(p => {
+             const img = p.image || p.images?.[0]?.url || '';
+             return !img.includes('cdn.hiobuy.com/mock');
+          });
+          alibabaProducts = validItems.map((p: any) => mapHiobuyToC2g(p, pricing));
           totalCount += combinedTotal;
 
           const expiresAt = new Date();
@@ -385,7 +385,12 @@ async function fetchShopProductsBase(params?: {
         });
 
         if (res && res.items && res.items.length > 0) {
-          alibabaProducts = res.items.map((p: any) => mapHiobuyToC2g(p, pricing));
+          // Filter out mock products returned by test API keys
+          const validItems = res.items.filter((p: any) => {
+             const img = p.image || p.images?.[0]?.url || '';
+             return !img.includes('cdn.hiobuy.com/mock');
+          });
+          alibabaProducts = validItems.map((p: any) => mapHiobuyToC2g(p, pricing));
           totalCount += res.total || res.items.length;
 
           // Save to Cache (TTL 24 hours)
@@ -518,11 +523,7 @@ export async function getProductDetails(id: string, explicitChannel?: string) {
     if (!raw) throw new Error("Product not found on HioBuy");
 
     let mainImages = raw.images?.map(i => i.url) || [];
-    if (mainImages.length === 0) {
-      mainImages.push('https://placehold.co/600');
-    }
     mainImages = mainImages.map(img => {
-      if (img.includes('cdn.hiobuy.com/mock')) return "https://placehold.co/600x600/1e293b/94a3b8?text=Mock+Product";
       if (img.startsWith('//')) return 'https:' + img;
       if (img.startsWith('http://')) return img.replace('http://', 'https://');
       return img;
@@ -539,7 +540,6 @@ export async function getProductDetails(id: string, explicitChannel?: string) {
       const combination = propParts.length > 0 ? propParts.join(' / ') : 'Standard';
 
       let variantImage = sku.image || mainImages[0] || '';
-      if (variantImage.includes('cdn.hiobuy.com/mock')) variantImage = "https://placehold.co/600x600/1e293b/94a3b8?text=Mock+Product";
 
       return {
         id:                String(sku.sku_id || 'default'),

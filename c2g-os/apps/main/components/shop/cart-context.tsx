@@ -6,6 +6,7 @@ export type CartItem = {
   id: string; // unique cart item id (product.id + variant.id)
   productId: string;
   variantId?: string;
+  channel?: string; // "1688" | "taobao" etc. Defaults to "1688"
   name: string;
   imageUrl: string;
   priceGhs: number;
@@ -14,6 +15,7 @@ export type CartItem = {
   combination?: Record<string, string>;
   stock: number;
   moq?: number;
+  sellerName?: string;
 };
 
 type CartContextType = {
