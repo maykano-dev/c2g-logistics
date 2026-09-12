@@ -23,10 +23,11 @@ type CartContextType = {
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
+  clearCart: () => Promise<void>;
   cartCount: number;
   cartTotalGhs: number;
   isLoaded: boolean;
+  isSyncing: boolean;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -34,6 +35,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     async function loadCart() {
@@ -118,8 +120,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const removeFromCart = (id: string) => {
-    setItems(prev => prev.filter(i => i.id !== id));
+  const removeFromCart = async (id: string) => {
+    setIsSyncing(true);
+    const newItems = items.filter(i => i.id !== id);
+    setItems(newItems);
+    localStorage.setItem("c2g_mall_cart", JSON.stringify(newItems));
+    
+    try {
+      const { syncDbCart } = await import("../../app/shop/actions");
+      await syncDbCart(newItems);
+    } catch (e) {} finally {
+      setIsSyncing(false);
+    }
   };
 
   const updateQuantity = (id: string, quantity: number) => {
@@ -144,19 +156,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const clearCart = () => {
+  const clearCart = async () => {
+    setIsSyncing(true);
     setItems([]);
     localStorage.setItem("c2g_mall_cart", JSON.stringify([]));
-    import("../../app/shop/actions").then(({ syncDbCart }) => {
-      syncDbCart([]).catch(() => {});
-    });
+    
+    try {
+      const { syncDbCart } = await import("../../app/shop/actions");
+      await syncDbCart([]);
+    } catch (e) {} finally {
+      setIsSyncing(false);
+    }
   };
 
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const cartTotalGhs = items.reduce((acc, item) => acc + (item.priceGhs * item.quantity), 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotalGhs, isLoaded }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotalGhs, isLoaded, isSyncing }}>
       {children}
     </CartContext.Provider>
   );

@@ -7,12 +7,18 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function CartClient({ isLoggedIn }: { isLoggedIn?: boolean }) {
-  const { items, removeFromCart, updateQuantity, cartTotalGhs, cartCount, clearCart } = useCart();
+  const { items, removeFromCart, updateQuantity, cartTotalGhs, cartCount, clearCart, isSyncing } = useCart();
   const router = useRouter();
 
   if (items.length === 0) {
     return (
-      <div className="glass-panel p-16 text-center flex flex-col items-center justify-center border-dashed border-2">
+      <>
+        {isSyncing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary border-l-primary rounded-full animate-spin"></div>
+          </div>
+        )}
+        <div className="glass-panel p-16 text-center flex flex-col items-center justify-center border-dashed border-2">
         <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
           <ShoppingBag className="w-12 h-12 text-primary" />
         </div>
@@ -22,11 +28,18 @@ export default function CartClient({ isLoggedIn }: { isLoggedIn?: boolean }) {
           Start Shopping <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
+    <>
+      {isSyncing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary border-l-primary rounded-full animate-spin"></div>
+        </div>
+      )}
+      <div className="flex flex-col lg:flex-row gap-8">
       {/* Cart Items List */}
       <div className="flex-1 space-y-6">
         <div className="glass-panel p-6">
@@ -163,6 +176,7 @@ export default function CartClient({ isLoggedIn }: { isLoggedIn?: boolean }) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
