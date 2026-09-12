@@ -11,6 +11,7 @@ import NextTopLoader from 'nextjs-toploader';
 import { ModalProvider } from "../components/providers/modal-provider";
 import { getCachedSettings } from "@/utils/cache";
 import { MaintenanceBlocker } from "../components/maintenance-blocker";
+import CookieGuard from "../components/cookie-guard";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -127,26 +128,21 @@ export default async function RootLayout({
         />
       </head>
       <body className={outfit.className}>
-        <NextTopLoader 
-          color="transparent" 
-          height={0} 
-          showSpinner={true} 
-          shadow="none" 
-          template='<div role="spinner" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm"><div class="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 border-l-blue-500 rounded-full animate-spin"></div></div>'
-        />
+        <NextTopLoader color="#3b82f6" showSpinner={false} shadow="0 0 10px #3b82f6,0 0 5px #3b82f6" />
+        <CookieGuard />
         <ModalProvider>
           <CartProvider>
             <WishlistProvider>
               <div className="min-h-[100dvh] bg-background text-foreground flex flex-col w-full">
                 <ServiceWorkerRegister />
-              <OfflineIndicator />
-              <MaintenanceBlocker settings={settings}>
-                {children}
-              </MaintenanceBlocker>
-              <ClientFooter settings={settings} />
-            </div>
-          </WishlistProvider>
-        </CartProvider>
+                <OfflineIndicator />
+                <MaintenanceBlocker settings={settings}>
+                  {children}
+                </MaintenanceBlocker>
+                <ClientFooter settings={settings} />
+              </div>
+            </WishlistProvider>
+          </CartProvider>
         </ModalProvider>
         <ClientWhatsAppButton settings={settings} />
       </body>
