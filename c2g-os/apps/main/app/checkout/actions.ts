@@ -61,36 +61,80 @@ export async function getCartFreightEstimate(items: any[]) {
       .single();
     const exchangeRate = settings?.exchange_rate_ghs_to_cny || 0.52;
 
-    const lines = items.map(i => ({
-      id: i.productId,
-      quantity: i.quantity,
-      ...(i.variantId && i.variantId !== 'default' ? { spec_id: String(i.variantId) } : {})
+    if (!items || items.length === 0) return { success: true, freightCny: 0 };
+
+    const { estimateFreight, getProductDetail } = await import('@/lib/hiobuy');
+    
+    // Group items by seller_name to avoid CHANNEL_UPSTREAM_ERROR: PRODUCTS_FROM_DIFFERENT_SELLERS
+    const sellerGroups: Record<string, any[]> = {};
+    
+    await Promise.all(items.map(async (i) => {
+      let sellerName = `unknown_${i.productId}`; // Fallback to isolate products if seller fails to load
+      try {
+        const detail = await getProductDetail({ channel: (i.channel || "1688") as any, id: i.productId });
+        if (detail?.product?.seller_name) {
+          sellerName = detail.product.seller_name;
+        }
+      } catch (e) {
+        console.warn(`Could not fetch seller for product ${i.productId}`);
+      }
+
+      if (!sellerGroups[sellerName]) {
+        sellerGroups[sellerName] = [];
+      }
+      
+      sellerGroups[sellerName]?.push({
+        id: i.productId,
+        quantity: i.quantity,
+        ...(i.variantId && i.variantId !== 'default' ? { spec_id: String(i.variantId) } : {})
+      });
     }));
 
-    if (lines.length === 0) return { success: true, freightCny: 0 };
+    let totalFreightCny = 0;
+    let successCount = 0;
 
-    const { estimateFreight } = await import('@/lib/hiobuy');
-    const res = await estimateFreight({
-      channel: "1688",
-      receiver: {
-        name: warehouseData?.name || "C2G Warehouse",
-        mobile: warehouseData?.phone || "13800138000",
-        address: warehouseData?.address || "Guangzhou Baiyun",
-        province: warehouseData?.province || "Guangdong",
-        city: warehouseData?.city || "Guangzhou",
-        district: warehouseData?.district || "Baiyun District"
-      },
-      lines
+    const receiver = {
+      name: warehouseData?.name || "C2G Warehouse",
+      mobile: warehouseData?.phone || "13800138000",
+      address: warehouseData?.address || "Guangzhou Baiyun",
+      province: warehouseData?.province || "Guangdong",
+      city: warehouseData?.city || "Guangzhou",
+      district: warehouseData?.district || "Baiyun District"
+    };
+
+    // Calculate freight for each seller's group in parallel
+    const freightPromises = Object.values(sellerGroups).map(async (lines) => {
+      return estimateFreight({
+        channel: "1688",
+        receiver,
+        lines
+      }).catch(err => {
+        console.error("Freight estimate failed for group:", err);
+        return { success: false, total: undefined };
+      });
     });
 
-    if (res.success && res.total?.shipping?.amount !== undefined) {
-      // Apply the 5% buffer as requested
-      const bufferedFreightCny = res.total.shipping.amount * 1.05;
-      const freightGhs = bufferedFreightCny / exchangeRate;
-      return { success: true, freightCny: bufferedFreightCny, freightGhs };
+    const results = await Promise.all(freightPromises);
+    
+    for (const res of results) {
+      if (res.success && res.total?.shipping?.amount !== undefined) {
+        totalFreightCny += res.total.shipping.amount;
+        successCount++;
+      }
     }
 
-    return { success: false, error: "Failed to fetch freight estimate from HioBuy" };
+    // If at least some succeeded, we return the total (or we could mandate all must succeed)
+    // To be safe, if we fail to get estimates for SOME items, we might undercharge the user.
+    // If ANY group fails, we should probably fail the whole estimate so they don't checkout with 0 shipping.
+    if (successCount < Object.keys(sellerGroups).length) {
+       return { success: false, error: "Failed to fetch freight estimate for some items from different sellers" };
+    }
+
+    // Apply the 5% buffer as requested
+    const bufferedFreightCny = totalFreightCny * 1.05;
+    const freightGhs = bufferedFreightCny / exchangeRate;
+    return { success: true, freightCny: bufferedFreightCny, freightGhs };
+    
   } catch (error: any) {
     console.error("Freight estimate error:", error);
     return { success: false, error: "Error calculating freight estimate" };
