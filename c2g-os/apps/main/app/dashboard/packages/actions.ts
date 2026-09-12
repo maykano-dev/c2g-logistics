@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { RegisterPackagesSchema } from '@/utils/security-schemas';
 import { deductFromWallet } from '../wallet/actions';
 import { createNotification } from '@/utils/notifications';
@@ -28,7 +29,7 @@ export async function getPackages() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error('Unauthorized');
+    redirect('/login');
   }
 
   // Fetch packages (shipments stuck in arrival pipeline)
