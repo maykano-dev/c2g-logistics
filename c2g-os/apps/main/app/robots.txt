@@ -1,13 +1,40 @@
 User-Agent: *
 Allow: /
+
+# Private Dashboards & Internal Areas
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /agent/
-Disallow: /staff/
 Disallow: /employee/
-Disallow: /api/
+Disallow: /staff/
+Disallow: /finance/
+Disallow: /scanner/
+
+# Checkout, Carts & Payments
+Disallow: /cart/
 Disallow: /checkout/
 Disallow: /payment-status/
-Disallow: /cart/
+
+# APIs & Webhooks
+Disallow: /api/
+
+# Auth Callbacks & Private Profile Setup
+Disallow: /auth/
+Disallow: /login/mfa/
+Disallow: /forgot-password/
+
+# User Specific Content
+Disallow: /wishlist/
+Disallow: /store/*/wishlist/
+
+# Test & Debug Routes
+Disallow: /test/
+
+# Prevent Crawling of Parametrized Search/Filter URLs to save crawl budget (prevents infinite URL spaces)
+Disallow: /*?query=
+Disallow: /*?search=
+Disallow: /*?filter=
+Disallow: /*?sort=
+Disallow: /*?page=
 
 Sitemap: https://c2g-logistics.com/sitemap.xml
