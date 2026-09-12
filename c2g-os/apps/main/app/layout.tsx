@@ -11,7 +11,6 @@ import NextTopLoader from 'nextjs-toploader';
 import { ModalProvider } from "../components/providers/modal-provider";
 import { getCachedSettings } from "@/utils/cache";
 import { MaintenanceBlocker } from "../components/maintenance-blocker";
-import CookieGuard from "../components/cookie-guard";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -129,7 +128,6 @@ export default async function RootLayout({
       </head>
       <body className={outfit.className}>
         <NextTopLoader color="#3b82f6" showSpinner={false} shadow="0 0 10px #3b82f6,0 0 5px #3b82f6" />
-        <CookieGuard />
         <ModalProvider>
           <CartProvider>
             <WishlistProvider>
