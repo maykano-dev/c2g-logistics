@@ -247,15 +247,45 @@ async function ShopContent({
     page: resolvedParams.page ? parseInt(resolvedParams.page, 10) : undefined
   };
 
-  // Fetch all data in parallel
-  const [allProductsResult, topPurchasedResult, trendingResult, newArrivalsResult, bestSellersResult] =
-    await Promise.all([
+  let allProductsResult: any = { products: [], exchangeRate: 1, currentPage: 1, totalPages: 1 };
+  let topPurchasedResult: any = { products: [] };
+  let trendingResult: any = { products: [] };
+  let newArrivalsResult: any = { products: [] };
+  let bestSellersResult: any = { products: [] };
+  let pageError: string | null = null;
+
+  try {
+    const results = await Promise.all([
       getShopProducts(paramsForProducts),
       getTopPurchasedProducts(5),
       getTrendingProducts(),
       getNewArrivals(),
       getBestSellers(),
     ]);
+    
+    allProductsResult = results[0];
+    topPurchasedResult = results[1];
+    trendingResult = results[2];
+    newArrivalsResult = results[3];
+    bestSellersResult = results[4];
+  } catch (err: any) {
+    console.error("Shop page parallel fetch failed:", err);
+    pageError = err.message || String(err);
+  }
+
+  if (pageError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+        <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-5">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <h3 className="text-xl font-bold mb-2 text-destructive">Failed to load shop data</h3>
+        <p className="text-muted-foreground text-sm max-w-lg mb-6 bg-secondary/50 p-4 rounded-md font-mono text-left overflow-auto">
+          {pageError}
+        </p>
+      </div>
+    );
+  }
 
   const { products, exchangeRate, currentPage, totalPages } = allProductsResult;
   const { products: topPurchasedProducts } = topPurchasedResult;
