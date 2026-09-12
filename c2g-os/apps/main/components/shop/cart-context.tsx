@@ -144,7 +144,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => {
+    setItems([]);
+    localStorage.setItem("c2g_mall_cart", JSON.stringify([]));
+    import("../../app/shop/actions").then(({ syncDbCart }) => {
+      syncDbCart([]).catch(() => {});
+    });
+  };
 
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const cartTotalGhs = items.reduce((acc, item) => acc + (item.priceGhs * item.quantity), 0);
