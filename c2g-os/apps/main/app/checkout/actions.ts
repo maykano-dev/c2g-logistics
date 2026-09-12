@@ -451,6 +451,13 @@ export async function createEcomOrder(orderData: any) {
     console.warn('Failed to dispatch notification:', e);
   }
 
+  // Clear the database cart upon successful order
+  try {
+    await supabase.from('shopping_carts').update({ cart_data: [] }).eq('user_id', userId);
+  } catch (e) {
+    console.warn('Failed to clear database cart after order creation:', e);
+  }
+
   return { 
     success: true, 
     orderId: createdOrders[0]?.orderIdFormatted, 

@@ -17,7 +17,7 @@ import { useEffect } from "react";
  * 3. The user simply gets logged out and can sign back in cleanly
  */
 
-const COOKIE_SIZE_LIMIT = 6000; // 6KB — safe buffer before 8KB server rejection
+const COOKIE_SIZE_LIMIT = 7800; // 7.8KB — safe buffer before 8KB server rejection
 
 function getCookieSizeBytes(): number {
   return new Blob([document.cookie]).size;
@@ -50,14 +50,6 @@ export default function CookieGuard() {
           `[CookieGuard] Cookie size (${size} bytes) exceeds safe limit (${COOKIE_SIZE_LIMIT} bytes). Clearing auth cookies to prevent HTTP 400.`
         );
         clearSupabaseCookies();
-        
-        // If we're on a protected page, reload to trigger a clean redirect to login
-        const path = window.location.pathname;
-        const isProtected = path.startsWith("/dashboard") || path.startsWith("/admin") || path.startsWith("/finance") || path.startsWith("/employee") || path.startsWith("/agent") || path.startsWith("/checkout");
-        
-        if (isProtected) {
-          window.location.reload();
-        }
       }
     } catch (e) {
       // Silently fail — this is a defensive safeguard, not a critical feature

@@ -870,15 +870,35 @@ export async function getDbCart() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, items: [] };
-  const cartData = user.user_metadata?.cart || [];
-  return { success: true, items: cartData };
+  
+  // Clean up legacy cart from metadata if it exists to fix Cookie Bloat loop
+  if (user.user_metadata?.cart) {
+     await supabase.auth.updateUser({ data: { cart: null } }).catch(() => {});
+  }
+  
+  const { data, error } = await supabase
+    .from('shopping_carts')
+    .select('cart_data')
+    .eq('user_id', user.id)
+    .single();
+    
+  if (error || !data) return { success: true, items: [] };
+  return { success: true, items: data.cart_data || [] };
 }
 
 export async function syncDbCart(items: any[]) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false };
-  const { error } = await supabase.auth.updateUser({ data: { cart: items } });
+  
+  const { error } = await supabase
+    .from('shopping_carts')
+    .upsert({ 
+      user_id: user.id, 
+      cart_data: items,
+      updated_at: new Date().toISOString()
+    });
+    
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
