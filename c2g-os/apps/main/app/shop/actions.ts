@@ -684,6 +684,45 @@ export async function processImageSearch(base64Data: string) {
 // ═══════════════════════════════════════════════════════════════════
 // URL Parsing (HioBuy API)
 // ═══════════════════════════════════════════════════════════════════
+async function expandShortLink(url: string): Promise<string> {
+  try {
+    if (!url.includes('qr.1688.com') && !url.includes('m.tb.cn')) return url;
+    
+    return await new Promise((resolve) => {
+      const https = require('https');
+      https.get(url, { family: 4, headers: { "User-Agent": "curl/7.68.0" } }, (res: any) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          const loc = res.headers.location;
+          if (loc.includes("detail.1688.com") || loc.includes("item.taobao.com")) {
+            return resolve(loc);
+          }
+        }
+        
+        let data = "";
+        res.on("data", (chunk: any) => data += chunk);
+        res.on("end", () => {
+          const match = data.match(/[?&](?:offerId|id)=([0-9]+)/);
+          if (match && match[1]) {
+            if (url.includes("1688.com")) {
+              resolve(`https://detail.1688.com/offer/${match[1]}.html`);
+            } else {
+              resolve(`https://item.taobao.com/item.htm?id=${match[1]}`);
+            }
+          } else {
+            resolve(url); // fallback
+          }
+        });
+      }).on("error", (e: any) => {
+        console.warn("Failed to expand short link:", e.message);
+        resolve(url);
+      });
+    });
+  } catch (e) {
+    console.warn("Failed to expand short link:", e);
+  }
+  return url;
+}
+
 export async function processUrlParse(url: string) {
   try {
     const supabase = await createClient();
@@ -692,7 +731,10 @@ export async function processUrlParse(url: string) {
       return { success: false, error: "Authentication required to parse links." };
     }
 
-    const qHash = `url_parse_${crypto.createHash("md5").update(url.trim()).digest("hex")}`;
+    // Attempt to expand mobile short-links before hashing/caching
+    const finalUrl = await expandShortLink(url.trim());
+
+    const qHash = `url_parse_${crypto.createHash("md5").update(finalUrl).digest("hex")}`;
     
     // Check in-memory cache first
     const memCached = getFromMemoryCache(qHash);
@@ -712,7 +754,7 @@ export async function processUrlParse(url: string) {
       return cacheData.result_data;
     }
 
-    const res = await parseProduct({ url });
+    const res = await parseProduct({ url: finalUrl });
     if (!res?.product?.id) {
       return { success: false, error: "Could not parse product URL." };
     }

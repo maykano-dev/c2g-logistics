@@ -80,6 +80,11 @@ export async function hiobuyFetch<T>(
     fetchBody = JSON.stringify(requestData);
   }
 
+  // Next.js 'undici' fetch implementation has a known bug with Cloudflare/HTTP2
+  // that randomly drops the connection during body parsing (ECONNRESET -> fetch failed).
+  // Forcing "Connection: close" avoids keep-alive socket drops.
+  headers["Connection"] = "close";
+
   const res = await fetch(fetchUrl, {
     method,
     headers,

@@ -7,6 +7,7 @@ import { createLinkOrder, payLinkOrder } from "../actions";
 import { useRouter } from "next/navigation";
 import { useModal } from "@/components/providers/modal-provider";
 import WalletPaymentModal from "@/components/wallet/wallet-payment-modal";
+import { processUrlParse } from "@/app/shop/actions";
 
 export function NewLinkOrderForm({ 
   exchangeRate, 
@@ -24,7 +25,7 @@ export function NewLinkOrderForm({
   walletBalance?: number
 }) {
   const router = useRouter();
-  const { showConfirm } = useModal();
+  const { showConfirm, showAlert } = useModal();
   
   // Multi-item State
   const [items, setItems] = useState([
@@ -40,6 +41,7 @@ export function NewLinkOrderForm({
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isModalProcessing, setIsModalProcessing] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [isParsingLink, setIsParsingLink] = useState(false);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -205,6 +207,66 @@ export function NewLinkOrderForm({
 
           {/* Hidden JSON representation of items to submit with the form */}
           <input type="hidden" name="items_json" value={JSON.stringify(items)} />
+
+          {/* Smart Link Area */}
+          <div className="glass-panel p-6 md:p-8 space-y-4 relative border-2 border-primary/30 bg-primary/5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                <LinkIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-primary">For 1688 links only</h3>
+                <p className="text-sm text-muted-foreground">Paste a link to skip this form and instantly view the product.</p>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <input 
+                type="url"
+                placeholder="Paste 1688 or Taobao link here..."
+                onChange={async (e) => {
+                  const val = e.target.value.trim();
+                  if (!val) return;
+                  if (/^https?:\/\//i.test(val) || val.includes('1688.com') || val.includes('taobao.com')) {
+                    let urlToParse = val;
+                    // Auto-extract clean URL from messy pasted text
+                    const urlMatch = val.match(/(https?:\/\/[a-zA-Z0-9-._~:/?#[\]@!$&'()*+,;=%]+)/);
+                    if (urlMatch && urlMatch[1]) {
+                      urlToParse = urlMatch[1];
+                    }
+                    if (!/^https?:\/\//i.test(urlToParse)) {
+                      urlToParse = `https://${urlToParse}`;
+                    }
+                    // Instantly format the paste in the input box
+                    e.target.value = urlToParse;
+                    try {
+                      setIsParsingLink(true);
+                      const res = await processUrlParse(urlToParse);
+                      if (res.success && res.productId) {
+                        router.push(`/shop/product/${res.productId}?channel=${res.channel || '1688'}`);
+                      } else {
+                        showAlert({ title: 'Link Error', message: res.error || "Could not extract a product from this link. Please use the manual form below.", type: 'danger' });
+                        e.target.value = ''; // clear so they can try again or use manual
+                      }
+                    } catch (err) {
+                      showAlert({ title: 'Error', message: "Failed to parse product link.", type: 'danger' });
+                      e.target.value = '';
+                    } finally {
+                      setIsParsingLink(false);
+                    }
+                  }
+                }}
+                className={`flex h-12 w-full rounded-xl border border-primary/30 bg-background/80 px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all backdrop-blur-sm shadow-sm ${isParsingLink ? 'opacity-60' : ''}`}
+                disabled={isParsingLink}
+              />
+              {isParsingLink && (
+                <div className="flex items-center gap-2 text-primary text-sm font-semibold mt-3 bg-primary/10 border border-primary/20 w-fit px-4 py-1.5 rounded-full shadow-sm">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing your link...
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="space-y-6">
             {items.map((item, index) => (
