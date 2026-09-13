@@ -85,12 +85,20 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
 
     setIsPending(true);
 
-    // Basic URL detection for Chinese marketplaces
-    const isUrl = /^https?:\/\//i.test(query.trim()) || 
-                  /^(?:m\.|detail\.)?(1688\.com|taobao\.com|weidian\.com|tmall\.com)/i.test(query.trim());
+    // Robust URL detection for Chinese marketplaces
+    const isUrl = /(https?:\/\/[^\s]+)/i.test(query) || 
+                  /(?:m\.|detail\.)?(1688\.com|taobao\.com|weidian\.com|tmall\.com|tb\.cn)/i.test(query);
 
     if (isUrl) {
       let urlToParse = query.trim();
+      
+      // Auto-extract clean URL from messy pasted text (fallback if onChange missed it)
+      const urlMatch = urlToParse.match(/(https?:\/\/[^\s]+)/) || urlToParse.match(/((?:m\.|detail\.)?(?:1688\.com|taobao\.com|weidian\.com|tmall\.com|tb\.cn)[^\s]+)/i);
+      
+      if (urlMatch && urlMatch[1]) {
+        urlToParse = urlMatch[1];
+      }
+
       if (!/^https?:\/\//i.test(urlToParse)) {
         urlToParse = `https://${urlToParse}`;
       }
@@ -276,7 +284,17 @@ export default function ShopHeader({ walletBalance, isLoggedIn }: { walletBalanc
               type="text"
               placeholder="Search products, categories..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                let val = e.target.value;
+                // Smart link auto-extraction for messy share strings
+                if (/^https?:\/\//i.test(val) || val.includes('1688.com') || val.includes('taobao.com') || val.includes('tb.cn') || val.includes('weidian.com')) {
+                  const urlMatch = val.match(/(https?:\/\/[a-zA-Z0-9-._~:/?#[\]@!$&'()*+,;=%]+)/);
+                  if (urlMatch && urlMatch[1]) {
+                    val = urlMatch[1];
+                  }
+                }
+                setQuery(val);
+              }}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => {
                 // Delay hiding so clicks on suggestions register before blur
